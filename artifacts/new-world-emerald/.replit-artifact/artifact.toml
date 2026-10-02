@@ -1,0 +1,27 @@
+kind = "web"
+previewPath = "/"
+title = "New World Emerald Private School"
+version = "1.0.0"
+id = "artifacts/new-world-emerald"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 21831
+
+[services.development]
+run = "pnpm --filter @workspace/new-world-emerald run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/new-world-emerald", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/new-world-emerald/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "21831"
+BASE_PATH = "/"

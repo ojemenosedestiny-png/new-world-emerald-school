@@ -1,0 +1,1652 @@
+openapi: 3.1.0
+info:
+  # Do not change the title, if the title changes, the import paths will be broken
+  title: Api
+  version: 0.1.0
+  description: API specification
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: Auth
+    description: Browser and mobile authentication endpoints.
+  - name: Academic Calendar
+    description: Weekly academic calendar publishing.
+  - name: Admissions
+    description: Admission applications and school office review.
+  - name: School Commerce
+    description: School store orders and offline fee payment tracking.
+paths:
+  /website-admin/access:
+    get:
+      operationId: getWebsiteAdminAccess
+      tags: [Website]
+      summary: Check whether the signed-in account may manage this website
+      responses:
+        "200":
+          description: Access status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WebsiteAdminAccess"
+  /site-content:
+    get:
+      operationId: getSiteContent
+      tags: [Website]
+      summary: Get published school website content
+      responses:
+        "200":
+          description: Published content overrides
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SiteContent"
+    put:
+      operationId: updateSiteContent
+      tags: [Website]
+      summary: Save website content as an approved administrator
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SiteContentInput"
+      responses:
+        "200":
+          description: Saved content
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SiteContent"
+        "403":
+          description: Account is not approved to manage this school website
+        "409":
+          description: The revision has changed; reload before saving
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      description: Returns server health status
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+  /auth/user:
+    get:
+      tags: [Auth]
+      operationId: getCurrentAuthUser
+      summary: Get the currently authenticated user
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationSessionHeader"
+        - $ref: "#/components/parameters/SessionCookie"
+      responses:
+        "200":
+          description: Auth status resolved successfully.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthUserEnvelope"
+  /login:
+    get:
+      tags: [Auth]
+      operationId: beginBrowserLogin
+      summary: Start the browser login flow
+      parameters:
+        - name: returnTo
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "302":
+          description: Redirect to the identity provider.
+  /callback:
+    get:
+      tags: [Auth]
+      operationId: handleBrowserLoginCallback
+      summary: Complete the browser login flow
+      responses:
+        "302":
+          description: Redirect back to the requested page.
+  /logout:
+    get:
+      tags: [Auth]
+      operationId: logoutBrowserSession
+      summary: Clear the browser session
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationSessionHeader"
+        - $ref: "#/components/parameters/SessionCookie"
+        - name: returnTo
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "302":
+          description: Redirect after logout.
+  /mobile-auth/token-exchange:
+    post:
+      tags: [Auth]
+      operationId: exchangeMobileAuthorizationCode
+      summary: Exchange a mobile authorization code
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MobileTokenExchangeRequest"
+      responses:
+        "200":
+          description: Session created successfully.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MobileTokenExchangeSuccess"
+  /mobile-auth/logout:
+    post:
+      tags: [Auth]
+      operationId: logoutMobileSession
+      summary: Delete a mobile session
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationSessionHeader"
+      responses:
+        "200":
+          description: Logout processed.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LogoutSuccess"
+  /storage/uploads/request-url:
+    post:
+      tags: [Academic Calendar]
+      operationId: requestUploadUrl
+      summary: Request a protected upload URL
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UploadMetadata"
+      responses:
+        "200":
+          description: Presigned upload URL.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UploadUrlResponse"
+        "400":
+          description: Invalid upload metadata.
+        "401":
+          description: Authentication required.
+  /academic-calendar:
+    get:
+      tags: [Academic Calendar]
+      operationId: listAcademicCalendar
+      summary: List published weekly calendars
+      responses:
+        "200":
+          description: Published academic calendars.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AcademicCalendar"
+    post:
+      tags: [Academic Calendar]
+      operationId: createAcademicCalendar
+      summary: Publish a weekly academic calendar
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AcademicCalendarInput"
+      responses:
+        "201":
+          description: Calendar published.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AcademicCalendar"
+        "401":
+          description: Authentication required.
+  /academic-calendar/{id}:
+    delete:
+      tags: [Academic Calendar]
+      operationId: deleteAcademicCalendar
+      summary: Remove a weekly academic calendar
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Calendar removed.
+        "401":
+          description: Authentication required.
+        "404":
+          description: Calendar not found.
+  /admission-applications:
+    post:
+      tags: [Admissions]
+      operationId: createAdmissionApplication
+      summary: Submit an admission application
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdmissionApplicationInput"
+      responses:
+        "201":
+          description: Application received.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdmissionApplicationReceipt"
+        "400":
+          description: Invalid application details.
+    get:
+      tags: [Admissions]
+      operationId: listAdmissionApplications
+      summary: List admission applications for school staff
+      responses:
+        "200":
+          description: Admission applications.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AdmissionApplication"
+        "401":
+          description: Authentication required.
+  /admission-applications/{id}:
+    patch:
+      tags: [Admissions]
+      operationId: updateAdmissionApplication
+      summary: Update an admission application status
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdmissionApplicationStatusUpdate"
+      responses:
+        "200":
+          description: Application updated.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdmissionApplication"
+        "400":
+          description: Invalid application details.
+        "401":
+          description: Authentication required.
+        "404":
+          description: Application not found.
+  /live-updates:
+    get:
+      tags: [Live Updates]
+      operationId: listLiveUpdates
+      summary: List published school live updates
+      responses:
+        "200":
+          description: Published school update videos.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/LiveUpdate"
+    post:
+      tags: [Live Updates]
+      operationId: createLiveUpdate
+      summary: Publish a school live update video
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LiveUpdateInput"
+      responses:
+        "201":
+          description: Live update published.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LiveUpdate"
+        "400":
+          description: Invalid live update details.
+        "401":
+          description: Authentication required.
+  /live-updates/{id}:
+    patch:
+      tags: [Live Updates]
+      operationId: updateLiveUpdate
+      summary: Update a school live update
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LiveUpdateUpdate"
+      responses:
+        "200":
+          description: Live update updated.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LiveUpdate"
+        "400":
+          description: Invalid live update details.
+        "401":
+          description: Authentication required.
+        "404":
+          description: Live update not found.
+    delete:
+      tags: [Live Updates]
+      operationId: deleteLiveUpdate
+      summary: Remove a school live update
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Live update removed.
+        "401":
+          description: Authentication required.
+        "404":
+          description: Live update not found.
+  /school-commerce/products:
+    get:
+      tags: [School Commerce]
+      operationId: listStoreProducts
+      summary: List active school store products
+      responses:
+        "200":
+          description: Active school store products.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/StoreProduct"
+    post:
+      tags: [School Commerce]
+      operationId: createStoreProduct
+      summary: Add a school store product
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StoreProductInput"
+      responses:
+        "201":
+          description: Product created.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StoreProduct"
+        "400":
+          description: Invalid product details.
+        "401":
+          description: Authentication required.
+  /school-commerce/management/products:
+    get:
+      tags: [School Commerce]
+      operationId: listManagedStoreProducts
+      summary: List all school store products for staff
+      responses:
+        "200":
+          description: All school store products.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/StoreProduct"
+        "401":
+          description: Authentication required.
+  /school-commerce/products/{id}:
+    patch:
+      tags: [School Commerce]
+      operationId: updateStoreProduct
+      summary: Update a school store product
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StoreProductUpdate"
+      responses:
+        "200":
+          description: Product updated.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StoreProduct"
+        "400":
+          description: Invalid product details.
+        "401":
+          description: Authentication required.
+        "404":
+          description: Product not found.
+    delete:
+      tags: [School Commerce]
+      operationId: deleteStoreProduct
+      summary: Remove a school store product
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Product removed.
+        "401":
+          description: Authentication required.
+        "404":
+          description: Product not found.
+  /school-commerce/fee-schedules:
+    get:
+      tags: [School Commerce]
+      operationId: listClassFeeSchedules
+      summary: List active class fee schedules
+      responses:
+        "200":
+          description: Active class fee schedules.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ClassFeeSchedule"
+    post:
+      tags: [School Commerce]
+      operationId: createClassFeeSchedule
+      summary: Create a class fee schedule
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ClassFeeScheduleInput"
+      responses:
+        "201":
+          description: Class fee schedule created.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClassFeeSchedule"
+        "400":
+          description: Invalid fee schedule or duplicate class, term, and year.
+        "401":
+          description: Authentication required.
+  /school-commerce/management/fee-schedules:
+    get:
+      tags: [School Commerce]
+      operationId: listManagedClassFeeSchedules
+      summary: List all class fee schedules for staff
+      responses:
+        "200":
+          description: All class fee schedules.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ClassFeeSchedule"
+        "401":
+          description: Authentication required.
+  /school-commerce/fee-schedules/{id}:
+    patch:
+      tags: [School Commerce]
+      operationId: updateClassFeeSchedule
+      summary: Update a class fee schedule
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ClassFeeScheduleUpdate"
+      responses:
+        "200":
+          description: Class fee schedule updated.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClassFeeSchedule"
+        "400":
+          description: Invalid fee schedule.
+        "401":
+          description: Authentication required.
+        "404":
+          description: Fee schedule not found.
+    delete:
+      tags: [School Commerce]
+      operationId: deleteClassFeeSchedule
+      summary: Remove a class fee schedule
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Fee schedule removed.
+        "401":
+          description: Authentication required.
+        "404":
+          description: Fee schedule not found.
+  /school-commerce/individual-charges:
+    post:
+      tags: [School Commerce]
+      operationId: createIndividualFeeCharge
+      summary: Create a private individual student fee charge
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/IndividualFeeChargeInput"
+      responses:
+        "201":
+          description: Individual fee charge created.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IndividualFeeCharge"
+        "400":
+          description: Invalid individual fee charge.
+        "401":
+          description: Authentication required.
+  /school-commerce/management/individual-charges:
+    get:
+      tags: [School Commerce]
+      operationId: listIndividualFeeCharges
+      summary: List individual fee charges for staff
+      responses:
+        "200":
+          description: Individual fee charges with student details.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/IndividualFeeCharge"
+        "401":
+          description: Authentication required.
+  /school-commerce/individual-charges/{id}:
+    patch:
+      tags: [School Commerce]
+      operationId: updateIndividualFeeCharge
+      summary: Update an individual fee charge
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/IndividualFeeChargeUpdate"
+      responses:
+        "200":
+          description: Individual fee charge updated.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IndividualFeeCharge"
+        "400":
+          description: Invalid individual fee charge.
+        "401":
+          description: Authentication required.
+        "404":
+          description: Individual fee charge not found.
+    delete:
+      tags: [School Commerce]
+      operationId: deleteIndividualFeeCharge
+      summary: Remove an individual fee charge
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Individual fee charge removed.
+        "401":
+          description: Authentication required.
+        "404":
+          description: Individual fee charge not found.
+  /school-commerce/individual-charges/lookup/{reference}:
+    get:
+      tags: [School Commerce]
+      operationId: lookupIndividualFeeCharge
+      summary: Look up a private individual fee charge by its school-issued reference
+      parameters:
+        - name: reference
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Safe payment details for the requested individual charge.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PublicIndividualFeeCharge"
+        "404":
+          description: Charge not found or no longer payable.
+  /school-commerce/orders:
+    post:
+      tags: [School Commerce]
+      operationId: createStoreOrder
+      summary: Submit a school store order request
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StoreOrderInput"
+      responses:
+        "201":
+          description: Store order request submitted.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StoreOrderReceipt"
+        "400":
+          description: Invalid order details.
+        "409":
+          description: A requested product is unavailable or out of stock.
+    get:
+      tags: [School Commerce]
+      operationId: listStoreOrders
+      summary: List store order requests for staff
+      responses:
+        "200":
+          description: Store orders, including parent contact details.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/StoreOrder"
+        "401":
+          description: Authentication required.
+  /school-commerce/orders/{id}:
+    patch:
+      tags: [School Commerce]
+      operationId: updateStoreOrder
+      summary: Update store order and manual payment status
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StoreOrderUpdate"
+      responses:
+        "200":
+          description: Store order updated.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StoreOrder"
+        "400":
+          description: Invalid order update.
+        "401":
+          description: Authentication required.
+        "404":
+          description: Order not found.
+  /school-commerce/fee-reports:
+    post:
+      tags: [School Commerce]
+      operationId: submitFeePaymentReport
+      summary: Request or report an offline school fee payment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FeePaymentReportInput"
+      responses:
+        "201":
+          description: Fee payment request received.
+          content:
+            application/json:
+              schema:
+                    $ref: "#/components/schemas/FeePaymentReportReceipt"
+        "400":
+          description: Invalid fee payment details.
+        "404":
+          description: Fee schedule or individual charge not found.
+        "409":
+          description: Individual charge is no longer payable or already has a pending report.
+    get:
+      tags: [School Commerce]
+      operationId: listFeePaymentReports
+      summary: List school fee payment requests for staff
+      responses:
+        "200":
+          description: Fee payment requests, including student and parent details.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/FeePaymentReport"
+        "401":
+          description: Authentication required.
+  /school-commerce/fee-reports/{id}:
+    patch:
+      tags: [School Commerce]
+      operationId: updateFeePaymentReport
+      summary: Verify a reported offline school fee payment
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FeePaymentReportUpdate"
+      responses:
+        "200":
+          description: Fee payment report updated.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FeePaymentReport"
+        "400":
+          description: Invalid payment update.
+        "401":
+          description: Authentication required.
+        "404":
+          description: Payment report not found.
+  /school-commerce/settings:
+    get:
+      tags: [School Commerce]
+      operationId: getSchoolCommerceSettings
+      summary: Get public offline payment instructions
+      responses:
+        "200":
+          description: Current public payment instructions.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SchoolCommerceSettings"
+    put:
+      tags: [School Commerce]
+      operationId: updateSchoolCommerceSettings
+      summary: Update public offline payment instructions
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SchoolCommerceSettingsUpdate"
+      responses:
+        "200":
+          description: Payment instructions updated.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SchoolCommerceSettings"
+        "401":
+          description: Authentication required.
+components:
+  parameters:
+    AuthorizationSessionHeader:
+      name: Authorization
+      in: header
+      required: false
+      schema:
+        type: string
+    SessionCookie:
+      name: sid
+      in: cookie
+      required: false
+      schema:
+        type: string
+  schemas:
+    WebsiteAdminAccess:
+      type: object
+      required: [isAdmin]
+      properties:
+        isAdmin:
+          type: boolean
+    SiteContent:
+      type: object
+      required: [revision, values, updatedAt]
+      properties:
+        revision:
+          type: integer
+          minimum: 0
+        values:
+          type: object
+          additionalProperties:
+            type: string
+        updatedAt:
+          type: [string, "null"]
+    SiteContentInput:
+      type: object
+      required: [revision, values]
+      properties:
+        revision:
+          type: integer
+          minimum: 0
+        values:
+          type: object
+          additionalProperties:
+            type: string
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+        - status
+    AuthUser:
+      type: object
+      required: [id, email, firstName, lastName, profileImageUrl]
+      properties:
+        id:
+          type: string
+        email:
+          type: [string, "null"]
+        firstName:
+          type: [string, "null"]
+        lastName:
+          type: [string, "null"]
+        profileImageUrl:
+          type: [string, "null"]
+    AuthUserEnvelope:
+      type: object
+      required: [user]
+      properties:
+        user:
+          oneOf:
+            - $ref: "#/components/schemas/AuthUser"
+            - type: "null"
+    UploadMetadata:
+      type: object
+      required: [name, size, contentType]
+      properties:
+        name:
+          type: string
+          minLength: 1
+        size:
+          type: integer
+          minimum: 1
+        contentType:
+          type: string
+          minLength: 1
+    UploadUrlResponse:
+      type: object
+      required: [uploadURL, objectPath, metadata]
+      properties:
+        uploadURL:
+          type: string
+        objectPath:
+          type: string
+        metadata:
+          $ref: "#/components/schemas/UploadMetadata"
+    AcademicCalendar:
+      type: object
+      required: [id, title, weekStart, weekEnd, term, fileName, objectPath, contentType, fileSize, uploadedAt]
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        weekStart:
+          type: string
+          format: date
+        weekEnd:
+          type: string
+          format: date
+        term:
+          type: string
+        fileName:
+          type: string
+        objectPath:
+          type: string
+        contentType:
+          type: string
+        fileSize:
+          type: integer
+        uploadedAt:
+          type: string
+          format: date-time
+    AcademicCalendarInput:
+      type: object
+      required: [title, weekStart, weekEnd, term, fileName, objectPath, contentType, fileSize]
+      properties:
+        title:
+          type: string
+          minLength: 1
+        weekStart:
+          type: string
+          format: date
+        weekEnd:
+          type: string
+          format: date
+        term:
+          type: string
+          minLength: 1
+        fileName:
+          type: string
+          minLength: 1
+        objectPath:
+          type: string
+          minLength: 1
+        contentType:
+          type: string
+          minLength: 1
+        fileSize:
+          type: integer
+          minimum: 1
+    LiveUpdate:
+      type: object
+      required: [id, title, description, fileName, objectPath, contentType, fileSize, publishedAt]
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        description:
+          type: string
+        fileName:
+          type: string
+        objectPath:
+          type: string
+        contentType:
+          type: string
+        fileSize:
+          type: integer
+        publishedAt:
+          type: string
+          format: date-time
+    LiveUpdateInput:
+      type: object
+      required: [title, description, fileName, objectPath, contentType, fileSize]
+      properties:
+        title:
+          type: string
+          minLength: 1
+        description:
+          type: string
+        fileName:
+          type: string
+          minLength: 1
+        objectPath:
+          type: string
+          minLength: 1
+        contentType:
+          type: string
+          minLength: 1
+        fileSize:
+          type: integer
+          minimum: 1
+    LiveUpdateUpdate:
+      type: object
+      minProperties: 1
+      properties:
+        title:
+          type: string
+          minLength: 1
+        description:
+          type: string
+        fileName:
+          type: string
+          minLength: 1
+        objectPath:
+          type: string
+          minLength: 1
+        contentType:
+          type: string
+          minLength: 1
+        fileSize:
+          type: integer
+          minimum: 1
+    MobileTokenExchangeRequest:
+      type: object
+      required: [code, code_verifier, redirect_uri, state]
+      properties:
+        code:
+          type: string
+          minLength: 1
+        code_verifier:
+          type: string
+          minLength: 1
+        redirect_uri:
+          type: string
+          minLength: 1
+        state:
+          type: string
+          minLength: 1
+        nonce:
+          type: string
+          minLength: 1
+    MobileTokenExchangeSuccess:
+      type: object
+      required: [token]
+      properties:
+        token:
+          type: string
+    LogoutSuccess:
+      type: object
+      required: [success]
+      properties:
+        success:
+          type: boolean
+          const: true
+    AdmissionApplication:
+      type: object
+      required: [id, studentFirstName, studentLastName, grade, entryYear, guardianEmail, guardianPhone, status, submittedAt]
+      properties:
+        id:
+          type: integer
+        studentFirstName:
+          type: string
+        studentLastName:
+          type: string
+        grade:
+          type: string
+        entryYear:
+          type: string
+        guardianEmail:
+          type: string
+        guardianPhone:
+          type: string
+        status:
+          type: string
+        submittedAt:
+          type: string
+          format: date-time
+    AdmissionApplicationInput:
+      type: object
+      required: [studentFirstName, studentLastName, grade, entryYear, guardianEmail, guardianPhone]
+      properties:
+        studentFirstName:
+          type: string
+          minLength: 1
+        studentLastName:
+          type: string
+          minLength: 1
+        grade:
+          type: string
+          minLength: 1
+        entryYear:
+          type: string
+          minLength: 1
+        guardianEmail:
+          type: string
+          minLength: 3
+        guardianPhone:
+          type: string
+          minLength: 7
+    AdmissionApplicationReceipt:
+      type: object
+      required: [id, studentFirstName, status, submittedAt]
+      properties:
+        id:
+          type: integer
+        studentFirstName:
+          type: string
+        status:
+          type: string
+        submittedAt:
+          type: string
+          format: date-time
+    AdmissionApplicationStatusUpdate:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          minLength: 1
+    StoreProduct:
+      type: object
+      required: [id, title, description, category, variant, priceKobo, stock, imageUrl, isActive, createdAt, updatedAt]
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        description:
+          type: string
+        category:
+          type: string
+          enum: [uniform, books, supplies, other]
+        variant:
+          type: string
+        priceKobo:
+          type: integer
+        stock:
+          type: [integer, "null"]
+        imageUrl:
+          type: [string, "null"]
+        isActive:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    StoreProductInput:
+      type: object
+      required: [title, description, category, variant, priceKobo, stock, imageUrl, isActive]
+      properties:
+        title:
+          type: string
+          minLength: 1
+        description:
+          type: string
+        category:
+          type: string
+          enum: [uniform, books, supplies, other]
+        variant:
+          type: string
+        priceKobo:
+          type: integer
+          minimum: 1
+        stock:
+          type: [integer, "null"]
+          minimum: 0
+        imageUrl:
+          type: [string, "null"]
+        isActive:
+          type: boolean
+    StoreProductUpdate:
+      type: object
+      minProperties: 1
+      properties:
+        title:
+          type: string
+          minLength: 1
+        description:
+          type: string
+        category:
+          type: string
+          enum: [uniform, books, supplies, other]
+        variant:
+          type: string
+        priceKobo:
+          type: integer
+          minimum: 1
+        stock:
+          type: [integer, "null"]
+          minimum: 0
+        imageUrl:
+          type: [string, "null"]
+        isActive:
+          type: boolean
+    StoreOrder:
+      type: object
+      required: [id, reference, guardianName, guardianEmail, guardianPhone, studentName, studentClass, items, totalKobo, orderNotes, officeNote, transferReference, orderStatus, paymentStatus, createdAt, updatedAt]
+      properties:
+        id:
+          type: integer
+        reference:
+          type: string
+        guardianName:
+          type: string
+        guardianEmail:
+          type: string
+        guardianPhone:
+          type: string
+        studentName:
+          type: string
+        studentClass:
+          type: string
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/StoreOrderLine"
+        totalKobo:
+          type: integer
+        orderNotes:
+          type: string
+        officeNote:
+          type: [string, "null"]
+        transferReference:
+          type: [string, "null"]
+        orderStatus:
+          type: string
+          enum: [new, contacted, preparing, ready, completed, cancelled]
+        paymentStatus:
+          type: string
+          enum: [awaiting_payment, reported, confirmed, rejected]
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    StoreOrderLine:
+      type: object
+      required: [productId, title, variant, quantity, unitPriceKobo, lineTotalKobo]
+      properties:
+        productId:
+          type: integer
+        title:
+          type: string
+        variant:
+          type: string
+        quantity:
+          type: integer
+        unitPriceKobo:
+          type: integer
+        lineTotalKobo:
+          type: integer
+    StoreOrderLineInput:
+      type: object
+      required: [productId, quantity]
+      properties:
+        productId:
+          type: integer
+          minimum: 1
+        quantity:
+          type: integer
+          minimum: 1
+          maximum: 20
+    StoreOrderInput:
+      type: object
+      required: [guardianName, guardianEmail, guardianPhone, studentName, studentClass, items]
+      properties:
+        guardianName:
+          type: string
+          minLength: 1
+        guardianEmail:
+          type: string
+          minLength: 3
+        guardianPhone:
+          type: string
+          minLength: 7
+        studentName:
+          type: string
+          minLength: 1
+        studentClass:
+          type: string
+          minLength: 1
+        items:
+          type: array
+          minItems: 1
+          maxItems: 30
+          items:
+            $ref: "#/components/schemas/StoreOrderLineInput"
+        orderNotes:
+          type: string
+        transferReference:
+          type: string
+    StoreOrderReceipt:
+      type: object
+      required: [reference, totalKobo, orderStatus, paymentStatus]
+      properties:
+        reference:
+          type: string
+        totalKobo:
+          type: integer
+        orderStatus:
+          type: string
+        paymentStatus:
+          type: string
+    StoreOrderUpdate:
+      type: object
+      minProperties: 1
+      properties:
+        orderStatus:
+          type: string
+          enum: [new, contacted, preparing, ready, completed, cancelled]
+        paymentStatus:
+          type: string
+          enum: [awaiting_payment, reported, confirmed, rejected]
+        transferReference:
+          type: [string, "null"]
+        officeNote:
+          type: [string, "null"]
+    ClassFeeSchedule:
+      type: object
+      required: [id, className, term, academicYear, amountKobo, description, isActive, createdAt, updatedAt]
+      properties:
+        id:
+          type: integer
+        className:
+          type: string
+        term:
+          type: string
+        academicYear:
+          type: string
+        amountKobo:
+          type: integer
+        description:
+          type: string
+        isActive:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    ClassFeeScheduleInput:
+      type: object
+      required: [className, term, academicYear, amountKobo, description, isActive]
+      properties:
+        className:
+          type: string
+          minLength: 1
+        term:
+          type: string
+          minLength: 1
+        academicYear:
+          type: string
+          minLength: 1
+        amountKobo:
+          type: integer
+          minimum: 1
+        description:
+          type: string
+        isActive:
+          type: boolean
+    ClassFeeScheduleUpdate:
+      type: object
+      minProperties: 1
+      properties:
+        className:
+          type: string
+          minLength: 1
+        term:
+          type: string
+          minLength: 1
+        academicYear:
+          type: string
+          minLength: 1
+        amountKobo:
+          type: integer
+          minimum: 1
+        description:
+          type: string
+        isActive:
+          type: boolean
+    IndividualFeeCharge:
+      type: object
+      required: [id, reference, studentName, studentIdentifier, className, term, academicYear, description, amountKobo, status, createdAt, updatedAt]
+      properties:
+        id:
+          type: integer
+        reference:
+          type: string
+        studentName:
+          type: string
+        studentIdentifier:
+          type: string
+        className:
+          type: string
+        term:
+          type: string
+        academicYear:
+          type: string
+        description:
+          type: string
+        amountKobo:
+          type: integer
+        status:
+          type: string
+          enum: [due, paid, cancelled]
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    IndividualFeeChargeInput:
+      type: object
+      required: [studentName, studentIdentifier, className, term, academicYear, description, amountKobo]
+      properties:
+        studentName:
+          type: string
+          minLength: 1
+        studentIdentifier:
+          type: string
+          minLength: 1
+        className:
+          type: string
+          minLength: 1
+        term:
+          type: string
+          minLength: 1
+        academicYear:
+          type: string
+          minLength: 1
+        description:
+          type: string
+          minLength: 1
+        amountKobo:
+          type: integer
+          minimum: 1
+    IndividualFeeChargeUpdate:
+      type: object
+      minProperties: 1
+      properties:
+        studentName:
+          type: string
+          minLength: 1
+        studentIdentifier:
+          type: string
+          minLength: 1
+        className:
+          type: string
+          minLength: 1
+        term:
+          type: string
+          minLength: 1
+        academicYear:
+          type: string
+          minLength: 1
+        description:
+          type: string
+          minLength: 1
+        amountKobo:
+          type: integer
+          minimum: 1
+        status:
+          type: string
+          enum: [due, paid, cancelled]
+    PublicIndividualFeeCharge:
+      type: object
+      required: [reference, className, term, academicYear, description, amountKobo, status]
+      properties:
+        reference:
+          type: string
+        className:
+          type: string
+        term:
+          type: string
+        academicYear:
+          type: string
+        description:
+          type: string
+        amountKobo:
+          type: integer
+        status:
+          type: string
+          enum: [due, paid, cancelled]
+    FeePaymentReport:
+      type: object
+      required: [id, reference, feeType, scheduleId, chargeId, studentName, studentIdentifier, className, term, academicYear, description, amountKobo, guardianName, guardianEmail, guardianPhone, transferReference, status, officeNote, createdAt, updatedAt]
+      properties:
+        id:
+          type: integer
+        reference:
+          type: string
+        feeType:
+          type: string
+          enum: [class_fee, individual_charge]
+        scheduleId:
+          type: [integer, "null"]
+        chargeId:
+          type: [integer, "null"]
+        studentName:
+          type: string
+        studentIdentifier:
+          type: string
+        className:
+          type: string
+        term:
+          type: string
+        academicYear:
+          type: string
+        description:
+          type: string
+        amountKobo:
+          type: integer
+        guardianName:
+          type: string
+        guardianEmail:
+          type: string
+        guardianPhone:
+          type: string
+        transferReference:
+          type: [string, "null"]
+        status:
+          type: string
+          enum: [payment_requested, reported, confirmed, rejected]
+        officeNote:
+          type: [string, "null"]
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    FeePaymentReportInput:
+      type: object
+      required: [feeType, studentName, studentIdentifier, guardianName, guardianEmail, guardianPhone]
+      properties:
+        feeType:
+          type: string
+          enum: [class_fee, individual_charge]
+        scheduleId:
+          type: integer
+          minimum: 1
+        chargeReference:
+          type: string
+          minLength: 1
+        studentName:
+          type: string
+          minLength: 1
+        studentIdentifier:
+          type: string
+          minLength: 1
+        className:
+          type: string
+        term:
+          type: string
+        academicYear:
+          type: string
+        guardianName:
+          type: string
+          minLength: 1
+        guardianEmail:
+          type: string
+          minLength: 3
+        guardianPhone:
+          type: string
+          minLength: 7
+        transferReference:
+          type: string
+    FeePaymentReportReceipt:
+      type: object
+      required: [reference, amountKobo, status]
+      properties:
+        reference:
+          type: string
+        amountKobo:
+          type: integer
+        status:
+          type: string
+          enum: [payment_requested, reported]
+    FeePaymentReportUpdate:
+      type: object
+      minProperties: 1
+      properties:
+        status:
+          type: string
+          enum: [payment_requested, reported, confirmed, rejected]
+        officeNote:
+          type: [string, "null"]
+    SchoolCommerceSettings:
+      type: object
+      required: [paymentInstructions, updatedAt]
+      properties:
+        paymentInstructions:
+          type: string
+        updatedAt:
+          type: string
+          format: date-time
+    SchoolCommerceSettingsUpdate:
+      type: object
+      required: [paymentInstructions]
+      properties:
+        paymentInstructions:
+          type: string
+
