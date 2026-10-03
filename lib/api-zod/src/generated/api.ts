@@ -63,85 +63,11 @@ export const HealthCheckResponse = zod.object({
 
 
 /**
- * @summary Get the currently authenticated user
+ * @summary Resolve the signed-in user's school account
  */
-export const GetCurrentAuthUserHeader = zod.object({
-  "Authorization": zod.string().optional()
-})
-
-export const GetCurrentAuthUserResponse = zod.object({
-  "user": zod.union([zod.object({
+export const GetLocalAccountResponse = zod.object({
   "id": zod.string(),
-  "email": zod.string().nullable(),
-  "firstName": zod.string().nullable(),
-  "lastName": zod.string().nullable(),
-  "profileImageUrl": zod.string().nullable()
-}),zod.null()])
-})
-
-
-/**
- * @summary Start the browser login flow
- */
-export const BeginBrowserLoginQueryParams = zod.object({
-  "returnTo": zod.coerce.string().optional()
-})
-
-export const BeginBrowserLoginResponse = zod.void()
-
-
-/**
- * @summary Complete the browser login flow
- */
-export const HandleBrowserLoginCallbackResponse = zod.void()
-
-
-/**
- * @summary Clear the browser session
- */
-export const LogoutBrowserSessionQueryParams = zod.object({
-  "returnTo": zod.coerce.string().optional()
-})
-
-export const LogoutBrowserSessionHeader = zod.object({
-  "Authorization": zod.string().optional()
-})
-
-export const LogoutBrowserSessionResponse = zod.void()
-
-
-/**
- * @summary Exchange a mobile authorization code
- */
-
-
-
-
-
-
-
-export const ExchangeMobileAuthorizationCodeBody = zod.object({
-  "code": zod.string().min(1),
-  "code_verifier": zod.string().min(1),
-  "redirect_uri": zod.string().min(1),
-  "state": zod.string().min(1),
-  "nonce": zod.string().min(1).optional()
-})
-
-export const ExchangeMobileAuthorizationCodeResponse = zod.object({
-  "token": zod.string()
-})
-
-
-/**
- * @summary Delete a mobile session
- */
-export const LogoutMobileSessionHeader = zod.object({
-  "Authorization": zod.string().optional()
-})
-
-export const LogoutMobileSessionResponse = zod.object({
-  "success": zod.boolean()
+  "isAdmin": zod.boolean()
 })
 
 

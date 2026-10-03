@@ -1,0 +1,59 @@
+diff --git a/build/src/index.js b/build/src/index.js
+index a101736025f90dc036155e99c0e0b432291e0bcb..a105c3b07ecba7724e8eb3ab8ad207b36d2ffecd 100644
+--- a/build/src/index.js
++++ b/build/src/index.js
+@@ -183,31 +183,48 @@ function teenyRequest(reqOpts, callback) {
+     if (callback === undefined) {
+         // Stream mode
+         const requestStream = streamEvents(new stream_1.PassThrough());
++        // Closing the consumer must also cancel fetch, including before headers.
++        const controller = new AbortController();
++        options.signal = controller.signal;
++        requestStream.abort = () => {
++            controller.abort();
++            requestStream.destroy();
++        };
++        requestStream.once('close', () => controller.abort());
+         // eslint-disable-next-line @typescript-eslint/no-explicit-any
+         let responseStream;
++        const pipeResponse = () => {
++            // Retry/cancel callbacks can destroy this destination synchronously
++            // during response emission, before the deferred listener runs.
++            if (!requestStream.destroyed && responseStream && !responseStream.destroyed) {
++                (0, stream_1.pipeline)(responseStream, requestStream, () => { });
++            }
++        };
+         requestStream.once('reading', () => {
+             if (responseStream) {
+-                (0, stream_1.pipeline)(responseStream, requestStream, () => { });
++                pipeResponse();
+             }
+             else {
+-                requestStream.once('response', () => {
+-                    (0, stream_1.pipeline)(responseStream, requestStream, () => { });
+-                });
++                requestStream.once('response', pipeResponse);
+             }
+         });
+         options.compress = false;
+         teenyRequest.stats.requestStarting();
+         fetch(uri, options).then(res => {
+             teenyRequest.stats.requestFinished();
++            if (requestStream.destroyed) {
++                res.body.destroy();
++                return;
++            }
+             responseStream = res.body;
+             responseStream.on('error', (err) => {
+-                requestStream.emit('error', err);
++                if (!requestStream.destroyed) requestStream.emit('error', err);
+             });
+             const response = fetchToRequestResponse(options, res);
+             requestStream.emit('response', response);
+         }, err => {
+             teenyRequest.stats.requestFinished();
+-            requestStream.emit('error', err);
++            if (!requestStream.destroyed) requestStream.emit('error', err);
+         });
+         // fetch doesn't supply the raw HTTP stream, instead it
+         // returns a PassThrough piped from the HTTP response

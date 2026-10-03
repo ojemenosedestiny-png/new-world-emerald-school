@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="300" height="80" viewBox="0 0 300 80" role="img" aria-label="New World Emerald Private School">
+  <rect x="4" y="10" width="56" height="60" rx="12" fill="#087443"/>
+  <path d="M15 25h12l5 9 5-9h12v27H37l-5 7-5-7H15z" fill="none" stroke="#ebc767" stroke-width="2"/>
+  <path d="M32 34v25" stroke="#ebc767" stroke-width="2"/>
+  <text x="74" y="33" font-family="Georgia,serif" font-size="21" font-weight="bold" fill="#183e2b">New World Emerald</text>
+  <text x="75" y="54" font-family="Arial,sans-serif" font-size="12" letter-spacing="2" fill="#52665b">PRIVATE SCHOOL</text>
+</svg>

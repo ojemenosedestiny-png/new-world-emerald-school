@@ -45,7 +45,9 @@ export function Navbar({ solid = false }: { solid?: boolean }) {
           </button>
           <a href="#" className="hover:text-primary transition-colors">Prospectus</a>
           <a href="#calendar" className="hover:text-primary transition-colors">Calendar</a>
+          <a href={asset("/#anniversary")} className="hover:text-primary transition-colors">5th anniversary</a>
           <Link href="/commerce?section=fees" className="hover:text-primary transition-colors">Fees &amp; Store</Link>
+          <Link href="/commerce?section=shop" className="hover:text-primary transition-colors" data-testid="link-uniform-shop-desktop">Uniform shop</Link>
           <a href={asset("/admin")} className="hover:text-primary transition-colors">Admin Panel</a>
         </div>
       </div>
@@ -138,6 +140,14 @@ export function Navbar({ solid = false }: { solid?: boolean }) {
                 ))}
               </ul>
               <div className="mt-8 flex flex-col gap-4">
+                <a
+                  href={asset("/#anniversary")}
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="flex items-center justify-between rounded-xl border border-primary/20 bg-primary/5 px-4 py-3 font-semibold text-primary"
+                  data-testid="link-mobile-anniversary"
+                >
+                  5th anniversary <ArrowRight size={18} aria-hidden="true" />
+                </a>
                 <Link
                   href="/commerce?section=fees"
                   onClick={() => setIsMobileMenuOpen(false)}
@@ -145,6 +155,14 @@ export function Navbar({ solid = false }: { solid?: boolean }) {
                   data-testid="link-mobile-fees-store"
                 >
                   Fees &amp; Store <ArrowRight size={18} aria-hidden="true" />
+                </Link>
+                <Link
+                  href="/commerce?section=shop"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="flex items-center justify-between rounded-xl border border-border bg-card px-4 py-3 font-semibold text-foreground"
+                  data-testid="link-mobile-uniform-shop"
+                >
+                  Uniform shop <ArrowRight size={18} aria-hidden="true" />
                 </Link>
                 <button onClick={() => {setIsPortalsOpen(true); setIsMobileMenuOpen(false);}} className="text-left font-medium flex items-center gap-2 text-muted-foreground">
                   <UserIcon size={18} /> Portals Login

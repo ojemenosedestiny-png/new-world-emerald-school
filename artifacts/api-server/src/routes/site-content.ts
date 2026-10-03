@@ -55,7 +55,7 @@ router.put("/site-content", async (req: Request, res: Response) => {
     values: { ...(current?.values ?? {}), ...values },
     revision: revision + 1,
     updatedAt: new Date(),
-    updatedBy: req.user!.id,
+    updatedBy: req.dbUser!.id,
   };
   const saved = current
     ? await db.update(siteContentTable).set(next)

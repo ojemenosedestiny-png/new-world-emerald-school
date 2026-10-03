@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import healthRouter from "./health";
-import authRouter from "./auth";
+import accountRouter from "./account";
 import storageRouter from "./storage";
 import academicCalendarRouter from "./academic-calendar";
 import admissionApplicationsRouter from "./admission-applications";
@@ -15,7 +15,7 @@ const router: IRouter = Router();
 
 router.use(protectWebsiteManagement);
 router.use(healthRouter);
-router.use(authRouter);
+router.use(accountRouter);
 router.use(storageRouter);
 router.use(academicCalendarRouter);
 router.use(admissionApplicationsRouter);

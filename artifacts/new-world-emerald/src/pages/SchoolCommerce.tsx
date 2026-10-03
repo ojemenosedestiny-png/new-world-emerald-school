@@ -105,7 +105,11 @@ export default function SchoolCommerce() {
     ),
     [productsQuery.data],
   );
-  const schedules = schedulesQuery.data ?? [];
+  // Informational annual estimates are not class schedules that parents can
+  // select for payment reports. Retain demo records in the office editor only.
+  const schedules = (schedulesQuery.data ?? []).filter(
+    (schedule) => !schedule.description.trimStart().toUpperCase().startsWith("DEMO:"),
+  );
   const cartItems = useMemo(() => products.filter((product) => cart[product.id]).map((product) => ({ product, quantity: cart[product.id] })), [products, cart]);
   const cartTotal = cartItems.reduce((sum, item) => sum + item.product.priceKobo * item.quantity, 0);
   const setQuantity = (id: number, quantity: number) => setCart((current) => {

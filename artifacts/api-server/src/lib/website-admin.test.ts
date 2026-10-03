@@ -9,11 +9,13 @@ process.env.SCHOOL_ADMIN_EMAILS = "approved@example.com";
 function request(path: string, method: string, account: "guest" | "visitor" | "admin") {
   return {
     path, method,
-    user: account === "guest" ? undefined : {
+    dbUser: account === "guest" ? undefined : {
       id: account,
-      email: account === "admin" ? "APPROVED@example.com" : "visitor@example.com",
     },
-    isAuthenticated: () => account !== "guest",
+    identity: {
+      email: account === "admin" ? "APPROVED@example.com" : "visitor@example.com",
+      emailVerified: account === "admin",
+    },
   } as unknown as Request;
 }
 
@@ -71,4 +73,10 @@ test("signed-in accounts do not become admins unless explicitly approved", () =>
   assert.equal(isWebsiteAdmin(request("/", "GET", "guest")), false);
   assert.equal(isWebsiteAdmin(request("/", "GET", "visitor")), false);
   assert.equal(isWebsiteAdmin(request("/", "GET", "admin")), true);
+});
+
+test("an allowlisted address without verified identity cannot manage the website", () => {
+  const req = request("/", "GET", "admin");
+  req.identity!.emailVerified = false;
+  assert.equal(isWebsiteAdmin(req), false);
 });

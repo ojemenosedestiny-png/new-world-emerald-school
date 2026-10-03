@@ -9,6 +9,7 @@ import {
 import { admissionApplicationsTable, db } from "@workspace/db";
 import { desc, eq } from "drizzle-orm";
 import { Router, type IRouter, type Request, type Response } from "express";
+import { requireAuthentication } from "../lib/requireAuthentication";
 
 const router: IRouter = Router();
 const allowedStatuses = new Set([
@@ -18,17 +19,6 @@ const allowedStatuses = new Set([
   "accepted",
   "declined",
 ]);
-
-function requireAuthentication(
-  req: Request,
-  res: Response,
-): req is Request & { user: Express.User } {
-  if (!req.isAuthenticated()) {
-    res.status(401).json({ error: "Authentication required" });
-    return false;
-  }
-  return true;
-}
 
 router.post(
   "/admission-applications",

@@ -15,65 +15,47 @@ const staggerContainer = {
   visible: { opacity: 1, transition: { staggerChildren: 0.08 } }
 };
 
-const stats = [
-  { label: 'Years of Excellence', value: '25+' },
-  { label: 'Active Students', value: '1,200+' },
-  { label: 'Qualified Teachers', value: '150+' },
-  { label: 'Graduation Rate', value: '100%' },
-];
-
 export function Hero() {
   return (
     <MotionConfig reducedMotion="user">
-    <div className="relative">
-    <section className="relative min-h-[100dvh] flex items-center justify-center overflow-hidden pb-32 pt-28">
-      <div className="absolute inset-0 z-0">
-        <img src={asset("/homepage-background.png")} alt="New World Emerald Private School campus" className="w-full h-full object-cover" fetchPriority="high" />
-        <div className="absolute inset-0 bg-gradient-to-br from-secondary/90 via-secondary/70 to-primary/60" />
-        <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-background to-transparent" />
-        <div className="absolute inset-x-0 top-0 h-1 bg-accent" />
-      </div>
+      <section className="relative isolate flex min-h-[590px] items-center overflow-hidden bg-secondary pt-24 pb-14 sm:min-h-[620px] sm:pt-28 md:min-h-[650px] md:py-28">
+        <img
+          src={asset("/campus-building-background.webp")}
+          alt="New World Emerald Private School campus"
+          className="absolute inset-0 -z-20 h-full w-full object-cover object-center"
+          fetchPriority="high"
+        />
+        <div className="absolute inset-0 -z-10 bg-gradient-to-r from-secondary/95 via-secondary/80 to-secondary/30 md:via-secondary/75" />
+        <div className="absolute inset-0 -z-10 bg-gradient-to-t from-secondary/45 via-transparent to-secondary/20" />
 
-      <div className="container relative z-10 mx-auto px-4 text-center">
-        <motion.div initial="hidden" animate="visible" variants={staggerContainer} className="max-w-4xl mx-auto">
-          <motion.div variants={fadeUp} className="mb-6 flex justify-center">
-            <span className="inline-flex items-center gap-3 px-4 py-2 rounded-full bg-secondary/50 backdrop-blur-sm border border-accent/40 text-white text-xs md:text-sm font-medium uppercase tracking-widest">
-              <img src={asset("/logo.jpg")} alt="" className="h-6 w-6 rounded-full object-cover" />
-              Cambridge &amp; Nigerian Curricula
-            </span>
+        <div className="container relative z-10 mx-auto px-5 sm:px-8">
+          <motion.div initial="hidden" animate="visible" variants={staggerContainer} className="max-w-3xl">
+            <motion.p variants={fadeUp} className="mb-5 text-xs font-semibold uppercase tracking-[0.2em] text-accent sm:text-sm">
+              New World Emerald Private School
+            </motion.p>
+            <motion.h1
+              variants={fadeUp}
+              aria-label="Building Future Leaders With Global Vision."
+              data-testid="hero-headline"
+              className="mb-5 max-w-[15ch] font-serif text-[clamp(2rem,8.2vw,4.6rem)] font-bold leading-[1.08] tracking-[-0.035em] text-white sm:max-w-[17ch] sm:text-5xl md:mb-6 md:text-7xl"
+            >
+              <span className="block"><AnimatedHeadlineText text="Building Future Leaders" /></span>
+              <span className="mt-1 block text-accent"><AnimatedHeadlineText text="With Global Vision." /></span>
+            </motion.h1>
+            <motion.p variants={fadeUp} className="mb-7 max-w-xl text-[15px] leading-7 text-white/90 sm:text-base md:mb-8 md:text-lg">
+              Offering Cambridge and Nigerian curricula from Creche to Senior Secondary, with a focus on academic excellence and character development.
+            </motion.p>
+            <motion.div variants={fadeUp} className="flex flex-wrap items-center gap-3">
+              <a href="#admissions" data-testid="link-hero-apply" className="inline-flex min-h-12 items-center justify-center rounded-lg bg-accent px-5 py-3 text-sm font-bold text-secondary shadow-md transition-colors hover:bg-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white sm:px-6 sm:text-base">
+                Apply now
+              </a>
+              <a href="#about" data-testid="link-hero-visit" className="inline-flex min-h-12 items-center justify-center rounded-lg border border-white/55 bg-secondary/30 px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-white/15 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white sm:px-6 sm:text-base">
+                Schedule a Visit
+              </a>
+            </motion.div>
           </motion.div>
-          <motion.h1 variants={fadeUp} aria-label="Building Future Leaders With Global Vision." data-testid="hero-headline" className="text-4xl sm:text-5xl md:text-7xl font-serif font-black text-white mb-6 leading-[1.1]" style={{ WebkitTextStroke: "0.35px currentColor" }}>
-            <AnimatedHeadlineText text="Building Future Leaders" /> <br className="hidden md:block"/>
-            <span className="text-accent italic"><AnimatedHeadlineText text="With Global Vision." /></span>
-          </motion.h1>
-          <motion.p variants={fadeUp} className="text-lg md:text-xl text-white/85 mb-10 max-w-2xl mx-auto leading-relaxed">
-            Offering Cambridge and Nigerian curricula from Creche to Senior Secondary, with a focus on academic excellence and character development.
-          </motion.p>
-          <motion.div variants={fadeUp} className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <a href="#admissions" data-testid="link-hero-apply" className="w-full sm:w-auto px-8 py-4 bg-accent text-secondary rounded-full font-bold text-lg shadow-lg transition-colors hover:bg-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">
-              Apply now
-            </a>
-            <a href="#about" data-testid="link-hero-visit" className="w-full sm:w-auto px-8 py-4 bg-white/10 backdrop-blur-sm text-white rounded-full font-bold text-lg border border-white/30 hover:bg-white/20 transition-colors">
-              Schedule a Visit
-            </a>
-          </motion.div>
-        </motion.div>
-      </div>
-    </section>
-
-    <div className="relative z-20 -mt-16 md:-mt-20 px-4 pb-8">
-      <div className="container mx-auto">
-        <div data-testid="hero-stats" className="bg-card rounded-2xl shadow-xl border border-border border-t-4 border-t-accent p-6 md:p-8 grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8">
-          {stats.map((stat, i) => (
-            <div key={i} className="text-center md:border-r md:border-border md:last:border-0">
-              <p className="text-3xl md:text-4xl font-serif font-bold text-primary mb-1">{stat.value}</p>
-              <p className="text-xs md:text-sm text-muted-foreground font-medium uppercase tracking-wider">{stat.label}</p>
-            </div>
-          ))}
         </div>
-      </div>
-    </div>
-    </div>
+      </section>
     </MotionConfig>
   );
 }
@@ -104,7 +86,7 @@ export function About() {
             </div>
             
             <p className="text-muted-foreground leading-relaxed text-lg">
-              Founded in 1999, New World Emerald Private School was born from a vision to create a nurturing environment where academic rigor meets character development. Today, we stand as a beacon of educational excellence in the region.
+              New World Emerald Private School celebrates five years of nurturing young learners in an environment where academic rigour meets character development. We thank our pupils, families, teachers and staff for being part of this journey as we look forward to the years ahead.
             </p>
             
             <div className="grid sm:grid-cols-2 gap-6 pt-4">

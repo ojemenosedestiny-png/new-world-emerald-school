@@ -1,6 +1,6 @@
 import { asset } from "@/lib/asset";
 import React, { useMemo, useState } from "react";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import {
   ArrowLeft,
   CalendarDays,
@@ -14,9 +14,11 @@ import {
   Mail,
   Phone,
   ShieldCheck,
+  Store,
   Users,
 } from "lucide-react";
 import {
+  ApiError,
   getListAdmissionApplicationsQueryKey,
   useListAdmissionApplications,
   useListAcademicCalendar,
@@ -24,7 +26,7 @@ import {
   useGetWebsiteAdminAccess,
   getGetWebsiteAdminAccessQueryKey,
 } from "@workspace/api-client-react";
-import { useAuth } from "@workspace/replit-auth-web";
+import { useAuth, useClerk, useUser } from "@clerk/react";
 import { useQueryClient } from "@tanstack/react-query";
 import { LiveUpdatesManager } from "@/components/LiveUpdatesManager";
 import { GraphicsStudio } from "@/components/GraphicsStudio";
@@ -56,9 +58,16 @@ function statusClass(status: string) {
 }
 
 export default function Admin() {
-  const { isAuthenticated, isLoading: isAuthLoading, login, logout, user } = useAuth();
+  const { isLoaded, isSignedIn } = useAuth();
+  const { user } = useUser();
+  const { signOut } = useClerk();
+  const [, setLocation] = useLocation();
+  const isAuthenticated = isLoaded && isSignedIn === true;
+  const isAuthLoading = !isLoaded;
+  const login = () => setLocation("/sign-in");
+  const logout = () => void signOut({ redirectUrl: import.meta.env.BASE_URL });
   const queryClient = useQueryClient();
-  const accessQuery = useGetWebsiteAdminAccess({ query: { queryKey: [...getGetWebsiteAdminAccessQueryKey(), user?.id ?? "anonymous"], enabled: isAuthenticated, retry: false } });
+  const accessQuery = useGetWebsiteAdminAccess({ query: { queryKey: [...getGetWebsiteAdminAccessQueryKey(), user?.externalId ?? user?.id ?? "anonymous"], enabled: isAuthenticated, retry: false } });
   const isAdmin = accessQuery.data?.isAdmin === true;
   const applicationsQuery = useListAdmissionApplications({
     query: {
@@ -95,7 +104,7 @@ export default function Admin() {
             Sign in to review admission applications and manage weekly school updates.
           </p>
           <button onClick={login} className="mt-8 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-accent px-5 py-3.5 font-bold text-secondary transition-colors hover:bg-accent/90">
-            <ShieldCheck size={18} /> Sign in to continue
+            <ShieldCheck size={18} /> Sign in with email
           </button>
           <Link href="/" className="mt-5 inline-flex items-center gap-2 text-sm text-white/60 hover:text-white">
             <ArrowLeft size={15} /> Return to website
@@ -111,14 +120,17 @@ export default function Admin() {
     await queryClient.invalidateQueries({ queryKey: getListAdmissionApplicationsQueryKey() });
   };
 
+  const accessDenied = accessQuery.error instanceof ApiError && [401, 403].includes(accessQuery.error.status);
+  const accessUnavailable = accessQuery.isError && !accessDenied;
   if (accessQuery.isError || !isAdmin) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-secondary px-4">
         <div className="w-full max-w-md rounded-3xl border border-white/10 bg-white/10 p-8 text-center text-white">
           <ShieldCheck className="mx-auto mb-5 text-accent" size={36} />
-          <h1 className="font-serif text-3xl font-bold">{accessQuery.isError ? "Access check unavailable" : "Administrator access required"}</h1>
-          <p className="mt-4 text-sm leading-relaxed text-white/70">{accessQuery.isError ? "We could not confirm your access. Please retry." : "Only accounts approved by the school can manage this website. Sign in with an approved administrator account."}</p>
-          {accessQuery.isError && <button onClick={() => accessQuery.refetch()} className="mt-6 rounded-xl bg-accent px-5 py-3 font-bold text-secondary">Retry access check</button>}
+          <h1 data-testid="admin-access-status" className="font-serif text-3xl font-bold">{accessUnavailable ? "Access check unavailable" : "Administrator access required"}</h1>
+          <p className="mt-4 text-sm leading-relaxed text-white/70">{accessUnavailable ? "We could not confirm your access. Please retry." : "Only accounts approved by the school can manage this website. Sign in with an approved administrator account."}</p>
+          {accessUnavailable && <button onClick={() => accessQuery.refetch()} className="mt-6 rounded-xl bg-accent px-5 py-3 font-bold text-secondary">Retry access check</button>}
+          <Link href="/account" className="mt-6 block text-sm text-accent underline">View school account</Link>
           <button onClick={logout} className="mt-6 block w-full rounded-xl border border-white/20 px-5 py-3 text-sm font-semibold">Sign out / use another account</button>
           <Link href="/" className="mt-5 inline-block text-sm text-white/70">Back to the school website</Link>
         </div>
@@ -138,7 +150,7 @@ export default function Admin() {
             </div>
           </Link>
           <div className="flex items-center gap-3">
-            <span className="hidden text-sm text-white/60 sm:block">{user?.email}</span>
+            <span className="hidden text-sm text-white/60 sm:block">{user?.primaryEmailAddress?.emailAddress}</span>
             <Link href="/" className="rounded-full border border-white/20 p-2.5 text-white/70 transition-colors hover:border-accent hover:text-accent" aria-label="Back to website">
               <ExternalLink size={17} />
             </Link>
@@ -156,6 +168,9 @@ export default function Admin() {
           <p className="mt-3 max-w-2xl text-muted-foreground">
             Review prospective families and keep the public website current from one place.
           </p>
+          <a href="#school-store" data-testid="link-admin-school-store" className="mt-5 inline-flex items-center gap-2 rounded-xl border border-primary/20 bg-primary/5 px-4 py-2.5 text-sm font-bold text-primary transition-colors hover:border-primary/40 hover:bg-primary/10">
+            <Store size={16} /> Open School Store
+          </a>
         </div>
 
         <div className="mb-10 grid gap-4 sm:grid-cols-3">

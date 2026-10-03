@@ -6,13 +6,13 @@ import type { Plugin } from "vite";
 
 type Field = { key: string; group: string; label: string; kind: string; defaultValue: string };
 const files = [
-  "Layout", "HeroAbout", "DirectorWelcome", "ParentServices", "ProgramsFacilities",
-  "LifeGallery", "AdmissionsNews", "LiveUpdates", "AcademicCalendar", "Widgets",
+  "Layout", "HeroAbout", "DirectorWelcome", "ParentServices", "FifthAnniversary", "ProgramsFacilities",
+  "LifeGallery", "AdmissionsNews", "LiveUpdates", "AcademicCalendar", "Widgets", "SchoolFeeGuide",
 ];
 const groups: Record<string, string> = {
   Navbar: "Navigation", Footer: "Footer", Hero: "Welcome banner",
   About: "About the school", WhyChooseUs: "Why choose us", DirectorWelcome: "Director's welcome",
-  ParentServices: "Parent services", Programs: "Academic programmes", Facilities: "Facilities",
+  ParentServices: "Parent services", FifthAnniversary: "5th anniversary", SchoolFeeGuide: "Reported fee guide", Programs: "Academic programmes", Facilities: "Facilities",
   SchoolLife: "School life", Gallery: "School gallery", Testimonials: "Parent testimonials",
   NewsEvents: "News and events", AdmissionsFAQ: "Admissions and FAQs", FinalCTA: "Admissions invitation",
   LiveUpdates: "Live updates introduction", AcademicCalendar: "Calendar introduction",
@@ -52,7 +52,17 @@ export function schoolContentPlugin(root: string): Plugin {
       const f = context.factory;
       function value(kind: string, fallback: string, expression?: ts.Expression, linkLabel?: string) {
         const group = scope ?? baseGroup;
-        const hash = createHash("sha256").update(`${group}:${kind}:${fallback}${linkLabel ? `:${linkLabel}` : ""}`).digest("hex").slice(0, 14);
+        // Changing the default photograph must not orphan an administrator's
+        // saved image. Keep its original key, but show the new default in admin.
+        const galleryPhotoOriginals: Record<string, string> = {
+          "/anniversary-pupil.webp": "/school-gallery/school-life-7.jpg",
+          "/anniversary-chess.webp": "/school-gallery/school-life-8.jpg",
+          "/anniversary-learning.webp": "/school-gallery/school-life-9.jpg",
+        };
+        const keyFallback = group === "Hero" && kind === "image" && ["/hero.jpg", "/campus-building-background.webp"].includes(fallback)
+          ? "/homepage-background.png"
+          : group === "Gallery" && kind === "image" ? galleryPhotoOriginals[fallback] ?? fallback : fallback;
+        const hash = createHash("sha256").update(`${group}:${kind}:${keyFallback}${linkLabel ? `:${linkLabel}` : ""}`).digest("hex").slice(0, 14);
         const key = `${group}.${kind}.${hash}`;
         catalog.set(key, {
           key, group: groups[group] ?? group.replace(/([a-z])([A-Z])/g, "$1 $2"),

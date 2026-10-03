@@ -1,4 +1,5 @@
 import type { ClassFeeSchedule } from "@workspace/api-client-react";
+import { SchoolFeeGuide } from "@/components/SchoolFeeGuide";
 
 export function FeeScheduleOverview({
   schedules,
@@ -7,13 +8,11 @@ export function FeeScheduleOverview({
   schedules: ClassFeeSchedule[];
   formatAmount: (amount: number) => string;
 }) {
-  if (!schedules.length) return null;
-
   return (
     <section className="mb-10 rounded-2xl border border-border bg-card p-5 md:p-8" aria-labelledby="fee-overview-title" data-testid="panel-fee-overview">
       <h2 id="fee-overview-title" className="font-serif text-2xl font-bold">School fee prices</h2>
-      <p className="mt-2 text-sm text-muted-foreground">View the amount for each class and term before completing a payment report.</p>
-      <div className="mt-5 overflow-x-auto">
+      <div className="mt-4"><SchoolFeeGuide /></div>
+      {schedules.length > 0 && <div className="mt-5 overflow-x-auto">
         <table className="w-full text-left text-sm">
           <caption className="sr-only">Published class and term fee schedules</caption>
           <thead className="border-b border-border text-muted-foreground">
@@ -40,7 +39,7 @@ export function FeeScheduleOverview({
             ))}
           </tbody>
         </table>
-      </div>
+      </div>}
     </section>
   );
 }

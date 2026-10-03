@@ -7,19 +7,9 @@ import {
 import { academicCalendarTable, db } from "@workspace/db";
 import { desc, eq } from "drizzle-orm";
 import { Router, type IRouter, type Request, type Response } from "express";
+import { requireAuthentication } from "../lib/requireAuthentication";
 
 const router: IRouter = Router();
-
-function requireAuthentication(
-  req: Request,
-  res: Response,
-): req is Request & { user: Express.User } {
-  if (!req.isAuthenticated()) {
-    res.status(401).json({ error: "Authentication required" });
-    return false;
-  }
-  return true;
-}
 
 router.get(
   "/academic-calendar",
@@ -56,7 +46,7 @@ router.post(
         objectPath: calendar.objectPath,
         contentType: calendar.contentType,
         fileSize: calendar.fileSize,
-        uploadedBy: req.user.id,
+        uploadedBy: req.dbUser.id,
       })
       .returning();
 

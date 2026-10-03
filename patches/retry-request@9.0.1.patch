@@ -1,0 +1,79 @@
+diff --git a/index.js b/index.js
+index 298a351097d70a7fb005b6961f4d58247e391d8f..3ed342a1a57c7b8ab9f9ae281767499c1d9aa47d 100644
+--- a/index.js
++++ b/index.js
+@@ -97,6 +97,8 @@ function retryRequest(requestOpts, opts, callback) {
+   let retryStream;
+   let requestStream;
+   let delayStream;
++  let aborted = false;
++  let retryTimer;
+ 
+   let activeRequest;
+   const retryRequest = {
+@@ -109,7 +111,15 @@ function retryRequest(requestOpts, opts, callback) {
+ 
+   if (streamMode) {
+     retryStream = new PassThrough({objectMode: opts.objectMode});
+-    retryStream.abort = resetStreams;
++    retryStream.abort = function () {
++      aborted = true;
++      clearTimeout(retryTimer);
++      resetStreams();
++      retryStream.destroy();
++    };
++    retryStream.once('close', () => {
++      if (!retryStream.readableEnded) retryStream.abort();
++    });
+   }
+ 
+   const timeOfFirstRequest = Date.now();
+@@ -126,6 +136,7 @@ function retryRequest(requestOpts, opts, callback) {
+   }
+ 
+   function resetStreams() {
++    if (delayStream) delayStream.destroy();
+     delayStream = null;
+ 
+     if (requestStream) {
+@@ -141,6 +152,7 @@ function retryRequest(requestOpts, opts, callback) {
+   }
+ 
+   function makeRequest() {
++    if (aborted) return;
+     let finishHandled = false;
+     currentRetryAttempt++;
+     debug(`Current retry attempt: ${currentRetryAttempt}`);
+@@ -192,6 +204,7 @@ function retryRequest(requestOpts, opts, callback) {
+   }
+ 
+   function retryAfterDelay(currentRetryAttempt) {
++    if (aborted) return;
+     if (streamMode) {
+       resetStreams();
+     }
+@@ -210,10 +223,14 @@ function retryRequest(requestOpts, opts, callback) {
+       return;
+     }
+ 
+-    setTimeout(makeRequest, nextRetryDelay);
++    retryTimer = setTimeout(makeRequest, nextRetryDelay);
+   }
+ 
+   function onResponse(err, response, body) {
++    if (aborted) {
++      if (response && response.destroy) response.destroy();
++      return;
++    }
+     // An error such as DNS resolution.
+     if (err) {
+       numNoResponseAttempts++;
+@@ -251,6 +268,8 @@ function retryRequest(requestOpts, opts, callback) {
+     // No more attempts need to be made, just continue on.
+     if (streamMode) {
+       retryStream.emit('response', response);
++      // Response consumers may synchronously abort/reset the request.
++      if (aborted || retryStream.destroyed || !delayStream) return;
+       delayStream.pipe(retryStream);
+       requestStream.on('error', err => {
+         retryStream.destroy(err);

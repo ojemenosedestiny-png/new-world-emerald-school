@@ -9,6 +9,19 @@ export function Programs() {
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, margin: "-100px" });
 
+  const curriculumDetails = [
+    { label: "Cambridge Curriculum" },
+    { label: "Nigerian Curriculum" },
+    { label: "Cambridge International Examination — Year 8" },
+    { label: "Checkpoint (Cambridge)" },
+    { label: "IGCSE — JSS 3" },
+    { label: "BECE — ERC / NECO — JSS 3" },
+    { label: "SSCE — WAEC" },
+    { label: "SSCE — NECO" },
+    { label: "SAT" },
+    { label: "HMB (Pre-Degree)" },
+  ];
+
   const programs = [
     {
       title: "Creche & Nursery",
@@ -57,7 +70,7 @@ export function Programs() {
               Our academic programmes combine <strong className="font-semibold text-foreground">Cambridge and Nigerian curricula</strong>, helping pupils build strong foundations with both a national and international perspective.
             </p>
           </div>
-          <a href="#curriculum-overview" className="flex items-center gap-2 font-bold text-primary hover:text-accent transition-colors">
+          <a href="#curriculum-details" className="flex items-center gap-2 font-bold text-primary hover:text-accent transition-colors">
             View Curriculum Details <ArrowRight size={20} />
           </a>
         </div>
@@ -118,6 +131,29 @@ export function Programs() {
             </motion.div>
           ))}
         </motion.div>
+
+        <div id="curriculum-details" className="mt-12 scroll-mt-32 rounded-2xl border border-border bg-card p-6 md:p-9">
+          <div className="max-w-3xl">
+            <AnimatedHeading as="h4" className="font-serif text-2xl md:text-3xl font-bold text-foreground">
+              Curriculum &amp; Academic Programmes
+            </AnimatedHeading>
+            <p className="mt-3 text-sm md:text-base leading-relaxed text-muted-foreground">
+              New World Emerald offers Cambridge and Nigerian curricula. The programmes and examinations listed below are part of the school’s academic information.
+            </p>
+          </div>
+          <ul className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {curriculumDetails.map((item, index) => (
+              <li
+                key={item.label}
+                data-testid={`curriculum-entry-${index}`}
+                className="flex min-h-12 items-center gap-3 rounded-xl bg-muted/50 px-4 py-3 text-sm font-medium leading-snug text-foreground"
+              >
+                <span aria-hidden="true" className="h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
+                {item.label}
+              </li>
+            ))}
+          </ul>
+        </div>
       </div>
     </section>
   );

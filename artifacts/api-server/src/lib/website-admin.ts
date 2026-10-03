@@ -1,16 +1,16 @@
 import type { NextFunction, Request, Response } from "express";
 
 export function isWebsiteAdmin(req: Request): boolean {
-  if (!req.isAuthenticated() || !req.user.email) return false;
+  if (!req.dbUser || !req.identity?.email || !req.identity.emailVerified) return false;
   const approved = (process.env.SCHOOL_ADMIN_EMAILS ?? "")
     .split(/[,;\s]+/)
     .map((email) => email.trim().toLowerCase())
     .filter(Boolean);
-  return approved.includes(req.user.email.trim().toLowerCase());
+  return approved.includes(req.identity.email.trim().toLowerCase());
 }
 
 export function requireWebsiteAdmin(req: Request, res: Response): boolean {
-  if (!req.isAuthenticated()) {
+  if (!req.dbUser) {
     res.status(401).json({ error: "Sign in to manage the website." });
     return false;
   }

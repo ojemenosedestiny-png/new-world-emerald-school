@@ -15,6 +15,7 @@ import {
   X,
 } from "lucide-react";
 import {
+  customFetch,
   getListLiveUpdatesQueryKey,
   useCreateLiveUpdate,
   useDeleteLiveUpdate,
@@ -130,12 +131,13 @@ export function LiveUpdatesManager() {
         },
       });
       setUploadStage("uploading");
-      const uploadResponse = await fetch(upload.uploadURL, {
+      await customFetch(upload.uploadURL, {
         method: "PUT",
+        credentials: "omit",
         headers: { "Content-Type": selectedFile.type },
         body: selectedFile,
+        responseType: "text",
       });
-      if (!uploadResponse.ok) throw new Error("The video could not be uploaded. Please try again.");
 
       setUploadStage("publishing");
       await createLiveUpdate.mutateAsync({

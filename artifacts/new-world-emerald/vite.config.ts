@@ -33,7 +33,7 @@ export default defineConfig({
   plugins: [
     schoolContentPlugin(import.meta.dirname),
     react(),
-    tailwindcss(),
+    tailwindcss({ optimize: false }),
     runtimeErrorOverlay(),
     ...(process.env.NODE_ENV !== 'production' &&
     process.env.REPL_ID !== undefined

@@ -10,20 +10,10 @@ import {
 import { db, liveUpdatesTable } from "@workspace/db";
 import { desc, eq } from "drizzle-orm";
 import { Router, type IRouter, type Request, type Response } from "express";
+import { requireAuthentication } from "../lib/requireAuthentication";
 
 const router: IRouter = Router();
 const maxVideoSize = 100 * 1024 * 1024;
-
-function requireAuthentication(
-  req: Request,
-  res: Response,
-): req is Request & { user: Express.User } {
-  if (!req.isAuthenticated()) {
-    res.status(401).json({ error: "Authentication required" });
-    return false;
-  }
-  return true;
-}
 
 function isVideoPayload(payload: {
   contentType?: string;
@@ -65,7 +55,7 @@ router.post(
       .insert(liveUpdatesTable)
       .values({
         ...parsed.data,
-        uploadedBy: req.user.id,
+        uploadedBy: req.dbUser.id,
       })
       .returning();
 

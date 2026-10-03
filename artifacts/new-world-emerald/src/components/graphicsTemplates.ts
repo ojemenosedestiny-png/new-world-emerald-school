@@ -1,3 +1,5 @@
+import { customFetch } from "@workspace/api-client-react";
+
 export type TemplateId = "admissions" | "event" | "announcement";
 export type SizeId = "landscape" | "square";
 
@@ -144,9 +146,7 @@ ${ctaSvg}
 }
 
 export async function fetchLogoDataUri(url: string): Promise<string> {
-  const res = await fetch(url, { credentials: "same-origin" });
-  if (!res.ok) throw new Error("Logo request failed");
-  const blob = await res.blob();
+  const blob = await customFetch<Blob>(url, { credentials: "same-origin", responseType: "blob" });
   return await new Promise<string>((resolve, reject) => {
     const r = new FileReader();
     r.onload = () => resolve(String(r.result));

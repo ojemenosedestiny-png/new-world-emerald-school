@@ -19,7 +19,9 @@ import {
   useListAcademicCalendar,
   useRequestUploadUrl,
 } from "@workspace/api-client-react";
-import { useAuth } from "@workspace/replit-auth-web";
+import { useAuth, useUser } from "@clerk/react";
+import { customFetch } from "@workspace/api-client-react";
+import { useLocation } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
 
 function formatDate(value: string) {
@@ -39,8 +41,18 @@ function fileUrl(objectPath: string) {
   return `/api/storage${objectPath}`;
 }
 
+function isVideo(calendar: { contentType: string; fileName: string }) {
+  return calendar.contentType.toLowerCase().startsWith("video/") ||
+    /\.(mp4|m4v|webm|mov|ogv)$/i.test(calendar.fileName);
+}
+
 export function AcademicCalendar({ officeMode = false }: { officeMode?: boolean }) {
-  const { isAuthenticated, isLoading: isAuthLoading, login, user } = useAuth();
+  const { isSignedIn, isLoaded } = useAuth();
+  const { user } = useUser();
+  const isAuthenticated = isLoaded && isSignedIn === true;
+  const isAuthLoading = !isLoaded;
+  const [, setLocation] = useLocation();
+  const login = () => setLocation("/sign-in");
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { data: calendars, isLoading, isError } = useListAcademicCalendar();
@@ -101,15 +113,13 @@ export function AcademicCalendar({ officeMode = false }: { officeMode?: boolean 
         },
       });
 
-      const uploadResponse = await fetch(upload.uploadURL, {
+      await customFetch(upload.uploadURL, {
         method: "PUT",
+        credentials: "omit",
         headers: { "Content-Type": selectedFile.type || "application/octet-stream" },
         body: selectedFile,
+        responseType: "text",
       });
-
-      if (!uploadResponse.ok) {
-        throw new Error("The file could not be uploaded.");
-      }
 
       await createCalendar.mutateAsync({
         data: {
@@ -205,7 +215,7 @@ export function AcademicCalendar({ officeMode = false }: { officeMode?: boolean 
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, amount: 0.2 }}
                 transition={{ delay: index * 0.06 }}
-                className="group flex flex-col gap-5 rounded-2xl border border-white/10 bg-white/[0.07] p-5 backdrop-blur-sm transition-colors hover:border-accent/50 sm:flex-row sm:items-center sm:justify-between"
+                className={`group flex flex-col gap-5 rounded-2xl border border-white/10 bg-white/[0.07] p-5 backdrop-blur-sm transition-colors hover:border-accent/50 ${isVideo(calendar) ? "" : "sm:flex-row sm:items-center sm:justify-between"}`}
               >
                 <div className="flex items-start gap-4">
                   <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary text-white">
@@ -230,15 +240,31 @@ export function AcademicCalendar({ officeMode = false }: { officeMode?: boolean 
                     </p>
                   </div>
                 </div>
+                {isVideo(calendar) && (
+                  <div className="overflow-hidden rounded-xl border border-white/10 bg-black">
+                    <video
+                      controls
+                      playsInline
+                      preload="metadata"
+                      src={fileUrl(calendar.objectPath)}
+                      aria-label={calendar.title}
+                      className="block aspect-video w-full max-h-[70vh] object-contain"
+                      data-testid={`video-calendar-${calendar.id}`}
+                    >
+                      Your browser cannot play this video.{" "}
+                      <a href={fileUrl(calendar.objectPath)}>Open the video</a>.
+                    </video>
+                  </div>
+                )}
                 <div className="flex items-center gap-3 sm:shrink-0">
-                  <a
+                  {!isVideo(calendar) && <a
                     href={fileUrl(calendar.objectPath)}
                     target="_blank"
                     rel="noreferrer"
                     className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2.5 text-sm font-bold text-secondary transition-colors hover:bg-accent"
                   >
                     <Download size={16} /> View
-                  </a>
+                  </a>}
                   {officeMode && isAuthenticated && (
                     <button
                       type="button"
@@ -317,7 +343,7 @@ export function AcademicCalendar({ officeMode = false }: { officeMode?: boolean 
                   <input
                     ref={fileInputRef}
                     type="file"
-                    accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                    accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.mp4,.m4v,.webm,.mov,.ogv"
                     onChange={handleFileChange}
                     className="mt-2 block w-full cursor-pointer rounded-xl border border-white/15 bg-white/5 p-3 text-sm text-white/70 file:mr-3 file:rounded-lg file:border-0 file:bg-accent file:px-3 file:py-2 file:font-semibold file:text-secondary"
                   />
@@ -345,7 +371,7 @@ export function AcademicCalendar({ officeMode = false }: { officeMode?: boolean 
                   {isUploading ? <><Loader2 className="animate-spin" size={17} /> Publishing…</> : <><Upload size={17} /> Publish calendar</>}
                 </button>
                 <p className="text-xs text-white/40">
-                  Signed in as {user?.email ?? "school office user"}. Publishing makes this update visible to everyone.
+                  Signed in as {user?.primaryEmailAddress?.emailAddress ?? "school office user"}. Publishing makes this update visible to everyone.
                 </p>
               </form>
             )}

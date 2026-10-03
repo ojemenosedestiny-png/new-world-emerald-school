@@ -31,22 +31,6 @@ export interface HealthStatus {
   status: string;
 }
 
-export interface AuthUser {
-  id: string;
-  /** @nullable */
-  email: string | null;
-  /** @nullable */
-  firstName: string | null;
-  /** @nullable */
-  lastName: string | null;
-  /** @nullable */
-  profileImageUrl: string | null;
-}
-
-export interface AuthUserEnvelope {
-  user: AuthUser | null;
-}
-
 export interface UploadMetadata {
   /** @minLength 1 */
   name: string;
@@ -130,28 +114,6 @@ export interface LiveUpdateUpdate {
   /** @minimum 1 */
   fileSize?: number;
 }
-
-export interface MobileTokenExchangeRequest {
-  /** @minLength 1 */
-  code: string;
-  /** @minLength 1 */
-  code_verifier: string;
-  /** @minLength 1 */
-  redirect_uri: string;
-  /** @minLength 1 */
-  state: string;
-  /** @minLength 1 */
-  nonce?: string;
-}
-
-export interface MobileTokenExchangeSuccess {
-  token: string;
-}
-
-export const LogoutSuccessValue = {
-  success: true,
-} as const;
-export type LogoutSuccess = typeof LogoutSuccessValue;
 
 export interface AdmissionApplication {
   id: number;
@@ -633,13 +595,8 @@ export interface SchoolCommerceSettingsUpdate {
   paymentInstructions: string;
 }
 
-export type AuthorizationSessionHeaderParameter = string;
-
-export type BeginBrowserLoginParams = {
-returnTo?: string;
-};
-
-export type LogoutBrowserSessionParams = {
-returnTo?: string;
+export type GetLocalAccount200 = {
+  id: string;
+  isAdmin: boolean;
 };
 

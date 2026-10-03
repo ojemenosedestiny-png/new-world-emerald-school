@@ -1,53 +1,134 @@
 import { AnimatedHeading } from "@/components/AnimatedHeading";
 import { asset } from "@/lib/asset";
-import React, { useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { motion, useInView, AnimatePresence } from 'framer-motion';
 import { X, ZoomIn, Star, ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export function SchoolLife() {
-  const timeline = [
-    { time: "08:00 AM", title: "Morning Assembly", desc: "Setting the tone for the day with inspiration and announcements." },
-    { time: "08:30 AM", title: "Core Academics", desc: "Engaging classroom sessions in Math, Sciences, and Languages." },
-    { time: "11:00 AM", title: "Creative Arts", desc: "Music, fine arts, and drama to foster creative expression." },
-    { time: "01:00 PM", title: "Lunch & Social", desc: "Nutritious meals and free time to build friendships." },
-    { time: "02:00 PM", title: "STEM Labs", desc: "Hands-on experiments and coding in our state-of-the-art labs." },
-    { time: "03:30 PM", title: "Clubs & Sports", desc: "Extracurricular activities, debate, robotics, and athletics." },
+  const ref = useRef(null);
+  const isInView = useInView(ref, { once: true, margin: "-100px" });
+  const schoolGroups = [
+    {
+      title: "School Administration",
+      kind: "roles",
+      items: [
+        { label: "Chairman / Director" },
+        { label: "HOS (Head of School)" },
+      ],
+    },
+    {
+      title: "School Structure",
+      kind: "structure",
+      items: [
+        { label: "Principal — Secondary" },
+        { label: "Headteacher — Primary" },
+        { label: "Lead — Early Years School" },
+        { label: "EYFS — Early Years Foundation Stage" },
+        { label: "Nursery" },
+        { label: "Reception" },
+        { label: "Primary — Year 1–6" },
+        { label: "Secondary — Year 7, 8, 9, 10, 11" },
+        { label: "SS3 — WAEC" },
+      ],
+    },
+    {
+      title: "Club Activities",
+      kind: "activities",
+      items: [
+        { label: "Ballet" },
+        { label: "Chess" },
+        { label: "Basketball" },
+        { label: "Football" },
+        { label: "Catering and Decoration" },
+        { label: "Dance" },
+        { label: "Music" },
+        { label: "French" },
+        { label: "Coding / Robotics" },
+      ],
+    },
+    {
+      title: "Skill Acquisition",
+      kind: "activities",
+      items: [
+        { label: "Cosmetology" },
+        { label: "GSM Repair" },
+        { label: "Government Matters" },
+        { label: "Solar Installation" },
+        { label: "Public Speaking" },
+        { label: "Catering" },
+      ],
+    },
   ];
 
   return (
     <section id="school-life" className="py-24 bg-muted/30">
       <div className="container mx-auto px-4 md:px-8">
-        <div className="grid lg:grid-cols-2 gap-16 items-center">
+        <div className="grid lg:grid-cols-2 gap-10 lg:gap-16 items-center">
           <div>
             <AnimatedHeading as="h2" className="text-primary font-bold tracking-widest uppercase text-sm mb-3">Student Experience</AnimatedHeading>
             <AnimatedHeading as="h3" className="text-4xl md:text-5xl font-serif font-bold text-foreground mb-6">
-              A Day in the Life at Emerald.
+              School Life at Emerald.
             </AnimatedHeading>
-            <p className="text-muted-foreground text-lg mb-8">
-              Education extends beyond the four walls of a classroom. Our structured yet dynamic daily routine ensures students develop holistically—balancing rigorous academics with arts, sports, and leadership programs.
+            <p className="text-muted-foreground text-base md:text-lg leading-relaxed">
+              Explore the school structure, club activities and skill acquisition opportunities at New World Emerald.
             </p>
-            
-            <div className="relative border-l-2 border-primary/20 pl-8 space-y-8">
-              {timeline.map((item, i) => (
-                <div key={i} className="relative">
-                  <span className="absolute -left-[41px] top-1 w-5 h-5 bg-background border-4 border-primary rounded-full" />
-                  <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 mb-1">
-                    <span className="font-mono text-sm font-bold text-primary bg-primary/10 px-2 py-1 rounded w-fit">{item.time}</span>
-                    <AnimatedHeading as="h4" className="font-serif text-lg font-bold text-foreground">{item.title}</AnimatedHeading>
-                  </div>
-                  <p className="text-sm text-muted-foreground">{item.desc}</p>
-                </div>
-              ))}
-            </div>
           </div>
           
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-3 md:gap-4">
             <img src={asset("/primary.jpg")} alt="Classroom" className="w-full h-64 object-cover rounded-2xl rounded-tr-[4rem]" />
             <img src={asset("/sports.jpg")} alt="Sports" className="w-full h-64 object-cover rounded-2xl rounded-bl-[4rem] mt-8" />
             <img src={asset("/science-lab.jpg")} alt="Lab" className="w-full h-64 object-cover rounded-2xl rounded-br-[4rem] col-span-2" />
           </div>
         </div>
+        <motion.div
+          ref={ref}
+          initial="hidden"
+          animate={isInView ? "visible" : "hidden"}
+          variants={{
+            hidden: { opacity: 0 },
+            visible: { opacity: 1, transition: { staggerChildren: 0.1 } },
+          }}
+          className="mt-12 grid gap-4 sm:grid-cols-2"
+        >
+          {schoolGroups.map((group, groupIndex) => (
+            <motion.section
+              key={group.title}
+              variants={{
+                hidden: { opacity: 0, y: 18 },
+                visible: { opacity: 1, y: 0, transition: { duration: 0.45 } },
+              }}
+              className="rounded-2xl border border-border bg-card p-5 md:p-7"
+            >
+              <AnimatedHeading as="h4" className="font-serif text-xl md:text-2xl font-bold text-foreground">
+                {group.title}
+              </AnimatedHeading>
+              <ul className={cn(
+                "mt-4",
+                group.kind === "activities"
+                  ? "flex flex-wrap gap-2"
+                  : group.kind === "structure"
+                    ? "grid gap-2 sm:grid-cols-2"
+                    : "grid gap-2"
+              )}>
+                {group.items.map((item, itemIndex) => (
+                  <li
+                    key={item.label}
+                    data-testid={`school-life-entry-${groupIndex}-${itemIndex}`}
+                    className={cn(
+                      "text-sm leading-snug text-foreground",
+                      group.kind === "activities"
+                        ? "rounded-full bg-muted px-3.5 py-2"
+                        : "rounded-lg bg-muted/50 px-3.5 py-2.5"
+                    )}
+                  >
+                    {item.label}
+                  </li>
+                ))}
+              </ul>
+            </motion.section>
+          ))}
+        </motion.div>
       </div>
     </section>
   );
@@ -72,9 +153,9 @@ export function Gallery() {
     { src: asset("/school-gallery/school-life-4.jpg"), cat: 'school-life', alt: 'Emerald student in school uniform on campus', aspect: 'aspect-[3/4]' },
     { src: asset("/school-gallery/school-life-5.jpg"), cat: 'school-life', alt: 'Young Emerald pupil welcomed at school', aspect: 'aspect-[3/4]' },
     { src: asset("/school-gallery/school-life-6.jpg"), cat: 'school-life', alt: 'Emerald student arriving on campus', aspect: 'aspect-[3/4]' },
-    { src: asset("/school-gallery/school-life-7.jpg"), cat: 'school-life', alt: 'Emerald pupil smiling in school uniform', aspect: 'aspect-[3/4]' },
-    { src: asset("/school-gallery/school-life-8.jpg"), cat: 'academics', alt: 'Pupils practising chess in the classroom', aspect: 'aspect-[3/4]' },
-    { src: asset("/school-gallery/school-life-9.jpg"), cat: 'academics', alt: 'Teacher guiding pupils through a classroom activity', aspect: 'aspect-[3/4]' },
+    { src: asset("/anniversary-pupil.webp"), cat: 'school-life', alt: 'Emerald pupil smiling in school uniform', aspect: 'aspect-[3/4]' },
+    { src: asset("/anniversary-chess.webp"), cat: 'academics', alt: 'Pupils practising chess in the classroom', aspect: 'aspect-[3/4]' },
+    { src: asset("/anniversary-learning.webp"), cat: 'academics', alt: 'Teacher guiding pupils through a classroom activity', aspect: 'aspect-[3/4]' },
     { src: asset("/graduation.jpg"), cat: 'events', aspect: 'aspect-square' },
     { src: asset("/science-lab.jpg"), cat: 'academics', aspect: 'aspect-video' },
     { src: asset("/hero.jpg"), cat: 'campus', aspect: 'aspect-[3/4]' },

@@ -1,6 +1,8 @@
 import { randomUUID } from 'crypto';
-import { Readable } from 'stream';
+import type { Readable } from 'stream';
 import { File, Storage } from '@google-cloud/storage';
+import { parseByteRange } from './byte-range';
+import { storageReadStream } from './storage-read-stream';
 
 import {
   canAccessObject,
@@ -38,6 +40,11 @@ export class ObjectNotFoundError extends Error {
   }
 }
 
+export interface ObjectDownload {
+  status: number;
+  headers: Headers;
+  body: Readable | null;
+}
 export class ObjectStorageService {
   constructor() {}
 
@@ -91,13 +98,14 @@ export class ObjectStorageService {
   async downloadObject(
     file: File,
     cacheTtlSec: number = 3600,
-  ): Promise<Response> {
+    options: { range?: string; headOnly?: boolean; signal?: AbortSignal } = {},
+  ): Promise<ObjectDownload> {
+    options.signal?.throwIfAborted();
     const [metadata] = await file.getMetadata();
+    options.signal?.throwIfAborted();
     const aclPolicy = await getObjectAclPolicy(file);
+    options.signal?.throwIfAborted();
     const isPublic = aclPolicy?.visibility === 'public';
-
-    const nodeStream = file.createReadStream();
-    const webStream = Readable.toWeb(nodeStream) as ReadableStream;
 
     const headers: Record<string, string> = {
       'Content-Type':
@@ -108,7 +116,28 @@ export class ObjectStorageService {
       headers['Content-Length'] = String(metadata.size);
     }
 
-    return new Response(webStream, { headers });
+    const size = Number(metadata.size);
+    const hasSize = Number.isSafeInteger(size) && size >= 0;
+    const range = hasSize ? parseByteRange(options.range, size) : null;
+    if (hasSize) headers['Accept-Ranges'] = 'bytes';
+    if (range === 'invalid') {
+      headers['Content-Range'] = `bytes */${size}`;
+      headers['Content-Length'] = '0';
+      return { body: null, status: 416, headers: new Headers(headers) };
+    }
+    if (range) {
+      headers['Content-Range'] = `bytes ${range.start}-${range.end}/${size}`;
+      headers['Content-Length'] = String(range.end - range.start + 1);
+    }
+    const status = range ? 206 : 200;
+    if (options.headOnly) return { body: null, status, headers: new Headers(headers) };
+    // Keep the GCS stream native: toWeb/fromWeb each install lifecycle listeners
+    // on top of the SDK's internal pipeline and obscure upstream cancellation.
+    return {
+      body: storageReadStream(file, range ? { start: range.start, end: range.end } : undefined),
+      status,
+      headers: new Headers(headers),
+    };
   }
 
   async getObjectEntityUploadURL(): Promise<string> {

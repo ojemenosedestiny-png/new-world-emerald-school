@@ -26,8 +26,6 @@ import type {
   AdmissionApplicationInput,
   AdmissionApplicationReceipt,
   AdmissionApplicationStatusUpdate,
-  AuthUserEnvelope,
-  BeginBrowserLoginParams,
   ClassFeeSchedule,
   ClassFeeScheduleInput,
   ClassFeeScheduleUpdate,
@@ -35,6 +33,7 @@ import type {
   FeePaymentReportInput,
   FeePaymentReportReceipt,
   FeePaymentReportUpdate,
+  GetLocalAccount200,
   HealthStatus,
   IndividualFeeCharge,
   IndividualFeeChargeInput,
@@ -42,10 +41,6 @@ import type {
   LiveUpdate,
   LiveUpdateInput,
   LiveUpdateUpdate,
-  LogoutBrowserSessionParams,
-  LogoutSuccess,
-  MobileTokenExchangeRequest,
-  MobileTokenExchangeSuccess,
   PublicIndividualFeeCharge,
   SchoolCommerceSettings,
   SchoolCommerceSettingsUpdate,
@@ -393,20 +388,20 @@ export function useHealthCheck<TData = Awaited<ReturnType<typeof healthCheck>>, 
 
 
 
-export const getGetCurrentAuthUserUrl = () => {
+export const getGetLocalAccountUrl = () => {
 
 
 
 
-  return `/api/auth/user`
+  return `/api/account`
 }
 
 /**
- * @summary Get the currently authenticated user
+ * @summary Resolve the signed-in user's school account
  */
-export const getCurrentAuthUser = async ( options?: RequestInit): Promise<AuthUserEnvelope> => {
+export const getLocalAccount = async ( options?: RequestInit): Promise<GetLocalAccount200> => {
 
-  return customFetch<AuthUserEnvelope>(getGetCurrentAuthUserUrl(),
+  return customFetch<GetLocalAccount200>(getGetLocalAccountUrl(),
   {
     ...options,
     method: 'GET'
@@ -419,45 +414,45 @@ export const getCurrentAuthUser = async ( options?: RequestInit): Promise<AuthUs
 
 
 
-export const getGetCurrentAuthUserQueryKey = () => {
+export const getGetLocalAccountQueryKey = () => {
     return [
-    `/api/auth/user`
+    `/api/account`
     ] as const;
     }
 
 
-export const getGetCurrentAuthUserQueryOptions = <TData = Awaited<ReturnType<typeof getCurrentAuthUser>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCurrentAuthUser>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+export const getGetLocalAccountQueryOptions = <TData = Awaited<ReturnType<typeof getLocalAccount>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getLocalAccount>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetCurrentAuthUserQueryKey();
+  const queryKey =  queryOptions?.queryKey ?? getGetLocalAccountQueryKey();
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getCurrentAuthUser>>> = ({ signal }) => getCurrentAuthUser({ signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getLocalAccount>>> = ({ signal }) => getLocalAccount({ signal, ...requestOptions });
 
 
 
 
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getCurrentAuthUser>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getLocalAccount>>, TError, TData> & { queryKey: QueryKey }
 }
 
-export type GetCurrentAuthUserQueryResult = NonNullable<Awaited<ReturnType<typeof getCurrentAuthUser>>>
-export type GetCurrentAuthUserQueryError = ErrorType<unknown>
+export type GetLocalAccountQueryResult = NonNullable<Awaited<ReturnType<typeof getLocalAccount>>>
+export type GetLocalAccountQueryError = ErrorType<void>
 
 
 /**
- * @summary Get the currently authenticated user
+ * @summary Resolve the signed-in user's school account
  */
 
-export function useGetCurrentAuthUser<TData = Awaited<ReturnType<typeof getCurrentAuthUser>>, TError = ErrorType<unknown>>(
-  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCurrentAuthUser>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+export function useGetLocalAccount<TData = Awaited<ReturnType<typeof getLocalAccount>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getLocalAccount>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
-  const queryOptions = getGetCurrentAuthUserQueryOptions(options)
+  const queryOptions = getGetLocalAccountQueryOptions(options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
@@ -469,393 +464,6 @@ export function useGetCurrentAuthUser<TData = Awaited<ReturnType<typeof getCurre
 
 
 
-
-export const getBeginBrowserLoginUrl = (params?: BeginBrowserLoginParams,) => {
-  const normalizedParams = new URLSearchParams();
-
-  Object.entries(params || {}).forEach(([key, value]) => {
-
-    if (value !== undefined) {
-      normalizedParams.append(key, value === null ? 'null' : String(value))
-    }
-  });
-
-  const stringifiedParams = normalizedParams.toString();
-
-  return stringifiedParams.length > 0 ? `/api/login?${stringifiedParams}` : `/api/login`
-}
-
-/**
- * @summary Start the browser login flow
- */
-export const beginBrowserLogin = async (params?: BeginBrowserLoginParams, options?: RequestInit): Promise<unknown> => {
-
-  return customFetch<unknown>(getBeginBrowserLoginUrl(params),
-  {
-    ...options,
-    method: 'GET'
-
-
-  }
-);}
-
-
-
-
-
-export const getBeginBrowserLoginQueryKey = (params?: BeginBrowserLoginParams,) => {
-    return [
-    `/api/login`, ...(params ? [params] : [])
-    ] as const;
-    }
-
-
-export const getBeginBrowserLoginQueryOptions = <TData = Awaited<ReturnType<typeof beginBrowserLogin>>, TError = ErrorType<void>>(params?: BeginBrowserLoginParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof beginBrowserLogin>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getBeginBrowserLoginQueryKey(params);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof beginBrowserLogin>>> = ({ signal }) => beginBrowserLogin(params, { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof beginBrowserLogin>>, TError, TData> & { queryKey: QueryKey }
-}
-
-export type BeginBrowserLoginQueryResult = NonNullable<Awaited<ReturnType<typeof beginBrowserLogin>>>
-export type BeginBrowserLoginQueryError = ErrorType<void>
-
-
-/**
- * @summary Start the browser login flow
- */
-
-export function useBeginBrowserLogin<TData = Awaited<ReturnType<typeof beginBrowserLogin>>, TError = ErrorType<void>>(
- params?: BeginBrowserLoginParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof beginBrowserLogin>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
-
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-
-  const queryOptions = getBeginBrowserLoginQueryOptions(params,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
-
-  return withQueryKey(query, queryOptions.queryKey);
-}
-
-
-
-
-
-
-
-export const getHandleBrowserLoginCallbackUrl = () => {
-
-
-
-
-  return `/api/callback`
-}
-
-/**
- * @summary Complete the browser login flow
- */
-export const handleBrowserLoginCallback = async ( options?: RequestInit): Promise<unknown> => {
-
-  return customFetch<unknown>(getHandleBrowserLoginCallbackUrl(),
-  {
-    ...options,
-    method: 'GET'
-
-
-  }
-);}
-
-
-
-
-
-export const getHandleBrowserLoginCallbackQueryKey = () => {
-    return [
-    `/api/callback`
-    ] as const;
-    }
-
-
-export const getHandleBrowserLoginCallbackQueryOptions = <TData = Awaited<ReturnType<typeof handleBrowserLoginCallback>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof handleBrowserLoginCallback>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getHandleBrowserLoginCallbackQueryKey();
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof handleBrowserLoginCallback>>> = ({ signal }) => handleBrowserLoginCallback({ signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof handleBrowserLoginCallback>>, TError, TData> & { queryKey: QueryKey }
-}
-
-export type HandleBrowserLoginCallbackQueryResult = NonNullable<Awaited<ReturnType<typeof handleBrowserLoginCallback>>>
-export type HandleBrowserLoginCallbackQueryError = ErrorType<void>
-
-
-/**
- * @summary Complete the browser login flow
- */
-
-export function useHandleBrowserLoginCallback<TData = Awaited<ReturnType<typeof handleBrowserLoginCallback>>, TError = ErrorType<void>>(
-  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof handleBrowserLoginCallback>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
-
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-
-  const queryOptions = getHandleBrowserLoginCallbackQueryOptions(options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
-
-  return withQueryKey(query, queryOptions.queryKey);
-}
-
-
-
-
-
-
-
-export const getLogoutBrowserSessionUrl = (params?: LogoutBrowserSessionParams,) => {
-  const normalizedParams = new URLSearchParams();
-
-  Object.entries(params || {}).forEach(([key, value]) => {
-
-    if (value !== undefined) {
-      normalizedParams.append(key, value === null ? 'null' : String(value))
-    }
-  });
-
-  const stringifiedParams = normalizedParams.toString();
-
-  return stringifiedParams.length > 0 ? `/api/logout?${stringifiedParams}` : `/api/logout`
-}
-
-/**
- * @summary Clear the browser session
- */
-export const logoutBrowserSession = async (params?: LogoutBrowserSessionParams, options?: RequestInit): Promise<unknown> => {
-
-  return customFetch<unknown>(getLogoutBrowserSessionUrl(params),
-  {
-    ...options,
-    method: 'GET'
-
-
-  }
-);}
-
-
-
-
-
-export const getLogoutBrowserSessionQueryKey = (params?: LogoutBrowserSessionParams,) => {
-    return [
-    `/api/logout`, ...(params ? [params] : [])
-    ] as const;
-    }
-
-
-export const getLogoutBrowserSessionQueryOptions = <TData = Awaited<ReturnType<typeof logoutBrowserSession>>, TError = ErrorType<void>>(params?: LogoutBrowserSessionParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof logoutBrowserSession>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getLogoutBrowserSessionQueryKey(params);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof logoutBrowserSession>>> = ({ signal }) => logoutBrowserSession(params, { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof logoutBrowserSession>>, TError, TData> & { queryKey: QueryKey }
-}
-
-export type LogoutBrowserSessionQueryResult = NonNullable<Awaited<ReturnType<typeof logoutBrowserSession>>>
-export type LogoutBrowserSessionQueryError = ErrorType<void>
-
-
-/**
- * @summary Clear the browser session
- */
-
-export function useLogoutBrowserSession<TData = Awaited<ReturnType<typeof logoutBrowserSession>>, TError = ErrorType<void>>(
- params?: LogoutBrowserSessionParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof logoutBrowserSession>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
-
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-
-  const queryOptions = getLogoutBrowserSessionQueryOptions(params,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
-
-  return withQueryKey(query, queryOptions.queryKey);
-}
-
-
-
-
-
-
-
-export const getExchangeMobileAuthorizationCodeUrl = () => {
-
-
-
-
-  return `/api/mobile-auth/token-exchange`
-}
-
-/**
- * @summary Exchange a mobile authorization code
- */
-export const exchangeMobileAuthorizationCode = async (mobileTokenExchangeRequest: MobileTokenExchangeRequest, options?: RequestInit): Promise<MobileTokenExchangeSuccess> => {
-
-  return customFetch<MobileTokenExchangeSuccess>(getExchangeMobileAuthorizationCodeUrl(),
-  {
-    ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(mobileTokenExchangeRequest)
-  }
-);}
-
-
-
-
-
-export const getExchangeMobileAuthorizationCodeMutationOptions = <TError = ErrorType<unknown>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof exchangeMobileAuthorizationCode>>, TError,{data: BodyType<MobileTokenExchangeRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof exchangeMobileAuthorizationCode>>, TError,{data: BodyType<MobileTokenExchangeRequest>}, TContext> => {
-
-const mutationKey = ['exchangeMobileAuthorizationCode'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof exchangeMobileAuthorizationCode>>, {data: BodyType<MobileTokenExchangeRequest>}> = (props) => {
-          const {data} = props ?? {};
-
-          return  exchangeMobileAuthorizationCode(data,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type ExchangeMobileAuthorizationCodeMutationResult = NonNullable<Awaited<ReturnType<typeof exchangeMobileAuthorizationCode>>>
-    export type ExchangeMobileAuthorizationCodeMutationBody = BodyType<MobileTokenExchangeRequest>
-    export type ExchangeMobileAuthorizationCodeMutationError = ErrorType<unknown>
-
-    /**
- * @summary Exchange a mobile authorization code
- */
-export const useExchangeMobileAuthorizationCode = <TError = ErrorType<unknown>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof exchangeMobileAuthorizationCode>>, TError,{data: BodyType<MobileTokenExchangeRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof exchangeMobileAuthorizationCode>>,
-        TError,
-        {data: BodyType<MobileTokenExchangeRequest>},
-        TContext
-      > => {
-      return useMutation(getExchangeMobileAuthorizationCodeMutationOptions(options));
-    }
-
-export const getLogoutMobileSessionUrl = () => {
-
-
-
-
-  return `/api/mobile-auth/logout`
-}
-
-/**
- * @summary Delete a mobile session
- */
-export const logoutMobileSession = async ( options?: RequestInit): Promise<LogoutSuccess> => {
-
-  return customFetch<LogoutSuccess>(getLogoutMobileSessionUrl(),
-  {
-    ...options,
-    method: 'POST'
-
-
-  }
-);}
-
-
-
-
-
-export const getLogoutMobileSessionMutationOptions = <TError = ErrorType<unknown>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof logoutMobileSession>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof logoutMobileSession>>, TError,void, TContext> => {
-
-const mutationKey = ['logoutMobileSession'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof logoutMobileSession>>, void> = () => {
-
-
-          return  logoutMobileSession(requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type LogoutMobileSessionMutationResult = NonNullable<Awaited<ReturnType<typeof logoutMobileSession>>>
-
-    export type LogoutMobileSessionMutationError = ErrorType<unknown>
-
-    /**
- * @summary Delete a mobile session
- */
-export const useLogoutMobileSession = <TError = ErrorType<unknown>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof logoutMobileSession>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof logoutMobileSession>>,
-        TError,
-        void,
-        TContext
-      > => {
-      return useMutation(getLogoutMobileSessionMutationOptions(options));
-    }
 
 export const getRequestUploadUrlUrl = () => {
 

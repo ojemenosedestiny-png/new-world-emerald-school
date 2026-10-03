@@ -47,16 +47,3 @@ Thumbs.db
 # Replit
 .cache/
 .local/
-
-# Keep credentials and private workspace uploads out of GitHub
-.env
-.env.*
-!.env.example
-*.pem
-*.key
-*.dump
-*.sqlite
-*.db
-.agents/
-attached_assets/
-.config/

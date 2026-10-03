@@ -77,91 +77,26 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
-  /auth/user:
+  /account:
     get:
-      tags: [Auth]
-      operationId: getCurrentAuthUser
-      summary: Get the currently authenticated user
-      parameters:
-        - $ref: "#/components/parameters/AuthorizationSessionHeader"
-        - $ref: "#/components/parameters/SessionCookie"
+      tags: [Account]
+      operationId: getLocalAccount
+      summary: Resolve the signed-in user's school account
       responses:
         "200":
-          description: Auth status resolved successfully.
+          description: Local account resolved
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/AuthUserEnvelope"
-  /login:
-    get:
-      tags: [Auth]
-      operationId: beginBrowserLogin
-      summary: Start the browser login flow
-      parameters:
-        - name: returnTo
-          in: query
-          required: false
-          schema:
-            type: string
-      responses:
-        "302":
-          description: Redirect to the identity provider.
-  /callback:
-    get:
-      tags: [Auth]
-      operationId: handleBrowserLoginCallback
-      summary: Complete the browser login flow
-      responses:
-        "302":
-          description: Redirect back to the requested page.
-  /logout:
-    get:
-      tags: [Auth]
-      operationId: logoutBrowserSession
-      summary: Clear the browser session
-      parameters:
-        - $ref: "#/components/parameters/AuthorizationSessionHeader"
-        - $ref: "#/components/parameters/SessionCookie"
-        - name: returnTo
-          in: query
-          required: false
-          schema:
-            type: string
-      responses:
-        "302":
-          description: Redirect after logout.
-  /mobile-auth/token-exchange:
-    post:
-      tags: [Auth]
-      operationId: exchangeMobileAuthorizationCode
-      summary: Exchange a mobile authorization code
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/MobileTokenExchangeRequest"
-      responses:
-        "200":
-          description: Session created successfully.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/MobileTokenExchangeSuccess"
-  /mobile-auth/logout:
-    post:
-      tags: [Auth]
-      operationId: logoutMobileSession
-      summary: Delete a mobile session
-      parameters:
-        - $ref: "#/components/parameters/AuthorizationSessionHeader"
-      responses:
-        "200":
-          description: Logout processed.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/LogoutSuccess"
+                type: object
+                required: [id, isAdmin]
+                properties:
+                  id:
+                    type: string
+                  isAdmin:
+                    type: boolean
+        "401":
+          description: Authentication required
   /storage/uploads/request-url:
     post:
       tags: [Academic Calendar]
@@ -851,19 +786,6 @@ paths:
         "401":
           description: Authentication required.
 components:
-  parameters:
-    AuthorizationSessionHeader:
-      name: Authorization
-      in: header
-      required: false
-      schema:
-        type: string
-    SessionCookie:
-      name: sid
-      in: cookie
-      required: false
-      schema:
-        type: string
   schemas:
     WebsiteAdminAccess:
       type: object
@@ -902,28 +824,6 @@ components:
           type: string
       required:
         - status
-    AuthUser:
-      type: object
-      required: [id, email, firstName, lastName, profileImageUrl]
-      properties:
-        id:
-          type: string
-        email:
-          type: [string, "null"]
-        firstName:
-          type: [string, "null"]
-        lastName:
-          type: [string, "null"]
-        profileImageUrl:
-          type: [string, "null"]
-    AuthUserEnvelope:
-      type: object
-      required: [user]
-      properties:
-        user:
-          oneOf:
-            - $ref: "#/components/schemas/AuthUser"
-            - type: "null"
     UploadMetadata:
       type: object
       required: [name, size, contentType]
@@ -1065,38 +965,6 @@ components:
         fileSize:
           type: integer
           minimum: 1
-    MobileTokenExchangeRequest:
-      type: object
-      required: [code, code_verifier, redirect_uri, state]
-      properties:
-        code:
-          type: string
-          minLength: 1
-        code_verifier:
-          type: string
-          minLength: 1
-        redirect_uri:
-          type: string
-          minLength: 1
-        state:
-          type: string
-          minLength: 1
-        nonce:
-          type: string
-          minLength: 1
-    MobileTokenExchangeSuccess:
-      type: object
-      required: [token]
-      properties:
-        token:
-          type: string
-    LogoutSuccess:
-      type: object
-      required: [success]
-      properties:
-        success:
-          type: boolean
-          const: true
     AdmissionApplication:
       type: object
       required: [id, studentFirstName, studentLastName, grade, entryYear, guardianEmail, guardianPhone, status, submittedAt]

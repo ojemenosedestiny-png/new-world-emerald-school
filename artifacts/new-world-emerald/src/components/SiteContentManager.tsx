@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { getGetSiteContentQueryKey, useGetSiteContent, useRequestUploadUrl, useUpdateSiteContent } from "@workspace/api-client-react";
+import { customFetch, getGetSiteContentQueryKey, useGetSiteContent, useRequestUploadUrl, useUpdateSiteContent } from "@workspace/api-client-react";
 import { schoolContentFields, type SchoolContentField } from "virtual:school-content-catalog";
 import { ExternalLink, Loader2, Save, Search, Upload } from "lucide-react";
 import { asset } from "@/lib/asset";
@@ -63,8 +63,7 @@ export function SiteContentManager() {
     setUploadingKey(field.key); setError(""); setMessage("");
     try {
       const result = await upload.mutateAsync({ data: { name: file.name, size: file.size, contentType: file.type } });
-      const response = await fetch(result.uploadURL, { method: "PUT", headers: { "Content-Type": file.type }, body: file });
-      if (!response.ok) throw new Error("The file could not be uploaded. Your existing photo or document is unchanged.");
+      await customFetch(result.uploadURL, { method: "PUT", credentials: "omit", headers: { "Content-Type": file.type }, body: file, responseType: "text" });
       edit(field, `/api/storage${result.objectPath}`);
       setMessage("File uploaded. Choose Save and publish to display it on the website.");
     } catch (cause) {

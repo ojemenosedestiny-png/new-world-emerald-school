@@ -1,62 +1,37 @@
-import { Readable } from 'stream';
 import {
   RequestUploadUrlBody,
   RequestUploadUrlResponse,
 } from '@workspace/api-zod';
 import { Router, type IRouter, type Request, type Response } from 'express';
 
-import { ObjectPermission } from '../lib/objectAcl';
 import {
   ObjectNotFoundError,
   ObjectStorageService,
 } from '../lib/objectStorage';
+import { serveObject } from '../lib/serve-object';
+import { requireAuthentication } from '../lib/requireAuthentication';
 
 const router: IRouter = Router();
 const objectStorageService = new ObjectStorageService();
 
-function hasAuthenticatedSession(
-  req: Request,
-): req is Request & { isAuthenticated: () => boolean } {
-  if (
-    !('isAuthenticated' in req) ||
-    typeof req.isAuthenticated !== 'function'
-  ) {
-    return false;
-  }
-
-  return req.isAuthenticated();
-}
-
 /**
- * POST /storage/uploads/request-url
- *
- * Request a presigned URL for file upload.
- * The client sends JSON metadata (name, size, contentType) — NOT the file.
- * Then uploads the file directly to the returned presigned URL.
- * Requires auth middleware so public callers cannot mint write-capable URLs.
+ * Request a presigned URL for file upload. The client sends JSON metadata,
+ * then uploads directly to storage. Public callers cannot mint upload URLs.
  */
 router.post(
   '/storage/uploads/request-url',
   async (req: Request, res: Response) => {
-    if (!hasAuthenticatedSession(req)) {
-      res.status(401).json({ error: 'Unauthorized' });
-
-      return;
-    }
-
+    if (!requireAuthentication(req, res)) return;
     const parsed = RequestUploadUrlBody.safeParse(req.body);
     if (!parsed.success) {
       res.status(400).json({ error: 'Missing or invalid required fields' });
       return;
     }
-
     try {
       const { name, size, contentType } = parsed.data;
-
       const uploadURL = await objectStorageService.getObjectEntityUploadURL();
       const objectPath =
         objectStorageService.normalizeObjectEntityPath(uploadURL);
-
       res.json(
         RequestUploadUrlResponse.parse({
           uploadURL,
@@ -72,11 +47,8 @@ router.post(
 );
 
 /**
- * GET /storage/public-objects/*
- *
- * Serve public assets from PUBLIC_OBJECT_SEARCH_PATHS.
+ * Serve assets from PUBLIC_OBJECT_SEARCH_PATHS.
  * These are unconditionally public — no authentication or ACL checks.
- * IMPORTANT: Always provide this endpoint when object storage is set up.
  */
 router.get(
   '/storage/public-objects/*filePath',
@@ -84,82 +56,56 @@ router.get(
     try {
       const raw = req.params.filePath;
       const filePath = Array.isArray(raw) ? raw.join('/') : raw;
-      const file = await objectStorageService.searchPublicObject(filePath);
-      if (!file) {
+      await serveObject(req, res, objectStorageService, async () => {
+        const file = await objectStorageService.searchPublicObject(filePath);
+        if (!file) throw new ObjectNotFoundError();
+        return file;
+      });
+    } catch (error) {
+      if (res.destroyed) return;
+      if (res.headersSent) {
+        req.log.error({ err: error }, 'Error streaming public object');
+        res.destroy();
+        return;
+      }
+      if (error instanceof ObjectNotFoundError) {
         res.status(404).json({ error: 'File not found' });
         return;
       }
-
-      const response = await objectStorageService.downloadObject(file);
-
-      res.status(response.status);
-      response.headers.forEach((value, key) => res.setHeader(key, value));
-
-      if (response.body) {
-        const nodeStream = Readable.fromWeb(
-          response.body as ReadableStream<Uint8Array>,
-        );
-        nodeStream.pipe(res);
-      } else {
-        res.end();
-      }
-    } catch (error) {
       req.log.error({ err: error }, 'Error serving public object');
+      res.removeHeader('Content-Length');
+      res.removeHeader('Content-Range');
       res.status(500).json({ error: 'Failed to serve public object' });
     }
   },
 );
 
 /**
- * GET /storage/objects/*
- *
- * Serve object entities from PRIVATE_OBJECT_DIR.
- * These are served from a separate path from /public-objects and can optionally
- * be protected with authentication or ACL checks based on the use case.
+ * Serve object entities from PRIVATE_OBJECT_DIR. Preserve the existing
+ * public-read behavior of this route; upload URL creation still requires auth.
  */
 router.get('/storage/objects/*path', async (req: Request, res: Response) => {
   try {
     const raw = req.params.path;
     const wildcardPath = Array.isArray(raw) ? raw.join('/') : raw;
     const objectPath = `/objects/${wildcardPath}`;
-    const objectFile =
-      await objectStorageService.getObjectEntityFile(objectPath);
-
-    // --- Protected route example (uncomment when using replit-auth) ---
-    // if (!req.isAuthenticated()) {
-    //   res.status(401).json({ error: "Unauthorized" });
-    //   return;
-    // }
-    // const canAccess = await objectStorageService.canAccessObjectEntity({
-    //   userId: req.user.id,
-    //   objectFile,
-    //   requestedPermission: ObjectPermission.READ,
-    // });
-    // if (!canAccess) {
-    //   res.status(403).json({ error: "Forbidden" });
-    //   return;
-    // }
-
-    const response = await objectStorageService.downloadObject(objectFile);
-
-    res.status(response.status);
-    response.headers.forEach((value, key) => res.setHeader(key, value));
-
-    if (response.body) {
-      const nodeStream = Readable.fromWeb(
-        response.body as ReadableStream<Uint8Array>,
-      );
-      nodeStream.pipe(res);
-    } else {
-      res.end();
-    }
+    await serveObject(req, res, objectStorageService, () =>
+      objectStorageService.getObjectEntityFile(objectPath));
   } catch (error) {
+    if (res.destroyed) return;
+    if (res.headersSent) {
+      req.log.error({ err: error }, 'Error streaming object');
+      res.destroy();
+      return;
+    }
     if (error instanceof ObjectNotFoundError) {
       req.log.warn({ err: error }, 'Object not found');
       res.status(404).json({ error: 'Object not found' });
       return;
     }
     req.log.error({ err: error }, 'Error serving object');
+    res.removeHeader('Content-Length');
+    res.removeHeader('Content-Range');
     res.status(500).json({ error: 'Failed to serve object' });
   }
 });
