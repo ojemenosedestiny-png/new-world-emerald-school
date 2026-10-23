@@ -4,6 +4,10 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence, useScroll, useSpring } from 'framer-motion';
 import { MessageSquare, X, Send, ChevronUp, User, LogIn, Lock, XCircle, FileText, Phone, MessageCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useLocation } from 'wouter';
+import { useQueryClient } from '@tanstack/react-query';
+import { useLoginPortalStudent, getGetPortalSessionQueryKey } from '@workspace/api-client-react';
+import { clearDrafts, clearStudentQueries, errorMessage } from '@/portal/lib';
 
 export function ScrollProgress() {
   const { scrollYProgress } = useScroll();
@@ -189,6 +193,28 @@ export function FloatingButtons() {
 
 export function PortalsModal({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) {
   const [activeTab, setActiveTab] = useState<'student' | 'parent' | 'teacher'>('student');
+  const [studentId, setStudentId] = useState("");
+  const [password, setPassword] = useState("");
+  const [showForgot, setShowForgot] = useState(false);
+  const [, setLocation] = useLocation();
+  const queryClient = useQueryClient();
+  const login = useLoginPortalStudent();
+  const go = (path: string) => { onClose(); setLocation(path); };
+
+  // Same sign-in as the student portal page; the portal then handles first-login password changes.
+  const submit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!studentId.trim() || !password || login.isPending) return;
+    login.mutate({ data: { studentId: studentId.trim(), password } }, {
+      onSuccess: async (session) => {
+        setPassword("");
+        await clearStudentQueries(queryClient);
+        clearDrafts(session.studentId);
+        queryClient.setQueryData(getGetPortalSessionQueryKey(), session);
+        go("/portal");
+      },
+    });
+  };
 
   return (
     <AnimatePresence>
@@ -205,10 +231,14 @@ export function PortalsModal({ isOpen, onClose }: { isOpen: boolean, onClose: ()
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Sign in to portal"
             className="relative w-full max-w-md bg-card border border-border shadow-2xl rounded-3xl overflow-hidden"
           >
-            <button 
+            <button
               onClick={onClose}
+              aria-label="Close"
               className="absolute top-4 right-4 text-muted-foreground hover:text-foreground z-10 transition-colors"
             >
               <XCircle size={24} />
@@ -221,52 +251,96 @@ export function PortalsModal({ isOpen, onClose }: { isOpen: boolean, onClose: ()
             </div>
 
             <div className="p-8 pt-6">
-              <div className="flex p-1 bg-muted rounded-xl mb-6">
+              <div className="flex p-1 bg-muted rounded-xl mb-6" role="tablist">
                 {(['student', 'parent', 'teacher'] as const).map(tab => (
                   <button
                     key={tab}
+                    role="tab"
+                    aria-selected={activeTab === tab}
                     onClick={() => setActiveTab(tab)}
                     className={cn(
                       "flex-1 py-2 text-sm font-medium rounded-lg capitalize transition-all",
                       activeTab === tab ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
                     )}
+                    data-testid={"tab-portal-" + tab}
                   >
                     {tab}
                   </button>
                 ))}
               </div>
 
-              <form className="space-y-4" onSubmit={e => e.preventDefault()}>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-foreground">ID Number / Email</label>
-                  <div className="relative">
-                    <User className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
-                    <input 
-                      type="text" 
-                      className="w-full pl-10 pr-4 py-3 bg-background border border-border rounded-xl outline-none focus:ring-2 focus:ring-primary/50 transition-all"
-                      placeholder={`Enter your ${activeTab} ID`}
-                    />
+              {activeTab === 'student' && (
+                <form className="space-y-4" onSubmit={submit} noValidate>
+                  <div className="space-y-2">
+                    <label htmlFor="portal-modal-id" className="text-sm font-medium text-foreground">Student ID</label>
+                    <div className="relative">
+                      <User className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
+                      <input
+                        id="portal-modal-id"
+                        type="text"
+                        autoComplete="username"
+                        autoCapitalize="characters"
+                        maxLength={50}
+                        value={studentId}
+                        onChange={(e) => setStudentId(e.target.value)}
+                        className="w-full pl-10 pr-4 py-3 bg-background border border-border rounded-xl outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+                        placeholder="Your school-issued student ID"
+                        data-testid="input-modal-student-id"
+                      />
+                    </div>
                   </div>
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center">
+                      <label htmlFor="portal-modal-password" className="text-sm font-medium text-foreground">Password</label>
+                      <button type="button" onClick={() => setShowForgot((v) => !v)} className="text-xs text-primary hover:underline" aria-expanded={showForgot} data-testid="button-modal-forgot">Forgot?</button>
+                    </div>
+                    <div className="relative">
+                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
+                      <input
+                        id="portal-modal-password"
+                        type="password"
+                        autoComplete="current-password"
+                        maxLength={128}
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        className="w-full pl-10 pr-4 py-3 bg-background border border-border rounded-xl outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+                        placeholder="••••••••"
+                        data-testid="input-modal-password"
+                      />
+                    </div>
+                    {showForgot && <p className="rounded-lg bg-muted p-3 text-xs text-muted-foreground">Please visit or call the school office. A staff member will give you a new temporary password.</p>}
+                  </div>
+                  {login.isError && (
+                    <p role="alert" className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive" data-testid="text-modal-login-error">
+                      {errorMessage(login.error, "Check your student ID and password.")}
+                    </p>
+                  )}
+                  <button type="submit" disabled={login.isPending || !studentId.trim() || !password} className="w-full py-3 bg-primary text-primary-foreground font-semibold rounded-xl shadow-lg shadow-primary/20 hover:bg-primary/90 transition-all flex items-center justify-center gap-2 mt-6 disabled:opacity-60 disabled:cursor-not-allowed" data-testid="button-modal-login">
+                    <LogIn size={18} />
+                    {login.isPending ? "Checking your details..." : "Sign In"}
+                  </button>
+                </form>
+              )}
+
+              {activeTab === 'teacher' && (
+                <div className="space-y-4 text-center">
+                  <p className="text-sm text-muted-foreground">Teachers and school administrators sign in with their school-approved email to manage exams, marking, revision and announcements.</p>
+                  <button onClick={() => go("/sign-in?returnTo=portal")} className="w-full py-3 bg-primary text-primary-foreground font-semibold rounded-xl shadow-lg shadow-primary/20 hover:bg-primary/90 transition-all flex items-center justify-center gap-2" data-testid="button-modal-staff">
+                    <LogIn size={18} /> Continue with school email
+                  </button>
+                  <p className="text-xs text-muted-foreground">Not approved yet? Ask the school office to add your email.</p>
                 </div>
-                <div className="space-y-2">
-                  <div className="flex justify-between items-center">
-                    <label className="text-sm font-medium text-foreground">Password</label>
-                    <a href="#" className="text-xs text-primary hover:underline">Forgot?</a>
-                  </div>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
-                    <input 
-                      type="password" 
-                      className="w-full pl-10 pr-4 py-3 bg-background border border-border rounded-xl outline-none focus:ring-2 focus:ring-primary/50 transition-all"
-                      placeholder="••••••••"
-                    />
-                  </div>
+              )}
+
+              {activeTab === 'parent' && (
+                <div className="space-y-4 text-center">
+                  <p className="text-sm text-muted-foreground">Parents do not need an account. Pay school fees, report a payment, or order uniforms and books online. For your child's progress, contact the school office.</p>
+                  <button onClick={() => go("/commerce?section=fees")} className="w-full py-3 bg-primary text-primary-foreground font-semibold rounded-xl shadow-lg shadow-primary/20 hover:bg-primary/90 transition-all flex items-center justify-center gap-2" data-testid="button-modal-parent">
+                    <FileText size={18} /> Fees, uniforms and school payments
+                  </button>
+                  <p className="text-xs text-muted-foreground">Your child signs in on the Student tab with the ID and password the school gave them.</p>
                 </div>
-                <button className="w-full py-3 bg-primary text-primary-foreground font-semibold rounded-xl shadow-lg shadow-primary/20 hover:bg-primary/90 transition-all flex items-center justify-center gap-2 mt-6">
-                  <LogIn size={18} />
-                  Sign In
-                </button>
-              </form>
+              )}
             </div>
           </motion.div>
         </div>
