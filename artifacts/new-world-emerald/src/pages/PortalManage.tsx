@@ -1,8 +1,8 @@
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { Link } from "wouter";
 import { useAuth, useClerk, useUser } from "@clerk/react";
 import { useGetPortalSession, getGetPortalSessionQueryKey, useGetPortalManagement, getGetPortalManagementQueryKey } from "@workspace/api-client-react";
-import { LogOut, ShieldAlert } from "lucide-react";
+import { ArrowRight, LogOut, School, ShieldAlert } from "lucide-react";
 import "@/portal/portal.css";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BackToWebsite, ErrorPanel, PortalHeader, Skeleton } from "@/portal/ui";
@@ -32,6 +32,7 @@ export default function PortalManage() {
   const { isLoaded, isSignedIn } = useAuth();
   const { user } = useUser();
   const { signOut } = useClerk();
+  const [tab, setTab] = useState("exams");
   const signedIn = isLoaded && isSignedIn === true;
   const uid = user?.id ?? "anon";
   const session = useGetPortalSession({ query: { queryKey: [...getGetPortalSessionQueryKey(), "staff", uid], enabled: signedIn, retry: 1 } });
@@ -67,7 +68,17 @@ export default function PortalManage() {
           : (
             <>
             <ManageOverview data={d} />
-            <Tabs defaultValue="exams">
+            {isAdmin && d.classes.length === 0 && tab !== "classes" && (
+              <div className="portal-card portal-rise mb-6 flex flex-col gap-4 border-l-4 border-l-[hsl(var(--p-gold))] p-5 sm:flex-row sm:items-center" data-testid="banner-first-class">
+                <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-[hsl(var(--p-gold-soft))] text-[hsl(36_70%_35%)]"><School size={20} /></div>
+                <div className="flex-1">
+                  <p className="font-serif text-lg font-semibold">Start by creating your first class</p>
+                  <p className="text-sm text-[hsl(var(--p-ink)/0.65)]">Exams, students, revision notes and announcements all belong to a class, so those buttons unlock once a class exists.</p>
+                </div>
+                <button className="portal-btn shrink-0" onClick={() => setTab("classes")} data-testid="button-go-classes">Create a class <ArrowRight size={15} /></button>
+              </div>
+            )}
+            <Tabs value={tab} onValueChange={setTab}>
               <TabsList className="mb-6 flex h-auto w-full justify-start gap-1 overflow-x-auto rounded-full border border-[hsl(var(--p-line))] bg-white/70 p-1">
                 <TabsTrigger value="exams" className="portal-tab" data-testid="tab-manage-exams">Exams</TabsTrigger>
                 <TabsTrigger value="marking" className="portal-tab" data-testid="tab-manage-marking">Marking{toMark ? " (" + toMark + ")" : ""}</TabsTrigger>
