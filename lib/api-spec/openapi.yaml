@@ -37,6 +37,10 @@ paths:
     $ref: "./portal.yaml#/paths/import"
   /portal/files/{id}:
     $ref: "./portal.yaml#/paths/file"
+  /portal/reports/manage:
+    $ref: "./reports.yaml#/paths/manage"
+  /portal/reports:
+    $ref: "./reports.yaml#/paths/student"
   /website-admin/access:
     get:
       operationId: getWebsiteAdminAccess
@@ -805,6 +809,34 @@ paths:
           description: Authentication required.
 components:
   schemas:
+    ReportTerm:
+      $ref: "./reports.yaml#/schemas/ReportTerm"
+    ReportTermInput:
+      $ref: "./reports.yaml#/schemas/ReportTermInput"
+    ReportSubject:
+      $ref: "./reports.yaml#/schemas/ReportSubject"
+    ReportSubjectInput:
+      $ref: "./reports.yaml#/schemas/ReportSubjectInput"
+    ReportScore:
+      $ref: "./reports.yaml#/schemas/ReportScore"
+    ReportCardInfo:
+      $ref: "./reports.yaml#/schemas/ReportCardInfo"
+    ReportSubjectResult:
+      $ref: "./reports.yaml#/schemas/ReportSubjectResult"
+    ReportStudentResult:
+      $ref: "./reports.yaml#/schemas/ReportStudentResult"
+    ReportSubjectStats:
+      $ref: "./reports.yaml#/schemas/ReportSubjectStats"
+    ReportStudent:
+      $ref: "./reports.yaml#/schemas/ReportStudent"
+    ReportWorkspace:
+      $ref: "./reports.yaml#/schemas/ReportWorkspace"
+    ReportCommand:
+      $ref: "./reports.yaml#/schemas/ReportCommand"
+    StudentTermReport:
+      $ref: "./reports.yaml#/schemas/StudentTermReport"
+    StudentReports:
+      $ref: "./reports.yaml#/schemas/StudentReports"
     PortalLogin:
       $ref: "./portal.yaml#/schemas/PortalLogin"
     PortalPassword:

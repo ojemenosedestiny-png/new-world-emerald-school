@@ -1,0 +1,219 @@
+paths:
+  manage:
+    get:
+      operationId: getReportWorkspace
+      parameters:
+        - { name: termId, in: query, required: false, schema: { type: integer } }
+        - { name: classId, in: query, required: false, schema: { type: integer } }
+      responses:
+        "200":
+          description: Terms, classes and, when both are chosen, that class's scores and computed results within the staff member's permissions
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ReportWorkspace" }
+    post:
+      operationId: manageReports
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ReportCommand" }
+      responses:
+        "200":
+          description: Saved
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PortalMessage" }
+  student:
+    get:
+      operationId: getStudentReports
+      responses:
+        "200":
+          description: The signed-in student's released report cards
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/StudentReports" }
+schemas:
+  ReportTerm:
+    type: object
+    required: [id, session, term, caMax, examMax, nextTermBegins]
+    properties:
+      id: { type: integer }
+      session: { type: string }
+      term: { type: string }
+      caMax: { type: integer }
+      examMax: { type: integer }
+      nextTermBegins: { type: [string, "null"] }
+  ReportTermInput:
+    type: object
+    required: [session, term, caMax, examMax]
+    properties:
+      id: { type: integer }
+      session: { type: string, minLength: 1, maxLength: 20 }
+      term: { type: string, minLength: 1, maxLength: 40 }
+      caMax: { type: integer, minimum: 0, maximum: 100 }
+      examMax: { type: integer, minimum: 0, maximum: 100 }
+      nextTermBegins: { type: [string, "null"], maxLength: 40 }
+  ReportSubject:
+    type: object
+    required: [id, classId, name, sortOrder]
+    properties:
+      id: { type: integer }
+      classId: { type: integer }
+      name: { type: string }
+      sortOrder: { type: integer }
+  ReportSubjectInput:
+    type: object
+    required: [classId, name]
+    properties:
+      id: { type: integer }
+      classId: { type: integer }
+      name: { type: string, minLength: 1, maxLength: 80 }
+      sortOrder: { type: integer, minimum: 0, maximum: 1000 }
+  ReportScore:
+    type: object
+    required: [studentId, subjectId, ca, exam]
+    properties:
+      studentId: { type: integer }
+      subjectId: { type: integer }
+      ca: { type: [number, "null"] }
+      exam: { type: [number, "null"] }
+  ReportCardInfo:
+    type: object
+    required: [studentId, teacherRemark, principalRemark, daysPresent, daysOpen]
+    properties:
+      studentId: { type: integer }
+      teacherRemark: { type: string, maxLength: 600 }
+      principalRemark: { type: string, maxLength: 600 }
+      daysPresent: { type: [integer, "null"], minimum: 0, maximum: 366 }
+      daysOpen: { type: [integer, "null"], minimum: 0, maximum: 366 }
+  ReportSubjectResult:
+    type: object
+    required: [subjectId, ca, exam, total, percent, grade, remark, position]
+    properties:
+      subjectId: { type: integer }
+      ca: { type: [number, "null"] }
+      exam: { type: [number, "null"] }
+      total: { type: number }
+      percent: { type: number }
+      grade: { type: string }
+      remark: { type: string }
+      position: { type: integer }
+  ReportStudentResult:
+    type: object
+    required: [studentId, subjects, total, average, grade, position, subjectsTaken]
+    properties:
+      studentId: { type: integer }
+      subjects: { type: array, items: { $ref: "#/schemas/ReportSubjectResult" } }
+      total: { type: number }
+      average: { type: [number, "null"] }
+      grade: { type: [string, "null"] }
+      position: { type: [integer, "null"] }
+      subjectsTaken: { type: integer }
+  ReportSubjectStats:
+    type: object
+    required: [subjectId, average, highest, lowest, entries]
+    properties:
+      subjectId: { type: integer }
+      average: { type: number }
+      highest: { type: number }
+      lowest: { type: number }
+      entries: { type: integer }
+  ReportStudent:
+    type: object
+    required: [id, studentId, name]
+    properties:
+      id: { type: integer }
+      studentId: { type: string }
+      name: { type: string }
+  ReportWorkspace:
+    type: object
+    required: [terms, classes, canAdmin, termId, classId, subjects, students, scores, cards, results, subjectStats, ranked, released]
+    properties:
+      terms: { type: array, items: { $ref: "#/schemas/ReportTerm" } }
+      classes:
+        type: array
+        items:
+          type: object
+          required: [id, name]
+          properties:
+            id: { type: integer }
+            name: { type: string }
+      canAdmin: { type: boolean }
+      termId: { type: [integer, "null"] }
+      classId: { type: [integer, "null"] }
+      subjects: { type: array, items: { $ref: "#/schemas/ReportSubject" } }
+      students: { type: array, items: { $ref: "#/schemas/ReportStudent" } }
+      scores: { type: array, items: { $ref: "#/schemas/ReportScore" } }
+      cards: { type: array, items: { $ref: "#/schemas/ReportCardInfo" } }
+      results: { type: array, items: { $ref: "#/schemas/ReportStudentResult" } }
+      subjectStats: { type: array, items: { $ref: "#/schemas/ReportSubjectStats" } }
+      ranked: { type: integer }
+      released: { type: boolean }
+  ReportCommand:
+    type: object
+    required: [action]
+    properties:
+      action: { type: string, enum: [saveTerm, deleteTerm, saveSubject, deleteSubject, saveScores, saveCards, releaseReports] }
+      term: { $ref: "#/schemas/ReportTermInput" }
+      subject: { $ref: "#/schemas/ReportSubjectInput" }
+      target:
+        type: object
+        required: [id]
+        properties:
+          id: { type: integer }
+      scores:
+        type: object
+        required: [termId, entries]
+        properties:
+          termId: { type: integer }
+          entries: { type: array, maxItems: 5000, items: { $ref: "#/schemas/ReportScore" } }
+      cards:
+        type: object
+        required: [termId, entries]
+        properties:
+          termId: { type: integer }
+          entries: { type: array, maxItems: 1000, items: { $ref: "#/schemas/ReportCardInfo" } }
+      release:
+        type: object
+        required: [termId, classId, released]
+        properties:
+          termId: { type: integer }
+          classId: { type: integer }
+          released: { type: boolean }
+  StudentTermReport:
+    type: object
+    required: [term, subjects, result, subjectStats, classSize, card, releasedAt]
+    properties:
+      term: { $ref: "#/schemas/ReportTerm" }
+      subjects: { type: array, items: { $ref: "#/schemas/ReportSubject" } }
+      result: { $ref: "#/schemas/ReportStudentResult" }
+      subjectStats: { type: array, items: { $ref: "#/schemas/ReportSubjectStats" } }
+      classSize: { type: integer }
+      card: { oneOf: [{ $ref: "#/schemas/ReportCardInfo" }, { type: "null" }] }
+      releasedAt: { type: string }
+  StudentReports:
+    type: object
+    required: [studentName, studentId, className, reports]
+    properties:
+      studentName: { type: string }
+      studentId: { type: string }
+      className: { type: string }
+      reports: { type: array, items: { $ref: "#/schemas/StudentTermReport" } }
+components:
+  schemas:
+    ReportTerm: { $ref: "#/schemas/ReportTerm" }
+    ReportTermInput: { $ref: "#/schemas/ReportTermInput" }
+    ReportSubject: { $ref: "#/schemas/ReportSubject" }
+    ReportSubjectInput: { $ref: "#/schemas/ReportSubjectInput" }
+    ReportScore: { $ref: "#/schemas/ReportScore" }
+    ReportCardInfo: { $ref: "#/schemas/ReportCardInfo" }
+    ReportSubjectResult: { $ref: "#/schemas/ReportSubjectResult" }
+    ReportStudentResult: { $ref: "#/schemas/ReportStudentResult" }
+    ReportSubjectStats: { $ref: "#/schemas/ReportSubjectStats" }
+    ReportStudent: { $ref: "#/schemas/ReportStudent" }
+    ReportWorkspace: { $ref: "#/schemas/ReportWorkspace" }
+    ReportCommand: { $ref: "#/schemas/ReportCommand" }
+    StudentTermReport: { $ref: "#/schemas/StudentTermReport" }
+    StudentReports: { $ref: "#/schemas/StudentReports" }
+    PortalMessage: { $ref: "./portal.yaml#/schemas/PortalMessage" }

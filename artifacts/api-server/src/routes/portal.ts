@@ -4,6 +4,7 @@ import { portalSessionRouter } from "./portal-session";
 import { portalStudentRouter } from "./portal-student";
 import { portalManagementRouter } from "./portal-management";
 import { portalFilesRouter } from "./portal-files";
+import { portalReportsRouter } from "./portal-reports";
 
 const portalRouter = Router();
 portalRouter.use(portalOriginGuard);
@@ -11,6 +12,7 @@ portalRouter.use(portalSessionRouter);
 portalRouter.use(portalStudentRouter);
 portalRouter.use(portalManagementRouter);
 portalRouter.use(portalFilesRouter);
+portalRouter.use(portalReportsRouter);
 const errors: ErrorRequestHandler = (error, req, res, _next) => {
   if (res.headersSent) { if (!res.destroyed) res.destroy(); return; }
   if (error instanceof PortalError) { res.status(error.status).json({ error: error.message }); return; }

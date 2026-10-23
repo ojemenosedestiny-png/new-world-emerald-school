@@ -14,6 +14,7 @@ import { EmptyState, ErrorPanel, PortalHeader, Skeleton, StatusPill } from "./ui
 import { PasswordChange } from "./PasswordChange";
 import { clearDrafts, clearStudentQueries, errorMessage, examWindow, fileUrl, formatDateTime, sortStudentExams } from "./lib";
 import { studentAverage } from "./manage/results";
+import { StudentReports } from "./reports/StudentReports";
 
 export function useStudentLogout() {
   const queryClient = useQueryClient();
@@ -115,6 +116,7 @@ export function StudentDashboard({ session }: { session: PortalSession }) {
             <TabsList className="mb-6 flex h-auto w-full justify-start gap-1 overflow-x-auto rounded-full border border-[hsl(var(--p-line))] bg-white/70 p-1 sm:w-auto">
               <TabsTrigger value="exams" className="portal-tab" data-testid="tab-exams">Exams ({data.exams.length})</TabsTrigger>
               <TabsTrigger value="results" className="portal-tab" data-testid="tab-results">Results</TabsTrigger>
+              <TabsTrigger value="reports" className="portal-tab" data-testid="tab-reports">Report cards</TabsTrigger>
               <TabsTrigger value="revision" className="portal-tab" data-testid="tab-revision">Revision ({data.materials.length})</TabsTrigger>
               <TabsTrigger value="notices" className="portal-tab" data-testid="tab-notices">Notices ({data.notices.length})</TabsTrigger>
             </TabsList>
@@ -163,6 +165,8 @@ export function StudentDashboard({ session }: { session: PortalSession }) {
                 })
               )}
             </TabsContent>
+
+            <TabsContent value="reports"><StudentReports /></TabsContent>
 
             <TabsContent value="revision" className="grid gap-4 md:grid-cols-2">
               {data.materials.length === 0 ? (

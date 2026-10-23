@@ -13,3 +13,4 @@ export * from "./portal-attempts";
 export * from "./portal-materials";
 export * from "./portal-notices";
 export * from "./portal-files";
+export * from "./portal-reports";

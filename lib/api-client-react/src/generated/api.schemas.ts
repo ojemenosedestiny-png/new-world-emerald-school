@@ -5,6 +5,545 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+export interface ReportTerm {
+  id: number;
+  session: string;
+  term: string;
+  caMax: number;
+  examMax: number;
+  /** @nullable */
+  nextTermBegins: string | null;
+}
+
+export interface ReportTermInput {
+  id?: number;
+  /**
+     * @minLength 1
+     * @maxLength 20
+     */
+  session: string;
+  /**
+     * @minLength 1
+     * @maxLength 40
+     */
+  term: string;
+  /**
+     * @minimum 0
+     * @maximum 100
+     */
+  caMax: number;
+  /**
+     * @minimum 0
+     * @maximum 100
+     */
+  examMax: number;
+  /**
+     * @maxLength 40
+     * @nullable
+     */
+  nextTermBegins?: string | null;
+}
+
+export interface ReportSubject {
+  id: number;
+  classId: number;
+  name: string;
+  sortOrder: number;
+}
+
+export interface ReportSubjectInput {
+  id?: number;
+  classId: number;
+  /**
+     * @minLength 1
+     * @maxLength 80
+     */
+  name: string;
+  /**
+     * @minimum 0
+     * @maximum 1000
+     */
+  sortOrder?: number;
+}
+
+export interface ReportScore {
+  studentId: number;
+  subjectId: number;
+  /** @nullable */
+  ca: number | null;
+  /** @nullable */
+  exam: number | null;
+}
+
+export interface ReportCardInfo {
+  studentId: number;
+  /** @maxLength 600 */
+  teacherRemark: string;
+  /** @maxLength 600 */
+  principalRemark: string;
+  /**
+     * @minimum 0
+     * @maximum 366
+     * @nullable
+     */
+  daysPresent: number | null;
+  /**
+     * @minimum 0
+     * @maximum 366
+     * @nullable
+     */
+  daysOpen: number | null;
+}
+
+export interface ReportSubjectResult {
+  subjectId: number;
+  /** @nullable */
+  ca: number | null;
+  /** @nullable */
+  exam: number | null;
+  total: number;
+  percent: number;
+  grade: string;
+  remark: string;
+  position: number;
+}
+
+export type ReportStudentResultSubjectsItem = {
+  subjectId: number;
+  /** @nullable */
+  ca: number | null;
+  /** @nullable */
+  exam: number | null;
+  total: number;
+  percent: number;
+  grade: string;
+  remark: string;
+  position: number;
+};
+
+export interface ReportStudentResult {
+  studentId: number;
+  subjects: ReportStudentResultSubjectsItem[];
+  total: number;
+  /** @nullable */
+  average: number | null;
+  /** @nullable */
+  grade: string | null;
+  /** @nullable */
+  position: number | null;
+  subjectsTaken: number;
+}
+
+export interface ReportSubjectStats {
+  subjectId: number;
+  average: number;
+  highest: number;
+  lowest: number;
+  entries: number;
+}
+
+export interface ReportStudent {
+  id: number;
+  studentId: string;
+  name: string;
+}
+
+export type ReportWorkspaceTermsItem = {
+  id: number;
+  session: string;
+  term: string;
+  caMax: number;
+  examMax: number;
+  /** @nullable */
+  nextTermBegins: string | null;
+};
+
+export type ReportWorkspaceClassesItem = {
+  id: number;
+  name: string;
+};
+
+export type ReportWorkspaceSubjectsItem = {
+  id: number;
+  classId: number;
+  name: string;
+  sortOrder: number;
+};
+
+export type ReportWorkspaceStudentsItem = {
+  id: number;
+  studentId: string;
+  name: string;
+};
+
+export type ReportWorkspaceScoresItem = {
+  studentId: number;
+  subjectId: number;
+  /** @nullable */
+  ca: number | null;
+  /** @nullable */
+  exam: number | null;
+};
+
+export type ReportWorkspaceCardsItem = {
+  studentId: number;
+  /** @maxLength 600 */
+  teacherRemark: string;
+  /** @maxLength 600 */
+  principalRemark: string;
+  /**
+     * @minimum 0
+     * @maximum 366
+     * @nullable
+     */
+  daysPresent: number | null;
+  /**
+     * @minimum 0
+     * @maximum 366
+     * @nullable
+     */
+  daysOpen: number | null;
+};
+
+export type ReportWorkspaceResultsItemSubjectsItem = {
+  subjectId: number;
+  /** @nullable */
+  ca: number | null;
+  /** @nullable */
+  exam: number | null;
+  total: number;
+  percent: number;
+  grade: string;
+  remark: string;
+  position: number;
+};
+
+export type ReportWorkspaceResultsItem = {
+  studentId: number;
+  subjects: ReportWorkspaceResultsItemSubjectsItem[];
+  total: number;
+  /** @nullable */
+  average: number | null;
+  /** @nullable */
+  grade: string | null;
+  /** @nullable */
+  position: number | null;
+  subjectsTaken: number;
+};
+
+export type ReportWorkspaceSubjectStatsItem = {
+  subjectId: number;
+  average: number;
+  highest: number;
+  lowest: number;
+  entries: number;
+};
+
+export interface ReportWorkspace {
+  terms: ReportWorkspaceTermsItem[];
+  classes: ReportWorkspaceClassesItem[];
+  canAdmin: boolean;
+  /** @nullable */
+  termId: number | null;
+  /** @nullable */
+  classId: number | null;
+  subjects: ReportWorkspaceSubjectsItem[];
+  students: ReportWorkspaceStudentsItem[];
+  scores: ReportWorkspaceScoresItem[];
+  cards: ReportWorkspaceCardsItem[];
+  results: ReportWorkspaceResultsItem[];
+  subjectStats: ReportWorkspaceSubjectStatsItem[];
+  ranked: number;
+  released: boolean;
+}
+
+export type ReportCommandAction = typeof ReportCommandAction[keyof typeof ReportCommandAction];
+
+
+export const ReportCommandAction = {
+  saveTerm: 'saveTerm',
+  deleteTerm: 'deleteTerm',
+  saveSubject: 'saveSubject',
+  deleteSubject: 'deleteSubject',
+  saveScores: 'saveScores',
+  saveCards: 'saveCards',
+  releaseReports: 'releaseReports',
+} as const;
+
+export type ReportCommandTerm = {
+  id?: number;
+  /**
+     * @minLength 1
+     * @maxLength 20
+     */
+  session: string;
+  /**
+     * @minLength 1
+     * @maxLength 40
+     */
+  term: string;
+  /**
+     * @minimum 0
+     * @maximum 100
+     */
+  caMax: number;
+  /**
+     * @minimum 0
+     * @maximum 100
+     */
+  examMax: number;
+  /**
+     * @maxLength 40
+     * @nullable
+     */
+  nextTermBegins?: string | null;
+};
+
+export type ReportCommandSubject = {
+  id?: number;
+  classId: number;
+  /**
+     * @minLength 1
+     * @maxLength 80
+     */
+  name: string;
+  /**
+     * @minimum 0
+     * @maximum 1000
+     */
+  sortOrder?: number;
+};
+
+export type ReportCommandTarget = {
+  id: number;
+};
+
+export type ReportCommandScoresEntriesItem = {
+  studentId: number;
+  subjectId: number;
+  /** @nullable */
+  ca: number | null;
+  /** @nullable */
+  exam: number | null;
+};
+
+export type ReportCommandScores = {
+  termId: number;
+  /** @maxItems 5000 */
+  entries: ReportCommandScoresEntriesItem[];
+};
+
+export type ReportCommandCardsEntriesItem = {
+  studentId: number;
+  /** @maxLength 600 */
+  teacherRemark: string;
+  /** @maxLength 600 */
+  principalRemark: string;
+  /**
+     * @minimum 0
+     * @maximum 366
+     * @nullable
+     */
+  daysPresent: number | null;
+  /**
+     * @minimum 0
+     * @maximum 366
+     * @nullable
+     */
+  daysOpen: number | null;
+};
+
+export type ReportCommandCards = {
+  termId: number;
+  /** @maxItems 1000 */
+  entries: ReportCommandCardsEntriesItem[];
+};
+
+export type ReportCommandRelease = {
+  termId: number;
+  classId: number;
+  released: boolean;
+};
+
+export interface ReportCommand {
+  action: ReportCommandAction;
+  term?: ReportCommandTerm;
+  subject?: ReportCommandSubject;
+  target?: ReportCommandTarget;
+  scores?: ReportCommandScores;
+  cards?: ReportCommandCards;
+  release?: ReportCommandRelease;
+}
+
+export type StudentTermReportTerm = {
+  id: number;
+  session: string;
+  term: string;
+  caMax: number;
+  examMax: number;
+  /** @nullable */
+  nextTermBegins: string | null;
+};
+
+export type StudentTermReportSubjectsItem = {
+  id: number;
+  classId: number;
+  name: string;
+  sortOrder: number;
+};
+
+export type StudentTermReportResultSubjectsItem = {
+  subjectId: number;
+  /** @nullable */
+  ca: number | null;
+  /** @nullable */
+  exam: number | null;
+  total: number;
+  percent: number;
+  grade: string;
+  remark: string;
+  position: number;
+};
+
+export type StudentTermReportResult = {
+  studentId: number;
+  subjects: StudentTermReportResultSubjectsItem[];
+  total: number;
+  /** @nullable */
+  average: number | null;
+  /** @nullable */
+  grade: string | null;
+  /** @nullable */
+  position: number | null;
+  subjectsTaken: number;
+};
+
+export type StudentTermReportSubjectStatsItem = {
+  subjectId: number;
+  average: number;
+  highest: number;
+  lowest: number;
+  entries: number;
+};
+
+export type StudentTermReportCard = {
+  studentId: number;
+  /** @maxLength 600 */
+  teacherRemark: string;
+  /** @maxLength 600 */
+  principalRemark: string;
+  /**
+     * @minimum 0
+     * @maximum 366
+     * @nullable
+     */
+  daysPresent: number | null;
+  /**
+     * @minimum 0
+     * @maximum 366
+     * @nullable
+     */
+  daysOpen: number | null;
+} | null;
+
+export interface StudentTermReport {
+  term: StudentTermReportTerm;
+  subjects: StudentTermReportSubjectsItem[];
+  result: StudentTermReportResult;
+  subjectStats: StudentTermReportSubjectStatsItem[];
+  classSize: number;
+  card: StudentTermReportCard;
+  releasedAt: string;
+}
+
+export type StudentReportsReportsItemTerm = {
+  id: number;
+  session: string;
+  term: string;
+  caMax: number;
+  examMax: number;
+  /** @nullable */
+  nextTermBegins: string | null;
+};
+
+export type StudentReportsReportsItemSubjectsItem = {
+  id: number;
+  classId: number;
+  name: string;
+  sortOrder: number;
+};
+
+export type StudentReportsReportsItemResultSubjectsItem = {
+  subjectId: number;
+  /** @nullable */
+  ca: number | null;
+  /** @nullable */
+  exam: number | null;
+  total: number;
+  percent: number;
+  grade: string;
+  remark: string;
+  position: number;
+};
+
+export type StudentReportsReportsItemResult = {
+  studentId: number;
+  subjects: StudentReportsReportsItemResultSubjectsItem[];
+  total: number;
+  /** @nullable */
+  average: number | null;
+  /** @nullable */
+  grade: string | null;
+  /** @nullable */
+  position: number | null;
+  subjectsTaken: number;
+};
+
+export type StudentReportsReportsItemSubjectStatsItem = {
+  subjectId: number;
+  average: number;
+  highest: number;
+  lowest: number;
+  entries: number;
+};
+
+export type StudentReportsReportsItemCard = {
+  studentId: number;
+  /** @maxLength 600 */
+  teacherRemark: string;
+  /** @maxLength 600 */
+  principalRemark: string;
+  /**
+     * @minimum 0
+     * @maximum 366
+     * @nullable
+     */
+  daysPresent: number | null;
+  /**
+     * @minimum 0
+     * @maximum 366
+     * @nullable
+     */
+  daysOpen: number | null;
+} | null;
+
+export type StudentReportsReportsItem = {
+  term: StudentReportsReportsItemTerm;
+  subjects: StudentReportsReportsItemSubjectsItem[];
+  result: StudentReportsReportsItemResult;
+  subjectStats: StudentReportsReportsItemSubjectStatsItem[];
+  classSize: number;
+  card: StudentReportsReportsItemCard;
+  releasedAt: string;
+};
+
+export interface StudentReports {
+  studentName: string;
+  studentId: string;
+  className: string;
+  reports: StudentReportsReportsItem[];
+}
+
 export interface PortalLogin {
   /**
      * @minLength 1
@@ -1694,6 +2233,11 @@ export interface SchoolCommerceSettingsUpdate {
 
 export type ImportPortalPdfParams = {
 classId: number;
+};
+
+export type GetReportWorkspaceParams = {
+termId?: number;
+classId?: number;
 };
 
 export type GetLocalAccount200 = {

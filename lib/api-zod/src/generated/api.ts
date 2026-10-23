@@ -745,6 +745,245 @@ export const GetPortalFileParams = zod.object({
 export const GetPortalFileResponse = zod.unknown()
 
 
+export const GetReportWorkspaceQueryParams = zod.object({
+  "termId": zod.coerce.number().optional(),
+  "classId": zod.coerce.number().optional()
+})
+
+export const getReportWorkspaceResponseCardsItemTeacherRemarkMax = 600;
+
+export const getReportWorkspaceResponseCardsItemPrincipalRemarkMax = 600;
+
+export const getReportWorkspaceResponseCardsItemDaysPresentMin = 0;
+export const getReportWorkspaceResponseCardsItemDaysPresentMax = 366;
+
+export const getReportWorkspaceResponseCardsItemDaysOpenMin = 0;
+export const getReportWorkspaceResponseCardsItemDaysOpenMax = 366;
+
+
+
+export const GetReportWorkspaceResponse = zod.object({
+  "terms": zod.array(zod.object({
+  "id": zod.number(),
+  "session": zod.string(),
+  "term": zod.string(),
+  "caMax": zod.number(),
+  "examMax": zod.number(),
+  "nextTermBegins": zod.string().nullable()
+})),
+  "classes": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string()
+})),
+  "canAdmin": zod.boolean(),
+  "termId": zod.number().nullable(),
+  "classId": zod.number().nullable(),
+  "subjects": zod.array(zod.object({
+  "id": zod.number(),
+  "classId": zod.number(),
+  "name": zod.string(),
+  "sortOrder": zod.number()
+})),
+  "students": zod.array(zod.object({
+  "id": zod.number(),
+  "studentId": zod.string(),
+  "name": zod.string()
+})),
+  "scores": zod.array(zod.object({
+  "studentId": zod.number(),
+  "subjectId": zod.number(),
+  "ca": zod.number().nullable(),
+  "exam": zod.number().nullable()
+})),
+  "cards": zod.array(zod.object({
+  "studentId": zod.number(),
+  "teacherRemark": zod.string().max(getReportWorkspaceResponseCardsItemTeacherRemarkMax),
+  "principalRemark": zod.string().max(getReportWorkspaceResponseCardsItemPrincipalRemarkMax),
+  "daysPresent": zod.number().min(getReportWorkspaceResponseCardsItemDaysPresentMin).max(getReportWorkspaceResponseCardsItemDaysPresentMax).nullable(),
+  "daysOpen": zod.number().min(getReportWorkspaceResponseCardsItemDaysOpenMin).max(getReportWorkspaceResponseCardsItemDaysOpenMax).nullable()
+})),
+  "results": zod.array(zod.object({
+  "studentId": zod.number(),
+  "subjects": zod.array(zod.object({
+  "subjectId": zod.number(),
+  "ca": zod.number().nullable(),
+  "exam": zod.number().nullable(),
+  "total": zod.number(),
+  "percent": zod.number(),
+  "grade": zod.string(),
+  "remark": zod.string(),
+  "position": zod.number()
+})),
+  "total": zod.number(),
+  "average": zod.number().nullable(),
+  "grade": zod.string().nullable(),
+  "position": zod.number().nullable(),
+  "subjectsTaken": zod.number()
+})),
+  "subjectStats": zod.array(zod.object({
+  "subjectId": zod.number(),
+  "average": zod.number(),
+  "highest": zod.number(),
+  "lowest": zod.number(),
+  "entries": zod.number()
+})),
+  "ranked": zod.number(),
+  "released": zod.boolean()
+})
+
+
+export const manageReportsBodyTermSessionMax = 20;
+
+export const manageReportsBodyTermTermMax = 40;
+
+export const manageReportsBodyTermCaMaxMin = 0;
+export const manageReportsBodyTermCaMaxMax = 100;
+
+export const manageReportsBodyTermExamMaxMin = 0;
+export const manageReportsBodyTermExamMaxMax = 100;
+
+export const manageReportsBodyTermNextTermBeginsMax = 40;
+
+export const manageReportsBodySubjectNameMax = 80;
+
+export const manageReportsBodySubjectSortOrderMin = 0;
+export const manageReportsBodySubjectSortOrderMax = 1000;
+
+export const manageReportsBodyScoresEntriesMax = 5000;
+
+export const manageReportsBodyCardsEntriesItemTeacherRemarkMax = 600;
+
+export const manageReportsBodyCardsEntriesItemPrincipalRemarkMax = 600;
+
+export const manageReportsBodyCardsEntriesItemDaysPresentMin = 0;
+export const manageReportsBodyCardsEntriesItemDaysPresentMax = 366;
+
+export const manageReportsBodyCardsEntriesItemDaysOpenMin = 0;
+export const manageReportsBodyCardsEntriesItemDaysOpenMax = 366;
+
+export const manageReportsBodyCardsEntriesMax = 1000;
+
+
+
+export const ManageReportsBody = zod.object({
+  "action": zod.enum(['saveTerm', 'deleteTerm', 'saveSubject', 'deleteSubject', 'saveScores', 'saveCards', 'releaseReports']),
+  "term": zod.object({
+  "id": zod.number().optional(),
+  "session": zod.string().min(1).max(manageReportsBodyTermSessionMax),
+  "term": zod.string().min(1).max(manageReportsBodyTermTermMax),
+  "caMax": zod.number().min(manageReportsBodyTermCaMaxMin).max(manageReportsBodyTermCaMaxMax),
+  "examMax": zod.number().min(manageReportsBodyTermExamMaxMin).max(manageReportsBodyTermExamMaxMax),
+  "nextTermBegins": zod.string().max(manageReportsBodyTermNextTermBeginsMax).nullish()
+}).optional(),
+  "subject": zod.object({
+  "id": zod.number().optional(),
+  "classId": zod.number(),
+  "name": zod.string().min(1).max(manageReportsBodySubjectNameMax),
+  "sortOrder": zod.number().min(manageReportsBodySubjectSortOrderMin).max(manageReportsBodySubjectSortOrderMax).optional()
+}).optional(),
+  "target": zod.object({
+  "id": zod.number()
+}).optional(),
+  "scores": zod.object({
+  "termId": zod.number(),
+  "entries": zod.array(zod.object({
+  "studentId": zod.number(),
+  "subjectId": zod.number(),
+  "ca": zod.number().nullable(),
+  "exam": zod.number().nullable()
+})).max(manageReportsBodyScoresEntriesMax)
+}).optional(),
+  "cards": zod.object({
+  "termId": zod.number(),
+  "entries": zod.array(zod.object({
+  "studentId": zod.number(),
+  "teacherRemark": zod.string().max(manageReportsBodyCardsEntriesItemTeacherRemarkMax),
+  "principalRemark": zod.string().max(manageReportsBodyCardsEntriesItemPrincipalRemarkMax),
+  "daysPresent": zod.number().min(manageReportsBodyCardsEntriesItemDaysPresentMin).max(manageReportsBodyCardsEntriesItemDaysPresentMax).nullable(),
+  "daysOpen": zod.number().min(manageReportsBodyCardsEntriesItemDaysOpenMin).max(manageReportsBodyCardsEntriesItemDaysOpenMax).nullable()
+})).max(manageReportsBodyCardsEntriesMax)
+}).optional(),
+  "release": zod.object({
+  "termId": zod.number(),
+  "classId": zod.number(),
+  "released": zod.boolean()
+}).optional()
+})
+
+export const ManageReportsResponse = zod.object({
+  "message": zod.string()
+})
+
+
+export const getStudentReportsResponseReportsItemCardOneTeacherRemarkMax = 600;
+
+export const getStudentReportsResponseReportsItemCardOnePrincipalRemarkMax = 600;
+
+export const getStudentReportsResponseReportsItemCardOneDaysPresentMin = 0;
+export const getStudentReportsResponseReportsItemCardOneDaysPresentMax = 366;
+
+export const getStudentReportsResponseReportsItemCardOneDaysOpenMin = 0;
+export const getStudentReportsResponseReportsItemCardOneDaysOpenMax = 366;
+
+
+
+export const GetStudentReportsResponse = zod.object({
+  "studentName": zod.string(),
+  "studentId": zod.string(),
+  "className": zod.string(),
+  "reports": zod.array(zod.object({
+  "term": zod.object({
+  "id": zod.number(),
+  "session": zod.string(),
+  "term": zod.string(),
+  "caMax": zod.number(),
+  "examMax": zod.number(),
+  "nextTermBegins": zod.string().nullable()
+}),
+  "subjects": zod.array(zod.object({
+  "id": zod.number(),
+  "classId": zod.number(),
+  "name": zod.string(),
+  "sortOrder": zod.number()
+})),
+  "result": zod.object({
+  "studentId": zod.number(),
+  "subjects": zod.array(zod.object({
+  "subjectId": zod.number(),
+  "ca": zod.number().nullable(),
+  "exam": zod.number().nullable(),
+  "total": zod.number(),
+  "percent": zod.number(),
+  "grade": zod.string(),
+  "remark": zod.string(),
+  "position": zod.number()
+})),
+  "total": zod.number(),
+  "average": zod.number().nullable(),
+  "grade": zod.string().nullable(),
+  "position": zod.number().nullable(),
+  "subjectsTaken": zod.number()
+}),
+  "subjectStats": zod.array(zod.object({
+  "subjectId": zod.number(),
+  "average": zod.number(),
+  "highest": zod.number(),
+  "lowest": zod.number(),
+  "entries": zod.number()
+})),
+  "classSize": zod.number(),
+  "card": zod.union([zod.object({
+  "studentId": zod.number(),
+  "teacherRemark": zod.string().max(getStudentReportsResponseReportsItemCardOneTeacherRemarkMax),
+  "principalRemark": zod.string().max(getStudentReportsResponseReportsItemCardOnePrincipalRemarkMax),
+  "daysPresent": zod.number().min(getStudentReportsResponseReportsItemCardOneDaysPresentMin).max(getStudentReportsResponseReportsItemCardOneDaysPresentMax).nullable(),
+  "daysOpen": zod.number().min(getStudentReportsResponseReportsItemCardOneDaysOpenMin).max(getStudentReportsResponseReportsItemCardOneDaysOpenMax).nullable()
+}),zod.null()]),
+  "releasedAt": zod.string()
+}))
+})
+
+
 /**
  * @summary Check whether the signed-in account may manage this website
  */

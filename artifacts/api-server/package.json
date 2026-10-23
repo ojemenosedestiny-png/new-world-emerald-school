@@ -11,7 +11,8 @@
     "start": "node --enable-source-maps ./dist/index.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test:storage": "node ./test-storage.mjs",
-    "test:auth": "node ./test-auth.mjs"
+    "test:auth": "node ./test-auth.mjs",
+    "test:portal-reports": "node ./test-portal.mjs portal-reports"
   },
   "dependencies": {
     "@clerk/express": "^2.1.75",

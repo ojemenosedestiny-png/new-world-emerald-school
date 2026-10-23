@@ -34,6 +34,7 @@ import type {
   FeePaymentReportReceipt,
   FeePaymentReportUpdate,
   GetLocalAccount200,
+  GetReportWorkspaceParams,
   HealthStatus,
   ImportPortalPdfParams,
   IndividualFeeCharge,
@@ -53,6 +54,8 @@ import type {
   PortalPdfImport,
   PortalSession,
   PublicIndividualFeeCharge,
+  ReportCommand,
+  ReportWorkspace,
   SchoolCommerceSettings,
   SchoolCommerceSettingsUpdate,
   SiteContent,
@@ -64,6 +67,7 @@ import type {
   StoreProduct,
   StoreProductInput,
   StoreProductUpdate,
+  StudentReports,
   UploadMetadata,
   UploadUrlResponse,
   WebsiteAdminAccess
@@ -969,6 +973,220 @@ export function useGetPortalFile<TData = Awaited<ReturnType<typeof getPortalFile
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetPortalFileQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetReportWorkspaceUrl = (params?: GetReportWorkspaceParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/portal/reports/manage?${stringifiedParams}` : `/api/portal/reports/manage`
+}
+
+export const getReportWorkspace = async (params?: GetReportWorkspaceParams, options?: RequestInit): Promise<ReportWorkspace> => {
+
+  return customFetch<ReportWorkspace>(getGetReportWorkspaceUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetReportWorkspaceQueryKey = (params?: GetReportWorkspaceParams,) => {
+    return [
+    `/api/portal/reports/manage`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetReportWorkspaceQueryOptions = <TData = Awaited<ReturnType<typeof getReportWorkspace>>, TError = ErrorType<unknown>>(params?: GetReportWorkspaceParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getReportWorkspace>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetReportWorkspaceQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getReportWorkspace>>> = ({ signal }) => getReportWorkspace(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getReportWorkspace>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetReportWorkspaceQueryResult = NonNullable<Awaited<ReturnType<typeof getReportWorkspace>>>
+export type GetReportWorkspaceQueryError = ErrorType<unknown>
+
+
+
+export function useGetReportWorkspace<TData = Awaited<ReturnType<typeof getReportWorkspace>>, TError = ErrorType<unknown>>(
+ params?: GetReportWorkspaceParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getReportWorkspace>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetReportWorkspaceQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getManageReportsUrl = () => {
+
+
+
+
+  return `/api/portal/reports/manage`
+}
+
+export const manageReports = async (reportCommand: ReportCommand, options?: RequestInit): Promise<PortalMessage> => {
+
+  return customFetch<PortalMessage>(getManageReportsUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(reportCommand)
+  }
+);}
+
+
+
+
+
+export const getManageReportsMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof manageReports>>, TError,{data: BodyType<ReportCommand>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof manageReports>>, TError,{data: BodyType<ReportCommand>}, TContext> => {
+
+const mutationKey = ['manageReports'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof manageReports>>, {data: BodyType<ReportCommand>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  manageReports(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ManageReportsMutationResult = NonNullable<Awaited<ReturnType<typeof manageReports>>>
+    export type ManageReportsMutationBody = BodyType<ReportCommand>
+    export type ManageReportsMutationError = ErrorType<unknown>
+
+    export const useManageReports = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof manageReports>>, TError,{data: BodyType<ReportCommand>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof manageReports>>,
+        TError,
+        {data: BodyType<ReportCommand>},
+        TContext
+      > => {
+      return useMutation(getManageReportsMutationOptions(options));
+    }
+
+export const getGetStudentReportsUrl = () => {
+
+
+
+
+  return `/api/portal/reports`
+}
+
+export const getStudentReports = async ( options?: RequestInit): Promise<StudentReports> => {
+
+  return customFetch<StudentReports>(getGetStudentReportsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetStudentReportsQueryKey = () => {
+    return [
+    `/api/portal/reports`
+    ] as const;
+    }
+
+
+export const getGetStudentReportsQueryOptions = <TData = Awaited<ReturnType<typeof getStudentReports>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getStudentReports>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetStudentReportsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getStudentReports>>> = ({ signal }) => getStudentReports({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getStudentReports>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetStudentReportsQueryResult = NonNullable<Awaited<ReturnType<typeof getStudentReports>>>
+export type GetStudentReportsQueryError = ErrorType<unknown>
+
+
+
+export function useGetStudentReports<TData = Awaited<ReturnType<typeof getStudentReports>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getStudentReports>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetStudentReportsQueryOptions(options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

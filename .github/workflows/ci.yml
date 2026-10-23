@@ -62,11 +62,12 @@ jobs:
       - name: API codegen is reproducible
         run: pnpm run test:api-regeneration
 
-      - name: Portal exam control tests (disposable Postgres)
+      - name: Portal exam control and report card tests (disposable Postgres)
         env:
           DATABASE_URL: postgresql://school:ci-only@localhost:5432/school_test
         run: |
           pnpm --filter @workspace/db run push
           pnpm --filter @workspace/api-server run test:portal-control
+          pnpm --filter @workspace/api-server run test:portal-reports
 
       # test:portal also needs Replit object storage, so it is run on Replit.

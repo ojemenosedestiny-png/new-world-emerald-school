@@ -12,6 +12,7 @@ import { MarkingPanel } from "@/portal/manage/MarkingPanel";
 import { MaterialsPanel, NoticesPanel } from "@/portal/manage/ContentPanels";
 import { ClassesPanel, StudentsPanel, TeachersPanel } from "@/portal/manage/PeoplePanels";
 import { ManageOverview } from "@/portal/manage/Overview";
+import { ReportsPanel } from "@/portal/reports/ReportsPanel";
 
 function Gate({ title, body, children }: { title: string; body: string; children?: ReactNode }) {
   return (
@@ -82,6 +83,7 @@ export default function PortalManage() {
               <TabsList className="mb-6 flex h-auto w-full justify-start gap-1 overflow-x-auto rounded-full border border-[hsl(var(--p-line))] bg-white/70 p-1">
                 <TabsTrigger value="exams" className="portal-tab" data-testid="tab-manage-exams">Exams</TabsTrigger>
                 <TabsTrigger value="marking" className="portal-tab" data-testid="tab-manage-marking">Marking{toMark ? " (" + toMark + ")" : ""}</TabsTrigger>
+                <TabsTrigger value="reports" className="portal-tab" data-testid="tab-manage-reports">Report cards</TabsTrigger>
                 <TabsTrigger value="revision" className="portal-tab" data-testid="tab-manage-revision">Revision</TabsTrigger>
                 <TabsTrigger value="notices" className="portal-tab" data-testid="tab-manage-notices">Announcements</TabsTrigger>
                 {isAdmin && <TabsTrigger value="students" className="portal-tab" data-testid="tab-manage-students">Students</TabsTrigger>}
@@ -90,6 +92,7 @@ export default function PortalManage() {
               </TabsList>
               <TabsContent value="exams"><ExamsPanel data={d} isAdmin={isAdmin} /></TabsContent>
               <TabsContent value="marking"><MarkingPanel data={d} /></TabsContent>
+              <TabsContent value="reports"><ReportsPanel /></TabsContent>
               <TabsContent value="revision"><MaterialsPanel data={d} /></TabsContent>
               <TabsContent value="notices"><NoticesPanel data={d} /></TabsContent>
               {isAdmin && <TabsContent value="students"><StudentsPanel data={d} /></TabsContent>}
