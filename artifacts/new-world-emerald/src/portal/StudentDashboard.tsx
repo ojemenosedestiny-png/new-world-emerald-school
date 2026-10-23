@@ -6,15 +6,17 @@ import {
   getGetPortalSessionQueryKey,
   type PortalSession, type PortalDashboardExamsItem, type PortalDashboardAttemptsItem,
 } from "@workspace/api-client-react";
-import { Award, BookOpen, CalendarClock, ClipboardList, FileText, KeyRound, LogOut, Megaphone, PlayCircle, Timer } from "lucide-react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Award, BookOpen, CalendarClock, ClipboardList, FileBarChart, FileText, Home, KeyRound, Megaphone, PlayCircle, Timer } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { EmptyState, ErrorPanel, PortalHeader, Skeleton, StatusPill } from "./ui";
+import { EmptyState, ErrorPanel, Skeleton, StatusPill } from "./ui";
 import { PasswordChange } from "./PasswordChange";
 import { clearDrafts, clearStudentQueries, errorMessage, examWindow, fileUrl, formatDateTime, sortStudentExams } from "./lib";
 import { studentAverage } from "./manage/results";
 import { StudentReports } from "./reports/StudentReports";
+import { StudentHome, type StudentSection } from "./StudentHome";
+import { AppShell, type NavGroup } from "./shell/AppShell";
+import type { usePortalTheme } from "./shell/theme";
 
 export function useStudentLogout() {
   const queryClient = useQueryClient();
@@ -63,7 +65,7 @@ function ExamRow({ exam, attempt }: { exam: PortalDashboardExamsItem; attempt?: 
         <h3 className="mt-1 font-serif text-xl font-semibold">{exam.title}</h3>
         <p className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-sm text-[hsl(var(--p-ink)/0.62)]">
           <span className="inline-flex items-center gap-1"><Timer size={14} /> {exam.durationMinutes} min</span>
-          <span>{exam.questionCount} questions, {exam.totalMarks} marks</span>
+          <span>{exam.questionCount} {exam.questionCount === 1 ? "question" : "questions"}, {exam.totalMarks} {exam.totalMarks === 1 ? "mark" : "marks"}</span>
           <span className="inline-flex items-center gap-1"><CalendarClock size={14} /> {formatDateTime(exam.startsAt)} to {formatDateTime(exam.endsAt)}</span>
         </p>
       </div>
@@ -78,11 +80,12 @@ function ExamRow({ exam, attempt }: { exam: PortalDashboardExamsItem; attempt?: 
   );
 }
 
-export function StudentDashboard({ session }: { session: PortalSession }) {
+export function StudentDashboard({ session, theme }: { session: PortalSession; theme: ReturnType<typeof usePortalTheme> }) {
   const dash = useGetPortalDashboard({ query: { queryKey: getGetPortalDashboardQueryKey(), refetchInterval: 20000 } });
   const logout = useStudentLogout();
   const [, setLocation] = useLocation();
   const [pwOpen, setPwOpen] = useState(false);
+  const [section, setSection] = useState<StudentSection>("home");
   const data = dash.data;
   const attemptByExam = useMemo(() => new Map((data?.attempts ?? []).map((a) => [a.examId, a])), [data]);
   const examIds = useMemo(() => new Set((data?.exams ?? []).map((e) => e.id)), [data]);
@@ -91,37 +94,40 @@ export function StudentDashboard({ session }: { session: PortalSession }) {
   const firstName = session.name.split(" ")[0];
   const average = studentAverage(data?.attempts ?? []);
 
+  const nextExam = exams.find((e) => attemptByExam.get(e.id)?.status === "in_progress" || examWindow(e.startsAt, e.endsAt) !== "closed");
+  const titles: Record<StudentSection, string> = { home: "Home", exams: "Exams", results: "Results", reports: "Report cards", revision: "Revision notes", notices: "Notices" };
+  const openCount = (data?.exams ?? []).filter((e) => examWindow(e.startsAt, e.endsAt) === "open" && attemptByExam.get(e.id)?.status !== "submitted" && attemptByExam.get(e.id)?.status !== "marked").length;
+  const groups: NavGroup<StudentSection>[] = [
+    { items: [{ key: "home", label: "Home", icon: Home, testId: "tab-home" }] },
+    { label: "Learning", items: [
+      { key: "exams", label: "Exams", icon: ClipboardList, badge: openCount, testId: "tab-exams" },
+      { key: "results", label: "Results", icon: Award, testId: "tab-results" },
+      { key: "reports", label: "Report cards", icon: FileBarChart, testId: "tab-reports" },
+      { key: "revision", label: "Revision notes", icon: BookOpen, testId: "tab-revision" },
+      { key: "notices", label: "Notices", icon: Megaphone, testId: "tab-notices" },
+    ] },
+  ];
+
   return (
-    <div className="portal">
-      <PortalHeader subtitle="Student Portal">
-        <button className="portal-btn-dark" onClick={() => setPwOpen(true)} data-testid="button-open-password"><KeyRound size={14} /><span className="hidden sm:inline">Password</span></button>
-        <button className="portal-btn-dark whitespace-nowrap" onClick={logout.run} disabled={logout.pending} aria-label={logout.pending ? "Signing out" : "Sign out"} data-testid="button-student-logout"><LogOut size={14} /><span className="hidden sm:inline">{logout.pending ? "Signing out" : "Sign out"}</span></button>
-      </PortalHeader>
-
-      <main className="mx-auto max-w-6xl px-4 py-8 md:px-8 md:py-12">
-        <section className="portal-rise mb-8 flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
-          <div>
-            <p className="text-xs font-bold uppercase tracking-[0.24em] text-[hsl(var(--p-emerald))]">{data?.className ?? "Your class"} <span className="text-[hsl(var(--p-ink)/0.4)]">/ {session.studentId}</span></p>
-            <h1 className="mt-2 font-serif text-4xl font-semibold md:text-5xl" data-testid="text-student-name">Good to see you, {firstName}.</h1>
-          </div>
-          {dash.isFetching && !dash.isLoading && <p className="text-xs text-[hsl(var(--p-ink)/0.45)]">Checking for updates</p>}
-        </section>
-
+    <AppShell<StudentSection>
+      subtitle="Student Portal" groups={groups} active={section} onNavigate={setSection}
+      title={titles[section]} eyebrow={data?.className || "Student portal"}
+      user={{ name: session.name, detail: session.studentId ?? "" }}
+      theme={theme.theme} onTheme={theme.setTheme}
+      onSignOut={logout.run} signingOut={logout.pending}
+      actions={dash.isFetching && !dash.isLoading ? <span className="hidden text-xs text-[hsl(var(--p-ink)/0.45)] sm:inline">Checking for updates</span> : undefined}
+      sidebarFooter={<button type="button" className="portal-nav-item" onClick={() => setPwOpen(true)} data-testid="button-open-password"><KeyRound size={17} aria-hidden="true" /><span>Change password</span></button>}
+    >
         {dash.isLoading ? (
           <div className="space-y-4"><Skeleton className="h-11 w-80" /><Skeleton className="h-28" /><Skeleton className="h-28" /></div>
         ) : dash.isError || !data ? (
           <ErrorPanel title="Your portal could not load" message={errorMessage(dash.error)} onRetry={() => dash.refetch()} />
         ) : (
-          <Tabs defaultValue="exams">
-            <TabsList className="mb-6 flex h-auto w-full justify-start gap-1 overflow-x-auto rounded-full border border-[hsl(var(--p-line))] bg-white/70 p-1 sm:w-auto">
-              <TabsTrigger value="exams" className="portal-tab" data-testid="tab-exams">Exams ({data.exams.length})</TabsTrigger>
-              <TabsTrigger value="results" className="portal-tab" data-testid="tab-results">Results</TabsTrigger>
-              <TabsTrigger value="reports" className="portal-tab" data-testid="tab-reports">Report cards</TabsTrigger>
-              <TabsTrigger value="revision" className="portal-tab" data-testid="tab-revision">Revision ({data.materials.length})</TabsTrigger>
-              <TabsTrigger value="notices" className="portal-tab" data-testid="tab-notices">Notices ({data.notices.length})</TabsTrigger>
-            </TabsList>
+          <div className="portal-rise" key={section}>
+            {section === "home" && <StudentHome data={data} firstName={firstName} studentId={session.studentId ?? ""} average={average} onGo={setSection}
+              nextExam={nextExam ? <ExamRow exam={nextExam} attempt={attemptByExam.get(nextExam.id)} /> : null} />}
 
-            <TabsContent value="exams" className="space-y-3">
+            {section === "exams" && <div className="space-y-3">
               {data.exams.length === 0 && orphanAttempts.length === 0 ? (
                 <EmptyState icon={<ClipboardList size={22} />} title="No exams scheduled" body="When your teacher publishes an exam for your class, it will appear here with its date and time." />
               ) : (
@@ -135,9 +141,9 @@ export function StudentDashboard({ session }: { session: PortalSession }) {
                   ))}
                 </>
               )}
-            </TabsContent>
+            </div>}
 
-            <TabsContent value="results" className="space-y-3">
+            {section === "results" && <div className="space-y-3">
               {average && (
                 <div className="portal-card flex items-center justify-between gap-4 p-5" data-testid="card-results-average">
                   <div><p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[hsl(var(--p-emerald))]">Your average</p><p className="text-sm text-[hsl(var(--p-ink)/0.6)]">Across {average.count} released {average.count === 1 ? "result" : "results"}</p></div>
@@ -164,11 +170,11 @@ export function StudentDashboard({ session }: { session: PortalSession }) {
                   );
                 })
               )}
-            </TabsContent>
+            </div>}
 
-            <TabsContent value="reports"><StudentReports /></TabsContent>
+            {section === "reports" && <StudentReports />}
 
-            <TabsContent value="revision" className="grid gap-4 md:grid-cols-2">
+            {section === "revision" && <div className="grid gap-4 md:grid-cols-2">
               {data.materials.length === 0 ? (
                 <div className="md:col-span-2"><EmptyState icon={<BookOpen size={22} />} title="No revision notes yet" body="Your teachers will share class notes and practice material here." /></div>
               ) : (
@@ -181,9 +187,9 @@ export function StudentDashboard({ session }: { session: PortalSession }) {
                   </article>
                 ))
               )}
-            </TabsContent>
+            </div>}
 
-            <TabsContent value="notices" className="space-y-3">
+            {section === "notices" && <div className="space-y-3">
               {data.notices.length === 0 ? (
                 <EmptyState icon={<Megaphone size={22} />} title="No announcements" body="Messages from your class teacher will show up here." />
               ) : (
@@ -194,17 +200,15 @@ export function StudentDashboard({ session }: { session: PortalSession }) {
                   </article>
                 ))
               )}
-            </TabsContent>
-          </Tabs>
+            </div>}
+          </div>
         )}
-      </main>
-
       <Dialog open={pwOpen} onOpenChange={setPwOpen}>
         <DialogContent className="portal max-w-md !min-h-0 rounded-2xl">
           <DialogHeader><DialogTitle className="font-serif text-2xl">Change password</DialogTitle><DialogDescription>At least 10 characters. Keep it private.</DialogDescription></DialogHeader>
           <PasswordChange required={false} onDone={() => setPwOpen(false)} />
         </DialogContent>
       </Dialog>
-    </div>
+    </AppShell>
   );
 }

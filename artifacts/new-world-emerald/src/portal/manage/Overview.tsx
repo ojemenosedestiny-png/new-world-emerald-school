@@ -13,7 +13,7 @@ export function overviewCounts(data: PortalManagement, now = Date.now()) {
 }
 
 function Stat({ icon, label, value, tone, testId }: { icon: ReactNode; label: string; value: number; tone?: "live" | "attention"; testId: string }) {
-  const accent = tone === "live" && value > 0 ? "text-[hsl(var(--p-emerald))]" : tone === "attention" && value > 0 ? "text-[hsl(36_70%_35%)]" : "text-[hsl(var(--p-ink)/0.45)]";
+  const accent = tone === "live" && value > 0 ? "text-[hsl(var(--p-emerald))]" : tone === "attention" && value > 0 ? "text-[hsl(var(--p-gold-ink))]" : "text-[hsl(var(--p-ink)/0.45)]";
   return (
     <div className="portal-card flex items-center gap-3 p-4" data-testid={testId}>
       <div className={"grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[hsl(var(--p-paper-2))] " + accent}>{icon}</div>

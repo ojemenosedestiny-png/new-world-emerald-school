@@ -37,7 +37,7 @@ export function ExamResults({ data, exam, isAdmin, onClose }: { data: PortalMana
 
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4" data-testid="results-counts">
           {(["writing", "submitted", "marked", "not_started"] as const).map((k) => (
-            <div key={k} className="rounded-2xl border border-[hsl(var(--p-line))] bg-white/80 p-3">
+            <div key={k} className="rounded-2xl border border-[hsl(var(--p-line))] bg-[hsl(var(--p-surface)/0.8)] p-3">
               <p className="text-xs text-[hsl(var(--p-ink)/0.55)]">{statusLabel(k)}</p>
               <p className="font-serif text-2xl font-semibold">{counts[k]}</p>
             </div>

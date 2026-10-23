@@ -86,7 +86,7 @@ export function StudentLogin() {
           </form>
 
           <div className="mt-8 flex gap-3 rounded-2xl bg-[hsl(var(--p-gold-soft)/0.7)] p-4 text-sm leading-relaxed text-[hsl(var(--p-ink)/0.8)]">
-            <KeyRound size={18} className="mt-0.5 shrink-0 text-[hsl(36_70%_35%)]" />
+            <KeyRound size={18} className="mt-0.5 shrink-0 text-[hsl(var(--p-gold-ink))]" />
             <p>Forgotten your password? Please visit or call the school office. A staff member will issue you a new temporary password.</p>
           </div>
         </div>

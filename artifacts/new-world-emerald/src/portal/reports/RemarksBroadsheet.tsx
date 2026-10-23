@@ -59,7 +59,7 @@ export function RemarksEditor({ ws, term, locked }: { ws: ReportWorkspace; term:
                   <label className="portal-label" htmlFor={"tr-" + st.id}>Class teacher's remark</label>
                   <textarea id={"tr-" + st.id} className="portal-input mt-1 min-h-[64px] text-sm" maxLength={600} value={d.teacherRemark} disabled={locked} onChange={(e) => set(st.id, { teacherRemark: e.target.value })} />
                   {!locked && suggestedRemarks(result?.average ?? null).length > 0 && (
-                    <div className="mt-1.5 flex flex-wrap gap-1">{suggestedRemarks(result?.average ?? null).map((s) => <button key={s} type="button" className="rounded-full border border-[hsl(var(--p-line))] bg-white/80 px-2 py-0.5 text-[11px] hover:border-[hsl(var(--p-emerald))]" onClick={() => set(st.id, { teacherRemark: s })}><Sparkles size={10} className="mr-1 inline" />{s}</button>)}</div>
+                    <div className="mt-1.5 flex flex-wrap gap-1">{suggestedRemarks(result?.average ?? null).map((s) => <button key={s} type="button" className="rounded-full border border-[hsl(var(--p-line))] bg-[hsl(var(--p-surface)/0.8)] px-2 py-0.5 text-[11px] hover:border-[hsl(var(--p-emerald))]" onClick={() => set(st.id, { teacherRemark: s })}><Sparkles size={10} className="mr-1 inline" />{s}</button>)}</div>
                   )}
                 </div>
                 <div>
@@ -103,7 +103,7 @@ export function Broadsheet({ ws, term, className }: { ws: ReportWorkspace; term:
             {sorted.map((st) => {
               const r = ws.results.find((x) => x.studentId === st.id);
               return (
-                <tr key={st.id} className="odd:bg-white/70 even:bg-[hsl(var(--p-paper-2)/0.5)]">
+                <tr key={st.id} className="odd:bg-[hsl(var(--p-surface)/0.7)] even:bg-[hsl(var(--p-paper-2)/0.5)]">
                   <td className="px-3 py-2 font-bold">{r?.position ? ordinal(r.position) : "-"}</td>
                   <td className="px-3 py-2"><p className="font-semibold">{st.name}</p><p className="font-mono text-[11px] opacity-50">{st.studentId}</p></td>
                   {ws.subjects.map((s) => { const x = r?.subjects.find((y) => y.subjectId === s.id); return <td key={s.id} className="px-2 py-2 text-center tabular-nums">{x ? <>{x.total} <span className="text-xs font-bold opacity-60">{x.grade}</span></> : <span className="opacity-30">-</span>}</td>; })}

@@ -34,7 +34,7 @@ function GradeDialog({ attempt, onClose }: { attempt: PortalManagementAttemptsIt
           const ans = attempt.answers[q.id] ?? "";
           const r = rows[i];
           return (
-            <div key={q.id} className="rounded-2xl border border-[hsl(var(--p-line))] bg-white/80 p-4" data-testid={"grade-q-" + q.id}>
+            <div key={q.id} className="rounded-2xl border border-[hsl(var(--p-line))] bg-[hsl(var(--p-surface)/0.8)] p-4" data-testid={"grade-q-" + q.id}>
               <p className="text-sm font-semibold"><span className="mr-2 text-[hsl(var(--p-ink)/0.45)]">{i + 1}.</span>{q.text}</p>
               {q.type === "mcq" ? (
                 <p className="mt-2 text-sm">Answer: <b>{ans === "" ? "No answer" : OPTION_LETTERS[Number(ans)] + ". " + (q.options[Number(ans)] ?? "")}</b> / Key: <b>{q.correctAnswer == null ? "not set" : OPTION_LETTERS[q.correctAnswer]}</b></p>

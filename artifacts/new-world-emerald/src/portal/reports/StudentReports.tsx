@@ -41,7 +41,7 @@ function TermReport({ data, report, open, onToggle }: { data: StudentReportsData
               <thead className="bg-[hsl(var(--p-ink))] text-left text-xs text-[hsl(var(--p-paper))]">
                 <tr><th className="px-3 py-2">Subject</th><th className="px-2 py-2 text-center">CA</th><th className="px-2 py-2 text-center">Exam</th><th className="px-2 py-2 text-center">Total</th><th className="px-2 py-2 text-center">Grade</th><th className="px-2 py-2 text-center">Position</th><th className="px-2 py-2 text-center">Class avg</th><th className="px-3 py-2">Remark</th></tr>
               </thead>
-              <tbody className="divide-y divide-[hsl(var(--p-line))] bg-white/70">
+              <tbody className="divide-y divide-[hsl(var(--p-line))] bg-[hsl(var(--p-surface)/0.7)]">
                 {r.subjects.map((s) => (
                   <tr key={s.subjectId}>
                     <td className="px-3 py-2 font-medium">{names.get(s.subjectId)}</td>
@@ -59,8 +59,8 @@ function TermReport({ data, report, open, onToggle }: { data: StudentReportsData
           </div>
           {(report.card?.teacherRemark || report.card?.principalRemark) && (
             <div className="mt-4 grid gap-3 md:grid-cols-2">
-              {report.card?.teacherRemark && <div className="rounded-2xl border-l-4 border-l-[hsl(var(--p-emerald))] bg-white/70 p-4"><p className="portal-label">Class teacher</p><p className="mt-1 text-sm">{report.card.teacherRemark}</p></div>}
-              {report.card?.principalRemark && <div className="rounded-2xl border-l-4 border-l-[hsl(var(--p-gold))] bg-white/70 p-4"><p className="portal-label">Principal</p><p className="mt-1 text-sm">{report.card.principalRemark}</p></div>}
+              {report.card?.teacherRemark && <div className="rounded-2xl border-l-4 border-l-[hsl(var(--p-emerald))] bg-[hsl(var(--p-surface)/0.7)] p-4"><p className="portal-label">Class teacher</p><p className="mt-1 text-sm">{report.card.teacherRemark}</p></div>}
+              {report.card?.principalRemark && <div className="rounded-2xl border-l-4 border-l-[hsl(var(--p-gold))] bg-[hsl(var(--p-surface)/0.7)] p-4"><p className="portal-label">Principal</p><p className="mt-1 text-sm">{report.card.principalRemark}</p></div>}
             </div>
           )}
           <div className="mt-4 flex flex-wrap items-center justify-between gap-3">

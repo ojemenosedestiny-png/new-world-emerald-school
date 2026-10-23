@@ -132,7 +132,7 @@ export function ReportsPanel() {
               : <button className="portal-btn-gold portal-btn" disabled={cmd.pending || !ws.ranked} onClick={() => setConfirmRelease(true)} data-testid="button-release-reports"><Send size={14} /> Release report cards</button>)}
           </div>
 
-          <div className="flex gap-1 overflow-x-auto rounded-full border border-[hsl(var(--p-line))] bg-white/70 p-1" role="tablist">
+          <div className="flex gap-1 overflow-x-auto rounded-full border border-[hsl(var(--p-line))] bg-[hsl(var(--p-surface)/0.7)] p-1" role="tablist">
             {sections.map(([key, label]) => <button key={key} role="tab" aria-selected={section === key} className={"portal-tab " + (section === key ? "!bg-[hsl(var(--p-ink))] !text-[hsl(var(--p-paper))]" : "")} onClick={() => setSection(key)} data-testid={"report-section-" + key}>{label}</button>)}
           </div>
 

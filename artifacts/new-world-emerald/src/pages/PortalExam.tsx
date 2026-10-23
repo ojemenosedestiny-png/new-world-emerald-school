@@ -6,6 +6,7 @@ import "@/portal/portal.css";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { ErrorPanel, PortalHeader, Skeleton, StatusPill } from "@/portal/ui";
 import { errorMessage, fileUrl, formatTime, scrollToQuestion, usePortalMeta } from "@/portal/lib";
+import { usePortalTheme } from "@/portal/shell/theme";
 import { QuestionNavigator, unansweredNumbers } from "@/portal/exam/QuestionNavigator";
 import { useAttemptSync, type SaveState } from "@/portal/exam/useAttemptSync";
 import { Countdown, useRemaining } from "@/portal/exam/Countdown";
@@ -31,6 +32,7 @@ export default function PortalExam() {
   const params = useParams<{ id: string }>();
   const id = Number(params.id);
   const valid = Number.isInteger(id) && id > 0;
+  usePortalTheme();
   const session = useGetPortalSession({ query: { queryKey: getGetPortalSessionQueryKey() } });
   const isStudent = session.data?.role === "student" && !session.data.mustChangePassword;
   const q = useGetPortalAttempt(id, {
@@ -100,7 +102,7 @@ export default function PortalExam() {
         <div className="portal-rise mb-6">
           <p className="text-xs font-bold uppercase tracking-[0.22em] text-[hsl(var(--p-emerald))]">{attempt.subject} / {attempt.totalMarks} marks</p>
           <h1 className="mt-2 font-serif text-3xl font-semibold md:text-4xl" data-testid="text-exam-title">{attempt.title}</h1>
-          {attempt.instructions && <p className="mt-3 whitespace-pre-wrap rounded-xl bg-white/70 p-4 text-sm leading-relaxed text-[hsl(var(--p-ink)/0.8)]">{attempt.instructions}</p>}
+          {attempt.instructions && <p className="mt-3 whitespace-pre-wrap rounded-xl bg-[hsl(var(--p-surface)/0.7)] p-4 text-sm leading-relaxed text-[hsl(var(--p-ink)/0.8)]">{attempt.instructions}</p>}
         </div>
 
         {!inProgress && (

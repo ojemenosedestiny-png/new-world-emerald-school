@@ -18,7 +18,7 @@ export function PortalBrand({ subtitle }: { subtitle: string }) {
 
 export function PortalHeader({ subtitle, children }: { subtitle: string; children?: ReactNode }) {
   return (
-    <header className="portal-header sticky top-0 z-30 text-[hsl(var(--p-paper))]">
+    <header className="portal-header sticky top-0 z-30 text-[hsl(var(--p-chrome-ink))]">
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3.5 md:px-8">
         <PortalBrand subtitle={subtitle} />
         <div className="flex items-center gap-2">{children}</div>

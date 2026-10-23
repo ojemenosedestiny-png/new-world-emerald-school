@@ -79,7 +79,7 @@ export function BulkEnrol({ data, onClose }: { data: PortalManagement; onClose: 
               <input type="file" accept=".csv,text/csv,text/plain" className="sr-only" disabled={running} onChange={(e) => { readFile(e.target.files?.[0]); e.target.value = ""; }} data-testid="input-bulk-file" />
             </label>
             {rows.length > 0 && (
-              <div className="rounded-2xl border border-[hsl(var(--p-line))] bg-white/80">
+              <div className="rounded-2xl border border-[hsl(var(--p-line))] bg-[hsl(var(--p-surface)/0.8)]">
                 <p className="border-b border-[hsl(var(--p-line))] px-4 py-2 text-sm" data-testid="text-bulk-summary">
                   <b>{valid.length}</b> ready{invalid > 0 && <> / <span className="text-[hsl(var(--p-red))]"><b>{invalid}</b> need fixing</span></>}
                   {valid.length > MAX_BULK_STUDENTS && <span className="text-[hsl(var(--p-red))]"> / limit is {MAX_BULK_STUDENTS} per import</span>}
@@ -102,7 +102,7 @@ export function BulkEnrol({ data, onClose }: { data: PortalManagement; onClose: 
           <div className="space-y-4">
             <div className="grid gap-2 sm:grid-cols-2">
               <div className="rounded-2xl bg-[hsl(var(--p-emerald-soft))] p-4"><p className="text-xs">Enrolled in {cls}</p><p className="font-serif text-3xl font-semibold" data-testid="text-bulk-enrolled">{issued.length}</p></div>
-              <div className="rounded-2xl bg-white/80 p-4 ring-1 ring-[hsl(var(--p-line))]"><p className="text-xs">Not enrolled</p><p className="font-serif text-3xl font-semibold">{failed.length}</p></div>
+              <div className="rounded-2xl bg-[hsl(var(--p-surface)/0.8)] p-4 ring-1 ring-[hsl(var(--p-line))]"><p className="text-xs">Not enrolled</p><p className="font-serif text-3xl font-semibold">{failed.length}</p></div>
             </div>
             {issued.length > 0 && (
               <div className="flex flex-wrap gap-2">

@@ -8,6 +8,7 @@ import { StudentDashboard, useStudentLogout } from "@/portal/StudentDashboard";
 import { PasswordChange } from "@/portal/PasswordChange";
 import { BackToWebsite, ErrorPanel, PortalHeader, Skeleton } from "@/portal/ui";
 import { errorMessage, usePortalMeta } from "@/portal/lib";
+import { usePortalTheme } from "@/portal/shell/theme";
 
 function RequiredPassword() {
   const logout = useStudentLogout();
@@ -46,6 +47,7 @@ function SignedInAsStaff({ name }: { name: string }) {
 
 export default function Portal() {
   usePortalMeta("Student Portal");
+  const theme = usePortalTheme();
   const session = useGetPortalSession({ query: { queryKey: getGetPortalSessionQueryKey(), retry: 1 } });
 
   if (session.isLoading) {
@@ -59,7 +61,7 @@ export default function Portal() {
     );
   }
   const s = session.data;
-  if (s.role === "student") return s.mustChangePassword ? <RequiredPassword /> : <StudentDashboard session={s} />;
+  if (s.role === "student") return s.mustChangePassword ? <RequiredPassword /> : <StudentDashboard session={s} theme={theme} />;
   if (s.role === "teacher" || s.role === "admin") return <SignedInAsStaff name={s.name} />;
   return <StudentLogin />;
 }

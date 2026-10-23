@@ -57,7 +57,7 @@ export function ScoresEditor({ ws, term, locked }: { ws: ReportWorkspace; term: 
         {ws.subjects.map((s) => {
           const count = ws.scores.filter((x) => x.subjectId === s.id).length;
           return (
-            <button key={s.id} role="tab" aria-selected={s.id === subjectId} className={"portal-tab border border-[hsl(var(--p-line))] " + (s.id === subjectId ? "!bg-[hsl(var(--p-ink))] !text-[hsl(var(--p-paper))]" : "bg-white/70")} onClick={() => { if (!changed.length || window.confirm("Discard unsaved scores for this subject?")) setSubjectId(s.id); }} data-testid={"subject-tab-" + s.id}>
+            <button key={s.id} role="tab" aria-selected={s.id === subjectId} className={"portal-tab border border-[hsl(var(--p-line))] " + (s.id === subjectId ? "!bg-[hsl(var(--p-ink))] !text-[hsl(var(--p-paper))]" : "bg-[hsl(var(--p-surface)/0.7)]")} onClick={() => { if (!changed.length || window.confirm("Discard unsaved scores for this subject?")) setSubjectId(s.id); }} data-testid={"subject-tab-" + s.id}>
               {s.name} <span className="opacity-60">{count}/{ws.students.length}</span>
             </button>
           );

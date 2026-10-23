@@ -41,7 +41,7 @@ export function validateExam(e: PortalExam, publishing: boolean): string[] {
 function QuestionEditor({ q, i, count, onChange, onMove, onRemove }: { q: Q; i: number; count: number; onChange: (q: Q) => void; onMove: (d: -1 | 1) => void; onRemove: () => void }) {
   const p = "q" + i;
   return (
-    <div className="rounded-2xl border border-[hsl(var(--p-line))] bg-white/80 p-4" data-testid={"editor-question-" + i}>
+    <div className="rounded-2xl border border-[hsl(var(--p-line))] bg-[hsl(var(--p-surface)/0.8)] p-4" data-testid={"editor-question-" + i}>
       <div className="mb-3 flex flex-wrap items-center gap-2">
         <span className="grid h-7 w-7 place-items-center rounded-full bg-[hsl(var(--p-ink))] text-xs font-bold text-[hsl(var(--p-paper))]">{i + 1}</span>
         <select aria-label={"Question " + (i + 1) + " type"} className="portal-input !w-auto !py-1.5 text-sm" value={q.type} onChange={(e) => { const t = e.target.value as Q["type"]; onChange({ ...q, type: t, options: t === "mcq" ? (q.options.length >= 2 ? q.options : ["", "", "", ""]) : [], correctAnswer: null }); }} data-testid={"select-qtype-" + i}>
@@ -69,7 +69,7 @@ function QuestionEditor({ q, i, count, onChange, onMove, onRemove }: { q: Q; i: 
           ))}
           <div className="flex items-center justify-between">
             <button type="button" className="portal-btn-ghost" disabled={q.options.length >= 8} onClick={() => onChange({ ...q, options: [...q.options, ""] })}><Plus size={12} /> Option</button>
-            {q.correctAnswer == null ? <span className="text-xs font-semibold text-[hsl(36_70%_35%)]">Answer key not set</span> : <span className="text-xs font-semibold text-[hsl(var(--p-emerald))]">Key: {OPTION_LETTERS[q.correctAnswer]}</span>}
+            {q.correctAnswer == null ? <span className="text-xs font-semibold text-[hsl(var(--p-gold-ink))]">Answer key not set</span> : <span className="text-xs font-semibold text-[hsl(var(--p-emerald))]">Key: {OPTION_LETTERS[q.correctAnswer]}</span>}
           </div>
         </div>
       ) : (
@@ -163,7 +163,7 @@ export function ExamEditor({ data, initial, onClose }: { data: PortalManagement;
               <div className="mt-3 rounded-xl border border-[hsl(var(--p-gold)/0.5)] bg-[hsl(var(--p-gold-soft)/0.6)] p-3 text-sm">
                 <p className="font-semibold">{importNote.found} questions detected{importNote.found && exam.questions.length && importNote.found !== exam.questions.length ? " (existing questions kept)" : ""}</p>
                 {importNote.warning && <p className="mt-1">{importNote.warning}</p>}
-                {importNote.extractedText && <details className="mt-2"><summary className="cursor-pointer text-xs font-semibold">Show extracted text</summary><pre className="mt-2 max-h-48 overflow-auto whitespace-pre-wrap rounded-lg bg-white/80 p-2 text-xs">{importNote.extractedText}</pre></details>}
+                {importNote.extractedText && <details className="mt-2"><summary className="cursor-pointer text-xs font-semibold">Show extracted text</summary><pre className="mt-2 max-h-48 overflow-auto whitespace-pre-wrap rounded-lg bg-[hsl(var(--p-surface)/0.8)] p-2 text-xs">{importNote.extractedText}</pre></details>}
               </div>
             )}
           </fieldset>

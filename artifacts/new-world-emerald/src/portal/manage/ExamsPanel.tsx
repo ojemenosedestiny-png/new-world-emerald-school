@@ -50,7 +50,7 @@ export function ExamsPanel({ data, isAdmin = false }: { data: PortalManagement; 
                     <span className="text-xs text-[hsl(var(--p-ink)/0.55)]">{className(data.classes, e.classId)} / {e.subject} / {e.mode === "pdf" ? "PDF paper" : "Interactive"}</span>
                   </div>
                   <h3 className="mt-2 font-serif text-xl font-semibold">{e.title}</h3>
-                  <p className="mt-1 text-sm text-[hsl(var(--p-ink)/0.6)]">{formatDateTime(e.startsAt)} to {formatDateTime(e.endsAt)} / {e.durationMinutes} min / {e.questions.length} questions</p>
+                  <p className="mt-1 text-sm text-[hsl(var(--p-ink)/0.6)]">{formatDateTime(e.startsAt)} to {formatDateTime(e.endsAt)} / {e.durationMinutes} min / {e.questions.length} {e.questions.length === 1 ? "question" : "questions"}</p>
                   <p className="mt-1 text-sm text-[hsl(var(--p-ink)/0.6)]">{attempts.length} started / {submitted.length} submitted / {unmarked} awaiting marking</p>
                 </div>
                 <div className="flex flex-wrap gap-2 md:justify-end">
