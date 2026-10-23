@@ -15,16 +15,18 @@ portalSessionRouter.get("/session", async (req, res) => {
 });
 portalSessionRouter.post("/session", async (req, res) => {
   const body = LoginPortalStudentBody.parse(req.body);
-  const key = req.ip || req.socket.remoteAddress || "unknown";
+  const studentId = body.studentId.trim().toUpperCase();
+  // Behind a hosting proxy many students share one address (and a school network
+  // shares one too), so only failed attempts count, per address and student ID.
+  // Each account also locks itself after repeated wrong passwords (below).
+  const key = (req.ip || req.socket.remoteAddress || "unknown") + "|" + studentId;
   const now = Date.now();
   let limit = limits.get(key);
   if (!limit || limit.until < now) {
     if (limits.size > 10000) limits.clear();
     limit = { count: 0, until: now + 15 * 60_000 };
-    limits.set(key, limit);
   }
-  check(++limit.count <= 30, "Too many sign-in attempts. Please wait 15 minutes.", 429);
-  const studentId = body.studentId.trim().toUpperCase();
+  check(limit.count < 20, "Too many sign-in attempts. Please wait 15 minutes.", 429);
   const student = await db.transaction(async (tx) => {
     const [row] = await tx.select().from(portalStudents).where(eq(portalStudents.studentId, studentId)).for("update");
     const valid = await verifyPassword(body.password, row?.passwordHash ?? await dummyHash);
@@ -37,6 +39,8 @@ portalSessionRouter.post("/session", async (req, res) => {
     await tx.update(portalStudents).set({ failedLogins: 0, lockedUntil: null }).where(eq(portalStudents.id, row.id));
     return row;
   });
+  if (!student) { limit.count++; limits.set(key, limit); }
+  else limits.delete(key);
   check(student, "Student ID or password is incorrect, or this account is temporarily unavailable.", 401);
   const token = randomBytes(32).toString("hex");
   // Replacing a browser login cannot retain another student's session.

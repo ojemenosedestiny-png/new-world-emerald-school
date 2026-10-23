@@ -55,6 +55,17 @@ test("staff can extend, reset and delete while students keep a safe exam flow", 
     assert.equal(changed.status, 204);
     const cookie = changed.cookie;
 
+    // Every request here comes from one address, like students behind a hosting proxy
+    // or a school network: successful sign-ins must never exhaust a shared allowance.
+    for (let i = 0; i < 25; i++) {
+      assert.equal((await call("/session", "POST", { studentId: marker, password: "Individual-New-6842!" })).status, 200, `sign-in ${i + 1}`);
+    }
+    const unknownId = `${marker}-NOBODY`;
+    for (let i = 0; i < 20; i++) assert.equal((await call("/session", "POST", { studentId: unknownId, password: "wrong" })).status, 401);
+    assert.equal((await call("/session", "POST", { studentId: unknownId, password: "wrong" })).status, 429);
+    // Guessing against one ID does not lock anyone else out.
+    assert.equal((await call("/session", "POST", { studentId: marker, password: "Individual-New-6842!" })).status, 200);
+
     const questions: PortalQuestionData[] = [
       { id: "mcq-1", type: "mcq", text: "What is 2 + 2?", options: ["3", "4"], correctAnswer: 1, marks: 2 },
       { id: "written-1", type: "written", text: "Explain how you added.", options: [], correctAnswer: null, marks: 3, rubric: "Explain addition." },
