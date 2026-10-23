@@ -98,3 +98,16 @@ test("health, account status and public storage reads stay public", () => {
     ["GET", "/storage/public-objects/logo.png"], ["GET", "/storage/objects/uploads/photo.jpg"],
   ]) assert.deepEqual(check(path, method, "guest"), { status: undefined, allowed: true });
 });
+
+test("an unresolved Clerk identity keeps public pages open and explains the admin refusal", () => {
+  const req = { path: "/site-content", method: "GET", identityError: "Account identity could not be resolved." } as unknown as Request;
+  let allowed = false;
+  protectWebsiteManagement(req, { status() { return this; }, json() { return this; } } as unknown as Response, () => { allowed = true; });
+  assert.equal(allowed, true);
+  let status: number | undefined;
+  let body: unknown;
+  const res = { status(code: number) { status = code; return this; }, json(value: unknown) { body = value; return this; } } as unknown as Response;
+  protectWebsiteManagement({ ...req, method: "PUT" } as unknown as Request, res, () => { throw new Error("must not pass"); });
+  assert.equal(status, 401);
+  assert.deepEqual(body, { error: "Account identity could not be resolved." });
+});

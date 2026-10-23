@@ -96,3 +96,12 @@
 .portal-option[aria-checked="true"] { border-color: hsl(var(--p-emerald)); background: hsl(var(--p-emerald-soft) / 0.6); }
 .portal-option-letter { flex-shrink: 0; width: 28px; height: 28px; display: grid; place-items: center; border-radius: 8px; font-weight: 800; font-size: 13px; background: hsl(var(--p-paper-2)); }
 .portal-option[aria-checked="true"] .portal-option-letter { background: hsl(var(--p-emerald)); color: hsl(var(--p-paper)); }
+.portal-nav-chip {
+  display: inline-grid; place-items: center; min-width: 2.1rem; height: 2.1rem; padding: 0 0.4rem;
+  border-radius: 10px; border: 1.5px solid hsl(var(--p-line)); background: hsl(0 0% 100% / 0.9);
+  font-size: 13px; font-weight: 700; color: hsl(var(--p-ink) / 0.75);
+  transition: background 0.15s, border-color 0.15s, transform 0.15s;
+}
+.portal-nav-chip:hover { border-color: hsl(var(--p-emerald)); transform: translateY(-1px); }
+.portal-nav-chip:focus-visible { outline: 3px solid hsl(var(--p-emerald) / 0.35); outline-offset: 2px; }
+.portal-nav-chip-done { background: hsl(var(--p-emerald)); border-color: hsl(var(--p-emerald)); color: hsl(var(--p-paper)); }

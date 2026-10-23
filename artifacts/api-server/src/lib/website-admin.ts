@@ -11,7 +11,7 @@ export function isWebsiteAdmin(req: Request): boolean {
 
 export function requireWebsiteAdmin(req: Request, res: Response): boolean {
   if (!req.dbUser) {
-    res.status(401).json({ error: "Sign in to manage the website." });
+    res.status(401).json({ error: req.identityError ?? "Sign in to manage the website." });
     return false;
   }
   if (!isWebsiteAdmin(req)) {

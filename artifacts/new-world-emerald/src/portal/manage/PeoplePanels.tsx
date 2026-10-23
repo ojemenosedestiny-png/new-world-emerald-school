@@ -1,12 +1,14 @@
 import { useState } from "react";
 import type { PortalManagement, PortalManagementStudentsItem, PortalManagementTeachersItem } from "@workspace/api-client-react";
-import { Copy, GraduationCap, KeyRound, Pencil, Plus, School, UserCheck, Users } from "lucide-react";
+import { Copy, GraduationCap, KeyRound, ListPlus, Pencil, Plus, Printer, School, UserCheck, Users } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { EmptyState, Field, StatusPill } from "../ui";
 import { generateTempPassword } from "../lib";
 import { ClassSelect } from "./ClassSelect";
 import { className, useCommand } from "./useCommand";
+import { BulkEnrol } from "./BulkEnrol";
+import { printLoginSlips, type IssuedLogin } from "./enrol";
 
 export function ClassesPanel({ data }: { data: PortalManagement }) {
   const cmd = useCommand();
@@ -40,8 +42,9 @@ export function ClassesPanel({ data }: { data: PortalManagement }) {
   );
 }
 
-function TempPasswordNotice({ studentId, password, onClose }: { studentId: string; password: string; onClose: () => void }) {
+function TempPasswordNotice({ login, onClose }: { login: IssuedLogin; onClose: () => void }) {
   const { toast } = useToast();
+  const { studentId, password } = login;
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="portal !min-h-0 max-w-md rounded-2xl">
@@ -51,7 +54,10 @@ function TempPasswordNotice({ studentId, password, onClose }: { studentId: strin
           <span className="flex-1 break-all">{password}</span>
           <button className="portal-btn-dark" onClick={() => navigator.clipboard.writeText(password).then(() => toast({ title: "Copied" }), () => toast({ variant: "destructive", title: "Copy failed", description: "Select and copy the password manually." }))} aria-label="Copy password" data-testid="button-copy-password"><Copy size={14} /></button>
         </div>
-        <DialogFooter><button className="portal-btn" onClick={onClose} data-testid="button-close-password">I have recorded it</button></DialogFooter>
+        <DialogFooter className="gap-2">
+          <button className="portal-btn-ghost" onClick={() => { if (!printLoginSlips([login])) toast({ variant: "destructive", title: "Pop-up blocked", description: "Allow pop-ups for this site to print." }); }} data-testid="button-print-slip"><Printer size={14} /> Print slip</button>
+          <button className="portal-btn" onClick={onClose} data-testid="button-close-password">I have recorded it</button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
@@ -62,7 +68,8 @@ export function StudentsPanel({ data }: { data: PortalManagement }) {
   const [form, setForm] = useState<PortalManagementStudentsItem | null>(null);
   const [filter, setFilter] = useState(0);
   const [search, setSearch] = useState("");
-  const [issued, setIssued] = useState<{ studentId: string; password: string } | null>(null);
+  const [issued, setIssued] = useState<IssuedLogin | null>(null);
+  const [bulk, setBulk] = useState(false);
   const list = data.students.filter((s) => (!filter || s.classId === filter) && (s.name + " " + s.studentId).toLowerCase().includes(search.toLowerCase()));
 
   const save = async () => {
@@ -72,12 +79,12 @@ export function StudentsPanel({ data }: { data: PortalManagement }) {
     const student = { id: form.id, studentId: form.studentId.trim(), name: form.name.trim(), classId: form.classId, active: form.active, ...(password ? { password } : {}) };
     if (await cmd.run({ action: "saveStudent", student }, isNew ? "Student enrolled" : "Student updated")) {
       setForm(null);
-      if (password) setIssued({ studentId: student.studentId, password });
+      if (password) setIssued({ studentId: student.studentId.toUpperCase(), name: student.name, className: className(data.classes, student.classId), password });
     }
   };
   const resetPassword = async (s: PortalManagementStudentsItem) => {
     const password = generateTempPassword();
-    if (await cmd.run({ action: "saveStudent", student: { id: s.id, studentId: s.studentId, name: s.name, classId: s.classId, active: s.active, password } }, "Password reset")) setIssued({ studentId: s.studentId, password });
+    if (await cmd.run({ action: "saveStudent", student: { id: s.id, studentId: s.studentId, name: s.name, classId: s.classId, active: s.active, password } }, "Password reset")) setIssued({ studentId: s.studentId, name: s.name, className: className(data.classes, s.classId), password });
   };
   const toggle = (s: PortalManagementStudentsItem) => cmd.run({ action: "saveStudent", student: { id: s.id, studentId: s.studentId, name: s.name, classId: s.classId, active: !s.active } }, s.active ? "Student deactivated" : "Student reactivated");
 
@@ -86,7 +93,8 @@ export function StudentsPanel({ data }: { data: PortalManagement }) {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
         <input className="portal-input sm:max-w-xs" placeholder="Search name or ID" aria-label="Search students" value={search} onChange={(e) => setSearch(e.target.value)} data-testid="input-search-students" />
         <select className="portal-input sm:max-w-[200px]" aria-label="Filter by class" value={filter} onChange={(e) => setFilter(Number(e.target.value))} data-testid="select-filter-class"><option value={0}>All classes</option>{data.classes.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</select>
-        <button className="portal-btn sm:ml-auto" disabled={data.classes.length === 0} onClick={() => setForm({ studentId: "", name: "", classId: data.classes[0]?.id ?? 0, active: true })} data-testid="button-add-student"><Plus size={15} /> Enrol student</button>
+        <button className="portal-btn-ghost sm:ml-auto" disabled={data.classes.length === 0} onClick={() => setBulk(true)} data-testid="button-bulk-enrol"><ListPlus size={15} /> Enrol class list</button>
+        <button className="portal-btn" disabled={data.classes.length === 0} onClick={() => setForm({ studentId: "", name: "", classId: data.classes[0]?.id ?? 0, active: true })} data-testid="button-add-student"><Plus size={15} /> Enrol student</button>
       </div>
       {data.classes.length === 0 && <p className="text-sm text-[hsl(var(--p-ink)/0.6)]">Create a class before enrolling students.</p>}
       {list.length === 0 ? <EmptyState icon={<GraduationCap size={22} />} title={data.students.length ? "No students match" : "No students enrolled"} body={data.students.length ? "Try another search or class filter." : "Enrol each student with a school-issued ID. A strong temporary password is generated for them."} /> : (
@@ -119,7 +127,8 @@ export function StudentsPanel({ data }: { data: PortalManagement }) {
           <DialogFooter><button className="portal-btn" onClick={save} disabled={cmd.pending || !form?.studentId.trim() || !form?.name.trim() || !form?.classId} data-testid="button-save-student">{cmd.pending ? "Saving..." : form?.id ? "Save changes" : "Enrol and generate password"}</button></DialogFooter>
         </DialogContent>
       </Dialog>
-      {issued && <TempPasswordNotice {...issued} onClose={() => setIssued(null)} />}
+      {issued && <TempPasswordNotice login={issued} onClose={() => setIssued(null)} />}
+      {bulk && <BulkEnrol data={data} onClose={() => setBulk(false)} />}
     </div>
   );
 }

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { PortalManagement, PortalExam } from "@workspace/api-client-react";
-import { BarChart3, ClipboardList, Eye, EyeOff, FileText, Lock, Pencil, Plus, Send, Trash2, Undo2 } from "lucide-react";
+import { BarChart3, ClipboardList, Copy, Eye, EyeOff, FileText, Lock, Pencil, Plus, Send, Trash2, Undo2 } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { EmptyState, StatusPill } from "../ui";
 import { fileUrl, formatDateTime } from "../lib";
@@ -9,6 +9,17 @@ import { ExamResults } from "./ExamResults";
 import { className, useCommand } from "./useCommand";
 
 type Pending = { id: number; published: boolean; resultsReleased: boolean; label: string; body: string } | null;
+
+/** A fresh draft copy: unpublished, results withheld, rescheduled to the default future window. */
+export function duplicateExam(e: PortalExam): PortalExam {
+  const { id: _id, ...rest } = e;
+  const window = blankExam(e.classId);
+  return {
+    ...rest, title: (e.title + " (copy)").slice(0, 200), published: false, resultsReleased: false,
+    startsAt: window.startsAt, endsAt: window.endsAt,
+    questions: e.questions.map((q) => ({ ...q, options: [...q.options] })),
+  };
+}
 
 export function ExamsPanel({ data, isAdmin = false }: { data: PortalManagement; isAdmin?: boolean }) {
   const cmd = useCommand();
@@ -44,6 +55,7 @@ export function ExamsPanel({ data, isAdmin = false }: { data: PortalManagement; 
                 </div>
                 <div className="flex flex-wrap gap-2 md:justify-end">
                   <button className="portal-btn-ghost" onClick={() => setResultsFor(id)} data-testid={"button-results-exam-" + id}><BarChart3 size={13} /> Results</button>
+                  <button className="portal-btn-ghost" onClick={() => setEditing(duplicateExam(e))} data-testid={"button-duplicate-exam-" + id}><Copy size={13} /> Duplicate</button>
                   {!started && <button className="portal-btn-ghost" onClick={() => setEditing({ ...e, questions: e.questions.map((q) => ({ ...q, options: [...q.options] })) })} data-testid={"button-edit-exam-" + id}><Pencil size={13} /> Edit</button>}
                   {e.fileId && <a className="portal-btn-ghost" href={fileUrl(e.fileId)} target="_blank" rel="noreferrer"><FileText size={13} /> Paper</a>}
                   {started && (e.published

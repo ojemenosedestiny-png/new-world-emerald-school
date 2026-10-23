@@ -122,3 +122,27 @@ export function examWindow(startsAt: string, endsAt: string, now = Date.now()): 
   if (now > new Date(endsAt).getTime()) return "closed";
   return "open";
 }
+
+type ExamTiming = { id: number; startsAt: string; endsAt: string };
+type AttemptStatus = { examId: number; status: string };
+/** Dashboard order: still writing, open now, upcoming, submitted, then closed. */
+export function sortStudentExams<T extends ExamTiming>(exams: T[], attempts: AttemptStatus[], now = Date.now()): T[] {
+  const status = new Map(attempts.map((a) => [a.examId, a.status]));
+  const rank = (e: T) => {
+    const s = status.get(e.id);
+    if (s === "in_progress") return 0;
+    if (s) return 3;
+    const w = examWindow(e.startsAt, e.endsAt, now);
+    return w === "open" ? 1 : w === "upcoming" ? 2 : 4;
+  };
+  const time = (e: T, r: number) => r === 1 ? new Date(e.endsAt).getTime() : r === 2 ? new Date(e.startsAt).getTime() : -new Date(e.startsAt).getTime();
+  return [...exams].sort((a, b) => { const ra = rank(a), rb = rank(b); return ra - rb || time(a, ra) - time(b, rb); });
+}
+
+export function scrollToQuestion(id: string) {
+  const el = document.getElementById("question-" + id);
+  if (!el) return;
+  el.scrollIntoView({ behavior: "smooth", block: "start" });
+  // Move keyboard focus to the first answer control for screen-reader and keyboard users.
+  window.setTimeout(() => el.querySelector<HTMLElement>("button:not(:disabled), textarea:not(:disabled)")?.focus({ preventScroll: true }), 350);
+}

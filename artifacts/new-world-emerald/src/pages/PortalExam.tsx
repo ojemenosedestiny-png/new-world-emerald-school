@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useParams } from "wouter";
 import { useGetPortalAttempt, getGetPortalAttemptQueryKey, useGetPortalSession, getGetPortalSessionQueryKey } from "@workspace/api-client-react";
-import { ArrowLeft, CheckCircle2, CloudOff, FileText, Hourglass, Loader2, Send } from "lucide-react";
+import { ArrowLeft, CheckCircle2, ChevronDown, ChevronUp, CloudOff, FileText, Hourglass, ListChecks, Loader2, Send } from "lucide-react";
 import "@/portal/portal.css";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { ErrorPanel, PortalHeader, Skeleton, StatusPill } from "@/portal/ui";
-import { errorMessage, fileUrl, formatTime, usePortalMeta } from "@/portal/lib";
+import { errorMessage, fileUrl, formatTime, scrollToQuestion, usePortalMeta } from "@/portal/lib";
+import { QuestionNavigator, unansweredNumbers } from "@/portal/exam/QuestionNavigator";
 import { useAttemptSync, type SaveState } from "@/portal/exam/useAttemptSync";
 import { Countdown, useRemaining } from "@/portal/exam/Countdown";
 import { QuestionCard } from "@/portal/exam/QuestionCard";
@@ -46,6 +47,7 @@ export default function PortalExam() {
   const offset = useMemo(() => (attempt ? new Date(attempt.serverNow).getTime() - q.dataUpdatedAt : 0), [attempt, q.dataUpdatedAt]);
   const remaining = useRemaining(attempt?.deadline, offset);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [navOpen, setNavOpen] = useState(false);
   const autoSubmitted = useRef(false);
   const inProgress = attempt?.status === "in_progress";
   const expired = remaining !== null && remaining <= 0;
@@ -80,7 +82,8 @@ export default function PortalExam() {
   if (session.isLoading || q.isLoading) return <div className="portal"><PortalHeader subtitle="Exam">{back}</PortalHeader><div className="mx-auto max-w-3xl space-y-4 px-4 py-10"><Skeleton className="h-10 w-1/2" /><Skeleton className="h-40" /><Skeleton className="h-40" /></div></div>;
   if (q.isError || !attempt) return <div className="portal"><PortalHeader subtitle="Exam">{back}</PortalHeader><div className="mx-auto max-w-xl px-4 py-12"><ErrorPanel title="This exam could not be opened" message={errorMessage(q.error)} onRetry={() => q.refetch()} /></div></div>;
 
-  const answered = attempt.questions.filter((x) => (sync.answers[x.id] ?? "").trim() !== "").length;
+  const unanswered = unansweredNumbers(attempt.questions, sync.answers);
+  const answered = attempt.questions.length - unanswered.length;
   const released = attempt.status === "marked" && attempt.resultsReleased && typeof attempt.score === "number";
   const marks = new Map((released ? attempt.marks ?? [] : []).map((m) => [m.questionId, m]));
   const pdf = attempt.mode === "pdf" && !!attempt.fileId && inProgress && !expired;
@@ -141,9 +144,19 @@ export default function PortalExam() {
 
       {inProgress && !expired && (
         <div className="fixed inset-x-0 bottom-0 z-30 border-t border-[hsl(var(--p-line))] bg-[hsl(var(--p-paper)/0.95)] backdrop-blur">
+          {navOpen && (
+            <div className="mx-auto max-w-3xl border-b border-[hsl(var(--p-line))] px-4 py-3" id="exam-question-nav">
+              <QuestionNavigator questions={attempt.questions} answers={sync.answers} onJump={() => setNavOpen(false)} />
+            </div>
+          )}
           <div className="mx-auto flex max-w-3xl items-center justify-between gap-4 px-4 py-3">
-            <div className="text-sm"><span className="font-bold">{answered}</span> of {attempt.questions.length} answered
-              {sync.submitError && <p className="text-xs text-[hsl(var(--p-red))]" role="alert">{sync.submitError}</p>}
+            <div className="flex items-center gap-3 text-sm">
+              <button type="button" className="portal-btn-ghost !px-2.5 !py-1.5" onClick={() => setNavOpen((o) => !o)} aria-expanded={navOpen} aria-controls="exam-question-nav" data-testid="button-toggle-nav">
+                <ListChecks size={14} /> <span className="hidden sm:inline">Questions</span> {navOpen ? <ChevronDown size={13} /> : <ChevronUp size={13} />}
+              </button>
+              <div><span className="font-bold" data-testid="text-answered-count">{answered}</span> of {attempt.questions.length} answered
+                {sync.submitError && <p className="text-xs text-[hsl(var(--p-red))]" role="alert">{sync.submitError}</p>}
+              </div>
             </div>
             <button className="portal-btn" onClick={() => setConfirmOpen(true)} disabled={sync.submitting} data-testid="button-open-submit"><Send size={15} /> {sync.submitting ? "Submitting..." : sync.submitError ? "Retry submit" : "Submit exam"}</button>
           </div>
@@ -157,6 +170,17 @@ export default function PortalExam() {
             <AlertDialogTitle className="font-serif text-2xl">Submit your exam?</AlertDialogTitle>
             <AlertDialogDescription>You have answered {answered} of {attempt.questions.length} questions. After submitting you cannot change any answer.</AlertDialogDescription>
           </AlertDialogHeader>
+          {unanswered.length > 0 && (
+            <div className="rounded-xl bg-[hsl(var(--p-gold-soft))] p-3 text-sm" data-testid="panel-unanswered">
+              <p className="font-semibold">{unanswered.length === 1 ? "1 question is" : unanswered.length + " questions are"} still blank:</p>
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {unanswered.slice(0, 40).map((u) => (
+                  <button key={u.id} type="button" className="portal-nav-chip" onClick={() => { setConfirmOpen(false); window.setTimeout(() => scrollToQuestion(u.id), 150); }} data-testid={"unanswered-" + u.number}>{u.number}</button>
+                ))}
+                {unanswered.length > 40 && <span className="self-center text-xs">and {unanswered.length - 40} more</span>}
+              </div>
+            </div>
+          )}
           <AlertDialogFooter>
             <AlertDialogCancel data-testid="button-cancel-submit">Keep working</AlertDialogCancel>
             <AlertDialogAction onClick={() => void sync.submit()} data-testid="button-confirm-submit">Submit now</AlertDialogAction>

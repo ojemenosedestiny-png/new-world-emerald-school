@@ -10,6 +10,8 @@ declare global {
     interface Request {
       dbUser?: User;
       identity?: { email: string | null; emailVerified: boolean };
+      /** Set when a Clerk session exists but cannot be mapped to a school account. */
+      identityError?: string;
     }
   }
 }
@@ -21,8 +23,11 @@ export async function localUserBridge(req: Request, res: Response, next: NextFun
     // This is the original subject ID for migrated users, not Clerk's native ID.
     const userId = schoolUserId(auth.sessionClaims);
     if (!userId) {
-      res.status(401).json({ error: "Account identity could not be resolved." });
-      return;
+      // A misconfigured session token must not break public pages: continue as a
+      // signed-out visitor, and explain the problem wherever sign-in is required.
+      req.identityError = "Account identity could not be resolved.";
+      req.log?.warn({ clerkUserId: auth.userId }, "Clerk session has no school userId claim; check the session token template");
+      return next();
     }
     let [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId)).limit(1);
     if (!user) {

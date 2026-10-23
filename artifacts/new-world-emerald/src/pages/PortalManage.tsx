@@ -11,6 +11,7 @@ import { ExamsPanel } from "@/portal/manage/ExamsPanel";
 import { MarkingPanel } from "@/portal/manage/MarkingPanel";
 import { MaterialsPanel, NoticesPanel } from "@/portal/manage/ContentPanels";
 import { ClassesPanel, StudentsPanel, TeachersPanel } from "@/portal/manage/PeoplePanels";
+import { ManageOverview } from "@/portal/manage/Overview";
 
 function Gate({ title, body, children }: { title: string; body: string; children?: ReactNode }) {
   return (
@@ -64,6 +65,8 @@ export default function PortalManage() {
           : mgmt.isError || !d ? <ErrorPanel title="Management data did not load" message={errorMessage(mgmt.error)} onRetry={() => mgmt.refetch()} />
           : (!isAdmin && d.classes.length === 0) ? <Gate title="No classes assigned" body="You are approved as a teacher but no class is assigned yet. Ask a school administrator to assign your classes." />
           : (
+            <>
+            <ManageOverview data={d} />
             <Tabs defaultValue="exams">
               <TabsList className="mb-6 flex h-auto w-full justify-start gap-1 overflow-x-auto rounded-full border border-[hsl(var(--p-line))] bg-white/70 p-1">
                 <TabsTrigger value="exams" className="portal-tab" data-testid="tab-manage-exams">Exams</TabsTrigger>
@@ -82,6 +85,7 @@ export default function PortalManage() {
               {isAdmin && <TabsContent value="teachers"><TeachersPanel data={d} /></TabsContent>}
               {isAdmin && <TabsContent value="classes"><ClassesPanel data={d} /></TabsContent>}
             </Tabs>
+            </>
           )}
       </main>
     </div>

@@ -12,7 +12,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { useToast } from "@/hooks/use-toast";
 import { EmptyState, ErrorPanel, PortalHeader, Skeleton, StatusPill } from "./ui";
 import { PasswordChange } from "./PasswordChange";
-import { clearDrafts, clearStudentQueries, errorMessage, examWindow, fileUrl, formatDateTime } from "./lib";
+import { clearDrafts, clearStudentQueries, errorMessage, examWindow, fileUrl, formatDateTime, sortStudentExams } from "./lib";
 import { studentAverage } from "./manage/results";
 
 export function useStudentLogout() {
@@ -86,6 +86,7 @@ export function StudentDashboard({ session }: { session: PortalSession }) {
   const attemptByExam = useMemo(() => new Map((data?.attempts ?? []).map((a) => [a.examId, a])), [data]);
   const examIds = useMemo(() => new Set((data?.exams ?? []).map((e) => e.id)), [data]);
   const orphanAttempts = (data?.attempts ?? []).filter((a) => !examIds.has(a.examId));
+  const exams = useMemo(() => sortStudentExams(data?.exams ?? [], data?.attempts ?? []), [data]);
   const firstName = session.name.split(" ")[0];
   const average = studentAverage(data?.attempts ?? []);
 
@@ -93,7 +94,7 @@ export function StudentDashboard({ session }: { session: PortalSession }) {
     <div className="portal">
       <PortalHeader subtitle="Student Portal">
         <button className="portal-btn-dark" onClick={() => setPwOpen(true)} data-testid="button-open-password"><KeyRound size={14} /><span className="hidden sm:inline">Password</span></button>
-        <button className="portal-btn-dark" onClick={logout.run} disabled={logout.pending} data-testid="button-student-logout"><LogOut size={14} /> {logout.pending ? "Signing out" : "Sign out"}</button>
+        <button className="portal-btn-dark whitespace-nowrap" onClick={logout.run} disabled={logout.pending} aria-label={logout.pending ? "Signing out" : "Sign out"} data-testid="button-student-logout"><LogOut size={14} /><span className="hidden sm:inline">{logout.pending ? "Signing out" : "Sign out"}</span></button>
       </PortalHeader>
 
       <main className="mx-auto max-w-6xl px-4 py-8 md:px-8 md:py-12">
@@ -123,7 +124,7 @@ export function StudentDashboard({ session }: { session: PortalSession }) {
                 <EmptyState icon={<ClipboardList size={22} />} title="No exams scheduled" body="When your teacher publishes an exam for your class, it will appear here with its date and time." />
               ) : (
                 <>
-                  {data.exams.map((exam) => <ExamRow key={exam.id} exam={exam} attempt={attemptByExam.get(exam.id)} />)}
+                  {exams.map((exam) => <ExamRow key={exam.id} exam={exam} attempt={attemptByExam.get(exam.id)} />)}
                   {orphanAttempts.map((a) => (
                     <article key={a.id} className="portal-card flex items-center justify-between gap-4 p-5">
                       <div><p className="text-xs uppercase tracking-widest text-[hsl(var(--p-ink)/0.5)]">{a.subject}</p><p className="font-serif text-lg font-semibold">{a.title}</p></div>

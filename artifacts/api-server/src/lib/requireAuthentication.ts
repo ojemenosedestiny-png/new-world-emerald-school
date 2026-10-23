@@ -5,7 +5,7 @@ export function requireAuthentication(
   res: Response,
 ): req is Request & { dbUser: NonNullable<Request["dbUser"]> } {
   if (!req.dbUser) {
-    res.status(401).json({ error: "Authentication required" });
+    res.status(401).json({ error: req.identityError ?? "Authentication required" });
     return false;
   }
   return true;
