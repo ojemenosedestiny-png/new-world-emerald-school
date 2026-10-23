@@ -22,8 +22,9 @@ export default defineConfig({
       },
     },
     output: {
-      workspace: apiClientReactSrc,
-      target: "generated",
+      // Use an explicit target rather than `workspace`: the latter makes Orval
+      // append exports to our hand-maintained src/index.ts on every generation.
+      target: path.resolve(apiClientReactSrc, "generated"),
       client: "react-query",
       mode: "split",
       baseUrl: "/api",

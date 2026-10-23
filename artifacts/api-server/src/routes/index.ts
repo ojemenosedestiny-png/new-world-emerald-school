@@ -10,9 +10,11 @@ import schoolCommerceOrdersRouter from "./school-commerce-orders";
 import schoolCommerceFeesRouter from "./school-commerce-fees";
 import siteContentRouter from "./site-content";
 import { protectWebsiteManagement } from "../lib/website-admin";
+import portalRouter from "./portal";
 
 const router: IRouter = Router();
 
+router.use("/portal", portalRouter);
 router.use(protectWebsiteManagement);
 router.use(healthRouter);
 router.use(accountRouter);

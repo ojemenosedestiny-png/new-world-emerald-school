@@ -151,6 +151,7 @@ export default function Admin() {
           </Link>
           <div className="flex items-center gap-3">
             <span className="hidden text-sm text-white/60 sm:block">{user?.primaryEmailAddress?.emailAddress}</span>
+            <Link href="/portal/manage" className="rounded-full border border-white/20 px-4 py-2 text-sm font-semibold text-white/80 transition-colors hover:border-accent hover:text-accent" data-testid="link-portal-manage">Learning portal</Link>
             <Link href="/" className="rounded-full border border-white/20 p-2.5 text-white/70 transition-colors hover:border-accent hover:text-accent" aria-label="Back to website">
               <ExternalLink size={17} />
             </Link>

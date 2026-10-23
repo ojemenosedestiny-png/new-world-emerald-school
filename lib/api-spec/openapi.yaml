@@ -19,6 +19,24 @@ tags:
   - name: School Commerce
     description: School store orders and offline fee payment tracking.
 paths:
+  /portal/session:
+    $ref: "./portal.yaml#/paths/session"
+  /portal/password:
+    $ref: "./portal.yaml#/paths/password"
+  /portal/student:
+    $ref: "./portal.yaml#/paths/student"
+  /portal/exams/{id}/start:
+    $ref: "./portal.yaml#/paths/start"
+  /portal/attempts/{id}:
+    $ref: "./portal.yaml#/paths/attempt"
+  /portal/attempts/{id}/submit:
+    $ref: "./portal.yaml#/paths/submit"
+  /portal/manage:
+    $ref: "./portal.yaml#/paths/manage"
+  /portal/import:
+    $ref: "./portal.yaml#/paths/import"
+  /portal/files/{id}:
+    $ref: "./portal.yaml#/paths/file"
   /website-admin/access:
     get:
       operationId: getWebsiteAdminAccess
@@ -787,6 +805,52 @@ paths:
           description: Authentication required.
 components:
   schemas:
+    PortalLogin:
+      $ref: "./portal.yaml#/schemas/PortalLogin"
+    PortalPassword:
+      $ref: "./portal.yaml#/schemas/PortalPassword"
+    PortalSession:
+      $ref: "./portal.yaml#/schemas/PortalSession"
+    PortalClass:
+      $ref: "./portal.yaml#/schemas/PortalClass"
+    PortalStudent:
+      $ref: "./portal.yaml#/schemas/PortalStudent"
+    PortalTeacher:
+      $ref: "./portal.yaml#/schemas/PortalTeacher"
+    PortalQuestion:
+      $ref: "./portal.yaml#/schemas/PortalQuestion"
+    PortalQuestionKey:
+      $ref: "./portal.yaml#/schemas/PortalQuestionKey"
+    PortalExam:
+      $ref: "./portal.yaml#/schemas/PortalExam"
+    PortalExamSummary:
+      $ref: "./portal.yaml#/schemas/PortalExamSummary"
+    PortalMark:
+      $ref: "./portal.yaml#/schemas/PortalMark"
+    PortalAttempt:
+      $ref: "./portal.yaml#/schemas/PortalAttempt"
+    PortalAnswerInput:
+      $ref: "./portal.yaml#/schemas/PortalAnswerInput"
+    PortalMaterial:
+      $ref: "./portal.yaml#/schemas/PortalMaterial"
+    PortalNotice:
+      $ref: "./portal.yaml#/schemas/PortalNotice"
+    PortalDashboard:
+      $ref: "./portal.yaml#/schemas/PortalDashboard"
+    PortalStaffAttempt:
+      $ref: "./portal.yaml#/schemas/PortalStaffAttempt"
+    PortalManagement:
+      $ref: "./portal.yaml#/schemas/PortalManagement"
+    PortalGrade:
+      $ref: "./portal.yaml#/schemas/PortalGrade"
+    PortalStatus:
+      $ref: "./portal.yaml#/schemas/PortalStatus"
+    PortalCommand:
+      $ref: "./portal.yaml#/schemas/PortalCommand"
+    PortalMessage:
+      $ref: "./portal.yaml#/schemas/PortalMessage"
+    PortalPdfImport:
+      $ref: "./portal.yaml#/schemas/PortalPdfImport"
     WebsiteAdminAccess:
       type: object
       required: [isAdmin]

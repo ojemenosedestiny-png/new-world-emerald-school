@@ -1,0 +1,391 @@
+paths:
+  session:
+    get:
+      operationId: getPortalSession
+      responses:
+        "200":
+          description: Current portal identity
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PortalSession" }
+    post:
+      operationId: loginPortalStudent
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PortalLogin" }
+      responses:
+        "200":
+          description: Signed in
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PortalSession" }
+    delete:
+      operationId: logoutPortalStudent
+      responses:
+        "204": { description: Signed out }
+  password:
+    put:
+      operationId: changePortalPassword
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PortalPassword" }
+      responses:
+        "204": { description: Password changed }
+  student:
+    get:
+      operationId: getPortalDashboard
+      responses:
+        "200":
+          description: Class learning dashboard
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PortalDashboard" }
+  start:
+    post:
+      operationId: startPortalExam
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      responses:
+        "200":
+          description: New or resumed attempt
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PortalAttempt" }
+  attempt:
+    get:
+      operationId: getPortalAttempt
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      responses:
+        "200":
+          description: Private student attempt
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PortalAttempt" }
+    put:
+      operationId: savePortalAnswers
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PortalAnswerInput" }
+      responses:
+        "200":
+          description: Answers saved
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PortalAttempt" }
+  submit:
+    post:
+      operationId: submitPortalAttempt
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PortalAnswerInput" }
+      responses:
+        "200":
+          description: Submitted for marking
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PortalAttempt" }
+  manage:
+    get:
+      operationId: getPortalManagement
+      responses:
+        "200":
+          description: Data within the staff member's permissions
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PortalManagement" }
+    post:
+      operationId: managePortal
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PortalCommand" }
+      responses:
+        "200":
+          description: Saved
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PortalMessage" }
+  import:
+    post:
+      operationId: importPortalPdf
+      parameters:
+        - { name: classId, in: query, required: true, schema: { type: integer } }
+      requestBody:
+        required: true
+        content:
+          application/pdf:
+            schema: { type: string, format: binary }
+      responses:
+        "200":
+          description: Private PDF and draft extracted questions, never auto-published
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PortalPdfImport" }
+  file:
+    get:
+      operationId: getPortalFile
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: Authorized PDF document
+          content:
+            application/pdf:
+              schema: { type: string, format: binary }
+schemas:
+  PortalLogin:
+    type: object
+    required: [studentId, password]
+    properties:
+      studentId: { type: string, minLength: 1, maxLength: 50 }
+      password: { type: string, minLength: 1, maxLength: 128 }
+  PortalPassword:
+    type: object
+    required: [currentPassword, newPassword]
+    properties:
+      currentPassword: { type: string, minLength: 1, maxLength: 128 }
+      newPassword: { type: string, minLength: 10, maxLength: 128 }
+  PortalSession:
+    type: object
+    required: [role, name, mustChangePassword, classIds]
+    properties:
+      role: { type: string, enum: [guest, student, teacher, admin] }
+      name: { type: string }
+      studentId: { type: string }
+      classId: { type: integer }
+      classIds: { type: array, items: { type: integer } }
+      mustChangePassword: { type: boolean }
+  PortalClass:
+    type: object
+    required: [name]
+    properties:
+      id: { type: integer }
+      name: { type: string, minLength: 1, maxLength: 100 }
+  PortalStudent:
+    type: object
+    required: [studentId, name, classId, active]
+    properties:
+      id: { type: integer }
+      studentId: { type: string, minLength: 1, maxLength: 50 }
+      name: { type: string, minLength: 1, maxLength: 150 }
+      classId: { type: integer }
+      active: { type: boolean }
+      password: { type: string, minLength: 10, maxLength: 128 }
+  PortalTeacher:
+    type: object
+    required: [email, name, classIds, active]
+    properties:
+      id: { type: integer }
+      email: { type: string, minLength: 3, maxLength: 200 }
+      name: { type: string, minLength: 1, maxLength: 150 }
+      classIds: { type: array, items: { type: integer } }
+      active: { type: boolean }
+  PortalQuestion:
+    type: object
+    required: [id, type, text, options, marks]
+    properties:
+      id: { type: string, minLength: 1, maxLength: 80 }
+      type: { type: string, enum: [mcq, written] }
+      text: { type: string, minLength: 1, maxLength: 12000 }
+      options: { type: array, items: { type: string, maxLength: 3000 }, maxItems: 8 }
+      marks: { type: number, minimum: 0.5, maximum: 100 }
+  PortalQuestionKey:
+    allOf:
+      - { $ref: "#/schemas/PortalQuestion" }
+      - type: object
+        properties:
+          correctAnswer: { type: [integer, "null"] }
+          rubric: { type: string, maxLength: 5000 }
+  PortalExam:
+    type: object
+    required: [title, subject, classId, durationMinutes, startsAt, endsAt, mode, instructions, questions, published, resultsReleased]
+    properties:
+      id: { type: integer }
+      title: { type: string, minLength: 1, maxLength: 200 }
+      subject: { type: string, minLength: 1, maxLength: 100 }
+      classId: { type: integer }
+      durationMinutes: { type: integer, minimum: 1, maximum: 300 }
+      startsAt: { type: string }
+      endsAt: { type: string }
+      mode: { type: string, enum: [interactive, pdf] }
+      fileId: { type: [string, "null"] }
+      instructions: { type: string, maxLength: 5000 }
+      questions: { type: array, items: { $ref: "#/schemas/PortalQuestionKey" }, maxItems: 200 }
+      published: { type: boolean }
+      resultsReleased: { type: boolean }
+  PortalExamSummary:
+    type: object
+    required: [id, title, subject, durationMinutes, startsAt, endsAt, mode, instructions, questionCount, totalMarks]
+    properties:
+      id: { type: integer }
+      title: { type: string }
+      subject: { type: string }
+      durationMinutes: { type: integer }
+      startsAt: { type: string }
+      endsAt: { type: string }
+      mode: { type: string }
+      instructions: { type: string }
+      questionCount: { type: integer }
+      totalMarks: { type: number }
+  PortalMark:
+    type: object
+    required: [questionId, score, feedback]
+    properties:
+      questionId: { type: string }
+      score: { type: number, minimum: 0 }
+      feedback: { type: string, maxLength: 3000 }
+  PortalAttempt:
+    type: object
+    required: [id, examId, title, subject, mode, instructions, questions, answers, startedAt, deadline, serverNow, status, savedAt, totalMarks, resultsReleased]
+    properties:
+      id: { type: integer }
+      examId: { type: integer }
+      title: { type: string }
+      subject: { type: string }
+      mode: { type: string }
+      instructions: { type: string }
+      fileId: { type: [string, "null"] }
+      questions: { type: array, items: { $ref: "#/schemas/PortalQuestion" } }
+      answers: { type: object, additionalProperties: { type: string } }
+      startedAt: { type: string }
+      deadline: { type: string }
+      serverNow: { type: string }
+      status: { type: string, enum: [in_progress, submitted, marked] }
+      savedAt: { type: string }
+      totalMarks: { type: number }
+      resultsReleased: { type: boolean }
+      score: { type: number }
+      marks: { type: array, items: { $ref: "#/schemas/PortalMark" } }
+  PortalAnswerInput:
+    type: object
+    required: [answers]
+    properties:
+      answers: { type: object, additionalProperties: { type: string, maxLength: 20000 } }
+  PortalMaterial:
+    type: object
+    required: [title, subject, classId, body, published]
+    properties:
+      id: { type: integer }
+      title: { type: string, minLength: 1, maxLength: 200 }
+      subject: { type: string, minLength: 1, maxLength: 100 }
+      classId: { type: integer }
+      body: { type: string, maxLength: 30000 }
+      fileId: { type: [string, "null"] }
+      published: { type: boolean }
+  PortalNotice:
+    type: object
+    required: [title, body, classId, published]
+    properties:
+      id: { type: integer }
+      title: { type: string, minLength: 1, maxLength: 200 }
+      body: { type: string, minLength: 1, maxLength: 5000 }
+      classId: { type: integer }
+      published: { type: boolean }
+  PortalDashboard:
+    type: object
+    required: [className, exams, attempts, materials, notices]
+    properties:
+      className: { type: string }
+      exams: { type: array, items: { $ref: "#/schemas/PortalExamSummary" } }
+      attempts: { type: array, items: { $ref: "#/schemas/PortalAttempt" } }
+      materials: { type: array, items: { $ref: "#/schemas/PortalMaterial" } }
+      notices: { type: array, items: { $ref: "#/schemas/PortalNotice" } }
+  PortalStaffAttempt:
+    allOf:
+      - { $ref: "#/schemas/PortalAttempt" }
+      - type: object
+        required: [studentName, studentId, classId, questionKeys]
+        properties:
+          studentName: { type: string }
+          studentId: { type: string }
+          classId: { type: integer }
+          questionKeys: { type: array, items: { $ref: "#/schemas/PortalQuestionKey" } }
+  PortalManagement:
+    type: object
+    required: [classes, students, teachers, exams, attempts, materials, notices]
+    properties:
+      classes: { type: array, items: { $ref: "#/schemas/PortalClass" } }
+      students: { type: array, items: { $ref: "#/schemas/PortalStudent" } }
+      teachers: { type: array, items: { $ref: "#/schemas/PortalTeacher" } }
+      exams: { type: array, items: { $ref: "#/schemas/PortalExam" } }
+      attempts: { type: array, items: { $ref: "#/schemas/PortalStaffAttempt" } }
+      materials: { type: array, items: { $ref: "#/schemas/PortalMaterial" } }
+      notices: { type: array, items: { $ref: "#/schemas/PortalNotice" } }
+  PortalGrade:
+    type: object
+    required: [attemptId, marks]
+    properties:
+      attemptId: { type: integer }
+      marks: { type: array, items: { $ref: "#/schemas/PortalMark" } }
+  PortalStatus:
+    type: object
+    required: [id, published, resultsReleased]
+    properties:
+      id: { type: integer }
+      published: { type: boolean }
+      resultsReleased: { type: boolean }
+  PortalCommand:
+    type: object
+    required: [action]
+    properties:
+      action: { type: string, enum: [saveClass, saveStudent, saveTeacher, saveExam, saveMaterial, saveNotice, grade, examStatus] }
+      schoolClass: { $ref: "#/schemas/PortalClass" }
+      student: { $ref: "#/schemas/PortalStudent" }
+      teacher: { $ref: "#/schemas/PortalTeacher" }
+      exam: { $ref: "#/schemas/PortalExam" }
+      material: { $ref: "#/schemas/PortalMaterial" }
+      notice: { $ref: "#/schemas/PortalNotice" }
+      grade: { $ref: "#/schemas/PortalGrade" }
+      examStatus: { $ref: "#/schemas/PortalStatus" }
+  PortalMessage:
+    type: object
+    required: [message]
+    properties:
+      message: { type: string }
+  PortalPdfImport:
+    type: object
+    required: [fileId, questions, warning, extractedText]
+    properties:
+      fileId: { type: string }
+      questions: { type: array, items: { $ref: "#/schemas/PortalQuestionKey" } }
+      warning: { type: string }
+      extractedText: { type: string }
+components:
+  schemas:
+    PortalLogin: { $ref: "#/schemas/PortalLogin" }
+    PortalPassword: { $ref: "#/schemas/PortalPassword" }
+    PortalSession: { $ref: "#/schemas/PortalSession" }
+    PortalClass: { $ref: "#/schemas/PortalClass" }
+    PortalStudent: { $ref: "#/schemas/PortalStudent" }
+    PortalTeacher: { $ref: "#/schemas/PortalTeacher" }
+    PortalQuestion: { $ref: "#/schemas/PortalQuestion" }
+    PortalQuestionKey: { $ref: "#/schemas/PortalQuestionKey" }
+    PortalExam: { $ref: "#/schemas/PortalExam" }
+    PortalExamSummary: { $ref: "#/schemas/PortalExamSummary" }
+    PortalMark: { $ref: "#/schemas/PortalMark" }
+    PortalAttempt: { $ref: "#/schemas/PortalAttempt" }
+    PortalAnswerInput: { $ref: "#/schemas/PortalAnswerInput" }
+    PortalMaterial: { $ref: "#/schemas/PortalMaterial" }
+    PortalNotice: { $ref: "#/schemas/PortalNotice" }
+    PortalDashboard: { $ref: "#/schemas/PortalDashboard" }
+    PortalStaffAttempt: { $ref: "#/schemas/PortalStaffAttempt" }
+    PortalManagement: { $ref: "#/schemas/PortalManagement" }
+    PortalGrade: { $ref: "#/schemas/PortalGrade" }
+    PortalStatus: { $ref: "#/schemas/PortalStatus" }
+    PortalCommand: { $ref: "#/schemas/PortalCommand" }
+    PortalMessage: { $ref: "#/schemas/PortalMessage" }
+    PortalPdfImport: { $ref: "#/schemas/PortalPdfImport" }

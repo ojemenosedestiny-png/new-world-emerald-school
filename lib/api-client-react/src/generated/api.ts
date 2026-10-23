@@ -35,12 +35,23 @@ import type {
   FeePaymentReportUpdate,
   GetLocalAccount200,
   HealthStatus,
+  ImportPortalPdfParams,
   IndividualFeeCharge,
   IndividualFeeChargeInput,
   IndividualFeeChargeUpdate,
   LiveUpdate,
   LiveUpdateInput,
   LiveUpdateUpdate,
+  PortalAnswerInput,
+  PortalAttempt,
+  PortalCommand,
+  PortalDashboard,
+  PortalLogin,
+  PortalManagement,
+  PortalMessage,
+  PortalPassword,
+  PortalPdfImport,
+  PortalSession,
   PublicIndividualFeeCharge,
   SchoolCommerceSettings,
   SchoolCommerceSettingsUpdate,
@@ -84,6 +95,891 @@ const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKe
   }
   return result;
 };
+
+export const getGetPortalSessionUrl = () => {
+
+
+
+
+  return `/api/portal/session`
+}
+
+export const getPortalSession = async ( options?: RequestInit): Promise<PortalSession> => {
+
+  return customFetch<PortalSession>(getGetPortalSessionUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetPortalSessionQueryKey = () => {
+    return [
+    `/api/portal/session`
+    ] as const;
+    }
+
+
+export const getGetPortalSessionQueryOptions = <TData = Awaited<ReturnType<typeof getPortalSession>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPortalSession>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetPortalSessionQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getPortalSession>>> = ({ signal }) => getPortalSession({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getPortalSession>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetPortalSessionQueryResult = NonNullable<Awaited<ReturnType<typeof getPortalSession>>>
+export type GetPortalSessionQueryError = ErrorType<unknown>
+
+
+
+export function useGetPortalSession<TData = Awaited<ReturnType<typeof getPortalSession>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPortalSession>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetPortalSessionQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getLoginPortalStudentUrl = () => {
+
+
+
+
+  return `/api/portal/session`
+}
+
+export const loginPortalStudent = async (portalLogin: PortalLogin, options?: RequestInit): Promise<PortalSession> => {
+
+  return customFetch<PortalSession>(getLoginPortalStudentUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(portalLogin)
+  }
+);}
+
+
+
+
+
+export const getLoginPortalStudentMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof loginPortalStudent>>, TError,{data: BodyType<PortalLogin>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof loginPortalStudent>>, TError,{data: BodyType<PortalLogin>}, TContext> => {
+
+const mutationKey = ['loginPortalStudent'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof loginPortalStudent>>, {data: BodyType<PortalLogin>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  loginPortalStudent(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type LoginPortalStudentMutationResult = NonNullable<Awaited<ReturnType<typeof loginPortalStudent>>>
+    export type LoginPortalStudentMutationBody = BodyType<PortalLogin>
+    export type LoginPortalStudentMutationError = ErrorType<unknown>
+
+    export const useLoginPortalStudent = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof loginPortalStudent>>, TError,{data: BodyType<PortalLogin>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof loginPortalStudent>>,
+        TError,
+        {data: BodyType<PortalLogin>},
+        TContext
+      > => {
+      return useMutation(getLoginPortalStudentMutationOptions(options));
+    }
+
+export const getLogoutPortalStudentUrl = () => {
+
+
+
+
+  return `/api/portal/session`
+}
+
+export const logoutPortalStudent = async ( options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getLogoutPortalStudentUrl(),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getLogoutPortalStudentMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof logoutPortalStudent>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof logoutPortalStudent>>, TError,void, TContext> => {
+
+const mutationKey = ['logoutPortalStudent'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof logoutPortalStudent>>, void> = () => {
+
+
+          return  logoutPortalStudent(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type LogoutPortalStudentMutationResult = NonNullable<Awaited<ReturnType<typeof logoutPortalStudent>>>
+
+    export type LogoutPortalStudentMutationError = ErrorType<unknown>
+
+    export const useLogoutPortalStudent = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof logoutPortalStudent>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof logoutPortalStudent>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getLogoutPortalStudentMutationOptions(options));
+    }
+
+export const getChangePortalPasswordUrl = () => {
+
+
+
+
+  return `/api/portal/password`
+}
+
+export const changePortalPassword = async (portalPassword: PortalPassword, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getChangePortalPasswordUrl(),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(portalPassword)
+  }
+);}
+
+
+
+
+
+export const getChangePortalPasswordMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof changePortalPassword>>, TError,{data: BodyType<PortalPassword>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof changePortalPassword>>, TError,{data: BodyType<PortalPassword>}, TContext> => {
+
+const mutationKey = ['changePortalPassword'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof changePortalPassword>>, {data: BodyType<PortalPassword>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  changePortalPassword(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ChangePortalPasswordMutationResult = NonNullable<Awaited<ReturnType<typeof changePortalPassword>>>
+    export type ChangePortalPasswordMutationBody = BodyType<PortalPassword>
+    export type ChangePortalPasswordMutationError = ErrorType<unknown>
+
+    export const useChangePortalPassword = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof changePortalPassword>>, TError,{data: BodyType<PortalPassword>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof changePortalPassword>>,
+        TError,
+        {data: BodyType<PortalPassword>},
+        TContext
+      > => {
+      return useMutation(getChangePortalPasswordMutationOptions(options));
+    }
+
+export const getGetPortalDashboardUrl = () => {
+
+
+
+
+  return `/api/portal/student`
+}
+
+export const getPortalDashboard = async ( options?: RequestInit): Promise<PortalDashboard> => {
+
+  return customFetch<PortalDashboard>(getGetPortalDashboardUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetPortalDashboardQueryKey = () => {
+    return [
+    `/api/portal/student`
+    ] as const;
+    }
+
+
+export const getGetPortalDashboardQueryOptions = <TData = Awaited<ReturnType<typeof getPortalDashboard>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPortalDashboard>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetPortalDashboardQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getPortalDashboard>>> = ({ signal }) => getPortalDashboard({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getPortalDashboard>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetPortalDashboardQueryResult = NonNullable<Awaited<ReturnType<typeof getPortalDashboard>>>
+export type GetPortalDashboardQueryError = ErrorType<unknown>
+
+
+
+export function useGetPortalDashboard<TData = Awaited<ReturnType<typeof getPortalDashboard>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPortalDashboard>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetPortalDashboardQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getStartPortalExamUrl = (id: number,) => {
+
+
+
+
+  return `/api/portal/exams/${id}/start`
+}
+
+export const startPortalExam = async (id: number, options?: RequestInit): Promise<PortalAttempt> => {
+
+  return customFetch<PortalAttempt>(getStartPortalExamUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getStartPortalExamMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof startPortalExam>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof startPortalExam>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['startPortalExam'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof startPortalExam>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  startPortalExam(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type StartPortalExamMutationResult = NonNullable<Awaited<ReturnType<typeof startPortalExam>>>
+
+    export type StartPortalExamMutationError = ErrorType<unknown>
+
+    export const useStartPortalExam = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof startPortalExam>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof startPortalExam>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getStartPortalExamMutationOptions(options));
+    }
+
+export const getGetPortalAttemptUrl = (id: number,) => {
+
+
+
+
+  return `/api/portal/attempts/${id}`
+}
+
+export const getPortalAttempt = async (id: number, options?: RequestInit): Promise<PortalAttempt> => {
+
+  return customFetch<PortalAttempt>(getGetPortalAttemptUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetPortalAttemptQueryKey = (id: number,) => {
+    return [
+    `/api/portal/attempts/${id}`
+    ] as const;
+    }
+
+
+export const getGetPortalAttemptQueryOptions = <TData = Awaited<ReturnType<typeof getPortalAttempt>>, TError = ErrorType<unknown>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPortalAttempt>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetPortalAttemptQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getPortalAttempt>>> = ({ signal }) => getPortalAttempt(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getPortalAttempt>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetPortalAttemptQueryResult = NonNullable<Awaited<ReturnType<typeof getPortalAttempt>>>
+export type GetPortalAttemptQueryError = ErrorType<unknown>
+
+
+
+export function useGetPortalAttempt<TData = Awaited<ReturnType<typeof getPortalAttempt>>, TError = ErrorType<unknown>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPortalAttempt>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetPortalAttemptQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getSavePortalAnswersUrl = (id: number,) => {
+
+
+
+
+  return `/api/portal/attempts/${id}`
+}
+
+export const savePortalAnswers = async (id: number,
+    portalAnswerInput: PortalAnswerInput, options?: RequestInit): Promise<PortalAttempt> => {
+
+  return customFetch<PortalAttempt>(getSavePortalAnswersUrl(id),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(portalAnswerInput)
+  }
+);}
+
+
+
+
+
+export const getSavePortalAnswersMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof savePortalAnswers>>, TError,{id: number;data: BodyType<PortalAnswerInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof savePortalAnswers>>, TError,{id: number;data: BodyType<PortalAnswerInput>}, TContext> => {
+
+const mutationKey = ['savePortalAnswers'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof savePortalAnswers>>, {id: number;data: BodyType<PortalAnswerInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  savePortalAnswers(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SavePortalAnswersMutationResult = NonNullable<Awaited<ReturnType<typeof savePortalAnswers>>>
+    export type SavePortalAnswersMutationBody = BodyType<PortalAnswerInput>
+    export type SavePortalAnswersMutationError = ErrorType<unknown>
+
+    export const useSavePortalAnswers = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof savePortalAnswers>>, TError,{id: number;data: BodyType<PortalAnswerInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof savePortalAnswers>>,
+        TError,
+        {id: number;data: BodyType<PortalAnswerInput>},
+        TContext
+      > => {
+      return useMutation(getSavePortalAnswersMutationOptions(options));
+    }
+
+export const getSubmitPortalAttemptUrl = (id: number,) => {
+
+
+
+
+  return `/api/portal/attempts/${id}/submit`
+}
+
+export const submitPortalAttempt = async (id: number,
+    portalAnswerInput: PortalAnswerInput, options?: RequestInit): Promise<PortalAttempt> => {
+
+  return customFetch<PortalAttempt>(getSubmitPortalAttemptUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(portalAnswerInput)
+  }
+);}
+
+
+
+
+
+export const getSubmitPortalAttemptMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof submitPortalAttempt>>, TError,{id: number;data: BodyType<PortalAnswerInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof submitPortalAttempt>>, TError,{id: number;data: BodyType<PortalAnswerInput>}, TContext> => {
+
+const mutationKey = ['submitPortalAttempt'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof submitPortalAttempt>>, {id: number;data: BodyType<PortalAnswerInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  submitPortalAttempt(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SubmitPortalAttemptMutationResult = NonNullable<Awaited<ReturnType<typeof submitPortalAttempt>>>
+    export type SubmitPortalAttemptMutationBody = BodyType<PortalAnswerInput>
+    export type SubmitPortalAttemptMutationError = ErrorType<unknown>
+
+    export const useSubmitPortalAttempt = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof submitPortalAttempt>>, TError,{id: number;data: BodyType<PortalAnswerInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof submitPortalAttempt>>,
+        TError,
+        {id: number;data: BodyType<PortalAnswerInput>},
+        TContext
+      > => {
+      return useMutation(getSubmitPortalAttemptMutationOptions(options));
+    }
+
+export const getGetPortalManagementUrl = () => {
+
+
+
+
+  return `/api/portal/manage`
+}
+
+export const getPortalManagement = async ( options?: RequestInit): Promise<PortalManagement> => {
+
+  return customFetch<PortalManagement>(getGetPortalManagementUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetPortalManagementQueryKey = () => {
+    return [
+    `/api/portal/manage`
+    ] as const;
+    }
+
+
+export const getGetPortalManagementQueryOptions = <TData = Awaited<ReturnType<typeof getPortalManagement>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPortalManagement>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetPortalManagementQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getPortalManagement>>> = ({ signal }) => getPortalManagement({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getPortalManagement>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetPortalManagementQueryResult = NonNullable<Awaited<ReturnType<typeof getPortalManagement>>>
+export type GetPortalManagementQueryError = ErrorType<unknown>
+
+
+
+export function useGetPortalManagement<TData = Awaited<ReturnType<typeof getPortalManagement>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPortalManagement>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetPortalManagementQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getManagePortalUrl = () => {
+
+
+
+
+  return `/api/portal/manage`
+}
+
+export const managePortal = async (portalCommand: PortalCommand, options?: RequestInit): Promise<PortalMessage> => {
+
+  return customFetch<PortalMessage>(getManagePortalUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(portalCommand)
+  }
+);}
+
+
+
+
+
+export const getManagePortalMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof managePortal>>, TError,{data: BodyType<PortalCommand>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof managePortal>>, TError,{data: BodyType<PortalCommand>}, TContext> => {
+
+const mutationKey = ['managePortal'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof managePortal>>, {data: BodyType<PortalCommand>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  managePortal(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ManagePortalMutationResult = NonNullable<Awaited<ReturnType<typeof managePortal>>>
+    export type ManagePortalMutationBody = BodyType<PortalCommand>
+    export type ManagePortalMutationError = ErrorType<unknown>
+
+    export const useManagePortal = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof managePortal>>, TError,{data: BodyType<PortalCommand>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof managePortal>>,
+        TError,
+        {data: BodyType<PortalCommand>},
+        TContext
+      > => {
+      return useMutation(getManagePortalMutationOptions(options));
+    }
+
+export const getImportPortalPdfUrl = (params: ImportPortalPdfParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/portal/import?${stringifiedParams}` : `/api/portal/import`
+}
+
+export const importPortalPdf = async (importPortalPdfBody: Blob,
+    params: ImportPortalPdfParams, options?: RequestInit): Promise<PortalPdfImport> => {
+
+  return customFetch<PortalPdfImport>(getImportPortalPdfUrl(params),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/pdf', ...options?.headers },
+    body: importPortalPdfBody
+  }
+);}
+
+
+
+
+
+export const getImportPortalPdfMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof importPortalPdf>>, TError,{data: BodyType<Blob>;params: ImportPortalPdfParams}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof importPortalPdf>>, TError,{data: BodyType<Blob>;params: ImportPortalPdfParams}, TContext> => {
+
+const mutationKey = ['importPortalPdf'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof importPortalPdf>>, {data: BodyType<Blob>;params: ImportPortalPdfParams}> = (props) => {
+          const {data,params} = props ?? {};
+
+          return  importPortalPdf(data,params,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ImportPortalPdfMutationResult = NonNullable<Awaited<ReturnType<typeof importPortalPdf>>>
+    export type ImportPortalPdfMutationBody = BodyType<Blob>
+    export type ImportPortalPdfMutationError = ErrorType<unknown>
+
+    export const useImportPortalPdf = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof importPortalPdf>>, TError,{data: BodyType<Blob>;params: ImportPortalPdfParams}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof importPortalPdf>>,
+        TError,
+        {data: BodyType<Blob>;params: ImportPortalPdfParams},
+        TContext
+      > => {
+      return useMutation(getImportPortalPdfMutationOptions(options));
+    }
+
+export const getGetPortalFileUrl = (id: string,) => {
+
+
+
+
+  return `/api/portal/files/${id}`
+}
+
+export const getPortalFile = async (id: string, options?: RequestInit): Promise<Blob> => {
+
+  return customFetch<Blob>(getGetPortalFileUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetPortalFileQueryKey = (id: string,) => {
+    return [
+    `/api/portal/files/${id}`
+    ] as const;
+    }
+
+
+export const getGetPortalFileQueryOptions = <TData = Awaited<ReturnType<typeof getPortalFile>>, TError = ErrorType<unknown>>(id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPortalFile>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetPortalFileQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getPortalFile>>> = ({ signal }) => getPortalFile(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getPortalFile>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetPortalFileQueryResult = NonNullable<Awaited<ReturnType<typeof getPortalFile>>>
+export type GetPortalFileQueryError = ErrorType<unknown>
+
+
+
+export function useGetPortalFile<TData = Awaited<ReturnType<typeof getPortalFile>>, TError = ErrorType<unknown>>(
+ id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPortalFile>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetPortalFileQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 
 export const getGetWebsiteAdminAccessUrl = () => {
 

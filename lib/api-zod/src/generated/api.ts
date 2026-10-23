@@ -8,6 +8,734 @@
 import * as zod from 'zod';
 
 
+export const GetPortalSessionResponse = zod.object({
+  "role": zod.enum(['guest', 'student', 'teacher', 'admin']),
+  "name": zod.string(),
+  "studentId": zod.string().optional(),
+  "classId": zod.number().optional(),
+  "classIds": zod.array(zod.number()),
+  "mustChangePassword": zod.boolean()
+})
+
+
+export const loginPortalStudentBodyStudentIdMax = 50;
+
+export const loginPortalStudentBodyPasswordMax = 128;
+
+
+
+export const LoginPortalStudentBody = zod.object({
+  "studentId": zod.string().min(1).max(loginPortalStudentBodyStudentIdMax),
+  "password": zod.string().min(1).max(loginPortalStudentBodyPasswordMax)
+})
+
+export const LoginPortalStudentResponse = zod.object({
+  "role": zod.enum(['guest', 'student', 'teacher', 'admin']),
+  "name": zod.string(),
+  "studentId": zod.string().optional(),
+  "classId": zod.number().optional(),
+  "classIds": zod.array(zod.number()),
+  "mustChangePassword": zod.boolean()
+})
+
+
+export const LogoutPortalStudentResponse = zod.void()
+
+
+export const changePortalPasswordBodyCurrentPasswordMax = 128;
+
+export const changePortalPasswordBodyNewPasswordMin = 10;
+export const changePortalPasswordBodyNewPasswordMax = 128;
+
+
+
+export const ChangePortalPasswordBody = zod.object({
+  "currentPassword": zod.string().min(1).max(changePortalPasswordBodyCurrentPasswordMax),
+  "newPassword": zod.string().min(changePortalPasswordBodyNewPasswordMin).max(changePortalPasswordBodyNewPasswordMax)
+})
+
+export const ChangePortalPasswordResponse = zod.void()
+
+
+export const getPortalDashboardResponseAttemptsItemQuestionsItemIdMax = 80;
+
+export const getPortalDashboardResponseAttemptsItemQuestionsItemTextMax = 12000;
+
+export const getPortalDashboardResponseAttemptsItemQuestionsItemOptionsItemMax = 3000;
+
+export const getPortalDashboardResponseAttemptsItemQuestionsItemOptionsMax = 8;
+
+export const getPortalDashboardResponseAttemptsItemQuestionsItemMarksMin = 0.5;
+export const getPortalDashboardResponseAttemptsItemQuestionsItemMarksMax = 100;
+
+export const getPortalDashboardResponseAttemptsItemMarksItemScoreMin = 0;
+
+export const getPortalDashboardResponseAttemptsItemMarksItemFeedbackMax = 3000;
+
+export const getPortalDashboardResponseMaterialsItemTitleMax = 200;
+
+export const getPortalDashboardResponseMaterialsItemSubjectMax = 100;
+
+export const getPortalDashboardResponseMaterialsItemBodyMax = 30000;
+
+export const getPortalDashboardResponseNoticesItemTitleMax = 200;
+
+export const getPortalDashboardResponseNoticesItemBodyMax = 5000;
+
+
+
+export const GetPortalDashboardResponse = zod.object({
+  "className": zod.string(),
+  "exams": zod.array(zod.object({
+  "id": zod.number(),
+  "title": zod.string(),
+  "subject": zod.string(),
+  "durationMinutes": zod.number(),
+  "startsAt": zod.string(),
+  "endsAt": zod.string(),
+  "mode": zod.string(),
+  "instructions": zod.string(),
+  "questionCount": zod.number(),
+  "totalMarks": zod.number()
+})),
+  "attempts": zod.array(zod.object({
+  "id": zod.number(),
+  "examId": zod.number(),
+  "title": zod.string(),
+  "subject": zod.string(),
+  "mode": zod.string(),
+  "instructions": zod.string(),
+  "fileId": zod.string().nullish(),
+  "questions": zod.array(zod.object({
+  "id": zod.string().min(1).max(getPortalDashboardResponseAttemptsItemQuestionsItemIdMax),
+  "type": zod.enum(['mcq', 'written']),
+  "text": zod.string().min(1).max(getPortalDashboardResponseAttemptsItemQuestionsItemTextMax),
+  "options": zod.array(zod.string().max(getPortalDashboardResponseAttemptsItemQuestionsItemOptionsItemMax)).max(getPortalDashboardResponseAttemptsItemQuestionsItemOptionsMax),
+  "marks": zod.number().min(getPortalDashboardResponseAttemptsItemQuestionsItemMarksMin).max(getPortalDashboardResponseAttemptsItemQuestionsItemMarksMax)
+})),
+  "answers": zod.record(zod.string(), zod.string()),
+  "startedAt": zod.string(),
+  "deadline": zod.string(),
+  "serverNow": zod.string(),
+  "status": zod.enum(['in_progress', 'submitted', 'marked']),
+  "savedAt": zod.string(),
+  "totalMarks": zod.number(),
+  "resultsReleased": zod.boolean(),
+  "score": zod.number().optional(),
+  "marks": zod.array(zod.object({
+  "questionId": zod.string(),
+  "score": zod.number().min(getPortalDashboardResponseAttemptsItemMarksItemScoreMin),
+  "feedback": zod.string().max(getPortalDashboardResponseAttemptsItemMarksItemFeedbackMax)
+})).optional()
+})),
+  "materials": zod.array(zod.object({
+  "id": zod.number().optional(),
+  "title": zod.string().min(1).max(getPortalDashboardResponseMaterialsItemTitleMax),
+  "subject": zod.string().min(1).max(getPortalDashboardResponseMaterialsItemSubjectMax),
+  "classId": zod.number(),
+  "body": zod.string().max(getPortalDashboardResponseMaterialsItemBodyMax),
+  "fileId": zod.string().nullish(),
+  "published": zod.boolean()
+})),
+  "notices": zod.array(zod.object({
+  "id": zod.number().optional(),
+  "title": zod.string().min(1).max(getPortalDashboardResponseNoticesItemTitleMax),
+  "body": zod.string().min(1).max(getPortalDashboardResponseNoticesItemBodyMax),
+  "classId": zod.number(),
+  "published": zod.boolean()
+}))
+})
+
+
+export const StartPortalExamParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const startPortalExamResponseQuestionsItemIdMax = 80;
+
+export const startPortalExamResponseQuestionsItemTextMax = 12000;
+
+export const startPortalExamResponseQuestionsItemOptionsItemMax = 3000;
+
+export const startPortalExamResponseQuestionsItemOptionsMax = 8;
+
+export const startPortalExamResponseQuestionsItemMarksMin = 0.5;
+export const startPortalExamResponseQuestionsItemMarksMax = 100;
+
+export const startPortalExamResponseMarksItemScoreMin = 0;
+
+export const startPortalExamResponseMarksItemFeedbackMax = 3000;
+
+
+
+export const StartPortalExamResponse = zod.object({
+  "id": zod.number(),
+  "examId": zod.number(),
+  "title": zod.string(),
+  "subject": zod.string(),
+  "mode": zod.string(),
+  "instructions": zod.string(),
+  "fileId": zod.string().nullish(),
+  "questions": zod.array(zod.object({
+  "id": zod.string().min(1).max(startPortalExamResponseQuestionsItemIdMax),
+  "type": zod.enum(['mcq', 'written']),
+  "text": zod.string().min(1).max(startPortalExamResponseQuestionsItemTextMax),
+  "options": zod.array(zod.string().max(startPortalExamResponseQuestionsItemOptionsItemMax)).max(startPortalExamResponseQuestionsItemOptionsMax),
+  "marks": zod.number().min(startPortalExamResponseQuestionsItemMarksMin).max(startPortalExamResponseQuestionsItemMarksMax)
+})),
+  "answers": zod.record(zod.string(), zod.string()),
+  "startedAt": zod.string(),
+  "deadline": zod.string(),
+  "serverNow": zod.string(),
+  "status": zod.enum(['in_progress', 'submitted', 'marked']),
+  "savedAt": zod.string(),
+  "totalMarks": zod.number(),
+  "resultsReleased": zod.boolean(),
+  "score": zod.number().optional(),
+  "marks": zod.array(zod.object({
+  "questionId": zod.string(),
+  "score": zod.number().min(startPortalExamResponseMarksItemScoreMin),
+  "feedback": zod.string().max(startPortalExamResponseMarksItemFeedbackMax)
+})).optional()
+})
+
+
+export const GetPortalAttemptParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const getPortalAttemptResponseQuestionsItemIdMax = 80;
+
+export const getPortalAttemptResponseQuestionsItemTextMax = 12000;
+
+export const getPortalAttemptResponseQuestionsItemOptionsItemMax = 3000;
+
+export const getPortalAttemptResponseQuestionsItemOptionsMax = 8;
+
+export const getPortalAttemptResponseQuestionsItemMarksMin = 0.5;
+export const getPortalAttemptResponseQuestionsItemMarksMax = 100;
+
+export const getPortalAttemptResponseMarksItemScoreMin = 0;
+
+export const getPortalAttemptResponseMarksItemFeedbackMax = 3000;
+
+
+
+export const GetPortalAttemptResponse = zod.object({
+  "id": zod.number(),
+  "examId": zod.number(),
+  "title": zod.string(),
+  "subject": zod.string(),
+  "mode": zod.string(),
+  "instructions": zod.string(),
+  "fileId": zod.string().nullish(),
+  "questions": zod.array(zod.object({
+  "id": zod.string().min(1).max(getPortalAttemptResponseQuestionsItemIdMax),
+  "type": zod.enum(['mcq', 'written']),
+  "text": zod.string().min(1).max(getPortalAttemptResponseQuestionsItemTextMax),
+  "options": zod.array(zod.string().max(getPortalAttemptResponseQuestionsItemOptionsItemMax)).max(getPortalAttemptResponseQuestionsItemOptionsMax),
+  "marks": zod.number().min(getPortalAttemptResponseQuestionsItemMarksMin).max(getPortalAttemptResponseQuestionsItemMarksMax)
+})),
+  "answers": zod.record(zod.string(), zod.string()),
+  "startedAt": zod.string(),
+  "deadline": zod.string(),
+  "serverNow": zod.string(),
+  "status": zod.enum(['in_progress', 'submitted', 'marked']),
+  "savedAt": zod.string(),
+  "totalMarks": zod.number(),
+  "resultsReleased": zod.boolean(),
+  "score": zod.number().optional(),
+  "marks": zod.array(zod.object({
+  "questionId": zod.string(),
+  "score": zod.number().min(getPortalAttemptResponseMarksItemScoreMin),
+  "feedback": zod.string().max(getPortalAttemptResponseMarksItemFeedbackMax)
+})).optional()
+})
+
+
+export const SavePortalAnswersParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const savePortalAnswersBodyAnswersMaxOne = 20000;
+
+
+
+export const SavePortalAnswersBody = zod.object({
+  "answers": zod.record(zod.string(), zod.string().max(savePortalAnswersBodyAnswersMaxOne))
+})
+
+export const savePortalAnswersResponseQuestionsItemIdMax = 80;
+
+export const savePortalAnswersResponseQuestionsItemTextMax = 12000;
+
+export const savePortalAnswersResponseQuestionsItemOptionsItemMax = 3000;
+
+export const savePortalAnswersResponseQuestionsItemOptionsMax = 8;
+
+export const savePortalAnswersResponseQuestionsItemMarksMin = 0.5;
+export const savePortalAnswersResponseQuestionsItemMarksMax = 100;
+
+export const savePortalAnswersResponseMarksItemScoreMin = 0;
+
+export const savePortalAnswersResponseMarksItemFeedbackMax = 3000;
+
+
+
+export const SavePortalAnswersResponse = zod.object({
+  "id": zod.number(),
+  "examId": zod.number(),
+  "title": zod.string(),
+  "subject": zod.string(),
+  "mode": zod.string(),
+  "instructions": zod.string(),
+  "fileId": zod.string().nullish(),
+  "questions": zod.array(zod.object({
+  "id": zod.string().min(1).max(savePortalAnswersResponseQuestionsItemIdMax),
+  "type": zod.enum(['mcq', 'written']),
+  "text": zod.string().min(1).max(savePortalAnswersResponseQuestionsItemTextMax),
+  "options": zod.array(zod.string().max(savePortalAnswersResponseQuestionsItemOptionsItemMax)).max(savePortalAnswersResponseQuestionsItemOptionsMax),
+  "marks": zod.number().min(savePortalAnswersResponseQuestionsItemMarksMin).max(savePortalAnswersResponseQuestionsItemMarksMax)
+})),
+  "answers": zod.record(zod.string(), zod.string()),
+  "startedAt": zod.string(),
+  "deadline": zod.string(),
+  "serverNow": zod.string(),
+  "status": zod.enum(['in_progress', 'submitted', 'marked']),
+  "savedAt": zod.string(),
+  "totalMarks": zod.number(),
+  "resultsReleased": zod.boolean(),
+  "score": zod.number().optional(),
+  "marks": zod.array(zod.object({
+  "questionId": zod.string(),
+  "score": zod.number().min(savePortalAnswersResponseMarksItemScoreMin),
+  "feedback": zod.string().max(savePortalAnswersResponseMarksItemFeedbackMax)
+})).optional()
+})
+
+
+export const SubmitPortalAttemptParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const submitPortalAttemptBodyAnswersMaxOne = 20000;
+
+
+
+export const SubmitPortalAttemptBody = zod.object({
+  "answers": zod.record(zod.string(), zod.string().max(submitPortalAttemptBodyAnswersMaxOne))
+})
+
+export const submitPortalAttemptResponseQuestionsItemIdMax = 80;
+
+export const submitPortalAttemptResponseQuestionsItemTextMax = 12000;
+
+export const submitPortalAttemptResponseQuestionsItemOptionsItemMax = 3000;
+
+export const submitPortalAttemptResponseQuestionsItemOptionsMax = 8;
+
+export const submitPortalAttemptResponseQuestionsItemMarksMin = 0.5;
+export const submitPortalAttemptResponseQuestionsItemMarksMax = 100;
+
+export const submitPortalAttemptResponseMarksItemScoreMin = 0;
+
+export const submitPortalAttemptResponseMarksItemFeedbackMax = 3000;
+
+
+
+export const SubmitPortalAttemptResponse = zod.object({
+  "id": zod.number(),
+  "examId": zod.number(),
+  "title": zod.string(),
+  "subject": zod.string(),
+  "mode": zod.string(),
+  "instructions": zod.string(),
+  "fileId": zod.string().nullish(),
+  "questions": zod.array(zod.object({
+  "id": zod.string().min(1).max(submitPortalAttemptResponseQuestionsItemIdMax),
+  "type": zod.enum(['mcq', 'written']),
+  "text": zod.string().min(1).max(submitPortalAttemptResponseQuestionsItemTextMax),
+  "options": zod.array(zod.string().max(submitPortalAttemptResponseQuestionsItemOptionsItemMax)).max(submitPortalAttemptResponseQuestionsItemOptionsMax),
+  "marks": zod.number().min(submitPortalAttemptResponseQuestionsItemMarksMin).max(submitPortalAttemptResponseQuestionsItemMarksMax)
+})),
+  "answers": zod.record(zod.string(), zod.string()),
+  "startedAt": zod.string(),
+  "deadline": zod.string(),
+  "serverNow": zod.string(),
+  "status": zod.enum(['in_progress', 'submitted', 'marked']),
+  "savedAt": zod.string(),
+  "totalMarks": zod.number(),
+  "resultsReleased": zod.boolean(),
+  "score": zod.number().optional(),
+  "marks": zod.array(zod.object({
+  "questionId": zod.string(),
+  "score": zod.number().min(submitPortalAttemptResponseMarksItemScoreMin),
+  "feedback": zod.string().max(submitPortalAttemptResponseMarksItemFeedbackMax)
+})).optional()
+})
+
+
+export const getPortalManagementResponseClassesItemNameMax = 100;
+
+export const getPortalManagementResponseStudentsItemStudentIdMax = 50;
+
+export const getPortalManagementResponseStudentsItemNameMax = 150;
+
+export const getPortalManagementResponseStudentsItemPasswordMin = 10;
+export const getPortalManagementResponseStudentsItemPasswordMax = 128;
+
+export const getPortalManagementResponseTeachersItemEmailMin = 3;
+export const getPortalManagementResponseTeachersItemEmailMax = 200;
+
+export const getPortalManagementResponseTeachersItemNameMax = 150;
+
+export const getPortalManagementResponseExamsItemTitleMax = 200;
+
+export const getPortalManagementResponseExamsItemSubjectMax = 100;
+
+export const getPortalManagementResponseExamsItemDurationMinutesMax = 300;
+
+export const getPortalManagementResponseExamsItemInstructionsMax = 5000;
+
+export const getPortalManagementResponseExamsItemQuestionsItemOneIdMax = 80;
+
+export const getPortalManagementResponseExamsItemQuestionsItemOneTextMax = 12000;
+
+export const getPortalManagementResponseExamsItemQuestionsItemOneOptionsItemMax = 3000;
+
+export const getPortalManagementResponseExamsItemQuestionsItemOneOptionsMax = 8;
+
+export const getPortalManagementResponseExamsItemQuestionsItemOneMarksMin = 0.5;
+export const getPortalManagementResponseExamsItemQuestionsItemOneMarksMax = 100;
+
+export const getPortalManagementResponseExamsItemQuestionsItemTwoRubricMax = 5000;
+
+export const getPortalManagementResponseExamsItemQuestionsMax = 200;
+
+export const getPortalManagementResponseAttemptsItemOneQuestionsItemIdMax = 80;
+
+export const getPortalManagementResponseAttemptsItemOneQuestionsItemTextMax = 12000;
+
+export const getPortalManagementResponseAttemptsItemOneQuestionsItemOptionsItemMax = 3000;
+
+export const getPortalManagementResponseAttemptsItemOneQuestionsItemOptionsMax = 8;
+
+export const getPortalManagementResponseAttemptsItemOneQuestionsItemMarksMin = 0.5;
+export const getPortalManagementResponseAttemptsItemOneQuestionsItemMarksMax = 100;
+
+export const getPortalManagementResponseAttemptsItemOneMarksItemScoreMin = 0;
+
+export const getPortalManagementResponseAttemptsItemOneMarksItemFeedbackMax = 3000;
+
+export const getPortalManagementResponseAttemptsItemTwoQuestionKeysItemOneIdMax = 80;
+
+export const getPortalManagementResponseAttemptsItemTwoQuestionKeysItemOneTextMax = 12000;
+
+export const getPortalManagementResponseAttemptsItemTwoQuestionKeysItemOneOptionsItemMax = 3000;
+
+export const getPortalManagementResponseAttemptsItemTwoQuestionKeysItemOneOptionsMax = 8;
+
+export const getPortalManagementResponseAttemptsItemTwoQuestionKeysItemOneMarksMin = 0.5;
+export const getPortalManagementResponseAttemptsItemTwoQuestionKeysItemOneMarksMax = 100;
+
+export const getPortalManagementResponseAttemptsItemTwoQuestionKeysItemTwoRubricMax = 5000;
+
+export const getPortalManagementResponseMaterialsItemTitleMax = 200;
+
+export const getPortalManagementResponseMaterialsItemSubjectMax = 100;
+
+export const getPortalManagementResponseMaterialsItemBodyMax = 30000;
+
+export const getPortalManagementResponseNoticesItemTitleMax = 200;
+
+export const getPortalManagementResponseNoticesItemBodyMax = 5000;
+
+
+
+export const GetPortalManagementResponse = zod.object({
+  "classes": zod.array(zod.object({
+  "id": zod.number().optional(),
+  "name": zod.string().min(1).max(getPortalManagementResponseClassesItemNameMax)
+})),
+  "students": zod.array(zod.object({
+  "id": zod.number().optional(),
+  "studentId": zod.string().min(1).max(getPortalManagementResponseStudentsItemStudentIdMax),
+  "name": zod.string().min(1).max(getPortalManagementResponseStudentsItemNameMax),
+  "classId": zod.number(),
+  "active": zod.boolean(),
+  "password": zod.string().min(getPortalManagementResponseStudentsItemPasswordMin).max(getPortalManagementResponseStudentsItemPasswordMax).optional()
+})),
+  "teachers": zod.array(zod.object({
+  "id": zod.number().optional(),
+  "email": zod.string().min(getPortalManagementResponseTeachersItemEmailMin).max(getPortalManagementResponseTeachersItemEmailMax),
+  "name": zod.string().min(1).max(getPortalManagementResponseTeachersItemNameMax),
+  "classIds": zod.array(zod.number()),
+  "active": zod.boolean()
+})),
+  "exams": zod.array(zod.object({
+  "id": zod.number().optional(),
+  "title": zod.string().min(1).max(getPortalManagementResponseExamsItemTitleMax),
+  "subject": zod.string().min(1).max(getPortalManagementResponseExamsItemSubjectMax),
+  "classId": zod.number(),
+  "durationMinutes": zod.number().min(1).max(getPortalManagementResponseExamsItemDurationMinutesMax),
+  "startsAt": zod.string(),
+  "endsAt": zod.string(),
+  "mode": zod.enum(['interactive', 'pdf']),
+  "fileId": zod.string().nullish(),
+  "instructions": zod.string().max(getPortalManagementResponseExamsItemInstructionsMax),
+  "questions": zod.array(zod.object({
+  "id": zod.string().min(1).max(getPortalManagementResponseExamsItemQuestionsItemOneIdMax),
+  "type": zod.enum(['mcq', 'written']),
+  "text": zod.string().min(1).max(getPortalManagementResponseExamsItemQuestionsItemOneTextMax),
+  "options": zod.array(zod.string().max(getPortalManagementResponseExamsItemQuestionsItemOneOptionsItemMax)).max(getPortalManagementResponseExamsItemQuestionsItemOneOptionsMax),
+  "marks": zod.number().min(getPortalManagementResponseExamsItemQuestionsItemOneMarksMin).max(getPortalManagementResponseExamsItemQuestionsItemOneMarksMax)
+}).and(zod.object({
+  "correctAnswer": zod.number().nullish(),
+  "rubric": zod.string().max(getPortalManagementResponseExamsItemQuestionsItemTwoRubricMax).optional()
+}))).max(getPortalManagementResponseExamsItemQuestionsMax),
+  "published": zod.boolean(),
+  "resultsReleased": zod.boolean()
+})),
+  "attempts": zod.array(zod.object({
+  "id": zod.number(),
+  "examId": zod.number(),
+  "title": zod.string(),
+  "subject": zod.string(),
+  "mode": zod.string(),
+  "instructions": zod.string(),
+  "fileId": zod.string().nullish(),
+  "questions": zod.array(zod.object({
+  "id": zod.string().min(1).max(getPortalManagementResponseAttemptsItemOneQuestionsItemIdMax),
+  "type": zod.enum(['mcq', 'written']),
+  "text": zod.string().min(1).max(getPortalManagementResponseAttemptsItemOneQuestionsItemTextMax),
+  "options": zod.array(zod.string().max(getPortalManagementResponseAttemptsItemOneQuestionsItemOptionsItemMax)).max(getPortalManagementResponseAttemptsItemOneQuestionsItemOptionsMax),
+  "marks": zod.number().min(getPortalManagementResponseAttemptsItemOneQuestionsItemMarksMin).max(getPortalManagementResponseAttemptsItemOneQuestionsItemMarksMax)
+})),
+  "answers": zod.record(zod.string(), zod.string()),
+  "startedAt": zod.string(),
+  "deadline": zod.string(),
+  "serverNow": zod.string(),
+  "status": zod.enum(['in_progress', 'submitted', 'marked']),
+  "savedAt": zod.string(),
+  "totalMarks": zod.number(),
+  "resultsReleased": zod.boolean(),
+  "score": zod.number().optional(),
+  "marks": zod.array(zod.object({
+  "questionId": zod.string(),
+  "score": zod.number().min(getPortalManagementResponseAttemptsItemOneMarksItemScoreMin),
+  "feedback": zod.string().max(getPortalManagementResponseAttemptsItemOneMarksItemFeedbackMax)
+})).optional()
+}).and(zod.object({
+  "studentName": zod.string(),
+  "studentId": zod.string(),
+  "classId": zod.number(),
+  "questionKeys": zod.array(zod.object({
+  "id": zod.string().min(1).max(getPortalManagementResponseAttemptsItemTwoQuestionKeysItemOneIdMax),
+  "type": zod.enum(['mcq', 'written']),
+  "text": zod.string().min(1).max(getPortalManagementResponseAttemptsItemTwoQuestionKeysItemOneTextMax),
+  "options": zod.array(zod.string().max(getPortalManagementResponseAttemptsItemTwoQuestionKeysItemOneOptionsItemMax)).max(getPortalManagementResponseAttemptsItemTwoQuestionKeysItemOneOptionsMax),
+  "marks": zod.number().min(getPortalManagementResponseAttemptsItemTwoQuestionKeysItemOneMarksMin).max(getPortalManagementResponseAttemptsItemTwoQuestionKeysItemOneMarksMax)
+}).and(zod.object({
+  "correctAnswer": zod.number().nullish(),
+  "rubric": zod.string().max(getPortalManagementResponseAttemptsItemTwoQuestionKeysItemTwoRubricMax).optional()
+})))
+}))),
+  "materials": zod.array(zod.object({
+  "id": zod.number().optional(),
+  "title": zod.string().min(1).max(getPortalManagementResponseMaterialsItemTitleMax),
+  "subject": zod.string().min(1).max(getPortalManagementResponseMaterialsItemSubjectMax),
+  "classId": zod.number(),
+  "body": zod.string().max(getPortalManagementResponseMaterialsItemBodyMax),
+  "fileId": zod.string().nullish(),
+  "published": zod.boolean()
+})),
+  "notices": zod.array(zod.object({
+  "id": zod.number().optional(),
+  "title": zod.string().min(1).max(getPortalManagementResponseNoticesItemTitleMax),
+  "body": zod.string().min(1).max(getPortalManagementResponseNoticesItemBodyMax),
+  "classId": zod.number(),
+  "published": zod.boolean()
+}))
+})
+
+
+export const managePortalBodySchoolClassNameMax = 100;
+
+export const managePortalBodyStudentStudentIdMax = 50;
+
+export const managePortalBodyStudentNameMax = 150;
+
+export const managePortalBodyStudentPasswordMin = 10;
+export const managePortalBodyStudentPasswordMax = 128;
+
+export const managePortalBodyTeacherEmailMin = 3;
+export const managePortalBodyTeacherEmailMax = 200;
+
+export const managePortalBodyTeacherNameMax = 150;
+
+export const managePortalBodyExamTitleMax = 200;
+
+export const managePortalBodyExamSubjectMax = 100;
+
+export const managePortalBodyExamDurationMinutesMax = 300;
+
+export const managePortalBodyExamInstructionsMax = 5000;
+
+export const managePortalBodyExamQuestionsItemOneIdMax = 80;
+
+export const managePortalBodyExamQuestionsItemOneTextMax = 12000;
+
+export const managePortalBodyExamQuestionsItemOneOptionsItemMax = 3000;
+
+export const managePortalBodyExamQuestionsItemOneOptionsMax = 8;
+
+export const managePortalBodyExamQuestionsItemOneMarksMin = 0.5;
+export const managePortalBodyExamQuestionsItemOneMarksMax = 100;
+
+export const managePortalBodyExamQuestionsItemTwoRubricMax = 5000;
+
+export const managePortalBodyExamQuestionsMax = 200;
+
+export const managePortalBodyMaterialTitleMax = 200;
+
+export const managePortalBodyMaterialSubjectMax = 100;
+
+export const managePortalBodyMaterialBodyMax = 30000;
+
+export const managePortalBodyNoticeTitleMax = 200;
+
+export const managePortalBodyNoticeBodyMax = 5000;
+
+export const managePortalBodyGradeMarksItemScoreMin = 0;
+
+export const managePortalBodyGradeMarksItemFeedbackMax = 3000;
+
+
+
+export const ManagePortalBody = zod.object({
+  "action": zod.enum(['saveClass', 'saveStudent', 'saveTeacher', 'saveExam', 'saveMaterial', 'saveNotice', 'grade', 'examStatus']),
+  "schoolClass": zod.object({
+  "id": zod.number().optional(),
+  "name": zod.string().min(1).max(managePortalBodySchoolClassNameMax)
+}).optional(),
+  "student": zod.object({
+  "id": zod.number().optional(),
+  "studentId": zod.string().min(1).max(managePortalBodyStudentStudentIdMax),
+  "name": zod.string().min(1).max(managePortalBodyStudentNameMax),
+  "classId": zod.number(),
+  "active": zod.boolean(),
+  "password": zod.string().min(managePortalBodyStudentPasswordMin).max(managePortalBodyStudentPasswordMax).optional()
+}).optional(),
+  "teacher": zod.object({
+  "id": zod.number().optional(),
+  "email": zod.string().min(managePortalBodyTeacherEmailMin).max(managePortalBodyTeacherEmailMax),
+  "name": zod.string().min(1).max(managePortalBodyTeacherNameMax),
+  "classIds": zod.array(zod.number()),
+  "active": zod.boolean()
+}).optional(),
+  "exam": zod.object({
+  "id": zod.number().optional(),
+  "title": zod.string().min(1).max(managePortalBodyExamTitleMax),
+  "subject": zod.string().min(1).max(managePortalBodyExamSubjectMax),
+  "classId": zod.number(),
+  "durationMinutes": zod.number().min(1).max(managePortalBodyExamDurationMinutesMax),
+  "startsAt": zod.string(),
+  "endsAt": zod.string(),
+  "mode": zod.enum(['interactive', 'pdf']),
+  "fileId": zod.string().nullish(),
+  "instructions": zod.string().max(managePortalBodyExamInstructionsMax),
+  "questions": zod.array(zod.object({
+  "id": zod.string().min(1).max(managePortalBodyExamQuestionsItemOneIdMax),
+  "type": zod.enum(['mcq', 'written']),
+  "text": zod.string().min(1).max(managePortalBodyExamQuestionsItemOneTextMax),
+  "options": zod.array(zod.string().max(managePortalBodyExamQuestionsItemOneOptionsItemMax)).max(managePortalBodyExamQuestionsItemOneOptionsMax),
+  "marks": zod.number().min(managePortalBodyExamQuestionsItemOneMarksMin).max(managePortalBodyExamQuestionsItemOneMarksMax)
+}).and(zod.object({
+  "correctAnswer": zod.number().nullish(),
+  "rubric": zod.string().max(managePortalBodyExamQuestionsItemTwoRubricMax).optional()
+}))).max(managePortalBodyExamQuestionsMax),
+  "published": zod.boolean(),
+  "resultsReleased": zod.boolean()
+}).optional(),
+  "material": zod.object({
+  "id": zod.number().optional(),
+  "title": zod.string().min(1).max(managePortalBodyMaterialTitleMax),
+  "subject": zod.string().min(1).max(managePortalBodyMaterialSubjectMax),
+  "classId": zod.number(),
+  "body": zod.string().max(managePortalBodyMaterialBodyMax),
+  "fileId": zod.string().nullish(),
+  "published": zod.boolean()
+}).optional(),
+  "notice": zod.object({
+  "id": zod.number().optional(),
+  "title": zod.string().min(1).max(managePortalBodyNoticeTitleMax),
+  "body": zod.string().min(1).max(managePortalBodyNoticeBodyMax),
+  "classId": zod.number(),
+  "published": zod.boolean()
+}).optional(),
+  "grade": zod.object({
+  "attemptId": zod.number(),
+  "marks": zod.array(zod.object({
+  "questionId": zod.string(),
+  "score": zod.number().min(managePortalBodyGradeMarksItemScoreMin),
+  "feedback": zod.string().max(managePortalBodyGradeMarksItemFeedbackMax)
+}))
+}).optional(),
+  "examStatus": zod.object({
+  "id": zod.number(),
+  "published": zod.boolean(),
+  "resultsReleased": zod.boolean()
+}).optional()
+})
+
+export const ManagePortalResponse = zod.object({
+  "message": zod.string()
+})
+
+
+export const ImportPortalPdfQueryParams = zod.object({
+  "classId": zod.coerce.number()
+})
+
+export const importPortalPdfResponseQuestionsItemOneIdMax = 80;
+
+export const importPortalPdfResponseQuestionsItemOneTextMax = 12000;
+
+export const importPortalPdfResponseQuestionsItemOneOptionsItemMax = 3000;
+
+export const importPortalPdfResponseQuestionsItemOneOptionsMax = 8;
+
+export const importPortalPdfResponseQuestionsItemOneMarksMin = 0.5;
+export const importPortalPdfResponseQuestionsItemOneMarksMax = 100;
+
+export const importPortalPdfResponseQuestionsItemTwoRubricMax = 5000;
+
+
+
+export const ImportPortalPdfResponse = zod.object({
+  "fileId": zod.string(),
+  "questions": zod.array(zod.object({
+  "id": zod.string().min(1).max(importPortalPdfResponseQuestionsItemOneIdMax),
+  "type": zod.enum(['mcq', 'written']),
+  "text": zod.string().min(1).max(importPortalPdfResponseQuestionsItemOneTextMax),
+  "options": zod.array(zod.string().max(importPortalPdfResponseQuestionsItemOneOptionsItemMax)).max(importPortalPdfResponseQuestionsItemOneOptionsMax),
+  "marks": zod.number().min(importPortalPdfResponseQuestionsItemOneMarksMin).max(importPortalPdfResponseQuestionsItemOneMarksMax)
+}).and(zod.object({
+  "correctAnswer": zod.number().nullish(),
+  "rubric": zod.string().max(importPortalPdfResponseQuestionsItemTwoRubricMax).optional()
+}))),
+  "warning": zod.string(),
+  "extractedText": zod.string()
+})
+
+
+export const GetPortalFileParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const GetPortalFileResponse = zod.unknown()
+
+
 /**
  * @summary Check whether the signed-in account may manage this website
  */

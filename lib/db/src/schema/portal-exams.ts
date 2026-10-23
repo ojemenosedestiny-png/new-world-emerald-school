@@ -1,0 +1,29 @@
+import { pgTable, serial, text, integer, boolean, timestamp, jsonb } from "drizzle-orm/pg-core";
+import { createInsertSchema } from "drizzle-zod";
+import { portalClasses } from "./portal-classes";
+export interface PortalQuestionData {
+  id: string;
+  type: "mcq" | "written";
+  text: string;
+  options: string[];
+  correctAnswer?: number | null;
+  marks: number;
+  rubric?: string;
+}
+export const portalExams = pgTable("portal_exams", {
+  id: serial("id").primaryKey(),
+  title: text("title").notNull(),
+  subject: text("subject").notNull(),
+  classId: integer("class_id").notNull().references(() => portalClasses.id),
+  durationMinutes: integer("duration_minutes").notNull(),
+  startsAt: timestamp("starts_at", { withTimezone: true }).notNull(),
+  endsAt: timestamp("ends_at", { withTimezone: true }).notNull(),
+  mode: text("mode").notNull(),
+  fileId: text("file_id"),
+  instructions: text("instructions").notNull().default(""),
+  questions: jsonb("questions").$type<PortalQuestionData[]>().notNull(),
+  published: boolean("published").notNull().default(false),
+  resultsReleased: boolean("results_released").notNull().default(false),
+});
+export const insertPortalExamSchema = createInsertSchema(portalExams).omit({ id: true });
+export type PortalExamRecord = typeof portalExams.$inferSelect;

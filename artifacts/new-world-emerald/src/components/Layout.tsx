@@ -46,6 +46,7 @@ export function Navbar({ solid = false }: { solid?: boolean }) {
           <a href="#calendar" className="hover:text-primary transition-colors">Calendar</a>
           <a href={asset("/#anniversary")} className="hover:text-primary transition-colors">5th anniversary</a>
           <Link href="/commerce?section=fees" className="hover:text-primary transition-colors" data-testid="link-uniform-shop-desktop">Uniforms &amp; School Payments</Link>
+          <Link href="/portal" className="hover:text-primary transition-colors" data-testid="link-student-portal-desktop">Student Portal</Link>
           <a href={asset("/admin")} className="hover:text-primary transition-colors">Admin Panel</a>
         </div>
       </div>
@@ -153,6 +154,14 @@ export function Navbar({ solid = false }: { solid?: boolean }) {
                   data-testid="link-mobile-fees-store"
                 >
                   Uniforms &amp; School Payments <ArrowRight className="shrink-0" size={18} aria-hidden="true" />
+                </Link>
+                <Link
+                  href="/portal"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="flex items-center justify-between gap-4 rounded-xl border border-primary/15 bg-primary/5 px-4 py-3 font-semibold leading-5 text-primary"
+                  data-testid="link-mobile-student-portal"
+                >
+                  Student Portal <ArrowRight className="shrink-0" size={18} aria-hidden="true" />
                 </Link>
                 <button onClick={() => {setIsPortalsOpen(true); setIsMobileMenuOpen(false);}} className="text-left font-medium flex items-center gap-2 text-muted-foreground">
                   <UserIcon size={18} /> Portals Login

@@ -173,6 +173,9 @@ export class ObjectStorageService {
     }
 
     const entityId = parts.slice(1).join('/');
+    // Portal exams and revision papers have a separate authorization endpoint.
+    // They must never inherit this legacy route's public-read behavior.
+    if (entityId.toLowerCase().startsWith('portal-private/')) throw new ObjectNotFoundError();
     let entityDir = this.getPrivateObjectDir();
     if (!entityDir.endsWith('/')) {
       entityDir = `${entityDir}/`;

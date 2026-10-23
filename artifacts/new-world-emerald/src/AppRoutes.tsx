@@ -11,6 +11,9 @@ const SchoolSignIn = lazy(() =>
 const Account = lazy(() => import("@/pages/Account"));
 const SchoolCommerce = lazy(() => import("@/pages/SchoolCommerce"));
 const Admin = lazy(() => import("@/pages/Admin"));
+const Portal = lazy(() => import("@/pages/Portal"));
+const PortalExam = lazy(() => import("@/pages/PortalExam"));
+const PortalManage = lazy(() => import("@/pages/PortalManage"));
 const NotFound = lazy(() => import("@/pages/not-found"));
 
 export function AppRoutes() {
@@ -25,6 +28,9 @@ export function AppRoutes() {
         <Route path="/account" component={Account} />
         <Route path="/commerce" component={SchoolCommerce} />
         <Route path="/admin" component={Admin} />
+        <Route path="/portal" component={Portal} />
+        <Route path="/portal/exam/:id" component={PortalExam} />
+        <Route path="/portal/manage" component={PortalManage} />
         <Route component={NotFound} />
       </Switch>
     </RouteBoundary>

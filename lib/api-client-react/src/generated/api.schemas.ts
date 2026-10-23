@@ -5,6 +5,1070 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+export interface PortalLogin {
+  /**
+     * @minLength 1
+     * @maxLength 50
+     */
+  studentId: string;
+  /**
+     * @minLength 1
+     * @maxLength 128
+     */
+  password: string;
+}
+
+export interface PortalPassword {
+  /**
+     * @minLength 1
+     * @maxLength 128
+     */
+  currentPassword: string;
+  /**
+     * @minLength 10
+     * @maxLength 128
+     */
+  newPassword: string;
+}
+
+export type PortalSessionRole = typeof PortalSessionRole[keyof typeof PortalSessionRole];
+
+
+export const PortalSessionRole = {
+  guest: 'guest',
+  student: 'student',
+  teacher: 'teacher',
+  admin: 'admin',
+} as const;
+
+export interface PortalSession {
+  role: PortalSessionRole;
+  name: string;
+  studentId?: string;
+  classId?: number;
+  classIds: number[];
+  mustChangePassword: boolean;
+}
+
+export interface PortalClass {
+  id?: number;
+  /**
+     * @minLength 1
+     * @maxLength 100
+     */
+  name: string;
+}
+
+export interface PortalStudent {
+  id?: number;
+  /**
+     * @minLength 1
+     * @maxLength 50
+     */
+  studentId: string;
+  /**
+     * @minLength 1
+     * @maxLength 150
+     */
+  name: string;
+  classId: number;
+  active: boolean;
+  /**
+     * @minLength 10
+     * @maxLength 128
+     */
+  password?: string;
+}
+
+export interface PortalTeacher {
+  id?: number;
+  /**
+     * @minLength 3
+     * @maxLength 200
+     */
+  email: string;
+  /**
+     * @minLength 1
+     * @maxLength 150
+     */
+  name: string;
+  classIds: number[];
+  active: boolean;
+}
+
+export type PortalQuestionType = typeof PortalQuestionType[keyof typeof PortalQuestionType];
+
+
+export const PortalQuestionType = {
+  mcq: 'mcq',
+  written: 'written',
+} as const;
+
+export interface PortalQuestion {
+  /**
+     * @minLength 1
+     * @maxLength 80
+     */
+  id: string;
+  type: PortalQuestionType;
+  /**
+     * @minLength 1
+     * @maxLength 12000
+     */
+  text: string;
+  /**
+     * @maxItems 8
+     * @items.maxLength 3000
+     */
+  options: string[];
+  /**
+     * @minimum 0.5
+     * @maximum 100
+     */
+  marks: number;
+}
+
+export type PortalQuestionKey = ({
+  /**
+     * @minLength 1
+     * @maxLength 80
+     */
+  id: string;
+  type: 'mcq' | 'written';
+  /**
+     * @minLength 1
+     * @maxLength 12000
+     */
+  text: string;
+  /**
+     * @maxItems 8
+     * @items.maxLength 3000
+     */
+  options: string[];
+  /**
+     * @minimum 0.5
+     * @maximum 100
+     */
+  marks: number;
+}) & ({
+  /** @nullable */
+  correctAnswer?: number | null;
+  /** @maxLength 5000 */
+  rubric?: string;
+});
+
+export type PortalExamMode = typeof PortalExamMode[keyof typeof PortalExamMode];
+
+
+export const PortalExamMode = {
+  interactive: 'interactive',
+  pdf: 'pdf',
+} as const;
+
+export type PortalExamQuestionsItem = ({
+  /**
+     * @minLength 1
+     * @maxLength 80
+     */
+  id: string;
+  type: 'mcq' | 'written';
+  /**
+     * @minLength 1
+     * @maxLength 12000
+     */
+  text: string;
+  /**
+     * @maxItems 8
+     * @items.maxLength 3000
+     */
+  options: string[];
+  /**
+     * @minimum 0.5
+     * @maximum 100
+     */
+  marks: number;
+}) & ({
+  /** @nullable */
+  correctAnswer?: number | null;
+  /** @maxLength 5000 */
+  rubric?: string;
+});
+
+export interface PortalExam {
+  id?: number;
+  /**
+     * @minLength 1
+     * @maxLength 200
+     */
+  title: string;
+  /**
+     * @minLength 1
+     * @maxLength 100
+     */
+  subject: string;
+  classId: number;
+  /**
+     * @minimum 1
+     * @maximum 300
+     */
+  durationMinutes: number;
+  startsAt: string;
+  endsAt: string;
+  mode: PortalExamMode;
+  /** @nullable */
+  fileId?: string | null;
+  /** @maxLength 5000 */
+  instructions: string;
+  /** @maxItems 200 */
+  questions: PortalExamQuestionsItem[];
+  published: boolean;
+  resultsReleased: boolean;
+}
+
+export interface PortalExamSummary {
+  id: number;
+  title: string;
+  subject: string;
+  durationMinutes: number;
+  startsAt: string;
+  endsAt: string;
+  mode: string;
+  instructions: string;
+  questionCount: number;
+  totalMarks: number;
+}
+
+export interface PortalMark {
+  questionId: string;
+  /** @minimum 0 */
+  score: number;
+  /** @maxLength 3000 */
+  feedback: string;
+}
+
+export type PortalAttemptQuestionsItemType = typeof PortalAttemptQuestionsItemType[keyof typeof PortalAttemptQuestionsItemType];
+
+
+export const PortalAttemptQuestionsItemType = {
+  mcq: 'mcq',
+  written: 'written',
+} as const;
+
+export type PortalAttemptQuestionsItem = {
+  /**
+     * @minLength 1
+     * @maxLength 80
+     */
+  id: string;
+  type: PortalAttemptQuestionsItemType;
+  /**
+     * @minLength 1
+     * @maxLength 12000
+     */
+  text: string;
+  /**
+     * @maxItems 8
+     * @items.maxLength 3000
+     */
+  options: string[];
+  /**
+     * @minimum 0.5
+     * @maximum 100
+     */
+  marks: number;
+};
+
+export type PortalAttemptAnswers = {[key: string]: string};
+
+export type PortalAttemptStatus = typeof PortalAttemptStatus[keyof typeof PortalAttemptStatus];
+
+
+export const PortalAttemptStatus = {
+  in_progress: 'in_progress',
+  submitted: 'submitted',
+  marked: 'marked',
+} as const;
+
+export type PortalAttemptMarksItem = {
+  questionId: string;
+  /** @minimum 0 */
+  score: number;
+  /** @maxLength 3000 */
+  feedback: string;
+};
+
+export interface PortalAttempt {
+  id: number;
+  examId: number;
+  title: string;
+  subject: string;
+  mode: string;
+  instructions: string;
+  /** @nullable */
+  fileId?: string | null;
+  questions: PortalAttemptQuestionsItem[];
+  answers: PortalAttemptAnswers;
+  startedAt: string;
+  deadline: string;
+  serverNow: string;
+  status: PortalAttemptStatus;
+  savedAt: string;
+  totalMarks: number;
+  resultsReleased: boolean;
+  score?: number;
+  marks?: PortalAttemptMarksItem[];
+}
+
+export type PortalAnswerInputAnswers = {[key: string]: string};
+
+export interface PortalAnswerInput {
+  answers: PortalAnswerInputAnswers;
+}
+
+export interface PortalMaterial {
+  id?: number;
+  /**
+     * @minLength 1
+     * @maxLength 200
+     */
+  title: string;
+  /**
+     * @minLength 1
+     * @maxLength 100
+     */
+  subject: string;
+  classId: number;
+  /** @maxLength 30000 */
+  body: string;
+  /** @nullable */
+  fileId?: string | null;
+  published: boolean;
+}
+
+export interface PortalNotice {
+  id?: number;
+  /**
+     * @minLength 1
+     * @maxLength 200
+     */
+  title: string;
+  /**
+     * @minLength 1
+     * @maxLength 5000
+     */
+  body: string;
+  classId: number;
+  published: boolean;
+}
+
+export type PortalDashboardExamsItem = {
+  id: number;
+  title: string;
+  subject: string;
+  durationMinutes: number;
+  startsAt: string;
+  endsAt: string;
+  mode: string;
+  instructions: string;
+  questionCount: number;
+  totalMarks: number;
+};
+
+export type PortalDashboardAttemptsItemQuestionsItemType = typeof PortalDashboardAttemptsItemQuestionsItemType[keyof typeof PortalDashboardAttemptsItemQuestionsItemType];
+
+
+export const PortalDashboardAttemptsItemQuestionsItemType = {
+  mcq: 'mcq',
+  written: 'written',
+} as const;
+
+export type PortalDashboardAttemptsItemQuestionsItem = {
+  /**
+     * @minLength 1
+     * @maxLength 80
+     */
+  id: string;
+  type: PortalDashboardAttemptsItemQuestionsItemType;
+  /**
+     * @minLength 1
+     * @maxLength 12000
+     */
+  text: string;
+  /**
+     * @maxItems 8
+     * @items.maxLength 3000
+     */
+  options: string[];
+  /**
+     * @minimum 0.5
+     * @maximum 100
+     */
+  marks: number;
+};
+
+export type PortalDashboardAttemptsItemAnswers = {[key: string]: string};
+
+export type PortalDashboardAttemptsItemStatus = typeof PortalDashboardAttemptsItemStatus[keyof typeof PortalDashboardAttemptsItemStatus];
+
+
+export const PortalDashboardAttemptsItemStatus = {
+  in_progress: 'in_progress',
+  submitted: 'submitted',
+  marked: 'marked',
+} as const;
+
+export type PortalDashboardAttemptsItemMarksItem = {
+  questionId: string;
+  /** @minimum 0 */
+  score: number;
+  /** @maxLength 3000 */
+  feedback: string;
+};
+
+export type PortalDashboardAttemptsItem = {
+  id: number;
+  examId: number;
+  title: string;
+  subject: string;
+  mode: string;
+  instructions: string;
+  /** @nullable */
+  fileId?: string | null;
+  questions: PortalDashboardAttemptsItemQuestionsItem[];
+  answers: PortalDashboardAttemptsItemAnswers;
+  startedAt: string;
+  deadline: string;
+  serverNow: string;
+  status: PortalDashboardAttemptsItemStatus;
+  savedAt: string;
+  totalMarks: number;
+  resultsReleased: boolean;
+  score?: number;
+  marks?: PortalDashboardAttemptsItemMarksItem[];
+};
+
+export type PortalDashboardMaterialsItem = {
+  id?: number;
+  /**
+     * @minLength 1
+     * @maxLength 200
+     */
+  title: string;
+  /**
+     * @minLength 1
+     * @maxLength 100
+     */
+  subject: string;
+  classId: number;
+  /** @maxLength 30000 */
+  body: string;
+  /** @nullable */
+  fileId?: string | null;
+  published: boolean;
+};
+
+export type PortalDashboardNoticesItem = {
+  id?: number;
+  /**
+     * @minLength 1
+     * @maxLength 200
+     */
+  title: string;
+  /**
+     * @minLength 1
+     * @maxLength 5000
+     */
+  body: string;
+  classId: number;
+  published: boolean;
+};
+
+export interface PortalDashboard {
+  className: string;
+  exams: PortalDashboardExamsItem[];
+  attempts: PortalDashboardAttemptsItem[];
+  materials: PortalDashboardMaterialsItem[];
+  notices: PortalDashboardNoticesItem[];
+}
+
+export type PortalStaffAttempt = ({
+  id: number;
+  examId: number;
+  title: string;
+  subject: string;
+  mode: string;
+  instructions: string;
+  /** @nullable */
+  fileId?: string | null;
+  questions: ({
+  /**
+     * @minLength 1
+     * @maxLength 80
+     */
+  id: string;
+  type: 'mcq' | 'written';
+  /**
+     * @minLength 1
+     * @maxLength 12000
+     */
+  text: string;
+  /**
+     * @maxItems 8
+     * @items.maxLength 3000
+     */
+  options: string[];
+  /**
+     * @minimum 0.5
+     * @maximum 100
+     */
+  marks: number;
+})[];
+  answers: {[key: string]: string};
+  startedAt: string;
+  deadline: string;
+  serverNow: string;
+  status: 'in_progress' | 'submitted' | 'marked';
+  savedAt: string;
+  totalMarks: number;
+  resultsReleased: boolean;
+  score?: number;
+  marks?: {
+  questionId: string;
+  /** @minimum 0 */
+  score: number;
+  /** @maxLength 3000 */
+  feedback: string;
+}[];
+}) & ({
+  studentName: string;
+  studentId: string;
+  classId: number;
+  questionKeys: (({
+  /**
+     * @minLength 1
+     * @maxLength 80
+     */
+  id: string;
+  type: 'mcq' | 'written';
+  /**
+     * @minLength 1
+     * @maxLength 12000
+     */
+  text: string;
+  /**
+     * @maxItems 8
+     * @items.maxLength 3000
+     */
+  options: string[];
+  /**
+     * @minimum 0.5
+     * @maximum 100
+     */
+  marks: number;
+}) & ({
+  /** @nullable */
+  correctAnswer?: number | null;
+  /** @maxLength 5000 */
+  rubric?: string;
+}))[];
+});
+
+export type PortalManagementClassesItem = {
+  id?: number;
+  /**
+     * @minLength 1
+     * @maxLength 100
+     */
+  name: string;
+};
+
+export type PortalManagementStudentsItem = {
+  id?: number;
+  /**
+     * @minLength 1
+     * @maxLength 50
+     */
+  studentId: string;
+  /**
+     * @minLength 1
+     * @maxLength 150
+     */
+  name: string;
+  classId: number;
+  active: boolean;
+  /**
+     * @minLength 10
+     * @maxLength 128
+     */
+  password?: string;
+};
+
+export type PortalManagementTeachersItem = {
+  id?: number;
+  /**
+     * @minLength 3
+     * @maxLength 200
+     */
+  email: string;
+  /**
+     * @minLength 1
+     * @maxLength 150
+     */
+  name: string;
+  classIds: number[];
+  active: boolean;
+};
+
+export type PortalManagementExamsItemMode = typeof PortalManagementExamsItemMode[keyof typeof PortalManagementExamsItemMode];
+
+
+export const PortalManagementExamsItemMode = {
+  interactive: 'interactive',
+  pdf: 'pdf',
+} as const;
+
+export type PortalManagementExamsItemQuestionsItem = ({
+  /**
+     * @minLength 1
+     * @maxLength 80
+     */
+  id: string;
+  type: 'mcq' | 'written';
+  /**
+     * @minLength 1
+     * @maxLength 12000
+     */
+  text: string;
+  /**
+     * @maxItems 8
+     * @items.maxLength 3000
+     */
+  options: string[];
+  /**
+     * @minimum 0.5
+     * @maximum 100
+     */
+  marks: number;
+}) & ({
+  /** @nullable */
+  correctAnswer?: number | null;
+  /** @maxLength 5000 */
+  rubric?: string;
+});
+
+export type PortalManagementExamsItem = {
+  id?: number;
+  /**
+     * @minLength 1
+     * @maxLength 200
+     */
+  title: string;
+  /**
+     * @minLength 1
+     * @maxLength 100
+     */
+  subject: string;
+  classId: number;
+  /**
+     * @minimum 1
+     * @maximum 300
+     */
+  durationMinutes: number;
+  startsAt: string;
+  endsAt: string;
+  mode: PortalManagementExamsItemMode;
+  /** @nullable */
+  fileId?: string | null;
+  /** @maxLength 5000 */
+  instructions: string;
+  /** @maxItems 200 */
+  questions: PortalManagementExamsItemQuestionsItem[];
+  published: boolean;
+  resultsReleased: boolean;
+};
+
+export type PortalManagementAttemptsItem = ({
+  id: number;
+  examId: number;
+  title: string;
+  subject: string;
+  mode: string;
+  instructions: string;
+  /** @nullable */
+  fileId?: string | null;
+  questions: ({
+  /**
+     * @minLength 1
+     * @maxLength 80
+     */
+  id: string;
+  type: 'mcq' | 'written';
+  /**
+     * @minLength 1
+     * @maxLength 12000
+     */
+  text: string;
+  /**
+     * @maxItems 8
+     * @items.maxLength 3000
+     */
+  options: string[];
+  /**
+     * @minimum 0.5
+     * @maximum 100
+     */
+  marks: number;
+})[];
+  answers: {[key: string]: string};
+  startedAt: string;
+  deadline: string;
+  serverNow: string;
+  status: 'in_progress' | 'submitted' | 'marked';
+  savedAt: string;
+  totalMarks: number;
+  resultsReleased: boolean;
+  score?: number;
+  marks?: {
+  questionId: string;
+  /** @minimum 0 */
+  score: number;
+  /** @maxLength 3000 */
+  feedback: string;
+}[];
+}) & ({
+  studentName: string;
+  studentId: string;
+  classId: number;
+  questionKeys: (({
+  /**
+     * @minLength 1
+     * @maxLength 80
+     */
+  id: string;
+  type: 'mcq' | 'written';
+  /**
+     * @minLength 1
+     * @maxLength 12000
+     */
+  text: string;
+  /**
+     * @maxItems 8
+     * @items.maxLength 3000
+     */
+  options: string[];
+  /**
+     * @minimum 0.5
+     * @maximum 100
+     */
+  marks: number;
+}) & ({
+  /** @nullable */
+  correctAnswer?: number | null;
+  /** @maxLength 5000 */
+  rubric?: string;
+}))[];
+});
+
+export type PortalManagementMaterialsItem = {
+  id?: number;
+  /**
+     * @minLength 1
+     * @maxLength 200
+     */
+  title: string;
+  /**
+     * @minLength 1
+     * @maxLength 100
+     */
+  subject: string;
+  classId: number;
+  /** @maxLength 30000 */
+  body: string;
+  /** @nullable */
+  fileId?: string | null;
+  published: boolean;
+};
+
+export type PortalManagementNoticesItem = {
+  id?: number;
+  /**
+     * @minLength 1
+     * @maxLength 200
+     */
+  title: string;
+  /**
+     * @minLength 1
+     * @maxLength 5000
+     */
+  body: string;
+  classId: number;
+  published: boolean;
+};
+
+export interface PortalManagement {
+  classes: PortalManagementClassesItem[];
+  students: PortalManagementStudentsItem[];
+  teachers: PortalManagementTeachersItem[];
+  exams: PortalManagementExamsItem[];
+  attempts: PortalManagementAttemptsItem[];
+  materials: PortalManagementMaterialsItem[];
+  notices: PortalManagementNoticesItem[];
+}
+
+export type PortalGradeMarksItem = {
+  questionId: string;
+  /** @minimum 0 */
+  score: number;
+  /** @maxLength 3000 */
+  feedback: string;
+};
+
+export interface PortalGrade {
+  attemptId: number;
+  marks: PortalGradeMarksItem[];
+}
+
+export interface PortalStatus {
+  id: number;
+  published: boolean;
+  resultsReleased: boolean;
+}
+
+export type PortalCommandAction = typeof PortalCommandAction[keyof typeof PortalCommandAction];
+
+
+export const PortalCommandAction = {
+  saveClass: 'saveClass',
+  saveStudent: 'saveStudent',
+  saveTeacher: 'saveTeacher',
+  saveExam: 'saveExam',
+  saveMaterial: 'saveMaterial',
+  saveNotice: 'saveNotice',
+  grade: 'grade',
+  examStatus: 'examStatus',
+} as const;
+
+export type PortalCommandSchoolClass = {
+  id?: number;
+  /**
+     * @minLength 1
+     * @maxLength 100
+     */
+  name: string;
+};
+
+export type PortalCommandStudent = {
+  id?: number;
+  /**
+     * @minLength 1
+     * @maxLength 50
+     */
+  studentId: string;
+  /**
+     * @minLength 1
+     * @maxLength 150
+     */
+  name: string;
+  classId: number;
+  active: boolean;
+  /**
+     * @minLength 10
+     * @maxLength 128
+     */
+  password?: string;
+};
+
+export type PortalCommandTeacher = {
+  id?: number;
+  /**
+     * @minLength 3
+     * @maxLength 200
+     */
+  email: string;
+  /**
+     * @minLength 1
+     * @maxLength 150
+     */
+  name: string;
+  classIds: number[];
+  active: boolean;
+};
+
+export type PortalCommandExamMode = typeof PortalCommandExamMode[keyof typeof PortalCommandExamMode];
+
+
+export const PortalCommandExamMode = {
+  interactive: 'interactive',
+  pdf: 'pdf',
+} as const;
+
+export type PortalCommandExamQuestionsItem = ({
+  /**
+     * @minLength 1
+     * @maxLength 80
+     */
+  id: string;
+  type: 'mcq' | 'written';
+  /**
+     * @minLength 1
+     * @maxLength 12000
+     */
+  text: string;
+  /**
+     * @maxItems 8
+     * @items.maxLength 3000
+     */
+  options: string[];
+  /**
+     * @minimum 0.5
+     * @maximum 100
+     */
+  marks: number;
+}) & ({
+  /** @nullable */
+  correctAnswer?: number | null;
+  /** @maxLength 5000 */
+  rubric?: string;
+});
+
+export type PortalCommandExam = {
+  id?: number;
+  /**
+     * @minLength 1
+     * @maxLength 200
+     */
+  title: string;
+  /**
+     * @minLength 1
+     * @maxLength 100
+     */
+  subject: string;
+  classId: number;
+  /**
+     * @minimum 1
+     * @maximum 300
+     */
+  durationMinutes: number;
+  startsAt: string;
+  endsAt: string;
+  mode: PortalCommandExamMode;
+  /** @nullable */
+  fileId?: string | null;
+  /** @maxLength 5000 */
+  instructions: string;
+  /** @maxItems 200 */
+  questions: PortalCommandExamQuestionsItem[];
+  published: boolean;
+  resultsReleased: boolean;
+};
+
+export type PortalCommandMaterial = {
+  id?: number;
+  /**
+     * @minLength 1
+     * @maxLength 200
+     */
+  title: string;
+  /**
+     * @minLength 1
+     * @maxLength 100
+     */
+  subject: string;
+  classId: number;
+  /** @maxLength 30000 */
+  body: string;
+  /** @nullable */
+  fileId?: string | null;
+  published: boolean;
+};
+
+export type PortalCommandNotice = {
+  id?: number;
+  /**
+     * @minLength 1
+     * @maxLength 200
+     */
+  title: string;
+  /**
+     * @minLength 1
+     * @maxLength 5000
+     */
+  body: string;
+  classId: number;
+  published: boolean;
+};
+
+export type PortalCommandGradeMarksItem = {
+  questionId: string;
+  /** @minimum 0 */
+  score: number;
+  /** @maxLength 3000 */
+  feedback: string;
+};
+
+export type PortalCommandGrade = {
+  attemptId: number;
+  marks: PortalCommandGradeMarksItem[];
+};
+
+export type PortalCommandExamStatus = {
+  id: number;
+  published: boolean;
+  resultsReleased: boolean;
+};
+
+export interface PortalCommand {
+  action: PortalCommandAction;
+  schoolClass?: PortalCommandSchoolClass;
+  student?: PortalCommandStudent;
+  teacher?: PortalCommandTeacher;
+  exam?: PortalCommandExam;
+  material?: PortalCommandMaterial;
+  notice?: PortalCommandNotice;
+  grade?: PortalCommandGrade;
+  examStatus?: PortalCommandExamStatus;
+}
+
+export interface PortalMessage {
+  message: string;
+}
+
+export type PortalPdfImportQuestionsItem = ({
+  /**
+     * @minLength 1
+     * @maxLength 80
+     */
+  id: string;
+  type: 'mcq' | 'written';
+  /**
+     * @minLength 1
+     * @maxLength 12000
+     */
+  text: string;
+  /**
+     * @maxItems 8
+     * @items.maxLength 3000
+     */
+  options: string[];
+  /**
+     * @minimum 0.5
+     * @maximum 100
+     */
+  marks: number;
+}) & ({
+  /** @nullable */
+  correctAnswer?: number | null;
+  /** @maxLength 5000 */
+  rubric?: string;
+});
+
+export interface PortalPdfImport {
+  fileId: string;
+  questions: PortalPdfImportQuestionsItem[];
+  warning: string;
+  extractedText: string;
+}
+
 export interface WebsiteAdminAccess {
   isAdmin: boolean;
 }
@@ -594,6 +1658,10 @@ export interface SchoolCommerceSettings {
 export interface SchoolCommerceSettingsUpdate {
   paymentInstructions: string;
 }
+
+export type ImportPortalPdfParams = {
+classId: number;
+};
 
 export type GetLocalAccount200 = {
   id: string;

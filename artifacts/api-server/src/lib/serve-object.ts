@@ -12,6 +12,7 @@ export async function serveObject(
   res: Response,
   service: ObjectStorageService,
   resolveFile: () => Promise<File>,
+  options: { noStore?: boolean } = {},
 ): Promise<void> {
   const controller = new AbortController();
   const disconnect = () => controller.abort();
@@ -34,6 +35,7 @@ export async function serveObject(
     }
     res.status(download.status);
     download.headers.forEach((value, key) => res.setHeader(key, value));
+    if (options.noStore) res.setHeader('Cache-Control', 'private, no-store');
     if (!download.body) {
       res.end();
       return;
