@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite --config vite.config.ts --host 0.0.0.0",
     "build": "vite build --config vite.config.ts",
-    "check:build": "PORT=5173 BASE_PATH=/ pnpm run build && node scripts/check-build.mjs",
+    "check:build": "node ../../scripts/src/with-env.mjs PORT=5173 BASE_PATH=/ \"pnpm run build\" && node scripts/check-build.mjs",
     "test:build-check": "node --test scripts/check-build.test.mjs",
     "serve": "vite preview --config vite.config.ts --host 0.0.0.0",
     "typecheck": "tsc --build ../../lib/api-client-react && tsc -p tsconfig.json --noEmit",

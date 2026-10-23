@@ -847,6 +847,10 @@ components:
       $ref: "./portal.yaml#/schemas/PortalStatus"
     PortalCommand:
       $ref: "./portal.yaml#/schemas/PortalCommand"
+    PortalTarget:
+      $ref: "./portal.yaml#/schemas/PortalTarget"
+    PortalAttemptControl:
+      $ref: "./portal.yaml#/schemas/PortalAttemptControl"
     PortalMessage:
       $ref: "./portal.yaml#/schemas/PortalMessage"
     PortalPdfImport:

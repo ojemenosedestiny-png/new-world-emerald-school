@@ -74,7 +74,7 @@ export default function PortalManage() {
                 {isAdmin && <TabsTrigger value="teachers" className="portal-tab" data-testid="tab-manage-teachers">Teachers</TabsTrigger>}
                 {isAdmin && <TabsTrigger value="classes" className="portal-tab" data-testid="tab-manage-classes">Classes</TabsTrigger>}
               </TabsList>
-              <TabsContent value="exams"><ExamsPanel data={d} /></TabsContent>
+              <TabsContent value="exams"><ExamsPanel data={d} isAdmin={isAdmin} /></TabsContent>
               <TabsContent value="marking"><MarkingPanel data={d} /></TabsContent>
               <TabsContent value="revision"><MaterialsPanel data={d} /></TabsContent>
               <TabsContent value="notices"><NoticesPanel data={d} /></TabsContent>

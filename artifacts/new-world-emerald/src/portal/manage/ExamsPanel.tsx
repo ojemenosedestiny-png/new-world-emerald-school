@@ -1,18 +1,22 @@
 import { useState } from "react";
 import type { PortalManagement, PortalExam } from "@workspace/api-client-react";
-import { ClipboardList, Eye, EyeOff, FileText, Lock, Pencil, Plus, Send, Undo2 } from "lucide-react";
+import { BarChart3, ClipboardList, Eye, EyeOff, FileText, Lock, Pencil, Plus, Send, Trash2, Undo2 } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { EmptyState, StatusPill } from "../ui";
 import { fileUrl, formatDateTime } from "../lib";
 import { ExamEditor, blankExam } from "./ExamEditor";
+import { ExamResults } from "./ExamResults";
 import { className, useCommand } from "./useCommand";
 
 type Pending = { id: number; published: boolean; resultsReleased: boolean; label: string; body: string } | null;
 
-export function ExamsPanel({ data }: { data: PortalManagement }) {
+export function ExamsPanel({ data, isAdmin = false }: { data: PortalManagement; isAdmin?: boolean }) {
   const cmd = useCommand();
   const [editing, setEditing] = useState<PortalExam | null>(null);
   const [confirm, setConfirm] = useState<Pending>(null);
+  const [resultsFor, setResultsFor] = useState<number | null>(null);
+  const [deleting, setDeleting] = useState<{ id: number; title: string } | null>(null);
+  const resultsExam = data.exams.find((e) => e.id === resultsFor);
 
   return (
     <div className="space-y-4">
@@ -39,6 +43,7 @@ export function ExamsPanel({ data }: { data: PortalManagement }) {
                   <p className="mt-1 text-sm text-[hsl(var(--p-ink)/0.6)]">{attempts.length} started / {submitted.length} submitted / {unmarked} awaiting marking</p>
                 </div>
                 <div className="flex flex-wrap gap-2 md:justify-end">
+                  <button className="portal-btn-ghost" onClick={() => setResultsFor(id)} data-testid={"button-results-exam-" + id}><BarChart3 size={13} /> Results</button>
                   {!started && <button className="portal-btn-ghost" onClick={() => setEditing({ ...e, questions: e.questions.map((q) => ({ ...q, options: [...q.options] })) })} data-testid={"button-edit-exam-" + id}><Pencil size={13} /> Edit</button>}
                   {e.fileId && <a className="portal-btn-ghost" href={fileUrl(e.fileId)} target="_blank" rel="noreferrer"><FileText size={13} /> Paper</a>}
                   {started && (e.published
@@ -49,6 +54,7 @@ export function ExamsPanel({ data }: { data: PortalManagement }) {
                   {submitted.length > 0 && (e.resultsReleased
                     ? <button className="portal-btn-ghost" disabled={cmd.pending} onClick={() => setConfirm({ id, published: e.published, resultsReleased: false, label: "Withhold results?", body: "Students will see their result as pending again." })} data-testid={"button-withhold-" + id}><Undo2 size={13} /> Withhold results</button>
                     : <button className="portal-btn-gold portal-btn !py-1.5 text-[13px]" disabled={cmd.pending || unmarked > 0} title={unmarked ? "Mark every submitted attempt first" : undefined} onClick={() => setConfirm({ id, published: e.published, resultsReleased: true, label: "Release results?", body: "Every student who submitted will see their score and feedback." })} data-testid={"button-release-" + id}><Send size={13} /> Release results</button>)}
+                  {!started && <button className="portal-btn-ghost" disabled={cmd.pending} onClick={() => setDeleting({ id, title: e.title })} data-testid={"button-delete-exam-" + id}><Trash2 size={13} /> Delete</button>}
                 </div>
               </div>
               {started && <p className="mt-3 text-xs text-[hsl(var(--p-ink)/0.5)]">A student has started this exam, so questions and settings can no longer change. Use publish and results controls only.</p>}
@@ -57,6 +63,16 @@ export function ExamsPanel({ data }: { data: PortalManagement }) {
         })}</div>
       )}
       {editing && <ExamEditor data={data} initial={editing} onClose={() => setEditing(null)} />}
+      {resultsExam && <ExamResults data={data} exam={resultsExam} isAdmin={isAdmin} onClose={() => setResultsFor(null)} />}
+      <AlertDialog open={!!deleting} onOpenChange={(o) => !o && setDeleting(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader><AlertDialogTitle className="font-serif text-2xl">Delete "{deleting?.title}"?</AlertDialogTitle><AlertDialogDescription>The exam and its questions are removed permanently. Only exams no student has started can be deleted.</AlertDialogDescription></AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction data-testid="button-confirm-delete-exam" onClick={() => { if (deleting) void cmd.run({ action: "deleteExam", target: { id: deleting.id } }, "Exam deleted"); setDeleting(null); }}>Delete exam</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       <AlertDialog open={!!confirm} onOpenChange={(o) => !o && setConfirm(null)}>
         <AlertDialogContent>
           <AlertDialogHeader><AlertDialogTitle className="font-serif text-2xl">{confirm?.label}</AlertDialogTitle><AlertDialogDescription>{confirm?.body}</AlertDialogDescription></AlertDialogHeader>

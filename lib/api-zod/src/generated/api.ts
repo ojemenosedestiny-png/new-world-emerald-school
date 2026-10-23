@@ -610,10 +610,12 @@ export const managePortalBodyGradeMarksItemScoreMin = 0;
 
 export const managePortalBodyGradeMarksItemFeedbackMax = 3000;
 
+export const managePortalBodyAttemptControlMinutesMax = 240;
+
 
 
 export const ManagePortalBody = zod.object({
-  "action": zod.enum(['saveClass', 'saveStudent', 'saveTeacher', 'saveExam', 'saveMaterial', 'saveNotice', 'grade', 'examStatus']),
+  "action": zod.enum(['saveClass', 'saveStudent', 'saveTeacher', 'saveExam', 'saveMaterial', 'saveNotice', 'grade', 'examStatus', 'deleteExam', 'deleteMaterial', 'deleteNotice', 'extendAttempt', 'resetAttempt']),
   "schoolClass": zod.object({
   "id": zod.number().optional(),
   "name": zod.string().min(1).max(managePortalBodySchoolClassNameMax)
@@ -685,6 +687,13 @@ export const ManagePortalBody = zod.object({
   "id": zod.number(),
   "published": zod.boolean(),
   "resultsReleased": zod.boolean()
+}).optional(),
+  "target": zod.object({
+  "id": zod.number()
+}).optional(),
+  "attemptControl": zod.object({
+  "attemptId": zod.number(),
+  "minutes": zod.number().min(1).max(managePortalBodyAttemptControlMinutesMax).optional()
 }).optional()
 })
 

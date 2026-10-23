@@ -21,9 +21,14 @@ test("uploaded photo URLs respect artifact prefixes and reject non-object paths"
 });
 
 test("the public homepage route does not depend on signed-in status", async () => {
+  // Routes live in AppRoutes.tsx; App.tsx wraps them in providers. Check both for redirects.
   const app = await readFile(new URL("./src/App.tsx", import.meta.url), "utf8");
-  assert.match(app, /<Route path="\/" component=\{Home\} \/>/);
-  assert.doesNotMatch(app, /HomeRedirect|<Redirect to="\/admin"/);
+  const routes = await readFile(new URL("./src/AppRoutes.tsx", import.meta.url), "utf8");
+  assert.match(routes, /<Route path="\/" component=\{Home\} \/>/);
+  for (const source of [app, routes]) assert.doesNotMatch(source, /HomeRedirect|<Redirect to="\/admin"/);
   const signIn = await readFile(new URL("./src/pages/SchoolSignIn.tsx", import.meta.url), "utf8");
-  assert.match(signIn, /forceRedirectUrl=\{`\$\{basePath\}\/admin`\}/);
+  // Sign-in defaults to /admin; the only alternative is the allow-listed portal return target.
+  assert.match(signIn, /const target = basePath \+ \(token \? RETURN_TARGETS\[token\] : "\/admin"\);/);
+  assert.match(signIn, /RETURN_TARGETS: Record<string, string> = \{ portal: "\/portal\/manage" \};/);
+  assert.match(signIn, /<SignIn [^>]*forceRedirectUrl=\{target\}/);
 });

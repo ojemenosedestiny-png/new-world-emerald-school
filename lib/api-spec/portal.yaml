@@ -342,7 +342,7 @@ schemas:
     type: object
     required: [action]
     properties:
-      action: { type: string, enum: [saveClass, saveStudent, saveTeacher, saveExam, saveMaterial, saveNotice, grade, examStatus] }
+      action: { type: string, enum: [saveClass, saveStudent, saveTeacher, saveExam, saveMaterial, saveNotice, grade, examStatus, deleteExam, deleteMaterial, deleteNotice, extendAttempt, resetAttempt] }
       schoolClass: { $ref: "#/schemas/PortalClass" }
       student: { $ref: "#/schemas/PortalStudent" }
       teacher: { $ref: "#/schemas/PortalTeacher" }
@@ -351,6 +351,19 @@ schemas:
       notice: { $ref: "#/schemas/PortalNotice" }
       grade: { $ref: "#/schemas/PortalGrade" }
       examStatus: { $ref: "#/schemas/PortalStatus" }
+      target: { $ref: "#/schemas/PortalTarget" }
+      attemptControl: { $ref: "#/schemas/PortalAttemptControl" }
+  PortalTarget:
+    type: object
+    required: [id]
+    properties:
+      id: { type: integer }
+  PortalAttemptControl:
+    type: object
+    required: [attemptId]
+    properties:
+      attemptId: { type: integer }
+      minutes: { type: integer, minimum: 1, maximum: 240 }
   PortalMessage:
     type: object
     required: [message]
@@ -387,5 +400,7 @@ components:
     PortalGrade: { $ref: "#/schemas/PortalGrade" }
     PortalStatus: { $ref: "#/schemas/PortalStatus" }
     PortalCommand: { $ref: "#/schemas/PortalCommand" }
+    PortalTarget: { $ref: "#/schemas/PortalTarget" }
+    PortalAttemptControl: { $ref: "#/schemas/PortalAttemptControl" }
     PortalMessage: { $ref: "#/schemas/PortalMessage" }
     PortalPdfImport: { $ref: "#/schemas/PortalPdfImport" }

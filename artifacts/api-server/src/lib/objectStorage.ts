@@ -1,6 +1,6 @@
 import { randomUUID } from 'crypto';
 import type { Readable } from 'stream';
-import { File, Storage } from '@google-cloud/storage';
+import { File, Storage, type StorageOptions } from '@google-cloud/storage';
 import { parseByteRange } from './byte-range';
 import { storageReadStream } from './storage-read-stream';
 
@@ -14,23 +14,46 @@ import {
 
 const REPLIT_SIDECAR_ENDPOINT = 'http://127.0.0.1:1106';
 
-export const objectStorageClient = new Storage({
-  credentials: {
-    audience: 'replit',
-    subject_token_type: 'access_token',
-    token_url: `${REPLIT_SIDECAR_ENDPOINT}/token`,
-    type: 'external_account',
-    credential_source: {
-      url: `${REPLIT_SIDECAR_ENDPOINT}/credential`,
-      format: {
-        type: 'json',
-        subject_token_field_name: 'access_token',
+/**
+ * Outside Replit (e.g. Render), set GCS_SERVICE_ACCOUNT_JSON to a Google Cloud
+ * service account key, as raw JSON or base64. Without it, Replit's sidecar is used.
+ */
+export function storageClientOptions(serviceAccount = process.env.GCS_SERVICE_ACCOUNT_JSON): StorageOptions {
+  const raw = serviceAccount?.trim();
+  if (raw) {
+    const json = raw.startsWith('{') ? raw : Buffer.from(raw, 'base64').toString('utf8');
+    let credentials: { client_email?: string; private_key?: string; project_id?: string };
+    try {
+      credentials = JSON.parse(json);
+    } catch {
+      throw new Error('GCS_SERVICE_ACCOUNT_JSON must be a service account key as JSON or base64-encoded JSON.');
+    }
+    if (!credentials.client_email || !credentials.private_key) {
+      throw new Error('GCS_SERVICE_ACCOUNT_JSON is missing client_email or private_key.');
+    }
+    return { credentials, projectId: credentials.project_id };
+  }
+  return {
+    credentials: {
+      audience: 'replit',
+      subject_token_type: 'access_token',
+      token_url: `${REPLIT_SIDECAR_ENDPOINT}/token`,
+      type: 'external_account',
+      credential_source: {
+        url: `${REPLIT_SIDECAR_ENDPOINT}/credential`,
+        format: {
+          type: 'json',
+          subject_token_field_name: 'access_token',
+        },
       },
+      universe_domain: 'googleapis.com',
     },
-    universe_domain: 'googleapis.com',
-  },
-  projectId: '',
-});
+    projectId: '',
+  };
+}
+
+const usesServiceAccount = Boolean(process.env.GCS_SERVICE_ACCOUNT_JSON?.trim());
+export const objectStorageClient = new Storage(storageClientOptions());
 
 export class ObjectNotFoundError extends Error {
   constructor() {
@@ -275,6 +298,16 @@ async function signObjectURL({
   method: 'GET' | 'PUT' | 'DELETE' | 'HEAD';
   ttlSec: number;
 }): Promise<string> {
+  if (usesServiceAccount) {
+    // A service account key signs V4 URLs locally; no Replit sidecar involved.
+    const action = method === 'PUT' ? 'write' : method === 'DELETE' ? 'delete' : 'read';
+    const [signedURL] = await objectStorageClient.bucket(bucketName).file(objectName).getSignedUrl({
+      version: 'v4',
+      action,
+      expires: Date.now() + ttlSec * 1000,
+    });
+    return signedURL;
+  }
   const request = {
     bucket_name: bucketName,
     object_name: objectName,

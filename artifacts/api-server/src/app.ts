@@ -8,6 +8,7 @@ import { logger } from "./lib/logger";
 import { CLERK_PROXY_PATH, clerkProxyMiddleware, getClerkProxyHost } from "./middlewares/clerkProxyMiddleware";
 import { localUserBridge } from "./middlewares/localUserBridge";
 import { startApprovedIdentityRefresh } from "./lib/approved-identities";
+import { serveFrontend } from "./lib/frontend";
 
 const app: Express = express();
 
@@ -31,6 +32,8 @@ app.use(
   }),
 );
 app.use(CLERK_PROXY_PATH, clerkProxyMiddleware());
+// Website files need no auth, so they are served before the Clerk middleware.
+serveFrontend(app);
 app.use(cors({ credentials: true, origin: true }));
 app.use(express.json({ limit: "2mb" }));
 app.use(express.urlencoded({ extended: true }));

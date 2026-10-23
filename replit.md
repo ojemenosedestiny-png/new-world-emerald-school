@@ -4,13 +4,17 @@ School website with an approved-administrator panel for admissions, content and 
 
 ## Run & Operate
 
-- `pnpm --filter @workspace/api-server run dev` — run the API server (port 5000)
+- `pnpm --filter @workspace/api-server run dev` — run the API server (port from `PORT`; 8080 on Replit)
 - `pnpm run typecheck` — full typecheck across all packages
 - `pnpm run build` — typecheck + build all packages
 - `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
 - `pnpm run test:api-regeneration` — regenerate twice in a disposable workspace, check public API exports and cookie auth, and verify the standalone frontend typecheck rebuilds declarations from clean outputs (requires installed dependencies; no services or credentials needed)
 - `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
+- `pnpm --filter @workspace/api-server run test:auth` / `test:storage` — API unit tests (no services needed)
+- `pnpm --filter @workspace/new-world-emerald run test:photo-entry` — all frontend vitest suites
+- `pnpm --filter @workspace/new-world-emerald run check:build` — production build plus initial-JS budget and lazy-route check
 - Required env: `DATABASE_URL` — Postgres connection string
+- CI: `.github/workflows/ci.yml` runs typecheck, the tests above, both builds and `test:api-regeneration` on pushes to `main` and on pull requests
 
 ## Stack
 
@@ -24,7 +28,12 @@ School website with an approved-administrator panel for admissions, content and 
 
 ## Where things live
 
-_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
+- `artifacts/new-world-emerald` — public website, `/admin`, `/portal` (React + Vite; routes in `src/AppRoutes.tsx`)
+- `artifacts/api-server` — Express API under `/api`; routers in `src/routes`, website admin guard in `src/lib/website-admin.ts`, portal auth in `src/lib/portal-auth.ts`
+- `lib/db/src/schema` — source of truth for the database schema (Drizzle)
+- `lib/api-spec/openapi.yaml` + `portal.yaml` — source of truth for API contracts; `lib/api-zod` and `lib/api-client-react/src/generated` are generated from them
+- `artifacts/mockup-sandbox` — Replit design canvas, not part of the live site
+- `scripts/src/with-env.mjs` — cross-platform `KEY=value command` helper used by package scripts
 
 ## Architecture decisions
 
@@ -43,6 +52,10 @@ _Populate as you build — short repo map plus pointers to the source-of-truth f
 - Staff create scheduled, timed exams with multiple-choice and written questions. Multiple-choice scoring is automatic; staff mark written work and release results after the exam window closes. A started exam's content is frozen; each student has one resumable attempt.
 - PDF upload accepts up to 15MB and drafts numbered text-based questions for review. It never guesses answer keys. Scanned papers and complex layouts can use the original-PDF mode with bulk answer slots; OCR is not included. Do not publish original exam papers containing an answer key.
 - Revision notes/PDFs and announcements are class-scoped. Student results, exam keys, private PDFs and saved answers must not be exposed through public website storage routes.
+- Staff open **Results** on any exam for live progress (not started / writing with time left / awaiting marking / marked), class statistics (average, highest, lowest, pass rate at 50%) and a CSV export. Staff can give a student who is still writing 5–240 extra minutes; the extension applies to that student only and may run past the exam window. Approved administrators can reset an attempt (deletes the answers so the student can start again while the exam is open). Both are blocked while results are released.
+- Exams no student has started, revision notes and announcements can be deleted. Started exams can only be hidden.
+- Students see their average across released results on the Results tab; unreleased scores are never included.
+- `pnpm --filter @workspace/api-server run test:portal-control` runs database-only checks for the staff controls (needs `DATABASE_URL` pointing at a disposable database; CI runs it against a throwaway Postgres).
 - `pnpm --filter @workspace/api-server run test:portal` runs isolated synthetic portal API checks and cleans its own development data. Never seed privileged Clerk/browser identities or change the actual school approval list for testing.
 
 ## User preferences
@@ -51,8 +64,15 @@ _Populate as you build — explicit user instructions worth remembering across s
 
 ## Gotchas
 
-_Populate as you build — sharp edges, "always run X before Y" rules._
+- Website API routes are private by default. `protectWebsiteManagement` only lets through the public endpoints listed in `src/lib/website-admin.ts`; a new public endpoint must be added there (and to `website-admin.test.ts`). Portal routes use their own role checks.
+- `requireAuthentication` only checks sign-in, not admin approval. Use `requireWebsiteAdmin` when a route needs an administrator.
+- After editing the OpenAPI spec, run codegen and commit the generated files. Never hand-edit `generated/` folders. `lib/api-client-react/src/index.ts` is hand-maintained; keep each export once.
+- Schema changes go through `drizzle-kit push` (no migration files) and `scripts/post-merge.sh` pushes automatically after merges. Make changes additive (new nullable columns/tables); plan renames and drops by hand with a backup first. Never run `push-force` against production.
+- Use pnpm 10 (the lockfile is v9 format). pnpm 12 rejects the `onlyBuiltDependencies` setting.
+- Local development on Windows works for typecheck, tests and builds. The API server and `test:portal` also need `DATABASE_URL` and Clerk keys.
 
 ## Pointers
+
+- Deploying outside Replit: `docs/DEPLOY-RENDER.md` (`render.yaml`, `scripts/render-build.sh`). Render-only behaviour is enabled by `FRONTEND_DIST_DIR` and `GCS_SERVICE_ACCOUNT_JSON`, which Replit leaves unset.
 
 - See the `pnpm-workspace` skill for workspace structure, TypeScript setup, and package details

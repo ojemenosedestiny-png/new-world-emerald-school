@@ -846,6 +846,11 @@ export const PortalCommandAction = {
   saveNotice: 'saveNotice',
   grade: 'grade',
   examStatus: 'examStatus',
+  deleteExam: 'deleteExam',
+  deleteMaterial: 'deleteMaterial',
+  deleteNotice: 'deleteNotice',
+  extendAttempt: 'extendAttempt',
+  resetAttempt: 'resetAttempt',
 } as const;
 
 export type PortalCommandSchoolClass = {
@@ -1017,6 +1022,19 @@ export type PortalCommandExamStatus = {
   resultsReleased: boolean;
 };
 
+export type PortalCommandTarget = {
+  id: number;
+};
+
+export type PortalCommandAttemptControl = {
+  attemptId: number;
+  /**
+     * @minimum 1
+     * @maximum 240
+     */
+  minutes?: number;
+};
+
 export interface PortalCommand {
   action: PortalCommandAction;
   schoolClass?: PortalCommandSchoolClass;
@@ -1027,6 +1045,21 @@ export interface PortalCommand {
   notice?: PortalCommandNotice;
   grade?: PortalCommandGrade;
   examStatus?: PortalCommandExamStatus;
+  target?: PortalCommandTarget;
+  attemptControl?: PortalCommandAttemptControl;
+}
+
+export interface PortalTarget {
+  id: number;
+}
+
+export interface PortalAttemptControl {
+  attemptId: number;
+  /**
+     * @minimum 1
+     * @maximum 240
+     */
+  minutes?: number;
 }
 
 export interface PortalMessage {

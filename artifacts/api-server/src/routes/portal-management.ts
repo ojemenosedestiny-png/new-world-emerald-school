@@ -45,6 +45,7 @@ portalManagementRouter.post("/manage", async (req, res) => {
   staffOnly(actor);
   const body = ManagePortalBody.parse(req.body);
   if (["saveClass", "saveStudent", "saveTeacher"].includes(body.action)) check(actor.role === "admin", "Only school administrators can manage enrolments and staff access.", 403);
+  if (body.action === "resetAttempt") check(actor.role === "admin", "Only school administrators can reset a student's attempt.", 403);
   switch (body.action) {
     case "saveClass": {
       const data = body.schoolClass;
@@ -179,6 +180,60 @@ portalManagementRouter.post("/manage", async (req, res) => {
           check(q && mark.score <= q.marks, "A mark exceeds the question's available marks.");
         }
         await tx.update(portalAttempts).set({ marks: [...automaticMarks(attempt.questions, attempt.answers), ...data.marks], status: "marked" }).where(eq(portalAttempts.id, attempt.id));
+      });
+      break;
+    }
+    case "deleteExam": {
+      const data = body.target;
+      check(data, "Exam required.");
+      await db.transaction(async (tx) => {
+        const [exam] = await tx.select().from(portalExams).where(eq(portalExams.id, data.id)).for("update");
+        check(exam, "Exam not found.", 404);
+        classAllowed(actor, exam.classId);
+        const [attempt] = await tx.select({ id: portalAttempts.id }).from(portalAttempts).where(eq(portalAttempts.examId, exam.id)).limit(1);
+        check(!attempt, "Students have started this exam, so it cannot be deleted. Hide it instead.", 409);
+        await tx.delete(portalExams).where(eq(portalExams.id, exam.id));
+      });
+      break;
+    }
+    case "deleteMaterial": {
+      const data = body.target;
+      check(data, "Revision material required.");
+      const [old] = await db.select().from(portalMaterials).where(eq(portalMaterials.id, data.id));
+      check(old, "Material not found.", 404); classAllowed(actor, old.classId);
+      await db.delete(portalMaterials).where(eq(portalMaterials.id, data.id));
+      break;
+    }
+    case "deleteNotice": {
+      const data = body.target;
+      check(data, "Announcement required.");
+      const [old] = await db.select().from(portalNotices).where(eq(portalNotices.id, data.id));
+      check(old, "Announcement not found.", 404); classAllowed(actor, old.classId);
+      await db.delete(portalNotices).where(eq(portalNotices.id, data.id));
+      break;
+    }
+    case "extendAttempt":
+    case "resetAttempt": {
+      const data = body.attemptControl;
+      check(data, "Attempt required.");
+      const extend = body.action === "extendAttempt";
+      check(!extend || (Number.isInteger(data.minutes) && data.minutes! >= 1 && data.minutes! <= 240), "Add between 1 and 240 minutes.");
+      await db.transaction(async (tx) => {
+        const [lookup] = await tx.select().from(portalAttempts).where(eq(portalAttempts.id, data.attemptId));
+        check(lookup, "Attempt not found.", 404);
+        // Same exam-first lock order as starts, grading and releases.
+        const [exam] = await tx.select().from(portalExams).where(eq(portalExams.id, lookup.examId)).for("update");
+        check(exam, "Exam not found.", 404); classAllowed(actor, exam.classId);
+        const [attempt] = await tx.select().from(portalAttempts).where(eq(portalAttempts.id, data.attemptId)).for("update");
+        check(!exam.resultsReleased, "Withhold results before changing attempts.", 409);
+        if (extend) {
+          check(attempt.status === "in_progress" && attempt.deadline.getTime() > Date.now(), "Only a student who is still writing can be given extra time.", 409);
+          // Staff extensions may run past the exam window; they apply to this student only.
+          await tx.update(portalAttempts).set({ deadline: new Date(attempt.deadline.getTime() + data.minutes! * 60_000) }).where(eq(portalAttempts.id, attempt.id));
+        } else {
+          // Removes the attempt so the student can start again while the exam is open.
+          await tx.delete(portalAttempts).where(eq(portalAttempts.id, attempt.id));
+        }
       });
       break;
     }

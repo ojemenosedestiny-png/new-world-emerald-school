@@ -13,6 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { EmptyState, ErrorPanel, PortalHeader, Skeleton, StatusPill } from "./ui";
 import { PasswordChange } from "./PasswordChange";
 import { clearDrafts, clearStudentQueries, errorMessage, examWindow, fileUrl, formatDateTime } from "./lib";
+import { studentAverage } from "./manage/results";
 
 export function useStudentLogout() {
   const queryClient = useQueryClient();
@@ -86,6 +87,7 @@ export function StudentDashboard({ session }: { session: PortalSession }) {
   const examIds = useMemo(() => new Set((data?.exams ?? []).map((e) => e.id)), [data]);
   const orphanAttempts = (data?.attempts ?? []).filter((a) => !examIds.has(a.examId));
   const firstName = session.name.split(" ")[0];
+  const average = studentAverage(data?.attempts ?? []);
 
   return (
     <div className="portal">
@@ -133,6 +135,12 @@ export function StudentDashboard({ session }: { session: PortalSession }) {
             </TabsContent>
 
             <TabsContent value="results" className="space-y-3">
+              {average && (
+                <div className="portal-card flex items-center justify-between gap-4 p-5" data-testid="card-results-average">
+                  <div><p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[hsl(var(--p-emerald))]">Your average</p><p className="text-sm text-[hsl(var(--p-ink)/0.6)]">Across {average.count} released {average.count === 1 ? "result" : "results"}</p></div>
+                  <p className="font-serif text-4xl font-bold text-[hsl(var(--p-emerald))]">{average.average}%</p>
+                </div>
+              )}
               {data.attempts.filter((a) => a.status !== "in_progress").length === 0 ? (
                 <EmptyState icon={<Award size={22} />} title="No submitted exams yet" body="After you submit an exam, it is listed here. Scores appear once your teacher has marked and released them." />
               ) : (

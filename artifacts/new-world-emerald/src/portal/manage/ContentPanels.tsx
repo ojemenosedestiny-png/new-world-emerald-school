@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import { useImportPortalPdf, type PortalManagement, type PortalManagementMaterialsItem, type PortalManagementNoticesItem } from "@workspace/api-client-react";
-import { BookOpen, Eye, EyeOff, FileText, Megaphone, Pencil, Plus, Upload, X } from "lucide-react";
+import { BookOpen, Eye, EyeOff, FileText, Megaphone, Pencil, Plus, Trash2, Upload, X } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { EmptyState, Field, StatusPill } from "../ui";
@@ -10,12 +11,28 @@ import { className, useCommand } from "./useCommand";
 
 const MAX_PDF = 15 * 1024 * 1024;
 
+type DeleteTarget = { id: number; title: string } | null;
+function ConfirmDelete({ target, noun, onCancel, onConfirm }: { target: DeleteTarget; noun: string; onCancel: () => void; onConfirm: (id: number) => void }) {
+  return (
+    <AlertDialog open={!!target} onOpenChange={(o) => !o && onCancel()}>
+      <AlertDialogContent>
+        <AlertDialogHeader><AlertDialogTitle className="font-serif text-2xl">Delete "{target?.title}"?</AlertDialogTitle><AlertDialogDescription>This {noun} is removed permanently and students will no longer see it.</AlertDialogDescription></AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction data-testid={"button-confirm-delete-" + noun.split(" ")[0]} onClick={() => { if (target) onConfirm(target.id); onCancel(); }}>Delete</AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+}
+
 export function MaterialsPanel({ data }: { data: PortalManagement }) {
   const cmd = useCommand();
   const { toast } = useToast();
   const upload = useImportPortalPdf();
   const fileRef = useRef<HTMLInputElement>(null);
   const [form, setForm] = useState<PortalManagementMaterialsItem | null>(null);
+  const [deleting, setDeleting] = useState<DeleteTarget>(null);
 
   const onFile = (f: File | undefined) => {
     if (!f || !form) return;
@@ -46,6 +63,7 @@ export function MaterialsPanel({ data }: { data: PortalManagement }) {
               <button className="portal-btn-ghost" onClick={() => setForm({ ...m })} data-testid={"button-edit-material-" + m.id}><Pencil size={13} /> Edit</button>
               <button className="portal-btn-ghost" disabled={cmd.pending} onClick={() => toggle(m)} data-testid={"button-toggle-material-" + m.id}>{m.published ? <><EyeOff size={13} /> Unpublish</> : <><Eye size={13} /> Publish</>}</button>
               {m.fileId && <a className="portal-btn-ghost" href={fileUrl(m.fileId)} target="_blank" rel="noreferrer"><FileText size={13} /> PDF</a>}
+              {m.id != null && <button className="portal-btn-ghost" disabled={cmd.pending} onClick={() => setDeleting({ id: m.id!, title: m.title })} data-testid={"button-delete-material-" + m.id}><Trash2 size={13} /> Delete</button>}
             </div>
           </div>))}
         </div>
@@ -70,6 +88,7 @@ export function MaterialsPanel({ data }: { data: PortalManagement }) {
           <DialogFooter><button className="portal-btn" onClick={save} disabled={cmd.pending || upload.isPending || !form?.title.trim() || !form?.subject.trim() || !form?.classId} data-testid="button-save-material">{cmd.pending ? "Saving..." : "Save"}</button></DialogFooter>
         </DialogContent>
       </Dialog>
+      <ConfirmDelete target={deleting} noun="revision note" onCancel={() => setDeleting(null)} onConfirm={(id) => void cmd.run({ action: "deleteMaterial", target: { id } }, "Revision note deleted")} />
     </div>
   );
 }
@@ -77,6 +96,7 @@ export function MaterialsPanel({ data }: { data: PortalManagement }) {
 export function NoticesPanel({ data }: { data: PortalManagement }) {
   const cmd = useCommand();
   const [form, setForm] = useState<PortalManagementNoticesItem | null>(null);
+  const [deleting, setDeleting] = useState<DeleteTarget>(null);
   const save = async () => {
     if (!form) return;
     if (await cmd.run({ action: "saveNotice", notice: { ...form, title: form.title.trim(), body: form.body.trim() } }, form.id ? "Announcement updated" : "Announcement saved")) setForm(null);
@@ -95,6 +115,7 @@ export function NoticesPanel({ data }: { data: PortalManagement }) {
             <div className="flex gap-2">
               <button className="portal-btn-ghost" onClick={() => setForm({ ...n })} data-testid={"button-edit-notice-" + n.id}><Pencil size={13} /> Edit</button>
               <button className="portal-btn-ghost" disabled={cmd.pending} onClick={() => cmd.run({ action: "saveNotice", notice: { ...n, published: !n.published } }, n.published ? "Announcement hidden" : "Announcement published")} data-testid={"button-toggle-notice-" + n.id}>{n.published ? "Unpublish" : "Publish"}</button>
+              {n.id != null && <button className="portal-btn-ghost" disabled={cmd.pending} onClick={() => setDeleting({ id: n.id!, title: n.title })} data-testid={"button-delete-notice-" + n.id}><Trash2 size={13} /> Delete</button>}
             </div>
           </div>))}
         </div>
@@ -111,6 +132,7 @@ export function NoticesPanel({ data }: { data: PortalManagement }) {
           <DialogFooter><button className="portal-btn" onClick={save} disabled={cmd.pending || !form?.title.trim() || !form?.body.trim() || !form?.classId} data-testid="button-save-notice">{cmd.pending ? "Saving..." : "Save"}</button></DialogFooter>
         </DialogContent>
       </Dialog>
+      <ConfirmDelete target={deleting} noun="announcement" onCancel={() => setDeleting(null)} onConfirm={(id) => void cmd.run({ action: "deleteNotice", target: { id } }, "Announcement deleted")} />
     </div>
   );
 }

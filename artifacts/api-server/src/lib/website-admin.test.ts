@@ -80,3 +80,21 @@ test("an allowlisted address without verified identity cannot manage the website
   req.identity!.emailVerified = false;
   assert.equal(isWebsiteAdmin(req), false);
 });
+test("routes that are not explicitly public fail closed", () => {
+  for (const [method, path] of [
+    ["GET", "/new-admin-report"], ["POST", "/new-admin-action"], ["DELETE", "/site-content"],
+    ["GET", "/school-commerce/management/new-list"], ["POST", "/admission-applications/1"],
+    ["GET", "/academic-calendar/1"], ["PUT", "/storage/objects/uploads/photo.jpg"],
+  ]) {
+    assert.deepEqual(check(path, method, "guest"), { status: 401, allowed: false });
+    assert.deepEqual(check(path, method, "visitor"), { status: 403, allowed: false });
+    assert.deepEqual(check(path, method, "admin"), { status: undefined, allowed: true });
+  }
+});
+
+test("health, account status and public storage reads stay public", () => {
+  for (const [method, path] of [
+    ["GET", "/healthz"], ["HEAD", "/healthz"], ["GET", "/account"], ["GET", "/website-admin/access"],
+    ["GET", "/storage/public-objects/logo.png"], ["GET", "/storage/objects/uploads/photo.jpg"],
+  ]) assert.deepEqual(check(path, method, "guest"), { status: undefined, allowed: true });
+});

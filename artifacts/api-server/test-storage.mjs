@@ -9,9 +9,9 @@ import { fileURLToPath } from 'node:url';
 // writing bundles to the system temp directory.
 const directory = await mkdtemp(join(tmpdir(), 'storage-tests-'));
 try {
-  const tests = ['byte-range', 'objectStorage-range', 'serve-object'];
+  const tests = ['byte-range', 'objectStorage-range', 'serve-object', 'render-deploy'];
   await build({
-    entryPoints: tests.map((name) => new URL(`./src/lib/${name}.test.ts`, import.meta.url).pathname),
+    entryPoints: tests.map((name) => fileURLToPath(new URL(`./src/lib/${name}.test.ts`, import.meta.url))),
     outdir: directory,
     bundle: true,
     platform: 'node',
@@ -21,7 +21,8 @@ try {
       name: 'resolve-storage-test-externals',
       setup(build) {
         build.onResolve({ filter: /^(@google-cloud\/storage|express)$/ }, (args) => ({
-          path: fileURLToPath(import.meta.resolve(args.path)), external: true,
+          // A file:// URL is a valid ESM specifier on every OS; a bare C:\ path is not.
+          path: import.meta.resolve(args.path), external: true,
         }));
       },
     }],

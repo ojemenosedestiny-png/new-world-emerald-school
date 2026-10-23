@@ -18,4 +18,9 @@ export const PortalCommandAction = {
   saveNotice: 'saveNotice',
   grade: 'grade',
   examStatus: 'examStatus',
+  deleteExam: 'deleteExam',
+  deleteMaterial: 'deleteMaterial',
+  deleteNotice: 'deleteNotice',
+  extendAttempt: 'extendAttempt',
+  resetAttempt: 'resetAttempt',
 } as const;

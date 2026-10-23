@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { PortalCommandAction } from './portalCommandAction';
+import type { PortalCommandAttemptControl } from './portalCommandAttemptControl';
 import type { PortalCommandExam } from './portalCommandExam';
 import type { PortalCommandExamStatus } from './portalCommandExamStatus';
 import type { PortalCommandGrade } from './portalCommandGrade';
@@ -13,6 +14,7 @@ import type { PortalCommandMaterial } from './portalCommandMaterial';
 import type { PortalCommandNotice } from './portalCommandNotice';
 import type { PortalCommandSchoolClass } from './portalCommandSchoolClass';
 import type { PortalCommandStudent } from './portalCommandStudent';
+import type { PortalCommandTarget } from './portalCommandTarget';
 import type { PortalCommandTeacher } from './portalCommandTeacher';
 
 export interface PortalCommand {
@@ -25,4 +27,6 @@ export interface PortalCommand {
   notice?: PortalCommandNotice;
   grade?: PortalCommandGrade;
   examStatus?: PortalCommandExamStatus;
+  target?: PortalCommandTarget;
+  attemptControl?: PortalCommandAttemptControl;
 }

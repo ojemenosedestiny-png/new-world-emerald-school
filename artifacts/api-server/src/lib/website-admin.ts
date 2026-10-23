@@ -21,28 +21,39 @@ export function requireWebsiteAdmin(req: Request, res: Response): boolean {
   return true;
 }
 
-// Central protection applies to existing routes as well as new editors.
-// Public content, admission submissions and parent order/payment requests remain public.
-export function protectWebsiteManagement(req: Request, res: Response, next: NextFunction) {
-  // Express routes are case-insensitive unless explicitly configured otherwise.
-  const path = req.path.replace(/\/+$/, "").toLowerCase() || "/";
-  const method = req.method === "HEAD" ? "GET" : req.method;
-  const read = method === "GET";
-  let privateRequest = false;
+// Public website endpoints. Everything else requires an approved administrator, so a
+// new route is private until it is deliberately added here (fail closed).
+// Routes that only need a signed-in account (e.g. /account) check that themselves.
+const publicReads = [
+  "/healthz",
+  "/account",
+  "/website-admin/access",
+  "/site-content",
+  "/academic-calendar",
+  "/live-updates",
+  "/school-commerce/products",
+  "/school-commerce/fee-schedules",
+  "/school-commerce/settings",
+];
+const publicReadPatterns = [
+  /^\/school-commerce\/individual-charges\/lookup\/[^/]+$/,
+  /^\/storage\/public-objects\/.+$/,
+  /^\/storage\/objects\/.+$/,
+];
+// Admission submissions and parent order/payment reports.
+const publicSubmissions = ["/admission-applications", "/school-commerce/orders", "/school-commerce/fee-reports"];
 
-  if (path.startsWith("/admission-applications")) privateRequest = method !== "POST";
-  if (path.startsWith("/academic-calendar") || path.startsWith("/live-updates")) privateRequest = !read;
-  if (path === "/storage/uploads/request-url") privateRequest = true;
-  if (path === "/site-content") privateRequest = !read;
-  if (path.startsWith("/school-commerce/")) {
-    const publicRead = read && (
-      ["/school-commerce/products", "/school-commerce/fee-schedules", "/school-commerce/settings"].includes(path) ||
-      /^\/school-commerce\/individual-charges\/lookup\/[^/]+$/.test(path)
-    );
-    const publicSubmission = method === "POST" &&
-      ["/school-commerce/orders", "/school-commerce/fee-reports"].includes(path);
-    privateRequest = !publicRead && !publicSubmission;
-  }
-  if (privateRequest && !requireWebsiteAdmin(req, res)) return;
+export function isPublicWebsiteRequest(method: string, rawPath: string): boolean {
+  // Express routes are case-insensitive unless explicitly configured otherwise.
+  const path = rawPath.replace(/\/+$/, "").toLowerCase() || "/";
+  const normalizedMethod = method === "HEAD" ? "GET" : method;
+  if (normalizedMethod === "GET") return publicReads.includes(path) || publicReadPatterns.some((pattern) => pattern.test(path));
+  if (normalizedMethod === "POST") return publicSubmissions.includes(path);
+  return false;
+}
+
+// Central protection applies to existing routes as well as new editors.
+export function protectWebsiteManagement(req: Request, res: Response, next: NextFunction) {
+  if (!isPublicWebsiteRequest(req.method, req.path) && !requireWebsiteAdmin(req, res)) return;
   next();
 }

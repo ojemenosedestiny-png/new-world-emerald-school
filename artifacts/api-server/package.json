@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "test:portal": "node ./test-portal.mjs",
-    "dev": "export NODE_ENV=development && pnpm run build && pnpm run start",
+    "test:portal-control": "node ./test-portal.mjs portal-control",
+    "dev": "node ../../scripts/src/with-env.mjs NODE_ENV=development \"pnpm run build && pnpm run start\"",
     "build": "node ./build.mjs",
     "start": "node --enable-source-maps ./dist/index.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit",

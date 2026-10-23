@@ -68,6 +68,8 @@ function run(args) {
     stdio: "inherit",
     timeout: 180_000,
     env: { ...process.env, CI: "true" },
+    // pnpm is a .cmd shim on Windows, which spawnSync can only launch through a shell.
+    shell: process.platform === "win32",
   });
   if (result.error) throw result.error;
   assert.equal(result.status, 0, `Command failed: pnpm ${args.join(" ")}`);
