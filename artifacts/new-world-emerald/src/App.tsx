@@ -3,15 +3,10 @@ import { QueryClient, QueryClientProvider, useQueryClient } from '@tanstack/reac
 import { ClerkProvider, useClerk } from "@clerk/react";
 import { publishableKeyFromHost } from "@clerk/react/internal";
 import { clerkAppearance } from "@/lib/clerkAppearance";
-import { SchoolSignIn } from "@/pages/SchoolSignIn";
-import Account from "@/pages/Account";
 import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
-import NotFound from '@/pages/not-found';
-import Home from '@/pages/Home';
-import Admin from '@/pages/Admin';
-import SchoolCommerce from '@/pages/SchoolCommerce';
-import { Route, Switch, useLocation, Router as WouterRouter } from 'wouter';
+import { AppRoutes } from "@/AppRoutes";
+import { useLocation, Router as WouterRouter } from 'wouter';
 import { SiteContentRuntime } from '@/lib/siteContent';
 
 const queryClient = new QueryClient();
@@ -43,20 +38,6 @@ function ClerkQueryClientCacheInvalidator() {
   return null;
 }
 
-function Router() {
-  return (
-    <Switch>
-      <Route path="/" component={Home} />
-      <Route path="/sign-in/*?" component={() => <SchoolSignIn />} />
-      <Route path="/sign-up/*?">{() => <SchoolSignIn signup />}</Route>
-      <Route path="/account" component={Account} />
-      <Route path="/commerce" component={SchoolCommerce} />
-      <Route path="/admin" component={Admin} />
-      <Route component={NotFound} />
-    </Switch>
-  );
-}
-
 function ClerkProviderWithRoutes() {
   const [, setLocation] = useLocation();
   return (
@@ -77,7 +58,7 @@ function ClerkProviderWithRoutes() {
       <ClerkQueryClientCacheInvalidator />
       <SiteContentRuntime>
       <TooltipProvider>
-          <Router />
+          <AppRoutes />
         <Toaster />
       </TooltipProvider>
       </SiteContentRuntime>

@@ -37,7 +37,7 @@ export function Programs() {
       desc: "Building a strong academic foundation with an emphasis on critical thinking, literacy, and numeracy.",
       note: "Primary learning builds on early foundations through reading, writing, mathematics, and curiosity about the world. Pupils are encouraged to ask questions, think creatively, and take increasing responsibility for their learning.",
       focus: ["Reading, writing, and numeracy", "Creative thinking and thoughtful questions", "Confidence, responsibility, and teamwork"],
-      img: asset("/primary.jpg")
+      img: asset("/images/homepage/back-to-school.webp")
     },
     {
       title: "Junior Secondary",

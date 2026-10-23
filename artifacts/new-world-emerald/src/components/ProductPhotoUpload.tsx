@@ -25,6 +25,8 @@ export function ProductPhotoUpload({
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
+  // Only the committed form value may drive the image source.
+  const [draftUrl, setDraftUrl] = useState(value);
   const requestRef = useRef<object | null>(null);
   const controllerRef = useRef<AbortController | null>(null);
   const productKeyRef = useRef(productKey);
@@ -32,11 +34,41 @@ export function ProductPhotoUpload({
   productKeyRef.current = productKey;
   valueRef.current = value;
 
+  useEffect(() => {
+    setDraftUrl(value);
+  }, [value, productKey]);
+
   useEffect(() => () => {
     requestRef.current = null;
     controllerRef.current?.abort();
     controllerRef.current = null;
   }, []);
+
+  function applyPhotoUrl() {
+    if (disabled || uploading) return;
+    const nextValue = draftUrl.trim();
+    if (nextValue === value) {
+      setDraftUrl(nextValue);
+      return;
+    }
+    if (nextValue) {
+      try {
+        // Keep public storage/asset paths and HTTP(S) links, including signed
+        // URLs without a file extension. Never turn arbitrary text into a path.
+        if (!nextValue.startsWith("/") && !/^https?:\/\//i.test(nextValue)) throw new Error();
+        const url = new URL(nextValue, window.location.href);
+        if (!["http:", "https:"].includes(url.protocol)) throw new Error();
+      } catch {
+        setError("Enter a complete HTTP(S) photo URL or a public image path. Your current photo has not changed.");
+        setMessage("");
+        return;
+      }
+    }
+    setDraftUrl(nextValue);
+    setError("");
+    setMessage(nextValue ? "Photo link applied. Save the product to apply this change." : "");
+    onChange(nextValue);
+  }
 
   async function uploadPhoto(file?: File) {
     if (!file || requestRef.current !== null) return;
@@ -124,14 +156,22 @@ export function ProductPhotoUpload({
       <label className="block text-xs font-semibold text-muted-foreground">
         Or enter a photo URL
         <input
-          value={value}
+          value={draftUrl}
           disabled={disabled || uploading}
-          onChange={(event) => { setError(""); setMessage(""); onChange(event.target.value); }}
+          onChange={(event) => { setError(""); setMessage(""); setDraftUrl(event.target.value); }}
+          onBlur={applyPhotoUrl}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") {
+              event.preventDefault();
+              applyPhotoUrl();
+            }
+          }}
           placeholder="Optional HTTPS URL"
           data-testid="input-product-image-url"
           className="mt-1.5 w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm font-normal text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 disabled:opacity-60"
         />
       </label>
+      <p className="text-xs text-muted-foreground">Leave the URL field or press Enter to preview the link. Add/Save publishes the change.</p>
       {error && <p role="alert" className="rounded-lg bg-destructive/5 px-3 py-2 text-xs leading-relaxed text-destructive" data-testid="error-product-photo-upload">{error}</p>}
       {message && <p role="status" className="text-xs font-medium text-primary" data-testid="status-product-photo-upload">{message}</p>}
     </div>

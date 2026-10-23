@@ -18,7 +18,7 @@ const staggerContainer = {
 export function Hero() {
   return (
     <MotionConfig reducedMotion="user">
-      <section className="relative isolate flex min-h-[590px] items-center overflow-hidden bg-secondary pt-24 pb-14 sm:min-h-[620px] sm:pt-28 md:min-h-[650px] md:py-28">
+      <section aria-labelledby="hero-headline" className="relative isolate flex min-h-[590px] items-center overflow-hidden bg-secondary pt-24 pb-14 sm:min-h-[620px] sm:pt-28 md:min-h-[650px] md:py-28">
         <img
           src={asset("/campus-building-background.webp")}
           alt="New World Emerald Private School campus"
@@ -27,34 +27,42 @@ export function Hero() {
         />
         <div className="absolute inset-0 -z-10 bg-gradient-to-r from-secondary/95 via-secondary/80 to-secondary/30 md:via-secondary/75" />
         <div className="absolute inset-0 -z-10 bg-gradient-to-t from-secondary/45 via-transparent to-secondary/20" />
-
-        <div className="container relative z-10 mx-auto px-5 sm:px-8">
-          <motion.div initial="hidden" animate="visible" variants={staggerContainer} className="max-w-3xl">
-            <motion.p variants={fadeUp} className="mb-5 text-xs font-semibold uppercase tracking-[0.2em] text-accent sm:text-sm">
-              New World Emerald Private School
-            </motion.p>
-            <motion.h1
-              variants={fadeUp}
-              aria-label="Building Future Leaders With Global Vision."
-              data-testid="hero-headline"
-              className="mb-5 max-w-[15ch] font-serif text-[clamp(2rem,8.2vw,4.6rem)] font-bold leading-[1.08] tracking-[-0.035em] text-white sm:max-w-[17ch] sm:text-5xl md:mb-6 md:text-7xl"
+      <div className="container relative z-10 mx-auto px-5 sm:px-8">
+        <motion.div initial="hidden" animate="visible" variants={staggerContainer} className="max-w-3xl">
+          <motion.p variants={fadeUp} className="mb-5 text-xs font-semibold uppercase tracking-[0.2em] text-accent sm:text-sm">
+            New World Emerald Private School
+          </motion.p>
+          <motion.h1
+            variants={fadeUp}
+            aria-label="Building Future Leaders With Global Vision."
+            data-testid="hero-headline"
+            className="mb-5 max-w-[15ch] font-serif text-[clamp(2rem,8.2vw,4.6rem)] font-bold leading-[1.08] tracking-[-0.035em] text-white sm:max-w-[17ch] sm:text-5xl md:mb-6 md:text-7xl"
+          >
+            <span className="block"><AnimatedHeadlineText text="Building Future Leaders" /></span>
+            <span className="mt-1 block text-accent"><AnimatedHeadlineText text="With Global Vision." /></span>
+          </motion.h1>
+          <motion.p variants={fadeUp} className="mb-7 max-w-xl text-[15px] leading-7 text-white/90 sm:text-base md:mb-8 md:text-lg">
+            Offering Cambridge and Nigerian curricula from Creche to Senior Secondary, with a focus on academic excellence and character development.
+          </motion.p>
+          <motion.div variants={fadeUp} className="flex flex-wrap items-center gap-3">
+            <a
+              href="#admissions"
+              data-testid="link-hero-apply"
+              className="inline-flex min-h-12 items-center justify-center rounded-lg bg-accent px-5 py-3 text-sm font-bold text-secondary shadow-md transition-colors hover:bg-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white sm:px-6 sm:text-base"
             >
-              <span className="block"><AnimatedHeadlineText text="Building Future Leaders" /></span>
-              <span className="mt-1 block text-accent"><AnimatedHeadlineText text="With Global Vision." /></span>
-            </motion.h1>
-            <motion.p variants={fadeUp} className="mb-7 max-w-xl text-[15px] leading-7 text-white/90 sm:text-base md:mb-8 md:text-lg">
-              Offering Cambridge and Nigerian curricula from Creche to Senior Secondary, with a focus on academic excellence and character development.
-            </motion.p>
-            <motion.div variants={fadeUp} className="flex flex-wrap items-center gap-3">
-              <a href="#admissions" data-testid="link-hero-apply" className="inline-flex min-h-12 items-center justify-center rounded-lg bg-accent px-5 py-3 text-sm font-bold text-secondary shadow-md transition-colors hover:bg-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white sm:px-6 sm:text-base">
-                Apply now
-              </a>
-              <a href="#about" data-testid="link-hero-visit" className="inline-flex min-h-12 items-center justify-center rounded-lg border border-white/55 bg-secondary/30 px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-white/15 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white sm:px-6 sm:text-base">
-                Schedule a Visit
-              </a>
-            </motion.div>
+              Apply now
+            </a>
+            <a
+              href="#about"
+              data-testid="link-hero-visit"
+              className="inline-flex min-h-12 items-center justify-center rounded-lg border border-white/55 bg-secondary/30 px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-white/15 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white sm:px-6 sm:text-base"
+            >
+              Schedule a Visit
+            </a>
           </motion.div>
-        </div>
+        </motion.div>
+
+      </div>
       </section>
     </MotionConfig>
   );
@@ -112,8 +120,8 @@ export function About() {
             <div className="absolute inset-0 bg-primary rounded-3xl translate-x-4 translate-y-4" />
             <div className="relative overflow-hidden rounded-3xl border border-border bg-card shadow-xl">
               <img
-                src={asset("/library.jpg")}
-                alt="A welcoming learning space at New World Emerald Private School"
+                src={asset("/images/homepage/school-community.webp")}
+                alt="A pupil and two adults welcomed at the New World Emerald school entrance"
                 className="min-h-[420px] w-full object-cover md:min-h-[560px]"
                 loading="lazy"
               />

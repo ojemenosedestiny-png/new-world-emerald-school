@@ -18,7 +18,6 @@ import { isSchoolSectionVisible, useSchoolContentRevision } from '@/lib/siteCont
 
 const schoolSections = [
   { name: "Hero", Component: Hero },
-  { name: "ParentServices", Component: ParentServices },
   { name: "FifthAnniversary", Component: FifthAnniversary },
   { name: "DirectorWelcome", Component: DirectorWelcome },
   { name: "About", Component: About },
@@ -32,6 +31,7 @@ const schoolSections = [
   { name: "LiveUpdates", Component: LiveUpdates },
   { name: "AcademicCalendar", Component: AcademicCalendar },
   { name: "AdmissionsFAQ", Component: AdmissionsFAQ },
+  { name: "ParentServices", Component: ParentServices },
   { name: "FinalCTA", Component: FinalCTA },
 ];
 
@@ -65,7 +65,7 @@ export default function Home() {
 
       <HomepageHeadingAnimations>
       <div>
-        <Navbar />
+          <Navbar />
         
         <main>
           {schoolSections.map(({ name, Component }) => isSchoolSectionVisible(name) ? <Component key={name} /> : null)}

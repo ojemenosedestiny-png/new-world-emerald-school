@@ -3,7 +3,7 @@ import { asset } from "@/lib/asset";
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'wouter';
-import { Menu, X, ChevronDown, MapPin, Phone, Mail, Instagram, Twitter, Facebook, Linkedin, ArrowRight } from 'lucide-react';
+import { Menu, X, ChevronDown, MapPin, Phone, Mail, ArrowRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { PortalsModal } from './Widgets';
 
@@ -43,11 +43,9 @@ export function Navbar({ solid = false }: { solid?: boolean }) {
           <button onClick={() => setIsPortalsOpen(true)} className="hover:text-primary transition-colors flex items-center gap-1">
             <UserIcon size={14} /> Portals Login
           </button>
-          <a href="#" className="hover:text-primary transition-colors">Prospectus</a>
           <a href="#calendar" className="hover:text-primary transition-colors">Calendar</a>
           <a href={asset("/#anniversary")} className="hover:text-primary transition-colors">5th anniversary</a>
-          <Link href="/commerce?section=fees" className="hover:text-primary transition-colors">Fees &amp; Store</Link>
-          <Link href="/commerce?section=shop" className="hover:text-primary transition-colors" data-testid="link-uniform-shop-desktop">Uniform shop</Link>
+          <Link href="/commerce?section=fees" className="hover:text-primary transition-colors" data-testid="link-uniform-shop-desktop">Uniforms &amp; School Payments</Link>
           <a href={asset("/admin")} className="hover:text-primary transition-colors">Admin Panel</a>
         </div>
       </div>
@@ -151,18 +149,10 @@ export function Navbar({ solid = false }: { solid?: boolean }) {
                 <Link
                   href="/commerce?section=fees"
                   onClick={() => setIsMobileMenuOpen(false)}
-                  className="flex items-center justify-between rounded-xl border border-primary/15 bg-primary/5 px-4 py-3 font-semibold text-primary"
+                  className="flex items-center justify-between gap-4 rounded-xl border border-primary/15 bg-primary/5 px-4 py-3 font-semibold leading-5 text-primary"
                   data-testid="link-mobile-fees-store"
                 >
-                  Fees &amp; Store <ArrowRight size={18} aria-hidden="true" />
-                </Link>
-                <Link
-                  href="/commerce?section=shop"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                  className="flex items-center justify-between rounded-xl border border-border bg-card px-4 py-3 font-semibold text-foreground"
-                  data-testid="link-mobile-uniform-shop"
-                >
-                  Uniform shop <ArrowRight size={18} aria-hidden="true" />
+                  Uniforms &amp; School Payments <ArrowRight className="shrink-0" size={18} aria-hidden="true" />
                 </Link>
                 <button onClick={() => {setIsPortalsOpen(true); setIsMobileMenuOpen(false);}} className="text-left font-medium flex items-center gap-2 text-muted-foreground">
                   <UserIcon size={18} /> Portals Login
@@ -197,23 +187,17 @@ export function Footer() {
             <p className="text-sm text-secondary-foreground/80 leading-relaxed">
               Building future leaders through excellence in education, character development, and global awareness.
             </p>
-            <div className="flex gap-4">
-              <a href="#" className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center hover:bg-primary hover:text-primary-foreground transition-all"><Facebook size={18} /></a>
-              <a href="#" className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center hover:bg-primary hover:text-primary-foreground transition-all"><Twitter size={18} /></a>
-              <a href="#" className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center hover:bg-primary hover:text-primary-foreground transition-all"><Instagram size={18} /></a>
-              <a href="#" className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center hover:bg-primary hover:text-primary-foreground transition-all"><Linkedin size={18} /></a>
-            </div>
           </div>
 
           <div>
             <AnimatedHeading as="h3" className="font-serif text-lg font-semibold mb-6">Quick Links</AnimatedHeading>
             <ul className="space-y-3 text-sm text-secondary-foreground/80">
-              <li><a href="#about" className="hover:text-primary transition-colors flex items-center gap-2"><ArrowRight size={14} /> About Us</a></li>
-              <li><a href="#academics" className="hover:text-primary transition-colors flex items-center gap-2"><ArrowRight size={14} /> Academic Programs</a></li>
-              <li><a href="#admissions" className="hover:text-primary transition-colors flex items-center gap-2"><ArrowRight size={14} /> Admissions</a></li>
+              <li><a href={asset("/#about")} className="hover:text-primary transition-colors flex items-center gap-2"><ArrowRight size={14} /> About Us</a></li>
+              <li><a href={asset("/#academics")} className="hover:text-primary transition-colors flex items-center gap-2"><ArrowRight size={14} /> Academic Programs</a></li>
+              <li><a href={asset("/#admissions")} className="hover:text-primary transition-colors flex items-center gap-2"><ArrowRight size={14} /> Admissions</a></li>
+              <li><a href={asset("/commerce?section=fees")} className="hover:text-primary transition-colors flex items-center gap-2"><ArrowRight size={14} /> Uniforms &amp; School Payments</a></li>
               <li><a href={asset("/admin")} className="hover:text-primary transition-colors flex items-center gap-2"><ArrowRight size={14} /> Admin Panel</a></li>
-              <li><a href="#school-life" className="hover:text-primary transition-colors flex items-center gap-2"><ArrowRight size={14} /> School Life</a></li>
-              <li><a href="#" className="hover:text-primary transition-colors flex items-center gap-2"><ArrowRight size={14} /> Career Opportunities</a></li>
+              <li><a href={asset("/#school-life")} className="hover:text-primary transition-colors flex items-center gap-2"><ArrowRight size={14} /> School Life</a></li>
             </ul>
           </div>
 
@@ -236,27 +220,22 @@ export function Footer() {
           </div>
 
           <div>
-            <AnimatedHeading as="h3" className="font-serif text-lg font-semibold mb-6">Newsletter</AnimatedHeading>
-            <p className="text-sm text-secondary-foreground/80 mb-4">Subscribe to receive updates, access to exclusive deals, and more.</p>
-            <form className="flex flex-col gap-3" onSubmit={e => e.preventDefault()}>
-              <input 
-                type="email" 
-                placeholder="Enter your email address" 
-                className="bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-sm outline-none focus:border-primary transition-colors"
-              />
-              <button className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold py-3 rounded-lg transition-colors shadow-lg shadow-primary/20">
-                Subscribe
-              </button>
-            </form>
+            <AnimatedHeading as="h3" className="font-serif text-lg font-semibold mb-6">Parent enquiries</AnimatedHeading>
+            <p className="text-sm text-secondary-foreground/80 mb-4">
+              Contact the School Office about admissions, school fees, or uniform orders.
+            </p>
+            <a
+              href="mailto:info@newworldemeraldprivateschool.com"
+              className="inline-flex min-h-11 items-center justify-center rounded-lg bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+            >
+              Email the School Office
+            </a>
           </div>
         </div>
 
         <div className="pt-8 border-t border-white/10 flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-secondary-foreground/60">
           <p>© {new Date().getFullYear()} New World Emerald Private School. All rights reserved.</p>
           <div className="flex gap-6">
-            <a href="#" className="hover:text-white transition-colors">Privacy Policy</a>
-            <a href="#" className="hover:text-white transition-colors">Terms of Service</a>
-            <a href="#" className="hover:text-white transition-colors">Cookie Policy</a>
           </div>
         </div>
       </div>

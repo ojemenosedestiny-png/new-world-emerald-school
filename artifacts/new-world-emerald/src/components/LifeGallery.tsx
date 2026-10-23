@@ -76,9 +76,9 @@ export function SchoolLife() {
           </div>
           
           <div className="grid grid-cols-2 gap-3 md:gap-4">
-            <img src={asset("/primary.jpg")} alt="Classroom" className="w-full h-64 object-cover rounded-2xl rounded-tr-[4rem]" />
-            <img src={asset("/sports.jpg")} alt="Sports" className="w-full h-64 object-cover rounded-2xl rounded-bl-[4rem] mt-8" />
-            <img src={asset("/science-lab.jpg")} alt="Lab" className="w-full h-64 object-cover rounded-2xl rounded-br-[4rem] col-span-2" />
+            <img src={asset("/images/homepage/classroom-learning.webp")} alt="Pupils learning together at classroom desks" loading="lazy" decoding="async" className="w-full h-64 object-cover rounded-2xl rounded-tr-[4rem]" />
+            <img src={asset("/images/homepage/student-study.webp")} alt="A pupil concentrating on her workbook" loading="lazy" decoding="async" className="w-full h-64 object-cover rounded-2xl rounded-bl-[4rem] mt-8" />
+            <img src={asset("/images/homepage/teacher-guided-learning.webp")} alt="A teacher guiding a classroom lesson" loading="lazy" decoding="async" className="w-full h-64 object-cover rounded-2xl rounded-br-[4rem] col-span-2" />
           </div>
         </div>
         <motion.div
@@ -157,11 +157,12 @@ export function Gallery() {
     { src: asset("/anniversary-chess.webp"), cat: 'academics', alt: 'Pupils practising chess in the classroom', aspect: 'aspect-[3/4]' },
     { src: asset("/anniversary-learning.webp"), cat: 'academics', alt: 'Teacher guiding pupils through a classroom activity', aspect: 'aspect-[3/4]' },
     { src: asset("/graduation.jpg"), cat: 'events', aspect: 'aspect-square' },
-    { src: asset("/science-lab.jpg"), cat: 'academics', aspect: 'aspect-video' },
-    { src: asset("/hero.jpg"), cat: 'campus', aspect: 'aspect-[3/4]' },
-    { src: asset("/primary.jpg"), cat: 'academics', aspect: 'aspect-square' },
-    { src: asset("/library.jpg"), cat: 'campus', aspect: 'aspect-video' },
-    { src: asset("/sports.jpg"), cat: 'events', aspect: 'aspect-[3/4]' },
+    { src: asset("/images/homepage/classroom-learning.webp"), cat: 'academics', alt: 'Pupils working through lesson books at classroom desks', aspect: 'aspect-[3/4]' },
+    { src: asset("/campus-building-background.webp"), cat: 'campus', alt: 'The New World Emerald Private School building', aspect: 'aspect-video' },
+    { src: asset("/images/homepage/back-to-school.webp"), cat: 'school-life', alt: 'A pupil holding a colourful Back to School frame', aspect: 'aspect-[3/4]' },
+    { src: asset("/images/homepage/student-study.webp"), cat: 'academics', alt: 'A pupil studying her workbook', aspect: 'aspect-[3/4]' },
+    { src: asset("/images/homepage/teacher-guided-learning.webp"), cat: 'academics', alt: 'A teacher leading a classroom lesson', aspect: 'aspect-[3/4]' },
+    { src: asset("/images/homepage/school-community.webp"), cat: 'school-life', alt: 'A pupil and two adults at the school entrance', aspect: 'aspect-[3/4]' },
   ];
 
   const filteredImages = filter === 'all' ? images : images.filter(img => img.cat === filter);

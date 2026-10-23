@@ -175,7 +175,7 @@ export default function SchoolCommerce() {
             <div>
               <Link href="/" data-testid="link-commerce-home" className="mb-7 inline-flex items-center gap-2 text-sm text-white/70 hover:text-accent"><ArrowLeft size={15} /> Return to school website</Link>
               <p className="mb-3 text-xs font-bold uppercase tracking-[0.24em] text-accent">Parent services</p>
-              <h1 className="max-w-3xl font-serif text-4xl font-bold leading-tight md:text-6xl">School fees, uniforms & materials.</h1>
+              <h1 className="max-w-3xl font-serif text-4xl font-bold leading-tight md:text-6xl">Uniforms &amp; School Payments</h1>
               <p className="mt-5 max-w-2xl text-base leading-relaxed text-white/70 md:text-lg">Request uniforms and learning materials, or tell the School Office about an offline fee transfer. Every request is linked to the student details you provide and confirmed manually by staff.</p>
               <div className="mt-8 flex flex-wrap gap-3">
                 <button type="button" onClick={() => setSection("shop")} data-testid="button-commerce-shop-tab" className={`rounded-full px-5 py-3 text-sm font-bold transition ${section === "shop" ? "bg-accent text-secondary" : "border border-white/20 text-white hover:border-accent hover:text-accent"}`}><ShoppingBag size={16} className="mr-2 inline" /> School store</button>
