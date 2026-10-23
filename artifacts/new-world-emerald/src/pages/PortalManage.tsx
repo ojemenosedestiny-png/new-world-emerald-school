@@ -2,7 +2,7 @@ import { useState, type ReactNode } from "react";
 import { Link } from "wouter";
 import { useAuth, useClerk, useUser } from "@clerk/react";
 import { useGetPortalSession, getGetPortalSessionQueryKey, useGetPortalManagement, getGetPortalManagementQueryKey } from "@workspace/api-client-react";
-import { ArrowRight, BookOpen, CheckSquare, ClipboardList, FileBarChart, Globe, GraduationCap, LayoutDashboard, Megaphone, School, ShieldAlert, Users } from "lucide-react";
+import { ArrowRight, BookOpen, CheckSquare, ClipboardList, FileBarChart, Globe, GraduationCap, LayoutDashboard, Megaphone, MonitorSmartphone, School, ScrollText, ShieldAlert, Users } from "lucide-react";
 import "@/portal/portal.css";
 import { BackToWebsite, ErrorPanel, Skeleton } from "@/portal/ui";
 import { errorMessage, usePortalMeta } from "@/portal/lib";
@@ -13,6 +13,9 @@ import { ClassesPanel, StudentsPanel, TeachersPanel } from "@/portal/manage/Peop
 import { Dashboard } from "@/portal/manage/Dashboard";
 import { AppShell, type NavGroup } from "@/portal/shell/AppShell";
 import { usePortalTheme } from "@/portal/shell/theme";
+import { TwoFactorSetup } from "@/components/TwoFactorSetup";
+import { IdleSignOut } from "@/components/IdleSignOut";
+import { AuditLogPanel, SessionsPanel } from "@/portal/security/SecurityPanels";
 import { ReportsPanel } from "@/portal/reports/ReportsPanel";
 
 function Gate({ title, body, children }: { title: string; body: string; children?: ReactNode }) {
@@ -29,10 +32,10 @@ function Gate({ title, body, children }: { title: string; body: string; children
   );
 }
 
-type Section = "overview" | "exams" | "marking" | "reports" | "revision" | "notices" | "students" | "teachers" | "classes";
+type Section = "overview" | "exams" | "marking" | "reports" | "revision" | "notices" | "students" | "teachers" | "classes" | "sessions" | "audit";
 const TITLES: Record<Section, string> = {
   overview: "Dashboard", exams: "Exams", marking: "Marking", reports: "Report cards", revision: "Revision notes",
-  notices: "Announcements", students: "Students", teachers: "Teachers", classes: "Classes",
+  notices: "Announcements", students: "Students", teachers: "Teachers", classes: "Classes", sessions: "Sessions", audit: "Audit log",
 };
 
 export default function PortalManage() {
@@ -53,6 +56,7 @@ export default function PortalManage() {
   if (!signedIn) return <Gate title="Staff sign-in" body="Teachers and school administrators sign in with their approved school email."><Link href="/sign-in?returnTo=portal" className="portal-btn w-full" data-testid="link-staff-signin">Sign in with email</Link></Gate>;
   if (session.isLoading) return <div className="portal p-10"><Skeleton className="mx-auto h-40 max-w-md" /></div>;
   if (session.isError) return <div className="portal grid place-items-center px-4"><div className="max-w-md"><ErrorPanel title="Could not check your access" message={errorMessage(session.error)} onRetry={() => session.refetch()} /></div></div>;
+  if (session.data?.mfaRequired) return <Gate title="Turn on two-factor" body="Administrator accounts need two-factor authentication."><TwoFactorSetup tone="portal" onCheckAgain={() => void session.refetch()} checking={session.isFetching} /></Gate>;
   if (!isStaff) return <Gate title="Not approved for the portal" body="This account is not an approved teacher or administrator. Ask the school office to approve your email."><button className="portal-btn-ghost w-full justify-center" onClick={() => void signOut({ redirectUrl: import.meta.env.BASE_URL + "portal/manage" })} data-testid="button-switch-account">Use another account</button></Gate>;
 
   const isAdmin = role === "admin";
@@ -72,6 +76,9 @@ export default function PortalManage() {
       { key: "students" as const, label: "Students", icon: GraduationCap, testId: "tab-manage-students" },
       { key: "teachers" as const, label: "Teachers", icon: Users, testId: "tab-manage-teachers" },
       { key: "classes" as const, label: "Classes", icon: School, testId: "tab-manage-classes" },
+    ] }, { label: "Security", items: [
+      { key: "sessions" as const, label: "Sessions", icon: MonitorSmartphone, testId: "tab-manage-sessions" },
+      ...(session.data?.superAdmin ? [{ key: "audit" as const, label: "Audit log", icon: ScrollText, testId: "tab-manage-audit" }] : []),
     ] }] : []),
   ];
   const scope = isAdmin ? "All classes" : (d?.classes.length ?? 0) + " assigned classes";
@@ -86,6 +93,7 @@ export default function PortalManage() {
       onSignOut={() => void signOut({ redirectUrl: import.meta.env.BASE_URL })}
       sidebarFooter={isAdmin ? <Link href="/admin" className="portal-nav-item" data-testid="link-admin"><Globe size={17} aria-hidden="true" /><span>Website admin</span></Link> : undefined}
     >
+      <IdleSignOut enabled onSignOut={() => void signOut({ redirectUrl: import.meta.env.BASE_URL })} />
       {mgmt.isLoading ? <div className="space-y-3"><Skeleton className="h-24" /><Skeleton className="h-64" /></div>
         : mgmt.isError || !d ? <ErrorPanel title="Management data did not load" message={errorMessage(mgmt.error)} onRetry={() => mgmt.refetch()} />
         : (!isAdmin && d.classes.length === 0) ? <Gate title="No classes assigned" body="You are approved as a teacher but no class is assigned yet. Ask a school administrator to assign your classes." />
@@ -110,6 +118,8 @@ export default function PortalManage() {
             {isAdmin && section === "students" && <StudentsPanel data={d} />}
             {isAdmin && section === "teachers" && <TeachersPanel data={d} />}
             {isAdmin && section === "classes" && <ClassesPanel data={d} />}
+            {isAdmin && section === "sessions" && <SessionsPanel />}
+            {isAdmin && session.data?.superAdmin && section === "audit" && <AuditLogPanel />}
           </div>
         )}
     </AppShell>

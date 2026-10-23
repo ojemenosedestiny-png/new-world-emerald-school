@@ -3,7 +3,7 @@ import { promisify } from "node:util";
 import type { Request, Response, NextFunction } from "express";
 import { and, eq, gt } from "drizzle-orm";
 import { db, portalStudents, portalSessions, portalTeachers, type PortalStudentRecord } from "@workspace/db";
-import { isWebsiteAdmin } from "./website-admin";
+import { adminNeedsMfa, isWebsiteAdmin } from "./website-admin";
 import { clerkClient, getAuth } from "@clerk/express";
 
 const scrypt = promisify(scryptCallback);
@@ -47,6 +47,8 @@ const verifiedStaff = new Map<string, { email: string; until: number }>();
 export async function portalActor(req: Request): Promise<PortalActor> {
   // Staff permissions are always rechecked, including after revocation.
   if (isWebsiteAdmin(req)) return { role: "admin", name: req.dbUser?.firstName || "School office", classIds: [], mustChangePassword: false };
+  // An approved administrator without required two-factor gets no staff access until it is on.
+  if (adminNeedsMfa(req)) return { role: "guest", name: "", classIds: [], mustChangePassword: false };
   if (req.dbUser) {
     const clerkId = getAuth(req).userId;
     if (clerkId) {

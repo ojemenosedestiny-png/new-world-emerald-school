@@ -2,14 +2,17 @@ import { Router, type IRouter, type Request, type Response } from "express";
 import { db, siteContentTable } from "@workspace/db";
 import { and, eq } from "drizzle-orm";
 import { UpdateSiteContentBody } from "@workspace/api-zod";
-import { isWebsiteAdmin, requireWebsiteAdmin } from "../lib/website-admin";
+import { adminNeedsMfa, isSuperAdmin, isWebsiteAdmin, requireWebsiteAdmin } from "../lib/website-admin";
+import { refreshApprovedIdentitiesSoon } from "../lib/approved-identities";
 
 const router: IRouter = Router();
 const documentId = "school-website";
 
 router.get("/website-admin/access", (req: Request, res: Response) => {
   res.setHeader("Cache-Control", "no-store");
-  res.json({ isAdmin: isWebsiteAdmin(req) });
+  const mfaRequired = adminNeedsMfa(req);
+  if (mfaRequired) refreshApprovedIdentitiesSoon();
+  res.json({ isAdmin: isWebsiteAdmin(req), isSuperAdmin: isSuperAdmin(req), mfaRequired });
 });
 
 router.get("/site-content", async (_req: Request, res: Response) => {

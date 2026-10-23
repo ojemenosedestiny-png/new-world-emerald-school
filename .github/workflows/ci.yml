@@ -69,5 +69,6 @@ jobs:
           pnpm --filter @workspace/db run push
           pnpm --filter @workspace/api-server run test:portal-control
           pnpm --filter @workspace/api-server run test:portal-reports
+          pnpm --filter @workspace/api-server run test:portal-security
 
       # test:portal also needs Replit object storage, so it is run on Replit.

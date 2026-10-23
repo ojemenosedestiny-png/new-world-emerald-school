@@ -5,6 +5,156 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+export interface AuditEntry {
+  id: number;
+  at: string;
+  actorKind: string;
+  /** @nullable */
+  actorId: string | null;
+  actorLabel: string;
+  action: string;
+  /** @nullable */
+  targetType: string | null;
+  /** @nullable */
+  targetId: string | null;
+  outcome: string;
+  /** @nullable */
+  status: number | null;
+  /** @nullable */
+  ip: string | null;
+  /** @nullable */
+  userAgent: string | null;
+  before: unknown;
+  after: unknown;
+}
+
+export type AuditPageEntriesItem = {
+  id: number;
+  at: string;
+  actorKind: string;
+  /** @nullable */
+  actorId: string | null;
+  actorLabel: string;
+  action: string;
+  /** @nullable */
+  targetType: string | null;
+  /** @nullable */
+  targetId: string | null;
+  outcome: string;
+  /** @nullable */
+  status: number | null;
+  /** @nullable */
+  ip: string | null;
+  /** @nullable */
+  userAgent: string | null;
+  before: unknown;
+  after: unknown;
+};
+
+export interface AuditPage {
+  total: number;
+  page: number;
+  pageSize: number;
+  entries: AuditPageEntriesItem[];
+}
+
+export interface StudentSessionInfo {
+  studentId: number;
+  studentCode: string;
+  name: string;
+  className: string;
+  ref: string;
+  /** @nullable */
+  createdAt: string | null;
+  expiresAt: string;
+  /** @nullable */
+  ip: string | null;
+  /** @nullable */
+  userAgent: string | null;
+}
+
+export interface StaffSessionInfo {
+  sessionId: string;
+  email: string;
+  role: string;
+  /** @nullable */
+  lastActiveAt: string | null;
+  /** @nullable */
+  createdAt: string | null;
+}
+
+export type SecuritySessionsStudentsItem = {
+  studentId: number;
+  studentCode: string;
+  name: string;
+  className: string;
+  ref: string;
+  /** @nullable */
+  createdAt: string | null;
+  expiresAt: string;
+  /** @nullable */
+  ip: string | null;
+  /** @nullable */
+  userAgent: string | null;
+};
+
+export type SecuritySessionsStaffItem = {
+  sessionId: string;
+  email: string;
+  role: string;
+  /** @nullable */
+  lastActiveAt: string | null;
+  /** @nullable */
+  createdAt: string | null;
+};
+
+export interface SecuritySessions {
+  students: SecuritySessionsStudentsItem[];
+  staff: SecuritySessionsStaffItem[];
+  staffAvailable: boolean;
+}
+
+export type RevokeRequestKind = typeof RevokeRequestKind[keyof typeof RevokeRequestKind];
+
+
+export const RevokeRequestKind = {
+  student: 'student',
+  studentSession: 'studentSession',
+  staff: 'staff',
+} as const;
+
+export interface RevokeRequest {
+  kind: RevokeRequestKind;
+  studentId?: number;
+  /** @maxLength 64 */
+  ref?: string;
+  /** @maxLength 120 */
+  sessionId?: string;
+}
+
+export interface LoginEvent {
+  at: string;
+  success: boolean;
+  /** @nullable */
+  ip: string | null;
+  /** @nullable */
+  userAgent: string | null;
+}
+
+export type StudentActivityLoginsItem = {
+  at: string;
+  success: boolean;
+  /** @nullable */
+  ip: string | null;
+  /** @nullable */
+  userAgent: string | null;
+};
+
+export interface StudentActivity {
+  logins: StudentActivityLoginsItem[];
+  activeSessions: number;
+}
+
 export interface ReportTerm {
   id: number;
   session: string;
@@ -587,6 +737,8 @@ export interface PortalSession {
   classId?: number;
   classIds: number[];
   mustChangePassword: boolean;
+  superAdmin?: boolean;
+  mfaRequired?: boolean;
 }
 
 export interface PortalClass {
@@ -1643,6 +1795,8 @@ export interface PortalPdfImport {
 
 export interface WebsiteAdminAccess {
   isAdmin: boolean;
+  isSuperAdmin?: boolean;
+  mfaRequired?: boolean;
 }
 
 export type SiteContentValues = {[key: string]: string};
@@ -2240,8 +2394,48 @@ termId?: number;
 classId?: number;
 };
 
+export type GetAuditLogParams = {
+/**
+ * @maxLength 100
+ */
+q?: string;
+actorKind?: GetAuditLogActorKind;
+outcome?: GetAuditLogOutcome;
+from?: string;
+to?: string;
+/**
+ * @minimum 1
+ */
+page?: number;
+/**
+ * @minimum 1
+ * @maximum 200
+ */
+pageSize?: number;
+};
+
+export type GetAuditLogActorKind = typeof GetAuditLogActorKind[keyof typeof GetAuditLogActorKind];
+
+
+export const GetAuditLogActorKind = {
+  staff: 'staff',
+  student: 'student',
+  system: 'system',
+} as const;
+
+export type GetAuditLogOutcome = typeof GetAuditLogOutcome[keyof typeof GetAuditLogOutcome];
+
+
+export const GetAuditLogOutcome = {
+  success: 'success',
+  denied: 'denied',
+  failed: 'failed',
+} as const;
+
 export type GetLocalAccount200 = {
   id: string;
   isAdmin: boolean;
+  isSuperAdmin?: boolean;
+  mfaRequired?: boolean;
 };
 

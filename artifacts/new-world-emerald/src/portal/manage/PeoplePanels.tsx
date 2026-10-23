@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { PortalManagement, PortalManagementStudentsItem, PortalManagementTeachersItem } from "@workspace/api-client-react";
-import { Copy, GraduationCap, KeyRound, ListPlus, Pencil, Plus, Printer, School, UserCheck, Users } from "lucide-react";
+import { Activity, Copy, GraduationCap, KeyRound, ListPlus, Pencil, Plus, Printer, School, UserCheck, Users } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { EmptyState, Field, StatusPill } from "../ui";
@@ -9,6 +9,7 @@ import { ClassSelect } from "./ClassSelect";
 import { className, useCommand } from "./useCommand";
 import { BulkEnrol } from "./BulkEnrol";
 import { printLoginSlips, type IssuedLogin } from "./enrol";
+import { StudentActivityDialogBody } from "../security/SecurityPanels";
 
 export function ClassesPanel({ data }: { data: PortalManagement }) {
   const cmd = useCommand();
@@ -70,6 +71,7 @@ export function StudentsPanel({ data }: { data: PortalManagement }) {
   const [search, setSearch] = useState("");
   const [issued, setIssued] = useState<IssuedLogin | null>(null);
   const [bulk, setBulk] = useState(false);
+  const [activity, setActivity] = useState<{ id: number; name: string } | null>(null);
   const list = data.students.filter((s) => (!filter || s.classId === filter) && (s.name + " " + s.studentId).toLowerCase().includes(search.toLowerCase()));
 
   const save = async () => {
@@ -107,6 +109,7 @@ export function StudentsPanel({ data }: { data: PortalManagement }) {
               </div>
               <div className="flex flex-wrap gap-2">
                 <button className="portal-btn-ghost" onClick={() => setForm({ ...s })} data-testid={"button-edit-student-" + s.id}><Pencil size={13} /> Edit</button>
+                <button className="portal-btn-ghost" onClick={() => setActivity({ id: s.id as number, name: s.name })} data-testid={"button-activity-student-" + s.id}><Activity size={13} /> Activity</button>
                 <button className="portal-btn-ghost" disabled={cmd.pending} onClick={() => resetPassword(s)} data-testid={"button-reset-student-" + s.id}><KeyRound size={13} /> Reset password</button>
                 <button className="portal-btn-ghost" disabled={cmd.pending} onClick={() => toggle(s)} data-testid={"button-toggle-student-" + s.id}>{s.active ? "Deactivate" : "Reactivate"}</button>
               </div>
@@ -129,6 +132,12 @@ export function StudentsPanel({ data }: { data: PortalManagement }) {
       </Dialog>
       {issued && <TempPasswordNotice login={issued} onClose={() => setIssued(null)} />}
       {bulk && <BulkEnrol data={data} onClose={() => setBulk(false)} />}
+      <Dialog open={!!activity} onOpenChange={(o) => !o && setActivity(null)}>
+        <DialogContent className="portal !min-h-0 max-w-lg rounded-2xl">
+          <DialogHeader><DialogTitle className="font-serif text-2xl">{activity?.name}</DialogTitle><DialogDescription>Sign-in history and active sessions</DialogDescription></DialogHeader>
+          {activity && <StudentActivityDialogBody studentId={activity.id} name={activity.name} />}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

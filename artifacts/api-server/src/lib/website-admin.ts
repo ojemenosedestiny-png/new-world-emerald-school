@@ -1,17 +1,32 @@
 import type { NextFunction, Request, Response } from "express";
+import { adminMfaRequired, approvedEmails, superAdminEmails } from "./approved-identities";
+
+/** Approved, verified administrator email, before any two-factor requirement. */
+function isApprovedAdmin(req: Request): boolean {
+  if (!req.dbUser || !req.identity?.email || !req.identity.emailVerified) return false;
+  return approvedEmails().includes(req.identity.email.trim().toLowerCase());
+}
 
 export function isWebsiteAdmin(req: Request): boolean {
-  if (!req.dbUser || !req.identity?.email || !req.identity.emailVerified) return false;
-  const approved = (process.env.SCHOOL_ADMIN_EMAILS ?? "")
-    .split(/[,;\s]+/)
-    .map((email) => email.trim().toLowerCase())
-    .filter(Boolean);
-  return approved.includes(req.identity.email.trim().toLowerCase());
+  return isApprovedAdmin(req) && (!adminMfaRequired() || req.identity?.mfa === true);
+}
+
+/** An approved administrator who must turn on two-factor authentication before access. */
+export function adminNeedsMfa(req: Request): boolean {
+  return isApprovedAdmin(req) && adminMfaRequired() && req.identity?.mfa !== true;
+}
+
+export function isSuperAdmin(req: Request): boolean {
+  return isWebsiteAdmin(req) && superAdminEmails().includes(req.identity!.email!.trim().toLowerCase());
 }
 
 export function requireWebsiteAdmin(req: Request, res: Response): boolean {
   if (!req.dbUser) {
     res.status(401).json({ error: req.identityError ?? "Sign in to manage the website." });
+    return false;
+  }
+  if (adminNeedsMfa(req)) {
+    res.status(403).json({ error: "Turn on two-factor authentication for your account to manage the website." });
     return false;
   }
   if (!isWebsiteAdmin(req)) {

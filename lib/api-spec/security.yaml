@@ -1,0 +1,141 @@
+paths:
+  audit:
+    get:
+      operationId: getAuditLog
+      parameters:
+        - { name: q, in: query, required: false, schema: { type: string, maxLength: 100 } }
+        - { name: actorKind, in: query, required: false, schema: { type: string, enum: [staff, student, system] } }
+        - { name: outcome, in: query, required: false, schema: { type: string, enum: [success, denied, failed] } }
+        - { name: from, in: query, required: false, schema: { type: string } }
+        - { name: to, in: query, required: false, schema: { type: string } }
+        - { name: page, in: query, required: false, schema: { type: integer, minimum: 1 } }
+        - { name: pageSize, in: query, required: false, schema: { type: integer, minimum: 1, maximum: 200 } }
+      responses:
+        "200":
+          description: Audit entries, newest first (super administrators only)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AuditPage" }
+  sessions:
+    get:
+      operationId: getSecuritySessions
+      responses:
+        "200":
+          description: Active student portal sessions and staff sign-in sessions (administrators)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SecuritySessions" }
+  revoke:
+    post:
+      operationId: revokeSessions
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/RevokeRequest" }
+      responses:
+        "200":
+          description: Sessions ended
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PortalMessage" }
+  studentActivity:
+    get:
+      operationId: getStudentActivity
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      responses:
+        "200":
+          description: A student's recent sign-ins and active session count (administrators)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/StudentActivity" }
+schemas:
+  AuditEntry:
+    type: object
+    required: [id, at, actorKind, actorId, actorLabel, action, targetType, targetId, outcome, status, ip, userAgent, before, after]
+    properties:
+      id: { type: integer }
+      at: { type: string }
+      actorKind: { type: string }
+      actorId: { type: [string, "null"] }
+      actorLabel: { type: string }
+      action: { type: string }
+      targetType: { type: [string, "null"] }
+      targetId: { type: [string, "null"] }
+      outcome: { type: string }
+      status: { type: [integer, "null"] }
+      ip: { type: [string, "null"] }
+      userAgent: { type: [string, "null"] }
+      before: {}
+      after: {}
+  AuditPage:
+    type: object
+    required: [total, page, pageSize, entries]
+    properties:
+      total: { type: integer }
+      page: { type: integer }
+      pageSize: { type: integer }
+      entries: { type: array, items: { $ref: "#/schemas/AuditEntry" } }
+  StudentSessionInfo:
+    type: object
+    required: [studentId, studentCode, name, className, ref, createdAt, expiresAt, ip, userAgent]
+    properties:
+      studentId: { type: integer }
+      studentCode: { type: string }
+      name: { type: string }
+      className: { type: string }
+      ref: { type: string }
+      createdAt: { type: [string, "null"] }
+      expiresAt: { type: string }
+      ip: { type: [string, "null"] }
+      userAgent: { type: [string, "null"] }
+  StaffSessionInfo:
+    type: object
+    required: [sessionId, email, role, lastActiveAt, createdAt]
+    properties:
+      sessionId: { type: string }
+      email: { type: string }
+      role: { type: string }
+      lastActiveAt: { type: [string, "null"] }
+      createdAt: { type: [string, "null"] }
+  SecuritySessions:
+    type: object
+    required: [students, staff, staffAvailable]
+    properties:
+      students: { type: array, items: { $ref: "#/schemas/StudentSessionInfo" } }
+      staff: { type: array, items: { $ref: "#/schemas/StaffSessionInfo" } }
+      staffAvailable: { type: boolean }
+  RevokeRequest:
+    type: object
+    required: [kind]
+    properties:
+      kind: { type: string, enum: [student, studentSession, staff] }
+      studentId: { type: integer }
+      ref: { type: string, maxLength: 64 }
+      sessionId: { type: string, maxLength: 120 }
+  LoginEvent:
+    type: object
+    required: [at, success, ip, userAgent]
+    properties:
+      at: { type: string }
+      success: { type: boolean }
+      ip: { type: [string, "null"] }
+      userAgent: { type: [string, "null"] }
+  StudentActivity:
+    type: object
+    required: [logins, activeSessions]
+    properties:
+      logins: { type: array, items: { $ref: "#/schemas/LoginEvent" } }
+      activeSessions: { type: integer }
+components:
+  schemas:
+    AuditEntry: { $ref: "#/schemas/AuditEntry" }
+    AuditPage: { $ref: "#/schemas/AuditPage" }
+    StudentSessionInfo: { $ref: "#/schemas/StudentSessionInfo" }
+    StaffSessionInfo: { $ref: "#/schemas/StaffSessionInfo" }
+    SecuritySessions: { $ref: "#/schemas/SecuritySessions" }
+    RevokeRequest: { $ref: "#/schemas/RevokeRequest" }
+    LoginEvent: { $ref: "#/schemas/LoginEvent" }
+    StudentActivity: { $ref: "#/schemas/StudentActivity" }
+    PortalMessage: { $ref: "./portal.yaml#/schemas/PortalMessage" }

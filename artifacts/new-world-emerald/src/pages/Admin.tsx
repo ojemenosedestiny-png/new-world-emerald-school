@@ -57,6 +57,9 @@ function statusClass(status: string) {
   return "bg-blue-100 text-blue-700";
 }
 
+import { TwoFactorSetup } from "@/components/TwoFactorSetup";
+import { IdleSignOut } from "@/components/IdleSignOut";
+
 export default function Admin() {
   const { isLoaded, isSignedIn } = useAuth();
   const { user } = useUser();
@@ -120,6 +123,19 @@ export default function Admin() {
     await queryClient.invalidateQueries({ queryKey: getListAdmissionApplicationsQueryKey() });
   };
 
+  if (accessQuery.data?.mfaRequired) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-secondary px-4">
+        <div className="w-full max-w-md rounded-3xl border border-white/10 bg-white/10 p-8 text-white">
+          <ShieldCheck className="mx-auto mb-5 text-accent" size={36} />
+          <h1 className="text-center font-serif text-3xl font-bold" data-testid="admin-access-status">Turn on two-factor</h1>
+          <div className="mt-5"><TwoFactorSetup onCheckAgain={() => void accessQuery.refetch()} checking={accessQuery.isFetching} /></div>
+          <button onClick={logout} className="mt-5 w-full text-sm text-white/60 hover:text-white">Sign out</button>
+        </div>
+      </main>
+    );
+  }
+
   const accessDenied = accessQuery.error instanceof ApiError && [401, 403].includes(accessQuery.error.status);
   const accessUnavailable = accessQuery.isError && !accessDenied;
   if (accessQuery.isError || !isAdmin) {
@@ -140,6 +156,7 @@ export default function Admin() {
 
   return (
     <div className="min-h-screen bg-muted/40 text-foreground">
+      <IdleSignOut enabled={isAdmin} onSignOut={logout} />
       <header className="border-b border-border bg-secondary text-white">
         <div className="container mx-auto flex items-center justify-between gap-5 px-4 py-5 md:px-8">
           <Link href="/" className="flex items-center gap-3">

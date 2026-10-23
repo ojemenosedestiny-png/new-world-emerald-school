@@ -7,6 +7,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { ErrorPanel, PortalHeader, Skeleton, StatusPill } from "@/portal/ui";
 import { errorMessage, fileUrl, formatTime, scrollToQuestion, usePortalMeta } from "@/portal/lib";
 import { usePortalTheme } from "@/portal/shell/theme";
+import { useKeepAlive } from "@/components/IdleSignOut";
 import { QuestionNavigator, unansweredNumbers } from "@/portal/exam/QuestionNavigator";
 import { useAttemptSync, type SaveState } from "@/portal/exam/useAttemptSync";
 import { Countdown, useRemaining } from "@/portal/exam/Countdown";
@@ -54,6 +55,8 @@ export default function PortalExam() {
   const inProgress = attempt?.status === "in_progress";
   const expired = remaining !== null && remaining <= 0;
   const locked = !inProgress || expired;
+  // An exam in progress counts as activity, so the idle sign-out in other tabs never ends it.
+  useKeepAlive(inProgress && !expired);
 
   useEffect(() => {
     if (!inProgress || !expired || autoSubmitted.current) return;

@@ -68,6 +68,7 @@ _Populate as you build — explicit user instructions worth remembering across s
 - `requireAuthentication` only checks sign-in, not admin approval. Use `requireWebsiteAdmin` when a route needs an administrator.
 - After editing the OpenAPI spec, run codegen and commit the generated files. Never hand-edit `generated/` folders. `lib/api-client-react/src/index.ts` is hand-maintained; keep each export once.
 - Schema changes go through `drizzle-kit push` (no migration files) and `scripts/post-merge.sh` pushes automatically after merges. Make changes additive (new nullable columns/tables); plan renames and drops by hand with a backup first. Never run `push-force` against production.
+- Security: every staff POST/PUT/PATCH/DELETE is written to `portal_audit_log` by `auditStaffChanges` (before snapshots for portal commands, secrets redacted). Super administrator = `SCHOOL_SUPER_ADMIN_EMAILS` or the first admin email. `REQUIRE_ADMIN_MFA=true` requires Clerk two-factor for admins (pending admins get no staff access). The CSP is report-only until `CSP_ENFORCE=true`; print windows must not use inline scripts.
 - Use pnpm 10 (the lockfile is v9 format). pnpm 12 rejects the `onlyBuiltDependencies` setting.
 - Local development on Windows works for typecheck, tests and builds. The API server and `test:portal` also need `DATABASE_URL` and Clerk keys.
 

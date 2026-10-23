@@ -169,6 +169,8 @@ schemas:
       classId: { type: integer }
       classIds: { type: array, items: { type: integer } }
       mustChangePassword: { type: boolean }
+      superAdmin: { type: boolean }
+      mfaRequired: { type: boolean }
   PortalClass:
     type: object
     required: [name]

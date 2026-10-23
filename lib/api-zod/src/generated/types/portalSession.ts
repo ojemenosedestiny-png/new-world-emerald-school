@@ -14,4 +14,6 @@ export interface PortalSession {
   classId?: number;
   classIds: number[];
   mustChangePassword: boolean;
+  superAdmin?: boolean;
+  mfaRequired?: boolean;
 }

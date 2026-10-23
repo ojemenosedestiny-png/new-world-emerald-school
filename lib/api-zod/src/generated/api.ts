@@ -14,7 +14,9 @@ export const GetPortalSessionResponse = zod.object({
   "studentId": zod.string().optional(),
   "classId": zod.number().optional(),
   "classIds": zod.array(zod.number()),
-  "mustChangePassword": zod.boolean()
+  "mustChangePassword": zod.boolean(),
+  "superAdmin": zod.boolean().optional(),
+  "mfaRequired": zod.boolean().optional()
 })
 
 
@@ -35,7 +37,9 @@ export const LoginPortalStudentResponse = zod.object({
   "studentId": zod.string().optional(),
   "classId": zod.number().optional(),
   "classIds": zod.array(zod.number()),
-  "mustChangePassword": zod.boolean()
+  "mustChangePassword": zod.boolean(),
+  "superAdmin": zod.boolean().optional(),
+  "mfaRequired": zod.boolean().optional()
 })
 
 
@@ -984,11 +988,109 @@ export const GetStudentReportsResponse = zod.object({
 })
 
 
+export const getAuditLogQueryQMax = 100;
+
+
+export const getAuditLogQueryPageSizeMax = 200;
+
+
+
+export const GetAuditLogQueryParams = zod.object({
+  "q": zod.coerce.string().max(getAuditLogQueryQMax).optional(),
+  "actorKind": zod.enum(['staff', 'student', 'system']).optional(),
+  "outcome": zod.enum(['success', 'denied', 'failed']).optional(),
+  "from": zod.coerce.string().optional(),
+  "to": zod.coerce.string().optional(),
+  "page": zod.coerce.number().min(1).optional(),
+  "pageSize": zod.coerce.number().min(1).max(getAuditLogQueryPageSizeMax).optional()
+})
+
+export const GetAuditLogResponse = zod.object({
+  "total": zod.number(),
+  "page": zod.number(),
+  "pageSize": zod.number(),
+  "entries": zod.array(zod.object({
+  "id": zod.number(),
+  "at": zod.string(),
+  "actorKind": zod.string(),
+  "actorId": zod.string().nullable(),
+  "actorLabel": zod.string(),
+  "action": zod.string(),
+  "targetType": zod.string().nullable(),
+  "targetId": zod.string().nullable(),
+  "outcome": zod.string(),
+  "status": zod.number().nullable(),
+  "ip": zod.string().nullable(),
+  "userAgent": zod.string().nullable(),
+  "before": zod.unknown(),
+  "after": zod.unknown()
+}))
+})
+
+
+export const GetSecuritySessionsResponse = zod.object({
+  "students": zod.array(zod.object({
+  "studentId": zod.number(),
+  "studentCode": zod.string(),
+  "name": zod.string(),
+  "className": zod.string(),
+  "ref": zod.string(),
+  "createdAt": zod.string().nullable(),
+  "expiresAt": zod.string(),
+  "ip": zod.string().nullable(),
+  "userAgent": zod.string().nullable()
+})),
+  "staff": zod.array(zod.object({
+  "sessionId": zod.string(),
+  "email": zod.string(),
+  "role": zod.string(),
+  "lastActiveAt": zod.string().nullable(),
+  "createdAt": zod.string().nullable()
+})),
+  "staffAvailable": zod.boolean()
+})
+
+
+export const revokeSessionsBodyRefMax = 64;
+
+export const revokeSessionsBodySessionIdMax = 120;
+
+
+
+export const RevokeSessionsBody = zod.object({
+  "kind": zod.enum(['student', 'studentSession', 'staff']),
+  "studentId": zod.number().optional(),
+  "ref": zod.string().max(revokeSessionsBodyRefMax).optional(),
+  "sessionId": zod.string().max(revokeSessionsBodySessionIdMax).optional()
+})
+
+export const RevokeSessionsResponse = zod.object({
+  "message": zod.string()
+})
+
+
+export const GetStudentActivityParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const GetStudentActivityResponse = zod.object({
+  "logins": zod.array(zod.object({
+  "at": zod.string(),
+  "success": zod.boolean(),
+  "ip": zod.string().nullable(),
+  "userAgent": zod.string().nullable()
+})),
+  "activeSessions": zod.number()
+})
+
+
 /**
  * @summary Check whether the signed-in account may manage this website
  */
 export const GetWebsiteAdminAccessResponse = zod.object({
-  "isAdmin": zod.boolean()
+  "isAdmin": zod.boolean(),
+  "isSuperAdmin": zod.boolean().optional(),
+  "mfaRequired": zod.boolean().optional()
 })
 
 
@@ -1043,7 +1145,9 @@ export const HealthCheckResponse = zod.object({
  */
 export const GetLocalAccountResponse = zod.object({
   "id": zod.string(),
-  "isAdmin": zod.boolean()
+  "isAdmin": zod.boolean(),
+  "isSuperAdmin": zod.boolean().optional(),
+  "mfaRequired": zod.boolean().optional()
 })
 
 

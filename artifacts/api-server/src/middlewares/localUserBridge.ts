@@ -2,14 +2,14 @@ import { getAuth } from "@clerk/express";
 import { db, usersTable, type User } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import type { NextFunction, Request, Response } from "express";
-import { hasVerifiedApproval } from "../lib/approved-identities";
+import { hasAdminMfa, hasVerifiedApproval } from "../lib/approved-identities";
 import { schoolUserId } from "../lib/school-identity";
 
 declare global {
   namespace Express {
     interface Request {
       dbUser?: User;
-      identity?: { email: string | null; emailVerified: boolean };
+      identity?: { email: string | null; emailVerified: boolean; mfa?: boolean };
       /** Set when a Clerk session exists but cannot be mapped to a school account. */
       identityError?: string;
     }
@@ -37,7 +37,7 @@ export async function localUserBridge(req: Request, res: Response, next: NextFun
     if (!user) throw new Error("Local account provisioning failed");
     req.dbUser = user;
     const email = typeof auth.sessionClaims?.email === "string" ? auth.sessionClaims.email : null;
-    req.identity = { email, emailVerified: hasVerifiedApproval(userId, email) };
+    req.identity = { email, emailVerified: hasVerifiedApproval(userId, email), mfa: hasAdminMfa(userId, email) };
     next();
   } catch (error) {
     next(error);

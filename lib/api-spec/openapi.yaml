@@ -41,6 +41,14 @@ paths:
     $ref: "./reports.yaml#/paths/manage"
   /portal/reports:
     $ref: "./reports.yaml#/paths/student"
+  /portal/security/audit:
+    $ref: "./security.yaml#/paths/audit"
+  /portal/security/sessions:
+    $ref: "./security.yaml#/paths/sessions"
+  /portal/security/revoke:
+    $ref: "./security.yaml#/paths/revoke"
+  /portal/students/{id}/activity:
+    $ref: "./security.yaml#/paths/studentActivity"
   /website-admin/access:
     get:
       operationId: getWebsiteAdminAccess
@@ -116,6 +124,10 @@ paths:
                   id:
                     type: string
                   isAdmin:
+                    type: boolean
+                  isSuperAdmin:
+                    type: boolean
+                  mfaRequired:
                     type: boolean
         "401":
           description: Authentication required
@@ -809,6 +821,22 @@ paths:
           description: Authentication required.
 components:
   schemas:
+    AuditEntry:
+      $ref: "./security.yaml#/schemas/AuditEntry"
+    AuditPage:
+      $ref: "./security.yaml#/schemas/AuditPage"
+    StudentSessionInfo:
+      $ref: "./security.yaml#/schemas/StudentSessionInfo"
+    StaffSessionInfo:
+      $ref: "./security.yaml#/schemas/StaffSessionInfo"
+    SecuritySessions:
+      $ref: "./security.yaml#/schemas/SecuritySessions"
+    RevokeRequest:
+      $ref: "./security.yaml#/schemas/RevokeRequest"
+    LoginEvent:
+      $ref: "./security.yaml#/schemas/LoginEvent"
+    StudentActivity:
+      $ref: "./security.yaml#/schemas/StudentActivity"
     ReportTerm:
       $ref: "./reports.yaml#/schemas/ReportTerm"
     ReportTermInput:
@@ -892,6 +920,10 @@ components:
       required: [isAdmin]
       properties:
         isAdmin:
+          type: boolean
+        isSuperAdmin:
+          type: boolean
+        mfaRequired:
           type: boolean
     SiteContent:
       type: object

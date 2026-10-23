@@ -16,6 +16,7 @@ import { studentAverage } from "./manage/results";
 import { StudentReports } from "./reports/StudentReports";
 import { StudentHome, type StudentSection } from "./StudentHome";
 import { AppShell, type NavGroup } from "./shell/AppShell";
+import { IdleSignOut } from "@/components/IdleSignOut";
 import type { usePortalTheme } from "./shell/theme";
 
 export function useStudentLogout() {
@@ -118,6 +119,7 @@ export function StudentDashboard({ session, theme }: { session: PortalSession; t
       actions={dash.isFetching && !dash.isLoading ? <span className="hidden text-xs text-[hsl(var(--p-ink)/0.45)] sm:inline">Checking for updates</span> : undefined}
       sidebarFooter={<button type="button" className="portal-nav-item" onClick={() => setPwOpen(true)} data-testid="button-open-password"><KeyRound size={17} aria-hidden="true" /><span>Change password</span></button>}
     >
+        <IdleSignOut enabled onSignOut={logout.run} />
         {dash.isLoading ? (
           <div className="space-y-4"><Skeleton className="h-11 w-80" /><Skeleton className="h-28" /><Skeleton className="h-28" /></div>
         ) : dash.isError || !data ? (

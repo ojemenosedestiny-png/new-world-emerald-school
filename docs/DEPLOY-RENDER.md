@@ -61,3 +61,28 @@ The free Render plan sleeps when idle, so the first visit after a quiet period i
 - Sign in at `/sign-in` with an email in `SCHOOL_ADMIN_EMAILS` and confirm `/admin` opens.
 - Upload a store photo in the admin panel and confirm it shows on the homepage (this tests the bucket and CORS).
 - Create a class and student at `/portal/manage`, then log in at `/portal`.
+
+## 5. Security settings
+
+| Variable | What it does |
+|---|---|
+| `SCHOOL_SUPER_ADMIN_EMAILS` | Who can read the audit log. Leave empty to use the first email in `SCHOOL_ADMIN_EMAILS`. |
+| `REQUIRE_ADMIN_MFA` | `true` makes every administrator turn on two-factor authentication before they can manage anything. |
+| `CSP_ENFORCE` | `false` (default) sends the Content-Security-Policy in report-only mode; `true` enforces it. |
+
+**Turning on required two-factor (in this order, so nobody is locked out):**
+1. In the Clerk dashboard: *Configure → Multi-factor*, enable **Authenticator application** and **Backup codes**. (Clerk may need a paid plan for MFA on a production instance; development instances include it.)
+2. Sign in to the site, open your account (top right) → *Security*, add an authenticator app and save your backup codes.
+3. In Render set `REQUIRE_ADMIN_MFA=true`. Other administrators are guided through setup the next time they sign in.
+
+**Enforcing the Content-Security-Policy:** watch the Render logs for `CSP violation report` lines for a few days of normal use (sign-in, uploads, printing, exams). If none point at something the site needs, set `CSP_ENFORCE=true`.
+
+**Idle sign-out:** staff and students are signed out after 30 minutes without activity (a one-minute warning first). Students in the middle of an exam are not signed out; the exam timer decides.
+
+**Audit log:** every staff change (who, what, when, IP address, device, before and after) and security events such as failed student sign-ins are recorded. The log is append-only and visible only to the super administrator in *Portal management → Audit log*.
+
+## 6. Backups and restore
+
+- **Automatic:** Render Postgres paid plans take daily backups with point-in-time recovery (*Database → Recovery*). The free plan has no backups.
+- **Manual copy before risky changes:** `pg_dump --no-owner --format=custom "$RENDER_EXTERNAL_DATABASE_URL" > nwe-$(date +%F).dump`
+- **Restore a manual copy into an empty database:** `pg_restore --no-owner --clean --if-exists -d "$TARGET_DATABASE_URL" nwe-YYYY-MM-DD.dump`, then point `DATABASE_URL` at it and redeploy.

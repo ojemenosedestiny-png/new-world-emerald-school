@@ -92,7 +92,7 @@ export function reportCardsHtml(reports: PrintableReport[]) {
   h3{margin:0;font:600 10px system-ui,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#5a6a6f}
   .remarks p{margin:6px 0 22px;font-size:13px}.sig{position:absolute;right:10px;bottom:6px;font:10px system-ui,sans-serif;color:#8a9599;border-top:1px solid #8a9599;padding-top:2px;min-width:120px;text-align:center}
   footer{margin-top:10px;font:10.5px system-ui,sans-serif;color:#5a6a6f}.next{font-size:12px;color:#10232c}
-  </style></head><body>${reports.map(reportSection).join("")}<script>window.onload=function(){setTimeout(function(){window.print()},300)}</script></body></html>`;
+  </style></head><body>${reports.map(reportSection).join("")}</body></html>`;
 }
 
 export function printReportCards(reports: PrintableReport[]) {
@@ -101,5 +101,13 @@ export function printReportCards(reports: PrintableReport[]) {
   w.document.open();
   w.document.write(reportCardsHtml(reports));
   w.document.close();
+  printWhenLoaded(w);
   return true;
+}
+
+/** Prints from the opener: the strict Content-Security-Policy blocks inline scripts in the new window. */
+function printWhenLoaded(w: Window) {
+  const print = () => { try { w.focus(); w.print(); } catch { /* window closed */ } };
+  if (w.document.readyState === "complete") window.setTimeout(print, 300);
+  else w.addEventListener("load", () => window.setTimeout(print, 100), { once: true });
 }

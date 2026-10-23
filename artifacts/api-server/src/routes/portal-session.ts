@@ -4,13 +4,20 @@ import { and, eq, lt, sql } from "drizzle-orm";
 import { db, portalStudents, portalSessions } from "@workspace/db";
 import { LoginPortalStudentBody, ChangePortalPasswordBody } from "@workspace/api-zod";
 import { check, hashPassword, hashToken, portalActor, sessionToken, setPortalCookie, verifyPassword, portalCookie } from "../lib/portal-auth";
+import { adminNeedsMfa, isSuperAdmin } from "../lib/website-admin";
+import { refreshApprovedIdentitiesSoon } from "../lib/approved-identities";
+import { clientIp, recordAudit } from "../lib/audit";
+import { recordStudentLogin } from "./portal-security";
 
 export const portalSessionRouter = Router();
 const limits = new Map<string, { count: number; until: number }>();
 const dummyHash = hashPassword(randomBytes(32).toString("hex"));
 portalSessionRouter.get("/session", async (req, res) => {
   const actor = await portalActor(req);
+  const mfaRequired = adminNeedsMfa(req);
+  if (mfaRequired) refreshApprovedIdentitiesSoon();
   res.json({ role: actor.role, name: actor.name, classIds: actor.classIds, mustChangePassword: actor.mustChangePassword,
+    ...(actor.role === "admin" ? { superAdmin: isSuperAdmin(req) } : {}), ...(mfaRequired ? { mfaRequired: true } : {}),
     ...(actor.student ? { studentId: actor.student.studentId, classId: actor.student.classId } : {}) });
 });
 portalSessionRouter.post("/session", async (req, res) => {
@@ -41,12 +48,14 @@ portalSessionRouter.post("/session", async (req, res) => {
   });
   if (!student) { limit.count++; limits.set(key, limit); }
   else limits.delete(key);
+  const [known] = student ? [student] : await db.select({ id: portalStudents.id }).from(portalStudents).where(eq(portalStudents.studentId, studentId));
+  await recordStudentLogin(req, studentId, known?.id ?? null, !!student);
   check(student, "Student ID or password is incorrect, or this account is temporarily unavailable.", 401);
   const token = randomBytes(32).toString("hex");
   // Replacing a browser login cannot retain another student's session.
   await db.delete(portalSessions).where(eq(portalSessions.tokenHash, hashToken(sessionToken(req))));
   await db.delete(portalSessions).where(lt(portalSessions.expiresAt, new Date()));
-  await db.insert(portalSessions).values({ tokenHash: hashToken(token), studentId: student.id, expiresAt: new Date(now + 12 * 60 * 60_000) });
+  await db.insert(portalSessions).values({ tokenHash: hashToken(token), studentId: student.id, expiresAt: new Date(now + 12 * 60 * 60_000), ip: clientIp(req), userAgent: (req.headers["user-agent"] ?? "").slice(0, 300) || null });
   setPortalCookie(req, res, token);
   res.json({ role: "student", name: student.name, studentId: student.studentId, classId: student.classId, classIds: [student.classId], mustChangePassword: student.mustChangePassword });
 });
@@ -69,8 +78,9 @@ portalSessionRouter.put("/password", async (req, res) => {
     check(session, "Your session expired. Sign in again.", 401);
     await tx.update(portalStudents).set({ passwordHash: await hashPassword(body.newPassword), mustChangePassword: false }).where(eq(portalStudents.id, student.id));
     await tx.delete(portalSessions).where(eq(portalSessions.studentId, student.id));
-    await tx.insert(portalSessions).values({ tokenHash: hashToken(token), studentId: student.id, expiresAt: new Date(Date.now() + 12 * 60 * 60_000) });
+    await tx.insert(portalSessions).values({ tokenHash: hashToken(token), studentId: student.id, expiresAt: new Date(Date.now() + 12 * 60 * 60_000), ip: clientIp(req), userAgent: (req.headers["user-agent"] ?? "").slice(0, 300) || null });
   });
+  await recordAudit({ actorKind: "student", actorId: String(actor.student!.id), actorLabel: actor.student!.studentId, action: "student.password_changed", ip: clientIp(req), userAgent: req.headers["user-agent"] ?? null });
   setPortalCookie(req, res, token);
   res.status(204).end();
 });

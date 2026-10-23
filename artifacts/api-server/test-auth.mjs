@@ -7,11 +7,13 @@ import { fileURLToPath } from "node:url";
 
 const directory = await mkdtemp(join(tmpdir(), "school-auth-tests-"));
 try {
-  const tests = ["website-admin", "school-identity", "report-cards"];
+  const tests = ["website-admin", "school-identity", "report-cards", "security"];
   await build({
     entryPoints: tests.map((name) => fileURLToPath(new URL(`./src/lib/${name}.test.ts`, import.meta.url))),
     outdir: directory, bundle: true, platform: "node", format: "esm",
     outExtension: { ".js": ".mjs" },
+    // CommonJS dependencies (e.g. Clerk) need require; resolve them from this package.
+    banner: { js: `import { createRequire as __createRequire } from "node:module"; const require = __createRequire(${JSON.stringify(fileURLToPath(new URL("./package.json", import.meta.url)))});` },
   });
   const result = spawnSync(process.execPath, ["--test", ...tests.map((name) => join(directory, `${name}.test.mjs`))], { stdio: "inherit" });
   if (result.error) throw result.error;

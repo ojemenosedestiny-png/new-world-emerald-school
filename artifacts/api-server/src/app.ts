@@ -9,6 +9,8 @@ import { CLERK_PROXY_PATH, clerkProxyMiddleware, getClerkProxyHost } from "./mid
 import { localUserBridge } from "./middlewares/localUserBridge";
 import { startApprovedIdentityRefresh } from "./lib/approved-identities";
 import { serveFrontend } from "./lib/frontend";
+import { mountCspReports, securityHeaders } from "./lib/security-headers";
+import { auditStaffChanges } from "./lib/audit";
 
 const app: Express = express();
 
@@ -31,7 +33,9 @@ app.use(
     },
   }),
 );
+app.use(securityHeaders());
 app.use(CLERK_PROXY_PATH, clerkProxyMiddleware());
+mountCspReports(app);
 // Website files need no auth, so they are served before the Clerk middleware.
 serveFrontend(app);
 app.use(cors({ credentials: true, origin: true }));
@@ -47,6 +51,7 @@ app.use(
 );
 startApprovedIdentityRefresh();
 app.use(localUserBridge);
+app.use("/api", auditStaffChanges());
 
 app.use("/api", router);
 

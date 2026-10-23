@@ -20,6 +20,12 @@ services:
           property: connectionString
       - key: SCHOOL_ADMIN_EMAILS
         sync: false
+      - key: SCHOOL_SUPER_ADMIN_EMAILS
+        sync: false
+      - key: REQUIRE_ADMIN_MFA
+        value: "false"
+      - key: CSP_ENFORCE
+        value: "false"
       - key: CLERK_SECRET_KEY
         sync: false
       - key: CLERK_PUBLISHABLE_KEY

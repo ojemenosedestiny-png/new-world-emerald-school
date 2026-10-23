@@ -8,4 +8,6 @@
 
 export interface WebsiteAdminAccess {
   isAdmin: boolean;
+  isSuperAdmin?: boolean;
+  mfaRequired?: boolean;
 }

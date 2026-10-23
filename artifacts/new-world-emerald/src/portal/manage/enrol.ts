@@ -73,7 +73,7 @@ export function loginSlipsHtml(logins: IssuedLogin[], portalUrl: string) {
     dt{color:#4b5d63}dd{margin:0;font-weight:600;word-break:break-all}.mono{font-family:ui-monospace,Consolas,monospace;font-size:14px}
     .note{margin:8px 0 0;font-size:11px;color:#4b5d63}
     @media print{body{margin:0}.grid{gap:8px}}
-  </style></head><body><div class="grid">${slips}</div><script>window.onload=function(){window.print()}</script></body></html>`;
+  </style></head><body><div class="grid">${slips}</div></body></html>`;
 }
 
 export function printLoginSlips(logins: IssuedLogin[]) {
@@ -83,5 +83,13 @@ export function printLoginSlips(logins: IssuedLogin[]) {
   w.document.open();
   w.document.write(loginSlipsHtml(logins, portalUrl));
   w.document.close();
+  printWhenLoaded(w);
   return true;
+}
+
+/** Prints from the opener: the strict Content-Security-Policy blocks inline scripts in the new window. */
+function printWhenLoaded(w: Window) {
+  const print = () => { try { w.focus(); w.print(); } catch { /* window closed */ } };
+  if (w.document.readyState === "complete") window.setTimeout(print, 300);
+  else w.addEventListener("load", () => window.setTimeout(print, 100), { once: true });
 }
