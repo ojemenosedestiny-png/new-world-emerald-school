@@ -14,6 +14,7 @@ const Admin = lazy(() => import("@/pages/Admin"));
 const Portal = lazy(() => import("@/pages/Portal"));
 const PortalExam = lazy(() => import("@/pages/PortalExam"));
 const PortalManage = lazy(() => import("@/pages/PortalManage"));
+const ActivateAccount = lazy(() => import("@/pages/ActivateAccount"));
 const NotFound = lazy(() => import("@/pages/not-found"));
 
 export function AppRoutes() {
@@ -31,6 +32,7 @@ export function AppRoutes() {
         <Route path="/portal" component={Portal} />
         <Route path="/portal/exam/:id" component={PortalExam} />
         <Route path="/portal/manage" component={PortalManage} />
+        <Route path="/portal/activate" component={ActivateAccount} />
         <Route component={NotFound} />
       </Switch>
     </RouteBoundary>

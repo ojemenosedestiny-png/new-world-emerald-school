@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { Link } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
-import { useLoginPortalStudent, getGetPortalSessionQueryKey } from "@workspace/api-client-react";
+import { useLoginPortalStudent, useRequestPasswordReset, getGetPortalSessionQueryKey } from "@workspace/api-client-react";
 import { Eye, EyeOff, KeyRound, LogIn, ShieldCheck } from "lucide-react";
 import { asset } from "@/lib/asset";
 import { BackToWebsite, ErrorPanel } from "./ui";
@@ -13,6 +13,9 @@ export function StudentLogin() {
   const [studentId, setStudentId] = useState("");
   const [password, setPassword] = useState("");
   const [show, setShow] = useState(false);
+  const [forgotOpen, setForgotOpen] = useState(false);
+  const [forgotId, setForgotId] = useState("");
+  const forgot = useRequestPasswordReset();
 
   const submit = (e: FormEvent) => {
     e.preventDefault();
@@ -85,9 +88,22 @@ export function StudentLogin() {
             </button>
           </form>
 
-          <div className="mt-8 flex gap-3 rounded-2xl bg-[hsl(var(--p-gold-soft)/0.7)] p-4 text-sm leading-relaxed text-[hsl(var(--p-ink)/0.8)]">
-            <KeyRound size={18} className="mt-0.5 shrink-0 text-[hsl(var(--p-gold-ink))]" />
-            <p>Forgotten your password? Please visit or call the school office. A staff member will issue you a new temporary password.</p>
+          <div className="mt-8 rounded-2xl bg-[hsl(var(--p-gold-soft)/0.7)] p-4 text-sm leading-relaxed text-[hsl(var(--p-ink)/0.8)]">
+            <div className="flex gap-3">
+              <KeyRound size={18} className="mt-0.5 shrink-0 text-[hsl(var(--p-gold-ink))]" />
+              <div className="flex-1">
+                <p>Forgotten your password? <button type="button" className="font-semibold text-[hsl(var(--p-emerald))] underline-offset-4 hover:underline" onClick={() => { setForgotOpen((o) => !o); setForgotId(studentId); }} aria-expanded={forgotOpen} data-testid="button-forgot-password">Email a reset link</button> to your parent, or contact the school office.</p>
+                {forgotOpen && (
+                  forgot.isSuccess ? <p className="mt-3 rounded-xl bg-[hsl(var(--p-surface)/0.8)] p-3" role="status" data-testid="text-forgot-sent">{forgot.data.message}</p> : (
+                    <form className="mt-3 flex gap-2" onSubmit={(e) => { e.preventDefault(); if (forgotId.trim()) forgot.mutate({ data: { studentId: forgotId.trim() } }); }}>
+                      <label htmlFor="forgot-id" className="sr-only">Student ID</label>
+                      <input id="forgot-id" className="portal-input !py-2 text-sm" placeholder="Your Student ID" value={forgotId} onChange={(e) => setForgotId(e.target.value)} maxLength={50} data-testid="input-forgot-id" />
+                      <button className="portal-btn !py-2 text-sm" disabled={!forgotId.trim() || forgot.isPending} data-testid="button-send-reset">{forgot.isPending ? "Sending..." : "Send"}</button>
+                    </form>
+                  )
+                )}
+              </div>
+            </div>
           </div>
         </div>
       </main>

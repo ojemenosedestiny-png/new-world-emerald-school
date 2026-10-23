@@ -7,6 +7,7 @@ import {
 import { ManagePortalBody } from "@workspace/api-zod";
 import { check, portalActor, staffOnly, classAllowed, hashPassword, type PortalActor } from "../lib/portal-auth";
 import { automaticMarks, attemptView, finalizeExpired, validateQuestions } from "../lib/portal-assessment";
+import { validEmail } from "../lib/accounts";
 
 export const portalManagementRouter = Router();
 function scoped(actor: PortalActor, column: typeof portalExams.classId | typeof portalClasses.id | typeof portalStudents.classId | typeof portalAttempts.examId | typeof portalMaterials.classId | typeof portalNotices.classId) {
@@ -26,7 +27,7 @@ portalManagementRouter.get("/manage", async (req, res) => {
   const actor = await portalActor(req);
   staffOnly(actor);
   const classes = await db.select().from(portalClasses).where(scoped(actor, portalClasses.id));
-  const students = await db.select({ id: portalStudents.id, studentId: portalStudents.studentId, name: portalStudents.name, classId: portalStudents.classId, active: portalStudents.active }).from(portalStudents).where(scoped(actor, portalStudents.classId));
+  const students = await db.select({ id: portalStudents.id, studentId: portalStudents.studentId, name: portalStudents.name, classId: portalStudents.classId, active: portalStudents.active, guardianEmail: portalStudents.guardianEmail, accountStatus: portalStudents.accountStatus }).from(portalStudents).where(scoped(actor, portalStudents.classId));
   const teachers = actor.role === "admin" ? await db.select().from(portalTeachers) : [];
   const exams = await db.select().from(portalExams).where(scoped(actor, portalExams.classId));
   const rawAttempts = exams.length ? await db.select().from(portalAttempts).where(inArray(portalAttempts.examId, exams.map((e) => e.id))) : [];
@@ -63,6 +64,8 @@ portalManagementRouter.post("/manage", async (req, res) => {
       const studentId = data.studentId.trim().toUpperCase();
       check(/^[A-Z0-9][A-Z0-9/_-]{0,49}$/.test(studentId), "Use letters, numbers, hyphens, slashes or underscores for student IDs.");
       check(data.name.trim(), "Student name required.");
+      const guardianEmail = data.guardianEmail === undefined ? undefined : data.guardianEmail?.trim().toLowerCase() || null;
+      check(!guardianEmail || validEmail(guardianEmail), "Enter a valid parent email, or leave it empty.");
       if (!data.id) check(data.password, "Give the new student an individual temporary password of at least 10 characters.");
       const passwordHash = data.password ? await hashPassword(data.password) : undefined;
       await db.transaction(async (tx) => {
@@ -71,11 +74,11 @@ portalManagementRouter.post("/manage", async (req, res) => {
           check(old, "Student not found.", 404);
           check(old.studentId === studentId && old.classId === data.classId, "Student ID and class cannot be changed on an existing enrolment.");
           await tx.update(portalStudents).set({
-            name: data.name.trim(), active: data.active,
+            name: data.name.trim(), active: data.active, ...(guardianEmail !== undefined ? { guardianEmail } : {}),
             ...(passwordHash ? { passwordHash, mustChangePassword: true, failedLogins: 0, lockedUntil: null } : {}),
           }).where(eq(portalStudents.id, data.id));
           if (!data.active || passwordHash) await tx.delete(portalSessions).where(eq(portalSessions.studentId, data.id));
-        } else await tx.insert(portalStudents).values({ studentId, name: data.name.trim(), classId: data.classId, active: data.active, passwordHash: passwordHash! });
+        } else await tx.insert(portalStudents).values({ studentId, name: data.name.trim(), classId: data.classId, active: data.active, passwordHash: passwordHash!, guardianEmail: guardianEmail ?? null });
       });
       break;
     }

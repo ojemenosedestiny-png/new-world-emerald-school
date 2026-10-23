@@ -86,3 +86,18 @@ The free Render plan sleeps when idle, so the first visit after a quiet period i
 - **Automatic:** Render Postgres paid plans take daily backups with point-in-time recovery (*Database → Recovery*). The free plan has no backups.
 - **Manual copy before risky changes:** `pg_dump --no-owner --format=custom "$RENDER_EXTERNAL_DATABASE_URL" > nwe-$(date +%F).dump`
 - **Restore a manual copy into an empty database:** `pg_restore --no-owner --clean --if-exists -d "$TARGET_DATABASE_URL" nwe-YYYY-MM-DD.dump`, then point `DATABASE_URL` at it and redeploy.
+
+## 7. Email (activation and password-reset links)
+
+| Variable | Value |
+|---|---|
+| `RESEND_API_KEY` | Your Resend API key |
+| `EMAIL_FROM` | Sender on a domain verified in Resend, e.g. `New World Emerald <portal@yourdomain.com>`. `onboarding@resend.dev` works only for emails to your own Resend address. |
+| `PUBLIC_SITE_URL` | Optional. The address used in emailed links, e.g. `https://www.yourdomain.com`. If empty, Render's own address (`RENDER_EXTERNAL_URL`) is used. |
+
+How it works:
+- **Enrol student** creates a Student ID automatically (`NWE/2026/00001`) and a one-time **activation link** (valid 72 hours). It is emailed to the parent when an email is given; staff can also copy it, send it by WhatsApp or print an activation slip.
+- The family opens the link, checks the student's details and chooses a password (10+ characters with letters and numbers). The student is then signed in.
+- **Reset link** (Students tab) and **Email a reset link** (student sign-in page) send a password-reset link valid for 24 hours. The sign-in page always gives the same reply, so it cannot reveal which Student IDs exist.
+- Existing students keep their current passwords. The old **Temporary password** option remains for families without email.
+- If an email cannot be sent, staff see why (for example an unverified domain) and can share the link instead.

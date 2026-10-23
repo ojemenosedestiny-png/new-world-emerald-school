@@ -49,6 +49,16 @@ paths:
     $ref: "./security.yaml#/paths/revoke"
   /portal/students/{id}/activity:
     $ref: "./security.yaml#/paths/studentActivity"
+  /portal/accounts/enrol:
+    $ref: "./accounts.yaml#/paths/enrol"
+  /portal/accounts/{id}/link:
+    $ref: "./accounts.yaml#/paths/link"
+  /portal/accounts/token/check:
+    $ref: "./accounts.yaml#/paths/tokenCheck"
+  /portal/accounts/token/complete:
+    $ref: "./accounts.yaml#/paths/tokenComplete"
+  /portal/accounts/forgot:
+    $ref: "./accounts.yaml#/paths/forgot"
   /website-admin/access:
     get:
       operationId: getWebsiteAdminAccess
@@ -821,6 +831,20 @@ paths:
           description: Authentication required.
 components:
   schemas:
+    EnrolStudentInput:
+      $ref: "./accounts.yaml#/schemas/EnrolStudentInput"
+    AccountLinkRequest:
+      $ref: "./accounts.yaml#/schemas/AccountLinkRequest"
+    AccountLinkResult:
+      $ref: "./accounts.yaml#/schemas/AccountLinkResult"
+    AccountTokenInput:
+      $ref: "./accounts.yaml#/schemas/AccountTokenInput"
+    AccountTokenInfo:
+      $ref: "./accounts.yaml#/schemas/AccountTokenInfo"
+    AccountTokenComplete:
+      $ref: "./accounts.yaml#/schemas/AccountTokenComplete"
+    ForgotPasswordInput:
+      $ref: "./accounts.yaml#/schemas/ForgotPasswordInput"
     AuditEntry:
       $ref: "./security.yaml#/schemas/AuditEntry"
     AuditPage:

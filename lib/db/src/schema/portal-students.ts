@@ -11,6 +11,11 @@ export const portalStudents = pgTable("portal_students", {
   mustChangePassword: boolean("must_change_password").notNull().default(true),
   failedLogins: integer("failed_logins").notNull().default(0),
   lockedUntil: timestamp("locked_until", { withTimezone: true }),
+  // Parent or guardian who receives activation and password-reset links.
+  guardianEmail: text("guardian_email"),
+  // "pending" until the account is activated through its link; existing accounts are "active".
+  accountStatus: text("account_status").notNull().default("active"),
+  activatedAt: timestamp("activated_at", { withTimezone: true }),
 });
 export const insertPortalStudentSchema = createInsertSchema(portalStudents).omit({ id: true });
 export type PortalStudentRecord = typeof portalStudents.$inferSelect;

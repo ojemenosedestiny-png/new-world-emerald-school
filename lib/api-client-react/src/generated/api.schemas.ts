@@ -5,6 +5,95 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+export interface EnrolStudentInput {
+  /**
+     * @minLength 1
+     * @maxLength 150
+     */
+  name: string;
+  classId: number;
+  /**
+     * @maxLength 200
+     * @nullable
+     */
+  guardianEmail?: string | null;
+  /**
+     * @maxLength 50
+     * @nullable
+     */
+  studentId?: string | null;
+  send?: boolean;
+}
+
+export type AccountLinkRequestPurpose = typeof AccountLinkRequestPurpose[keyof typeof AccountLinkRequestPurpose];
+
+
+export const AccountLinkRequestPurpose = {
+  activate: 'activate',
+  reset: 'reset',
+} as const;
+
+export interface AccountLinkRequest {
+  purpose: AccountLinkRequestPurpose;
+  send?: boolean;
+}
+
+export type AccountLinkResultStudent = {
+  id: number;
+  studentId: string;
+  name: string;
+  className: string;
+  /** @nullable */
+  guardianEmail: string | null;
+};
+
+export interface AccountLinkResult {
+  student: AccountLinkResultStudent;
+  url: string;
+  expiresAt: string;
+  emailed: boolean;
+  emailNote: string;
+}
+
+export interface AccountTokenInput {
+  /** @maxLength 100 */
+  token: string;
+}
+
+export type AccountTokenInfoPurpose = typeof AccountTokenInfoPurpose[keyof typeof AccountTokenInfoPurpose];
+
+
+export const AccountTokenInfoPurpose = {
+  activate: 'activate',
+  reset: 'reset',
+} as const;
+
+export interface AccountTokenInfo {
+  purpose: AccountTokenInfoPurpose;
+  studentName: string;
+  studentId: string;
+  className: string;
+  expiresAt: string;
+}
+
+export interface AccountTokenComplete {
+  /** @maxLength 100 */
+  token: string;
+  /**
+     * @minLength 1
+     * @maxLength 128
+     */
+  password: string;
+}
+
+export interface ForgotPasswordInput {
+  /**
+     * @minLength 1
+     * @maxLength 50
+     */
+  studentId: string;
+}
+
 export interface AuditEntry {
   id: number;
   at: string;
@@ -750,6 +839,14 @@ export interface PortalClass {
   name: string;
 }
 
+export type PortalStudentAccountStatus = typeof PortalStudentAccountStatus[keyof typeof PortalStudentAccountStatus];
+
+
+export const PortalStudentAccountStatus = {
+  pending: 'pending',
+  active: 'active',
+} as const;
+
 export interface PortalStudent {
   id?: number;
   /**
@@ -769,6 +866,12 @@ export interface PortalStudent {
      * @maxLength 128
      */
   password?: string;
+  /**
+     * @maxLength 200
+     * @nullable
+     */
+  guardianEmail?: string | null;
+  accountStatus?: PortalStudentAccountStatus;
 }
 
 export interface PortalTeacher {
@@ -1273,6 +1376,14 @@ export type PortalManagementClassesItem = {
   name: string;
 };
 
+export type PortalManagementStudentsItemAccountStatus = typeof PortalManagementStudentsItemAccountStatus[keyof typeof PortalManagementStudentsItemAccountStatus];
+
+
+export const PortalManagementStudentsItemAccountStatus = {
+  pending: 'pending',
+  active: 'active',
+} as const;
+
 export type PortalManagementStudentsItem = {
   id?: number;
   /**
@@ -1292,6 +1403,12 @@ export type PortalManagementStudentsItem = {
      * @maxLength 128
      */
   password?: string;
+  /**
+     * @maxLength 200
+     * @nullable
+     */
+  guardianEmail?: string | null;
+  accountStatus?: PortalManagementStudentsItemAccountStatus;
 };
 
 export type PortalManagementTeachersItem = {
@@ -1553,6 +1670,14 @@ export type PortalCommandSchoolClass = {
   name: string;
 };
 
+export type PortalCommandStudentAccountStatus = typeof PortalCommandStudentAccountStatus[keyof typeof PortalCommandStudentAccountStatus];
+
+
+export const PortalCommandStudentAccountStatus = {
+  pending: 'pending',
+  active: 'active',
+} as const;
+
 export type PortalCommandStudent = {
   id?: number;
   /**
@@ -1572,6 +1697,12 @@ export type PortalCommandStudent = {
      * @maxLength 128
      */
   password?: string;
+  /**
+     * @maxLength 200
+     * @nullable
+     */
+  guardianEmail?: string | null;
+  accountStatus?: PortalCommandStudentAccountStatus;
 };
 
 export type PortalCommandTeacher = {

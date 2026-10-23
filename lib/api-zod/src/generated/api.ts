@@ -388,6 +388,8 @@ export const getPortalManagementResponseStudentsItemNameMax = 150;
 export const getPortalManagementResponseStudentsItemPasswordMin = 10;
 export const getPortalManagementResponseStudentsItemPasswordMax = 128;
 
+export const getPortalManagementResponseStudentsItemGuardianEmailMax = 200;
+
 export const getPortalManagementResponseTeachersItemEmailMin = 3;
 export const getPortalManagementResponseTeachersItemEmailMax = 200;
 
@@ -467,7 +469,9 @@ export const GetPortalManagementResponse = zod.object({
   "name": zod.string().min(1).max(getPortalManagementResponseStudentsItemNameMax),
   "classId": zod.number(),
   "active": zod.boolean(),
-  "password": zod.string().min(getPortalManagementResponseStudentsItemPasswordMin).max(getPortalManagementResponseStudentsItemPasswordMax).optional()
+  "password": zod.string().min(getPortalManagementResponseStudentsItemPasswordMin).max(getPortalManagementResponseStudentsItemPasswordMax).optional(),
+  "guardianEmail": zod.string().max(getPortalManagementResponseStudentsItemGuardianEmailMax).nullish(),
+  "accountStatus": zod.enum(['pending', 'active']).optional()
 })),
   "teachers": zod.array(zod.object({
   "id": zod.number().optional(),
@@ -572,6 +576,8 @@ export const managePortalBodyStudentNameMax = 150;
 export const managePortalBodyStudentPasswordMin = 10;
 export const managePortalBodyStudentPasswordMax = 128;
 
+export const managePortalBodyStudentGuardianEmailMax = 200;
+
 export const managePortalBodyTeacherEmailMin = 3;
 export const managePortalBodyTeacherEmailMax = 200;
 
@@ -630,7 +636,9 @@ export const ManagePortalBody = zod.object({
   "name": zod.string().min(1).max(managePortalBodyStudentNameMax),
   "classId": zod.number(),
   "active": zod.boolean(),
-  "password": zod.string().min(managePortalBodyStudentPasswordMin).max(managePortalBodyStudentPasswordMax).optional()
+  "password": zod.string().min(managePortalBodyStudentPasswordMin).max(managePortalBodyStudentPasswordMax).optional(),
+  "guardianEmail": zod.string().max(managePortalBodyStudentGuardianEmailMax).nullish(),
+  "accountStatus": zod.enum(['pending', 'active']).optional()
 }).optional(),
   "teacher": zod.object({
   "id": zod.number().optional(),
@@ -1081,6 +1089,114 @@ export const GetStudentActivityResponse = zod.object({
   "userAgent": zod.string().nullable()
 })),
   "activeSessions": zod.number()
+})
+
+
+export const enrolStudentBodyNameMax = 150;
+
+export const enrolStudentBodyGuardianEmailMax = 200;
+
+export const enrolStudentBodyStudentIdMax = 50;
+
+
+
+export const EnrolStudentBody = zod.object({
+  "name": zod.string().min(1).max(enrolStudentBodyNameMax),
+  "classId": zod.number(),
+  "guardianEmail": zod.string().max(enrolStudentBodyGuardianEmailMax).nullish(),
+  "studentId": zod.string().max(enrolStudentBodyStudentIdMax).nullish(),
+  "send": zod.boolean().optional()
+})
+
+export const EnrolStudentResponse = zod.object({
+  "student": zod.object({
+  "id": zod.number(),
+  "studentId": zod.string(),
+  "name": zod.string(),
+  "className": zod.string(),
+  "guardianEmail": zod.string().nullable()
+}),
+  "url": zod.string(),
+  "expiresAt": zod.string(),
+  "emailed": zod.boolean(),
+  "emailNote": zod.string()
+})
+
+
+export const CreateAccountLinkParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const CreateAccountLinkBody = zod.object({
+  "purpose": zod.enum(['activate', 'reset']),
+  "send": zod.boolean().optional()
+})
+
+export const CreateAccountLinkResponse = zod.object({
+  "student": zod.object({
+  "id": zod.number(),
+  "studentId": zod.string(),
+  "name": zod.string(),
+  "className": zod.string(),
+  "guardianEmail": zod.string().nullable()
+}),
+  "url": zod.string(),
+  "expiresAt": zod.string(),
+  "emailed": zod.boolean(),
+  "emailNote": zod.string()
+})
+
+
+export const checkAccountTokenBodyTokenMax = 100;
+
+
+
+export const CheckAccountTokenBody = zod.object({
+  "token": zod.string().max(checkAccountTokenBodyTokenMax)
+})
+
+export const CheckAccountTokenResponse = zod.object({
+  "purpose": zod.enum(['activate', 'reset']),
+  "studentName": zod.string(),
+  "studentId": zod.string(),
+  "className": zod.string(),
+  "expiresAt": zod.string()
+})
+
+
+export const completeAccountTokenBodyTokenMax = 100;
+
+export const completeAccountTokenBodyPasswordMax = 128;
+
+
+
+export const CompleteAccountTokenBody = zod.object({
+  "token": zod.string().max(completeAccountTokenBodyTokenMax),
+  "password": zod.string().min(1).max(completeAccountTokenBodyPasswordMax)
+})
+
+export const CompleteAccountTokenResponse = zod.object({
+  "role": zod.enum(['guest', 'student', 'teacher', 'admin']),
+  "name": zod.string(),
+  "studentId": zod.string().optional(),
+  "classId": zod.number().optional(),
+  "classIds": zod.array(zod.number()),
+  "mustChangePassword": zod.boolean(),
+  "superAdmin": zod.boolean().optional(),
+  "mfaRequired": zod.boolean().optional()
+})
+
+
+export const requestPasswordResetBodyStudentIdMax = 50;
+
+
+
+export const RequestPasswordResetBody = zod.object({
+  "studentId": zod.string().min(1).max(requestPasswordResetBodyStudentIdMax)
+})
+
+export const RequestPasswordResetResponse = zod.object({
+  "message": zod.string()
 })
 
 

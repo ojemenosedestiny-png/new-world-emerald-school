@@ -8,6 +8,7 @@ import { adminNeedsMfa, isSuperAdmin } from "../lib/website-admin";
 import { refreshApprovedIdentitiesSoon } from "../lib/approved-identities";
 import { clientIp, recordAudit } from "../lib/audit";
 import { recordStudentLogin } from "./portal-security";
+import { passwordProblem } from "../lib/accounts";
 
 export const portalSessionRouter = Router();
 const limits = new Map<string, { count: number; until: number }>();
@@ -69,6 +70,8 @@ portalSessionRouter.put("/password", async (req, res) => {
   check(actor.student && actor.role === "student", "Student sign-in required.", 401);
   const body = ChangePortalPasswordBody.parse(req.body);
   check(body.newPassword !== body.currentPassword, "Choose a different password.");
+  const problem = passwordProblem(body.newPassword);
+  check(!problem, problem ?? "");
   const token = randomBytes(32).toString("hex");
   await db.transaction(async (tx) => {
     const [student] = await tx.select().from(portalStudents).where(eq(portalStudents.id, actor.student!.id)).for("update");

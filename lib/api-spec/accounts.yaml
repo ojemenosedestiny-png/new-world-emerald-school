@@ -1,0 +1,142 @@
+paths:
+  enrol:
+    post:
+      operationId: enrolStudent
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/EnrolStudentInput" }
+      responses:
+        "200":
+          description: Student created as pending, with a one-time activation link (administrators)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AccountLinkResult" }
+  link:
+    post:
+      operationId: createAccountLink
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AccountLinkRequest" }
+      responses:
+        "200":
+          description: A fresh activation or reset link, replacing any earlier unused one (administrators)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AccountLinkResult" }
+  tokenCheck:
+    post:
+      operationId: checkAccountToken
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AccountTokenInput" }
+      responses:
+        "200":
+          description: Who the link is for, so the family can confirm before choosing a password
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AccountTokenInfo" }
+  tokenComplete:
+    post:
+      operationId: completeAccountToken
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AccountTokenComplete" }
+      responses:
+        "200":
+          description: Password set and the student signed in
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PortalSession" }
+  forgot:
+    post:
+      operationId: requestPasswordReset
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ForgotPasswordInput" }
+      responses:
+        "200":
+          description: The same response whether or not the Student ID exists
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PortalMessage" }
+schemas:
+  EnrolStudentInput:
+    type: object
+    required: [name, classId]
+    properties:
+      name: { type: string, minLength: 1, maxLength: 150 }
+      classId: { type: integer }
+      guardianEmail: { type: [string, "null"], maxLength: 200 }
+      studentId: { type: [string, "null"], maxLength: 50 }
+      send: { type: boolean }
+  AccountLinkRequest:
+    type: object
+    required: [purpose]
+    properties:
+      purpose: { type: string, enum: [activate, reset] }
+      send: { type: boolean }
+  AccountLinkResult:
+    type: object
+    required: [student, url, expiresAt, emailed, emailNote]
+    properties:
+      student:
+        type: object
+        required: [id, studentId, name, className, guardianEmail]
+        properties:
+          id: { type: integer }
+          studentId: { type: string }
+          name: { type: string }
+          className: { type: string }
+          guardianEmail: { type: [string, "null"] }
+      url: { type: string }
+      expiresAt: { type: string }
+      emailed: { type: boolean }
+      emailNote: { type: string }
+  AccountTokenInput:
+    type: object
+    required: [token]
+    properties:
+      token: { type: string, maxLength: 100 }
+  AccountTokenInfo:
+    type: object
+    required: [purpose, studentName, studentId, className, expiresAt]
+    properties:
+      purpose: { type: string, enum: [activate, reset] }
+      studentName: { type: string }
+      studentId: { type: string }
+      className: { type: string }
+      expiresAt: { type: string }
+  AccountTokenComplete:
+    type: object
+    required: [token, password]
+    properties:
+      token: { type: string, maxLength: 100 }
+      password: { type: string, minLength: 1, maxLength: 128 }
+  ForgotPasswordInput:
+    type: object
+    required: [studentId]
+    properties:
+      studentId: { type: string, minLength: 1, maxLength: 50 }
+components:
+  schemas:
+    EnrolStudentInput: { $ref: "#/schemas/EnrolStudentInput" }
+    AccountLinkRequest: { $ref: "#/schemas/AccountLinkRequest" }
+    AccountLinkResult: { $ref: "#/schemas/AccountLinkResult" }
+    AccountTokenInput: { $ref: "#/schemas/AccountTokenInput" }
+    AccountTokenInfo: { $ref: "#/schemas/AccountTokenInfo" }
+    AccountTokenComplete: { $ref: "#/schemas/AccountTokenComplete" }
+    ForgotPasswordInput: { $ref: "#/schemas/ForgotPasswordInput" }
+    PortalMessage: { $ref: "./portal.yaml#/schemas/PortalMessage" }
+    PortalSession: { $ref: "./portal.yaml#/schemas/PortalSession" }

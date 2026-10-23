@@ -4,6 +4,7 @@ import { useChangePortalPassword, getGetPortalSessionQueryKey } from "@workspace
 import { Lock } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ErrorPanel } from "./ui";
+import { PasswordStrength, passwordProblem } from "./PasswordStrength";
 import { errorMessage } from "./lib";
 
 export function PasswordChange({ required, onDone }: { required: boolean; onDone?: () => void }) {
@@ -13,10 +14,10 @@ export function PasswordChange({ required, onDone }: { required: boolean; onDone
   const [current, setCurrent] = useState("");
   const [next, setNext] = useState("");
   const [confirm, setConfirm] = useState("");
-  const tooShort = next.length > 0 && next.length < 10;
+  const tooShort = next.length > 0 && passwordProblem(next) !== null;
   const mismatch = confirm.length > 0 && next !== confirm;
   const sameAsOld = next.length > 0 && next === current;
-  const valid = current.length > 0 && next.length >= 10 && next === confirm && !sameAsOld;
+  const valid = current.length > 0 && passwordProblem(next) === null && next === confirm && !sameAsOld;
 
   const submit = (e: FormEvent) => {
     e.preventDefault();
@@ -39,7 +40,7 @@ export function PasswordChange({ required, onDone }: { required: boolean; onDone
       {required && (
         <div className="rounded-2xl bg-[hsl(var(--p-gold-soft))] p-4 text-sm leading-relaxed">
           <p className="font-semibold">Choose your own password first</p>
-          <p className="mt-1 text-[hsl(var(--p-ink)/0.75)]">You signed in with a temporary password from the school. Set a private one of at least 10 characters before you continue.</p>
+          <p className="mt-1 text-[hsl(var(--p-ink)/0.75)]">You signed in with a temporary password from the school. Set a private one of at least 10 characters, with letters and numbers, before you continue.</p>
         </div>
       )}
       <div className="space-y-1.5">
@@ -49,9 +50,7 @@ export function PasswordChange({ required, onDone }: { required: boolean; onDone
       <div className="space-y-1.5">
         <label htmlFor="pw-new" className="portal-label">New password</label>
         <input id="pw-new" type="password" className="portal-input" autoComplete="new-password" value={next} onChange={(e) => setNext(e.target.value)} aria-invalid={tooShort || sameAsOld} aria-describedby="pw-new-hint" data-testid="input-new-password" />
-        <p id="pw-new-hint" className={"text-xs " + (tooShort || sameAsOld ? "text-[hsl(var(--p-red))]" : "text-[hsl(var(--p-ink)/0.55)]")}>
-          {sameAsOld ? "Your new password must be different." : next.length + " of at least 10 characters"}
-        </p>
+        {sameAsOld ? <p id="pw-new-hint" className="text-xs text-[hsl(var(--p-red))]">Your new password must be different.</p> : <div id="pw-new-hint"><PasswordStrength password={next} /></div>}
       </div>
       <div className="space-y-1.5">
         <label htmlFor="pw-confirm" className="portal-label">Type it again</label>

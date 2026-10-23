@@ -22,6 +22,11 @@ import type {
 import type {
   AcademicCalendar,
   AcademicCalendarInput,
+  AccountLinkRequest,
+  AccountLinkResult,
+  AccountTokenComplete,
+  AccountTokenInfo,
+  AccountTokenInput,
   AdmissionApplication,
   AdmissionApplicationInput,
   AdmissionApplicationReceipt,
@@ -30,10 +35,12 @@ import type {
   ClassFeeSchedule,
   ClassFeeScheduleInput,
   ClassFeeScheduleUpdate,
+  EnrolStudentInput,
   FeePaymentReport,
   FeePaymentReportInput,
   FeePaymentReportReceipt,
   FeePaymentReportUpdate,
+  ForgotPasswordInput,
   GetAuditLogParams,
   GetLocalAccount200,
   GetReportWorkspaceParams,
@@ -1488,6 +1495,332 @@ export function useGetStudentActivity<TData = Awaited<ReturnType<typeof getStude
 
 
 
+
+export const getEnrolStudentUrl = () => {
+
+
+
+
+  return `/api/portal/accounts/enrol`
+}
+
+export const enrolStudent = async (enrolStudentInput: EnrolStudentInput, options?: RequestInit): Promise<AccountLinkResult> => {
+
+  return customFetch<AccountLinkResult>(getEnrolStudentUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(enrolStudentInput)
+  }
+);}
+
+
+
+
+
+export const getEnrolStudentMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof enrolStudent>>, TError,{data: BodyType<EnrolStudentInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof enrolStudent>>, TError,{data: BodyType<EnrolStudentInput>}, TContext> => {
+
+const mutationKey = ['enrolStudent'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof enrolStudent>>, {data: BodyType<EnrolStudentInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  enrolStudent(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type EnrolStudentMutationResult = NonNullable<Awaited<ReturnType<typeof enrolStudent>>>
+    export type EnrolStudentMutationBody = BodyType<EnrolStudentInput>
+    export type EnrolStudentMutationError = ErrorType<unknown>
+
+    export const useEnrolStudent = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof enrolStudent>>, TError,{data: BodyType<EnrolStudentInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof enrolStudent>>,
+        TError,
+        {data: BodyType<EnrolStudentInput>},
+        TContext
+      > => {
+      return useMutation(getEnrolStudentMutationOptions(options));
+    }
+
+export const getCreateAccountLinkUrl = (id: number,) => {
+
+
+
+
+  return `/api/portal/accounts/${id}/link`
+}
+
+export const createAccountLink = async (id: number,
+    accountLinkRequest: AccountLinkRequest, options?: RequestInit): Promise<AccountLinkResult> => {
+
+  return customFetch<AccountLinkResult>(getCreateAccountLinkUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(accountLinkRequest)
+  }
+);}
+
+
+
+
+
+export const getCreateAccountLinkMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createAccountLink>>, TError,{id: number;data: BodyType<AccountLinkRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createAccountLink>>, TError,{id: number;data: BodyType<AccountLinkRequest>}, TContext> => {
+
+const mutationKey = ['createAccountLink'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createAccountLink>>, {id: number;data: BodyType<AccountLinkRequest>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  createAccountLink(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateAccountLinkMutationResult = NonNullable<Awaited<ReturnType<typeof createAccountLink>>>
+    export type CreateAccountLinkMutationBody = BodyType<AccountLinkRequest>
+    export type CreateAccountLinkMutationError = ErrorType<unknown>
+
+    export const useCreateAccountLink = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createAccountLink>>, TError,{id: number;data: BodyType<AccountLinkRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createAccountLink>>,
+        TError,
+        {id: number;data: BodyType<AccountLinkRequest>},
+        TContext
+      > => {
+      return useMutation(getCreateAccountLinkMutationOptions(options));
+    }
+
+export const getCheckAccountTokenUrl = () => {
+
+
+
+
+  return `/api/portal/accounts/token/check`
+}
+
+export const checkAccountToken = async (accountTokenInput: AccountTokenInput, options?: RequestInit): Promise<AccountTokenInfo> => {
+
+  return customFetch<AccountTokenInfo>(getCheckAccountTokenUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(accountTokenInput)
+  }
+);}
+
+
+
+
+
+export const getCheckAccountTokenMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof checkAccountToken>>, TError,{data: BodyType<AccountTokenInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof checkAccountToken>>, TError,{data: BodyType<AccountTokenInput>}, TContext> => {
+
+const mutationKey = ['checkAccountToken'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof checkAccountToken>>, {data: BodyType<AccountTokenInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  checkAccountToken(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CheckAccountTokenMutationResult = NonNullable<Awaited<ReturnType<typeof checkAccountToken>>>
+    export type CheckAccountTokenMutationBody = BodyType<AccountTokenInput>
+    export type CheckAccountTokenMutationError = ErrorType<unknown>
+
+    export const useCheckAccountToken = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof checkAccountToken>>, TError,{data: BodyType<AccountTokenInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof checkAccountToken>>,
+        TError,
+        {data: BodyType<AccountTokenInput>},
+        TContext
+      > => {
+      return useMutation(getCheckAccountTokenMutationOptions(options));
+    }
+
+export const getCompleteAccountTokenUrl = () => {
+
+
+
+
+  return `/api/portal/accounts/token/complete`
+}
+
+export const completeAccountToken = async (accountTokenComplete: AccountTokenComplete, options?: RequestInit): Promise<PortalSession> => {
+
+  return customFetch<PortalSession>(getCompleteAccountTokenUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(accountTokenComplete)
+  }
+);}
+
+
+
+
+
+export const getCompleteAccountTokenMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof completeAccountToken>>, TError,{data: BodyType<AccountTokenComplete>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof completeAccountToken>>, TError,{data: BodyType<AccountTokenComplete>}, TContext> => {
+
+const mutationKey = ['completeAccountToken'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof completeAccountToken>>, {data: BodyType<AccountTokenComplete>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  completeAccountToken(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CompleteAccountTokenMutationResult = NonNullable<Awaited<ReturnType<typeof completeAccountToken>>>
+    export type CompleteAccountTokenMutationBody = BodyType<AccountTokenComplete>
+    export type CompleteAccountTokenMutationError = ErrorType<unknown>
+
+    export const useCompleteAccountToken = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof completeAccountToken>>, TError,{data: BodyType<AccountTokenComplete>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof completeAccountToken>>,
+        TError,
+        {data: BodyType<AccountTokenComplete>},
+        TContext
+      > => {
+      return useMutation(getCompleteAccountTokenMutationOptions(options));
+    }
+
+export const getRequestPasswordResetUrl = () => {
+
+
+
+
+  return `/api/portal/accounts/forgot`
+}
+
+export const requestPasswordReset = async (forgotPasswordInput: ForgotPasswordInput, options?: RequestInit): Promise<PortalMessage> => {
+
+  return customFetch<PortalMessage>(getRequestPasswordResetUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(forgotPasswordInput)
+  }
+);}
+
+
+
+
+
+export const getRequestPasswordResetMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof requestPasswordReset>>, TError,{data: BodyType<ForgotPasswordInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof requestPasswordReset>>, TError,{data: BodyType<ForgotPasswordInput>}, TContext> => {
+
+const mutationKey = ['requestPasswordReset'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof requestPasswordReset>>, {data: BodyType<ForgotPasswordInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  requestPasswordReset(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RequestPasswordResetMutationResult = NonNullable<Awaited<ReturnType<typeof requestPasswordReset>>>
+    export type RequestPasswordResetMutationBody = BodyType<ForgotPasswordInput>
+    export type RequestPasswordResetMutationError = ErrorType<unknown>
+
+    export const useRequestPasswordReset = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof requestPasswordReset>>, TError,{data: BodyType<ForgotPasswordInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof requestPasswordReset>>,
+        TError,
+        {data: BodyType<ForgotPasswordInput>},
+        TContext
+      > => {
+      return useMutation(getRequestPasswordResetMutationOptions(options));
+    }
 
 export const getGetWebsiteAdminAccessUrl = () => {
 

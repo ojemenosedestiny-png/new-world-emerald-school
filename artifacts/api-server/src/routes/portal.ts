@@ -6,6 +6,7 @@ import { portalManagementRouter } from "./portal-management";
 import { portalFilesRouter } from "./portal-files";
 import { portalReportsRouter } from "./portal-reports";
 import { portalSecurityRouter } from "./portal-security";
+import { portalAccountsRouter } from "./portal-accounts";
 
 const portalRouter = Router();
 portalRouter.use(portalOriginGuard);
@@ -15,6 +16,7 @@ portalRouter.use(portalManagementRouter);
 portalRouter.use(portalFilesRouter);
 portalRouter.use(portalReportsRouter);
 portalRouter.use(portalSecurityRouter);
+portalRouter.use(portalAccountsRouter);
 const errors: ErrorRequestHandler = (error, req, res, _next) => {
   if (res.headersSent) { if (!res.destroyed) res.destroy(); return; }
   if (error instanceof PortalError) { res.status(error.status).json({ error: error.message }); return; }

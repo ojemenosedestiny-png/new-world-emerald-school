@@ -308,7 +308,7 @@ export function PortalsModal({ isOpen, onClose }: { isOpen: boolean, onClose: ()
                         data-testid="input-modal-password"
                       />
                     </div>
-                    {showForgot && <p className="rounded-lg bg-muted p-3 text-xs text-muted-foreground">Please visit or call the school office. A staff member will give you a new temporary password.</p>}
+                    {showForgot && <p className="rounded-lg bg-muted p-3 text-xs text-muted-foreground">Use <button type="button" className="font-semibold text-primary underline" onClick={() => go("/portal")}>Email a reset link</button> on the student portal page to send a reset link to your parent's email, or contact the school office.</p>}
                   </div>
                   {login.isError && (
                     <p role="alert" className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive" data-testid="text-modal-login-error">

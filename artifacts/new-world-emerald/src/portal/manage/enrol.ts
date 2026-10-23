@@ -2,7 +2,7 @@
 export const STUDENT_ID_PATTERN = /^[A-Z0-9][A-Z0-9/_-]{0,49}$/;
 export const MAX_BULK_STUDENTS = 500;
 
-export type EnrolRow = { line: number; studentId: string; name: string; error?: string };
+export type EnrolRow = { line: number; name: string; guardianEmail: string; studentId: string; error?: string };
 
 function splitLine(line: string) {
   // Tab (pasted from a spreadsheet) or comma (CSV). Quotes around a field are removed.
@@ -10,26 +10,43 @@ function splitLine(line: string) {
   return parts.map((p) => p.trim().replace(/^"(.*)"$/, "$1").replace(/""/g, '"').trim());
 }
 
-/** Parses "Student ID, Full name" lines; a header row is skipped automatically. */
+const EMAIL = /^[^\s@]{1,64}@[^\s@]+\.[^\s@]{2,}$/;
+
+/**
+ * Parses a class list. Without a header the columns are: Full name, Parent email, Existing
+ * Student ID (both optional). A header row (e.g. "Student ID, Name, Parent email") sets the order.
+ */
 export function parseEnrolList(text: string, existingIds: Iterable<string>): EnrolRow[] {
   const existing = new Set([...existingIds].map((id) => id.toUpperCase()));
   const seen = new Set<string>();
   const rows: EnrolRow[] = [];
+  let columns = { name: 0, email: 1, id: 2 };
+  let first = true;
   text.split(/\r?\n/).forEach((raw, index) => {
     if (!raw.trim()) return;
-    const [first = "", ...rest] = splitLine(raw);
-    if (rows.length === 0 && /\b(id|student)\b/i.test(first) && /name/i.test(rest.join(" "))) return;
-    const studentId = first.toUpperCase();
-    const name = rest.filter(Boolean).join(" ").replace(/\s+/g, " ").trim();
+    const cells = splitLine(raw);
+    if (first) {
+      first = false;
+      const lower = cells.map((c) => c.toLowerCase());
+      if (lower.some((c) => /name/.test(c))) {
+        const find = (re: RegExp) => lower.findIndex((c) => re.test(c));
+        columns = { name: find(/name/), email: find(/mail/), id: find(/\bid\b|number|admission/) };
+        return;
+      }
+    }
+    const at = (i: number) => (i >= 0 ? cells[i] ?? "" : "");
+    const name = at(columns.name).replace(/\s+/g, " ").trim();
+    const guardianEmail = at(columns.email).toLowerCase();
+    const studentId = at(columns.id).toUpperCase();
     let error: string | undefined;
-    if (!studentId) error = "Missing student ID";
-    else if (!STUDENT_ID_PATTERN.test(studentId)) error = "ID may use only letters, numbers, - / _";
-    else if (!name) error = "Missing name";
+    if (!name) error = "Missing name";
     else if (name.length > 150) error = "Name is too long";
-    else if (existing.has(studentId)) error = "ID already enrolled";
-    else if (seen.has(studentId)) error = "ID repeated in this list";
+    else if (guardianEmail && !EMAIL.test(guardianEmail)) error = "Parent email is not valid";
+    else if (studentId && !STUDENT_ID_PATTERN.test(studentId)) error = "ID may use only letters, numbers, - / _";
+    else if (studentId && existing.has(studentId)) error = "ID already enrolled";
+    else if (studentId && seen.has(studentId)) error = "ID repeated in this list";
     if (studentId) seen.add(studentId);
-    rows.push({ line: index + 1, studentId, name, error });
+    rows.push({ line: index + 1, name, guardianEmail, studentId, error });
   });
   return rows;
 }

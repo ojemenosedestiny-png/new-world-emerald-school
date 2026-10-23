@@ -187,6 +187,8 @@ schemas:
       classId: { type: integer }
       active: { type: boolean }
       password: { type: string, minLength: 10, maxLength: 128 }
+      guardianEmail: { type: [string, "null"], maxLength: 200 }
+      accountStatus: { type: string, enum: [pending, active] }
   PortalTeacher:
     type: object
     required: [email, name, classIds, active]

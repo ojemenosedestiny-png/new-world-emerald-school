@@ -26,6 +26,12 @@ services:
         value: "false"
       - key: CSP_ENFORCE
         value: "false"
+      - key: RESEND_API_KEY
+        sync: false
+      - key: EMAIL_FROM
+        sync: false
+      - key: PUBLIC_SITE_URL
+        sync: false
       - key: CLERK_SECRET_KEY
         sync: false
       - key: CLERK_PUBLISHABLE_KEY

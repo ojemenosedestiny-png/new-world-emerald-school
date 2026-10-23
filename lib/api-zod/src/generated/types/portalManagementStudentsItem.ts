@@ -5,6 +5,7 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { PortalManagementStudentsItemAccountStatus } from './portalManagementStudentsItemAccountStatus';
 
 export type PortalManagementStudentsItem = {
   id?: number;
@@ -25,4 +26,10 @@ export type PortalManagementStudentsItem = {
      * @maxLength 128
      */
   password?: string;
+  /**
+     * @maxLength 200
+     * @nullable
+     */
+  guardianEmail?: string | null;
+  accountStatus?: PortalManagementStudentsItemAccountStatus;
 };

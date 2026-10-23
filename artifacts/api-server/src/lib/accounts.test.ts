@@ -1,0 +1,66 @@
+import assert from "node:assert/strict";
+import { test } from "node:test";
+import { accountLink, formatStudentId, hashAccountToken, newAccountToken, passwordProblem, siteBaseUrl, validEmail, validTokenShape } from "./accounts";
+import { activationEmail, emailConfigured, resetEmail, sendEmail } from "./email";
+
+test("automatic Student IDs use NWE/year/five digits", () => {
+  assert.equal(formatStudentId(2026, 1), "NWE/2026/00001");
+  assert.equal(formatStudentId(2026, 123), "NWE/2026/00123");
+  assert.equal(formatStudentId(2027, 100000), "NWE/2027/100000");
+});
+
+test("new passwords need 10+ characters with a letter and a number", () => {
+  assert.equal(passwordProblem("Short1"), "Use at least 10 characters.");
+  assert.equal(passwordProblem("onlyletterslong"), "Include at least one letter and one number.");
+  assert.equal(passwordProblem("1234567890123"), "Include at least one letter and one number.");
+  assert.equal(passwordProblem("x".repeat(120) + "1".repeat(9)), "Use at most 128 characters.");
+  assert.equal(passwordProblem("Ada-Chosen-2026"), null);
+});
+
+test("emails and tokens are validated; only hashes are comparable", () => {
+  assert.equal(validEmail("parent@example.com"), true);
+  for (const bad of ["parent@", "@example.com", "par ent@example.com", "parent@example"]) assert.equal(validEmail(bad), false, bad);
+  const { token, hash } = newAccountToken();
+  assert.equal(validTokenShape(token), true);
+  assert.notEqual(hash, token);
+  assert.equal(hashAccountToken(token), hash);
+  assert.equal(validTokenShape("abc"), false);
+  assert.equal(validTokenShape(123), false);
+});
+
+test("links use the configured site address, never the request", () => {
+  assert.equal(siteBaseUrl({ PUBLIC_SITE_URL: "https://school.example/" }), "https://school.example");
+  assert.equal(siteBaseUrl({ RENDER_EXTERNAL_URL: "https://x.onrender.com" }), "https://x.onrender.com");
+  assert.equal(siteBaseUrl({ PUBLIC_SITE_URL: "https://school.example", RENDER_EXTERNAL_URL: "https://x.onrender.com" }), "https://school.example");
+  assert.equal(siteBaseUrl({}), null);
+  assert.equal(siteBaseUrl({ PUBLIC_SITE_URL: "https://evil.example/path" }), null);
+  assert.equal(accountLink("https://school.example", "ab".repeat(32)), "https://school.example/portal/activate?t=" + "ab".repeat(32));
+});
+
+test("email is sent through Resend when configured and explains failures", async () => {
+  const msg = { to: "parent@example.com", subject: "Hi", html: "<p>x</p>", text: "x" };
+  assert.deepEqual(await sendEmail(msg, {}), { sent: false, reason: "not_configured" });
+  assert.equal(emailConfigured({ RESEND_API_KEY: "re_x", EMAIL_FROM: "School <a@b.c>" }), true);
+  let seen: { url: string; init: RequestInit } | undefined;
+  const ok = (async (url: string, init: RequestInit) => { seen = { url, init }; return new Response("{}", { status: 200 }); }) as unknown as typeof fetch;
+  assert.deepEqual(await sendEmail(msg, { RESEND_API_KEY: "re_x", EMAIL_FROM: "School <a@b.c>" }, ok), { sent: true });
+  assert.equal(seen!.url, "https://api.resend.com/emails");
+  assert.equal((seen!.init.headers as Record<string, string>).Authorization, "Bearer re_x");
+  assert.deepEqual(JSON.parse(String(seen!.init.body)).to, ["parent@example.com"]);
+  const rejected = (async () => new Response(JSON.stringify({ message: "The example.com domain is not verified." }), { status: 403 })) as unknown as typeof fetch;
+  assert.deepEqual(await sendEmail(msg, { RESEND_API_KEY: "re_x", EMAIL_FROM: "a@b.c" }, rejected), { sent: false, reason: "rejected", detail: "The example.com domain is not verified." });
+  const down = (async () => { throw new Error("getaddrinfo ENOTFOUND"); }) as unknown as typeof fetch;
+  assert.equal((await sendEmail(msg, { RESEND_API_KEY: "re_x", EMAIL_FROM: "a@b.c" }, down)).reason, "unreachable");
+});
+
+test("account emails are escaped and carry the link and expiry", () => {
+  const a = activationEmail({ studentName: "<b>Ada</b>", studentId: "NWE/2026/00001", className: "JSS 1", url: "https://school.example/portal/activate?t=abc", hours: 72 });
+  assert.match(a.subject, /Activate/);
+  assert.doesNotMatch(a.html, /<b>Ada<\/b>/);
+  assert.match(a.html, /&lt;b&gt;Ada&lt;\/b&gt;/);
+  assert.match(a.html, /72 hours/);
+  assert.match(a.text, /NWE\/2026\/00001/);
+  const r = resetEmail({ studentName: "Ada", studentId: "NWE/2026/00001", url: "https://school.example/portal/activate?t=abc", hours: 24 });
+  assert.match(r.html, /24 hours/);
+  assert.match(r.text, /https:\/\/school\.example\/portal\/activate\?t=abc/);
+});

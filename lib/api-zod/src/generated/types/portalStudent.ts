@@ -5,6 +5,7 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { PortalStudentAccountStatus } from './portalStudentAccountStatus';
 
 export interface PortalStudent {
   id?: number;
@@ -25,4 +26,10 @@ export interface PortalStudent {
      * @maxLength 128
      */
   password?: string;
+  /**
+     * @maxLength 200
+     * @nullable
+     */
+  guardianEmail?: string | null;
+  accountStatus?: PortalStudentAccountStatus;
 }

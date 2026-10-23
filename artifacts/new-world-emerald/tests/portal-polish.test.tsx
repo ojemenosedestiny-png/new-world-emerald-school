@@ -10,10 +10,11 @@ import { BulkEnrol } from "../src/portal/manage/BulkEnrol";
 import { overviewCounts } from "../src/portal/manage/Overview";
 import { duplicateExam } from "../src/portal/manage/ExamsPanel";
 
-const mocks = vi.hoisted(() => ({ manage: vi.fn() }));
+const mocks = vi.hoisted(() => ({ manage: vi.fn(), enrol: vi.fn() }));
 vi.mock("@workspace/api-client-react", async (original) => ({
   ...await original<typeof import("@workspace/api-client-react")>(),
   useManagePortal: () => ({ mutateAsync: mocks.manage, isPending: false }),
+  useEnrolStudent: () => ({ mutateAsync: mocks.enrol, isPending: false }),
 }));
 
 const now = Date.UTC(2026, 9, 23, 12);
@@ -89,24 +90,27 @@ describe("bulk enrolment", () => {
     expect(html).toContain("&lt;script&gt;alert(1)&lt;/script&gt;");
     expect(html).toContain("Abc-123!xyz");
   });
-  it("enrols each valid student with its own password and reports failures", async () => {
-    mocks.manage.mockImplementation(async ({ data }: { data: { student: { studentId: string } } }) => {
-      if (data.student.studentId === "NWE-2") throw new Error("That student ID, email address or class name already exists.");
-      return { message: "Saved successfully." };
+  it("enrols each valid student with an automatic ID and activation link, and reports failures", async () => {
+    mocks.enrol.mockImplementation(async ({ data }: { data: { name: string; guardianEmail: string | null } }) => {
+      if (data.name === "Bayo Ade") throw new Error("Enter a valid parent email, or leave it empty.");
+      const n = mocks.enrol.mock.calls.length;
+      return { student: { id: n, studentId: `NWE/2026/0000${n}`, name: data.name, className: "JSS 1", guardianEmail: data.guardianEmail },
+        url: `https://school.example/portal/activate?t=${"a".repeat(64)}`, expiresAt: new Date().toISOString(), emailed: !!data.guardianEmail, emailNote: "" };
     });
     const data = { classes: [{ id: 7, name: "JSS 1" }], students: [], teachers: [], exams: [], attempts: [], materials: [], notices: [] } as unknown as PortalManagement;
     render(wrap(<BulkEnrol data={data} onClose={() => {}} />));
-    fireEvent.change(screen.getByTestId("input-bulk-list"), { target: { value: "NWE-1, Ada Obi\nNWE-2, Bayo Ade\nbad id, Nope" } });
-    expect(screen.getByTestId("text-bulk-summary").textContent).toContain("2 ready");
+    fireEvent.change(screen.getByTestId("input-bulk-list"), { target: { value: "Ada Obi, ada.parent@example.com\nBayo Ade\nChi Eze, , OLD-77\n, nobody@example.com" } });
+    expect(screen.getByTestId("text-bulk-summary").textContent).toContain("3 ready");
     fireEvent.click(screen.getByTestId("button-run-bulk"));
-    await waitFor(() => expect(screen.getByTestId("text-bulk-enrolled").textContent).toBe("1"));
-    expect(mocks.manage).toHaveBeenCalledTimes(2);
-    const sent = mocks.manage.mock.calls.map(([arg]) => arg.data.student);
-    expect(sent.map((s: { studentId: string; classId: number; active: boolean }) => [s.studentId, s.classId, s.active])).toEqual([["NWE-1", 7, true], ["NWE-2", 7, true]]);
-    expect(sent[0].password).not.toBe(sent[1].password);
-    expect(sent[0].password.length).toBeGreaterThanOrEqual(16);
-    expect(screen.getByText(/already exists/)).toBeTruthy();
-    expect(screen.getByTestId("button-print-slips")).toBeTruthy();
+    await waitFor(() => expect(screen.getByTestId("text-bulk-enrolled").textContent).toBe("2"));
+    expect(mocks.enrol).toHaveBeenCalledTimes(3);
+    const sent = mocks.enrol.mock.calls.map(([arg]) => arg.data);
+    expect(sent.map((d: { name: string; classId: number; guardianEmail: string | null; studentId: string | null; send: boolean }) => [d.name, d.classId, d.guardianEmail, d.studentId, d.send])).toEqual([
+      ["Ada Obi", 7, "ada.parent@example.com", null, true], ["Bayo Ade", 7, null, null, true], ["Chi Eze", 7, null, "OLD-77", true],
+    ]);
+    expect(screen.getByTestId("text-bulk-emailed").textContent).toBe("1");
+    expect(screen.getByText(/valid parent email/)).toBeTruthy();
+    expect(screen.getByTestId("button-print-slips").textContent).toContain("activation slips");
   });
 });
 
