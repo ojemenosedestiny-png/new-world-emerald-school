@@ -68,7 +68,7 @@ test("photos are resized and compressed; videos get an H.264 copy that every bro
     assert.match(photo, /w_1920/);
     assert.doesNotMatch(publicUrl("nwe/site/abc", "video"), /vc_h264|f_auto/, "the original video is unchanged");
     const video = playableVideoUrl("nwe/site/abc");
-    assert.match(video, /\/video\/upload\/q_auto,vc_h264\/.*abc\.mp4$/);
+    assert.match(video, /\/video\/upload\/br_1500k,c_limit,h_1280,q_auto:eco,vc_h264,w_1280\/.*abc\.mp4$/);
   } finally {
     if (saved === undefined) delete process.env.CLOUDINARY_URL; else process.env.CLOUDINARY_URL = saved;
   }
@@ -92,7 +92,7 @@ test("videos switch to the H.264 copy once it exists, asking Cloudinary to make 
     ready = true;
     const [later, laterReady] = await videoDeliveryUrl("nwe/site/vid", t0 + 122_000, deps);
     assert.equal(laterReady, true);
-    assert.match(later, /q_auto,vc_h264\/.*vid\.mp4$/);
+    assert.match(later, /vc_h264,w_1280\/.*vid\.mp4$/);
     ready = false;
     assert.equal((await videoDeliveryUrl("nwe/site/vid", t0 + 999_000, deps))[1], true, "once ready, stays ready");
     const failing = { copyExists: async () => { throw new Error("offline"); }, request: async () => {} };

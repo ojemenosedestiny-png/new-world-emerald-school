@@ -101,7 +101,9 @@ export async function deleteFromCloudinary(publicId: string, resourceType: Resou
 // automatic quality. A 2 MB phone photo usually arrives as 150 to 300 KB, which matters on mobile data.
 const WEB_IMAGE = { fetch_format: "auto", quality: "auto", width: 1920, crop: "limit" } as const;
 // Videos: an H.264 MP4 copy. Phones often record HEVC (H.265), which most browsers on Windows cannot play.
-const PLAYABLE_VIDEO = { video_codec: "h264", quality: "auto" } as const;
+// At most 1280 px on the longest side (portrait phone videos too) and 1.5 Mbps: sharp on phones and laptops,
+// light on mobile data, and under Cloudinary's 100 MB delivery limit for videos up to about 8 minutes.
+const PLAYABLE_VIDEO = { video_codec: "h264", quality: "auto:eco", width: 1280, height: 1280, crop: "limit", bit_rate: "1500k" } as const;
 
 /** CDN address of a public image (resized and compressed) or video (the original). */
 export function publicUrl(publicId: string, resourceType: ResourceType) {
