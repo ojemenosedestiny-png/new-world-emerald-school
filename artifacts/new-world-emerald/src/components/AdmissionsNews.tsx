@@ -74,6 +74,10 @@ export function NewsEvents() {
 }
 
 export function AdmissionsFAQ() {
+  // Editable in /admin → Website content ("Upload document"). Until the office uploads
+  // one, the button asks for a prospectus by email instead of leading nowhere.
+  const prospectusUrl = asset("/prospectus.pdf");
+  const hasProspectus = !prospectusUrl.endsWith("/prospectus.pdf");
   const [openFaq, setOpenFaq] = useState<number | null>(0);
   const [isApplyModalOpen, setIsApplyModalOpen] = useState(false);
   const createApplication = useCreateAdmissionApplication();
@@ -150,9 +154,17 @@ export function AdmissionsFAQ() {
               >
                 <FileText size={20} /> Apply Online Now
               </button>
-              <button className="px-8 py-4 bg-muted text-foreground rounded-full font-bold hover:bg-muted/80 transition-all flex items-center justify-center gap-2">
-                <Download size={20} /> Download Prospectus
-              </button>
+              {hasProspectus ? (
+                <a href={prospectusUrl} target="_blank" rel="noreferrer" download onClick={() => trackEvent('prospectus_downloaded')} data-testid="link-download-prospectus"
+                  className="px-8 py-4 bg-muted text-foreground rounded-full font-bold hover:bg-muted/80 transition-all flex items-center justify-center gap-2">
+                  <Download size={20} /> Download Prospectus
+                </a>
+              ) : (
+                <a href="mailto:info@newworldemeraldprivateschool.com?subject=Prospectus%20request" data-testid="link-request-prospectus"
+                  className="px-8 py-4 bg-muted text-foreground rounded-full font-bold hover:bg-muted/80 transition-all flex items-center justify-center gap-2">
+                  <Download size={20} /> Request a Prospectus
+                </a>
+              )}
             </div>
           </div>
 

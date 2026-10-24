@@ -1,4 +1,4 @@
-import { lazy } from "react";
+import { lazy, useEffect } from "react";
 import { Route, Switch, useLocation } from "wouter";
 import Home from "@/pages/Home";
 import { RouteBoundary } from "@/components/RouteBoundary";
@@ -19,6 +19,10 @@ const NotFound = lazy(() => import("@/pages/not-found"));
 
 export function AppRoutes() {
   const [location] = useLocation();
+  // A new page starts at the top, unless the link points to a section (#admissions).
+  useEffect(() => {
+    if (!window.location.hash) window.scrollTo(0, 0);
+  }, [location]);
 
   return (
     <RouteBoundary key={location}>

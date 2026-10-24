@@ -2,13 +2,23 @@ import { AnimatedHeading } from "@/components/AnimatedHeading";
 import { asset } from "@/lib/asset";
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Link } from 'wouter';
+import { Link, useLocation } from 'wouter';
 import { Menu, X, MapPin, Phone, Mail, ArrowRight, GraduationCap, ShieldCheck } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export function Navbar({ solid = false }: { solid?: boolean }) {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [location] = useLocation();
+  // Already on the homepage (often scrolled, with #section in the address): the logo goes back to the top.
+  const goHome = (event: React.MouseEvent) => {
+    setIsMobileMenuOpen(false);
+    if (location !== "/") return;
+    event.preventDefault();
+    if (window.location.hash) window.history.replaceState(null, "", window.location.pathname + window.location.search);
+    const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    window.scrollTo({ top: 0, behavior: reduce ? "auto" : "smooth" });
+  };
   // The open phone menu is a light sheet, so the logo text and close button switch to dark.
   const hasSolidBackground = isScrolled || solid || isMobileMenuOpen;
 
@@ -57,7 +67,7 @@ export function Navbar({ solid = false }: { solid?: boolean }) {
         )}
       >
         <div className="container mx-auto px-4 md:px-8 flex justify-between items-center">
-          <Link href="/" className="flex items-center gap-3 z-50">
+          <Link href="/" onClick={goHome} className="flex items-center gap-3 z-50" aria-label="New World Emerald home" data-testid="link-home-logo">
             <img src={asset("/logo.jpg")} alt="New World Emerald logo" className="w-11 h-11 object-contain drop-shadow-lg" />
             <div className={cn("flex flex-col", !hasSolidBackground && "text-white drop-shadow-md")}>
               <span className={cn("font-serif font-bold text-xl leading-tight", hasSolidBackground ? "text-foreground" : "text-white")}>N.W. Emerald</span>
