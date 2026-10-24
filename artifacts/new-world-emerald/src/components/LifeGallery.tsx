@@ -62,9 +62,9 @@ export function SchoolLife() {
   ];
 
   return (
-    <section id="school-life" className="py-24 bg-muted/30">
+    <section id="school-life" className="py-14 md:py-20 bg-muted/30">
       <div className="container mx-auto px-4 md:px-8">
-        <div className="grid lg:grid-cols-2 gap-10 lg:gap-16 items-center">
+        <div className="grid lg:grid-cols-2 gap-10 lg:gap-12 items-center">
           <div>
             <AnimatedHeading as="h2" className="text-primary font-bold tracking-widest uppercase text-sm mb-3">Student Experience</AnimatedHeading>
             <AnimatedHeading as="h3" className="text-4xl md:text-5xl font-serif font-bold text-foreground mb-6">
@@ -137,6 +137,7 @@ export function SchoolLife() {
 export function Gallery() {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [filter, setFilter] = useState('all');
+  const [showAll, setShowAll] = useState(false);
 
   const categories = [
     { id: 'all', label: 'All Photos' },
@@ -166,13 +167,14 @@ export function Gallery() {
   ];
 
   const filteredImages = filter === 'all' ? images : images.filter(img => img.cat === filter);
+  const shownImages = showAll ? filteredImages : filteredImages.slice(0, 8);
 
   return (
-    <section id="gallery" className="py-24 bg-background scroll-mt-28">
+    <section id="gallery" className="py-14 md:py-20 bg-background scroll-mt-28">
       <div className="container mx-auto px-4 md:px-8">
-        <div className="text-center max-w-2xl mx-auto mb-12">
+        <div className="text-center max-w-2xl mx-auto mb-8">
           <AnimatedHeading as="h2" className="text-primary font-bold tracking-widest uppercase text-sm mb-3">Our Gallery</AnimatedHeading>
-          <AnimatedHeading as="h3" className="text-4xl md:text-5xl font-serif font-bold text-foreground mb-8">
+          <AnimatedHeading as="h3" className="text-4xl md:text-5xl font-serif font-bold text-foreground mb-6">
             Moments of Excellence.
           </AnimatedHeading>
           
@@ -180,7 +182,7 @@ export function Gallery() {
             {categories.map(c => (
               <button 
                 key={c.id}
-                onClick={() => setFilter(c.id)}
+                onClick={() => { setFilter(c.id); setShowAll(false); }}
                 className={cn(
                   "px-6 py-2 rounded-full text-sm font-semibold transition-all",
                   filter === c.id 
@@ -196,10 +198,10 @@ export function Gallery() {
 
         <motion.div 
           layout
-          className="columns-1 sm:columns-2 lg:columns-3 gap-4 space-y-4"
+          className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4"
         >
           <AnimatePresence>
-            {filteredImages.map((img, i) => (
+            {shownImages.map((img) => (
               <motion.button
                 type="button"
                 aria-label={`View ${img.alt ?? 'school gallery photo'}`}
@@ -209,10 +211,10 @@ export function Gallery() {
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.9 }}
                 transition={{ duration: 0.3 }}
-                className={cn("relative block w-full rounded-2xl overflow-hidden group cursor-pointer break-inside-avoid border-4 border-card shadow-sm hover:shadow-lg transition-shadow duration-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary")}
+                className={cn("relative block aspect-[4/3] w-full rounded-2xl overflow-hidden group cursor-pointer border-4 border-card shadow-sm hover:shadow-lg transition-shadow duration-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary")}
                 onClick={() => setSelectedImage(img.src)}
               >
-                <img src={img.src} alt={img.alt ?? "School gallery photo"} loading="lazy" decoding="async" className="w-full h-auto object-cover" />
+                <img src={img.src} alt={img.alt ?? "School gallery photo"} loading="lazy" decoding="async" className="h-full w-full object-cover" />
                 <div className="absolute inset-0 bg-secondary/50 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
                   <ZoomIn className="text-white w-10 h-10" />
                 </div>
@@ -220,17 +222,26 @@ export function Gallery() {
             ))}
           </AnimatePresence>
         </motion.div>
+        {filteredImages.length > shownImages.length && (
+          <div className="mt-6 text-center">
+            <button type="button" onClick={() => setShowAll(true)} className="rounded-full border border-primary/30 px-6 py-2.5 text-sm font-semibold text-primary transition-colors hover:bg-primary/5" data-testid="button-gallery-show-all">
+              Show all {filteredImages.length} photos
+            </button>
+          </div>
+        )}
         {(filter === 'all' || filter === 'events') && (
-          <div className="mt-12 rounded-2xl border border-border bg-muted/30 p-5 md:p-8">
-            <AnimatedHeading as="h4" className="mb-2 font-serif text-2xl font-bold text-foreground">Emerald’s Founders Championship</AnimatedHeading>
-            <p className="mb-6 text-muted-foreground">Watch moments from our inter-schools championship.</p>
+          <div className="mt-8 grid items-center gap-6 rounded-2xl border border-border bg-muted/30 p-5 md:grid-cols-[1fr_auto] md:gap-10 md:p-8">
+            <div>
+              <AnimatedHeading as="h4" className="mb-2 font-serif text-2xl font-bold text-foreground md:text-3xl">Emerald’s Founders Championship</AnimatedHeading>
+              <p className="text-muted-foreground">Watch moments from our inter-schools championship, where our pupils competed with pride, teamwork and school spirit.</p>
+            </div>
             <video
               controls
               playsInline
               preload="none"
               poster={asset("/school-gallery/video-poster.jpg")}
               aria-label="Emerald’s Founders Championship school video"
-              className="mx-auto max-h-[70vh] w-full max-w-md rounded-xl bg-black"
+              className="mx-auto max-h-[480px] w-full max-w-[270px] rounded-xl bg-black"
             >
               <source src={asset("/school-gallery/new-world.mp4")} type="video/mp4" />
               Your browser does not support video playback. <a href={asset("/school-gallery/new-world.mp4")}>Download the school video.</a>
@@ -296,9 +307,9 @@ export function Testimonials() {
   const prev = () => setCurrent((c) => (c - 1 + reviews.length) % reviews.length);
 
   return (
-    <section className="py-24 bg-secondary text-secondary-foreground">
+    <section className="py-14 md:py-20 bg-secondary text-secondary-foreground">
       <div className="container mx-auto px-4 md:px-8">
-        <div className="grid lg:grid-cols-2 gap-16 items-center">
+        <div className="grid lg:grid-cols-2 gap-10 lg:gap-12 items-center">
           <div>
             <AnimatedHeading as="h2" className="text-primary font-bold tracking-widest uppercase text-sm mb-3">Parent Voices</AnimatedHeading>
             <AnimatedHeading as="h3" className="text-4xl md:text-5xl font-serif font-bold text-white mb-8">

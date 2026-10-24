@@ -6,7 +6,7 @@ export function DirectorWelcome() {
     <section
       id="director-welcome"
       aria-labelledby="director-welcome-title"
-      className="relative scroll-mt-28 overflow-hidden bg-[#f5f3e9] py-20 md:py-28"
+      className="relative scroll-mt-28 overflow-hidden bg-[#f5f3e9] py-14 md:py-20"
       data-testid="section-director-welcome"
     >
       <div className="pointer-events-none absolute -right-24 top-12 h-72 w-72 rounded-full border border-primary/10 md:h-96 md:w-96" />

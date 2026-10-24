@@ -159,7 +159,7 @@ export function AcademicCalendar({ officeMode = false }: { officeMode?: boolean 
   };
 
   return (
-    <section id="calendar" className={`relative overflow-hidden bg-secondary text-secondary-foreground ${officeMode ? "rounded-2xl py-8" : "py-24"}`}>
+    <section id="calendar" className={`relative overflow-hidden bg-secondary text-secondary-foreground ${officeMode ? "rounded-2xl py-8" : "py-14 md:py-20"}`}>
       <div className="absolute right-0 top-0 h-80 w-80 translate-x-1/3 -translate-y-1/3 rounded-full bg-primary/20 blur-3xl" />
       <div className="absolute bottom-0 left-0 h-72 w-72 -translate-x-1/3 translate-y-1/3 rounded-full bg-accent/10 blur-3xl" />
 

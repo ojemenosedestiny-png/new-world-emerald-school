@@ -58,9 +58,9 @@ export function Programs() {
   ];
 
   return (
-    <section id="academics" className="py-24 md:py-32 bg-muted/30">
+    <section id="academics" className="py-14 md:py-20 bg-muted/30">
       <div className="container mx-auto px-4 md:px-8">
-        <div className="flex flex-col md:flex-row justify-between items-end mb-16 gap-6">
+        <div className="flex flex-col md:flex-row justify-between items-end mb-10 gap-6">
           <div className="max-w-2xl">
             <AnimatedHeading as="h2" className="text-primary font-bold tracking-widest uppercase text-sm mb-3">Academic Structure</AnimatedHeading>
             <AnimatedHeading as="h3" className="text-4xl md:text-5xl font-serif font-bold text-foreground">
@@ -168,9 +168,9 @@ export function Facilities() {
   ];
 
   return (
-    <section className="py-24 bg-background">
+    <section className="py-14 md:py-20 bg-background">
       <div className="container mx-auto px-4 md:px-8">
-        <div className="text-center max-w-2xl mx-auto mb-16">
+        <div className="text-center max-w-2xl mx-auto mb-10">
           <AnimatedHeading as="h2" className="text-primary font-bold tracking-widest uppercase text-sm mb-3">Campus & Facilities</AnimatedHeading>
           <AnimatedHeading as="h3" className="text-4xl md:text-5xl font-serif font-bold text-foreground mb-6">
             An Environment Built <br/>for Excellence.

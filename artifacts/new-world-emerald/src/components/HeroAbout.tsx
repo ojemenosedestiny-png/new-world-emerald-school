@@ -73,12 +73,12 @@ export function About() {
   const isInView = useInView(ref, { once: true, margin: "-100px" });
 
   return (
-    <section id="about" className="py-24 md:py-32 bg-background relative overflow-hidden" ref={ref}>
+    <section id="about" className="py-14 md:py-20 bg-background relative overflow-hidden" ref={ref}>
       {/* Decorative elements */}
       <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-primary/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none" />
       
       <div className="container mx-auto px-4 md:px-8">
-        <div className="grid lg:grid-cols-2 gap-16 items-center">
+        <div className="grid lg:grid-cols-2 gap-10 lg:gap-12 items-center">
           <motion.div
             initial={{ opacity: 0, x: -16 }}
             animate={isInView ? { opacity: 1, x: 0 } : {}}
@@ -153,9 +153,9 @@ export function WhyChooseUs() {
   ];
 
   return (
-    <section className="py-24 bg-secondary text-secondary-foreground relative">
+    <section className="py-14 md:py-20 bg-secondary text-secondary-foreground relative">
       <div className="container mx-auto px-4 md:px-8">
-        <div className="text-center max-w-2xl mx-auto mb-16">
+        <div className="text-center max-w-2xl mx-auto mb-10">
           <AnimatedHeading as="h2" className="text-accent font-bold tracking-widest uppercase text-sm mb-3">Why Choose Us</AnimatedHeading>
           <AnimatedHeading as="h3" className="text-4xl md:text-5xl font-serif font-bold text-white mb-6">
             The Emerald Advantage

@@ -24,7 +24,7 @@ export function FifthAnniversary() {
     <section
       id="anniversary"
       aria-labelledby="anniversary-title"
-      className="scroll-mt-28 overflow-hidden bg-[#f4f1e7] py-16 sm:py-20 lg:py-28"
+      className="scroll-mt-28 overflow-hidden bg-[#f4f1e7] py-12 sm:py-16 lg:py-20"
     >
       <div className="container mx-auto px-4 md:px-8">
         <div className="relative isolate overflow-hidden rounded-[1.5rem] bg-[#0d382b] text-[#f8f4e9] shadow-[0_24px_70px_-35px_rgba(16,50,38,0.55)] sm:rounded-[2rem]">

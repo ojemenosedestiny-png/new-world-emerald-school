@@ -30,7 +30,7 @@ export function NewsEvents() {
   ];
 
   return (
-    <section id="news" className="py-24 bg-muted/30">
+    <section id="news" className="py-14 md:py-20 bg-muted/30">
       <div className="container mx-auto px-4 md:px-8">
         <div className="flex flex-col md:flex-row justify-between items-end mb-12 gap-6">
           <div>
@@ -112,9 +112,9 @@ export function AdmissionsFAQ() {
   ];
 
   return (
-    <section id="admissions" className="py-24 bg-background">
+    <section id="admissions" className="py-14 md:py-20 bg-background">
       <div className="container mx-auto px-4 md:px-8">
-        <div className="grid lg:grid-cols-2 gap-16">
+        <div className="grid lg:grid-cols-2 gap-10 lg:gap-12">
           <div>
             <AnimatedHeading as="h2" className="text-primary font-bold tracking-widest uppercase text-sm mb-3">Join Us</AnimatedHeading>
             <AnimatedHeading as="h3" className="text-4xl md:text-5xl font-serif font-bold text-foreground mb-6">
@@ -315,7 +315,7 @@ export function AdmissionsFAQ() {
 
 export function FinalCTA() {
   return (
-    <section className="relative py-32 overflow-hidden">
+    <section className="relative py-16 md:py-24 overflow-hidden">
       <div className="absolute inset-0 bg-primary z-0"></div>
       {/* Decorative patterns */}
       <div className="absolute top-0 right-0 w-96 h-96 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3"></div>
