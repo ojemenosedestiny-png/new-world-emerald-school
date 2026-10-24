@@ -7,7 +7,7 @@ import { fileURLToPath } from "node:url";
 
 const directory = await mkdtemp(join(tmpdir(), "school-auth-tests-"));
 try {
-  const tests = ["website-admin", "school-identity", "report-cards", "security", "accounts"];
+  const tests = ["website-admin", "school-identity", "report-cards", "security", "accounts", "community"];
   await build({
     entryPoints: tests.map((name) => fileURLToPath(new URL(`./src/lib/${name}.test.ts`, import.meta.url))),
     outdir: directory, bundle: true, platform: "node", format: "esm",

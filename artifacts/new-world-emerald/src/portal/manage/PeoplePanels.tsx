@@ -156,24 +156,31 @@ export function StudentsPanel({ data }: { data: PortalManagement }) {
 
 export function TeachersPanel({ data }: { data: PortalManagement }) {
   const cmd = useCommand();
-  const [form, setForm] = useState<PortalManagementTeachersItem | null>(null);
+  const [form, setFormState] = useState<PortalManagementTeachersItem | null>(null);
+  const [subjectsText, setSubjectsText] = useState("");
+  const setForm = (next: PortalManagementTeachersItem | null) => {
+    // Opening the dialog (or switching teacher) loads that teacher's subjects into the text box.
+    if (next && (!form || next.id !== form.id)) setSubjectsText((next.subjects ?? []).join(", "));
+    setFormState(next);
+  };
   const save = async () => {
     if (!form) return;
-    if (await cmd.run({ action: "saveTeacher", teacher: { ...form, email: form.email.trim().toLowerCase(), name: form.name.trim() } }, form.id ? "Teacher updated" : "Teacher approved")) setForm(null);
+    const subjects = subjectsText.split(",").map((s) => s.trim()).filter(Boolean);
+    if (await cmd.run({ action: "saveTeacher", teacher: { ...form, email: form.email.trim().toLowerCase(), name: form.name.trim(), title: (form.title ?? "").trim(), subjects } }, form.id ? "Teacher updated" : "Teacher approved")) setForm(null);
   };
   const toggleClass = (id: number) => form && setForm({ ...form, classIds: form.classIds.includes(id) ? form.classIds.filter((x) => x !== id) : [...form.classIds, id] });
   return (
     <div className="space-y-4">
       <div className="flex items-start justify-between gap-4">
         <p className="max-w-xl text-sm text-[hsl(var(--p-ink)/0.65)]">Teachers sign in with their school email and only see their assigned classes. Approval here never grants website administrator access.</p>
-        <button className="portal-btn shrink-0" onClick={() => setForm({ email: "", name: "", classIds: [], active: true })} data-testid="button-add-teacher"><Plus size={15} /> Approve teacher</button>
+        <button className="portal-btn shrink-0" onClick={() => setForm({ email: "", name: "", classIds: [], active: true, title: "", subjects: [], showInDirectory: true })} data-testid="button-add-teacher"><Plus size={15} /> Approve teacher</button>
       </div>
       {data.teachers.length === 0 ? <EmptyState icon={<Users size={22} />} title="No teachers approved" body="Add a teacher's email and choose the classes they teach. They can then sign in through staff sign-in." /> : (
         <div className="grid gap-3 md:grid-cols-2">
           {data.teachers.map((t) => (
             <div key={t.id} className="portal-card p-5" data-testid={"card-teacher-" + t.id}>
               <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0"><p className="font-semibold">{t.name} {!t.active && <StatusPill tone="muted">Inactive</StatusPill>}</p><p className="truncate text-xs text-[hsl(var(--p-ink)/0.55)]">{t.email}</p></div>
+                <div className="min-w-0"><p className="font-semibold">{t.name} {!t.active && <StatusPill tone="muted">Inactive</StatusPill>} {t.active && t.showInDirectory === false && <StatusPill tone="muted">Hidden from directory</StatusPill>}</p><p className="truncate text-xs text-[hsl(var(--p-ink)/0.55)]">{t.title ? t.title + " / " : ""}{t.email}</p>{!!t.subjects?.length && <p className="truncate text-xs text-[hsl(var(--p-ink)/0.55)]">{t.subjects.join(", ")}</p>}</div>
                 <UserCheck size={18} className={t.active ? "text-[hsl(var(--p-emerald))]" : "text-[hsl(var(--p-ink)/0.3)]"} />
               </div>
               <div className="mt-3 flex flex-wrap gap-1.5">{t.classIds.length ? t.classIds.map((c) => <StatusPill key={c} tone="green">{className(data.classes, c)}</StatusPill>) : <span className="text-xs text-[hsl(var(--p-ink)/0.5)]">No classes assigned</span>}</div>
@@ -186,16 +193,21 @@ export function TeachersPanel({ data }: { data: PortalManagement }) {
         </div>
       )}
       <Dialog open={!!form} onOpenChange={(o) => !o && setForm(null)}>
-        <DialogContent className="portal !min-h-0 max-w-md rounded-2xl">
+        <DialogContent className="portal !min-h-0 max-h-[92vh] max-w-lg overflow-y-auto rounded-2xl">
           <DialogHeader><DialogTitle className="font-serif text-2xl">{form?.id ? "Edit teacher" : "Approve teacher"}</DialogTitle></DialogHeader>
           {form && <div className="space-y-4">
             <Field label="School email" htmlFor="t-email"><input id="t-email" type="email" className="portal-input" maxLength={200} value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} data-testid="input-teacher-email" /></Field>
             <Field label="Name" htmlFor="t-name"><input id="t-name" className="portal-input" maxLength={150} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} data-testid="input-teacher-name" /></Field>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field label="Role (shown to students)" htmlFor="t-title"><input id="t-title" className="portal-input" maxLength={80} placeholder="e.g. Class Teacher" value={form.title ?? ""} onChange={(e) => setForm({ ...form, title: e.target.value })} data-testid="input-teacher-title" /></Field>
+              <Field label="Subjects (comma separated)" htmlFor="t-subjects"><input id="t-subjects" className="portal-input" maxLength={600} placeholder="Mathematics, Basic Science" value={subjectsText} onChange={(e) => setSubjectsText(e.target.value)} data-testid="input-teacher-subjects" /></Field>
+            </div>
             <fieldset><legend className="portal-label mb-2">Assigned classes</legend>
               <div className="grid grid-cols-2 gap-2">{data.classes.map((c) => <label key={c.id} className="flex items-center gap-2 rounded-lg border border-[hsl(var(--p-line))] bg-[hsl(var(--p-surface)/0.7)] px-3 py-2 text-sm"><input type="checkbox" checked={form.classIds.includes(c.id as number)} onChange={() => toggleClass(c.id as number)} data-testid={"checkbox-teacher-class-" + c.id} />{c.name}</label>)}</div>
               {data.classes.length === 0 && <p className="text-xs text-[hsl(var(--p-ink)/0.55)]">Create classes first.</p>}
             </fieldset>
             <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.active} onChange={(e) => setForm({ ...form, active: e.target.checked })} data-testid="checkbox-teacher-active" /> Active</label>
+            <label className="flex items-start gap-2 text-sm"><input type="checkbox" className="mt-0.5" checked={form.showInDirectory !== false} onChange={(e) => setForm({ ...form, showInDirectory: e.target.checked })} data-testid="checkbox-teacher-directory" /> <span>Show in the student staff directory <span className="block text-xs text-[hsl(var(--p-ink)/0.55)]">Students see the name, role, subjects and classes. Never the email.</span></span></label>
           </div>}
           <DialogFooter><button className="portal-btn" onClick={save} disabled={cmd.pending || !form || form.email.trim().length < 3 || !form.name.trim()} data-testid="button-save-teacher">{cmd.pending ? "Saving..." : "Save teacher"}</button></DialogFooter>
         </DialogContent>

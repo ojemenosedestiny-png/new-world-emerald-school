@@ -5,6 +5,60 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+export type PortalEventInputCategory = typeof PortalEventInputCategory[keyof typeof PortalEventInputCategory];
+
+
+export const PortalEventInputCategory = {
+  general: 'general',
+  academic: 'academic',
+  exam: 'exam',
+  sports: 'sports',
+  holiday: 'holiday',
+  meeting: 'meeting',
+  cultural: 'cultural',
+} as const;
+
+export interface PortalEventInput {
+  /**
+     * @minLength 1
+     * @maxLength 200
+     */
+  title: string;
+  /** @maxLength 5000 */
+  details?: string;
+  /** @maxLength 200 */
+  venue?: string;
+  category: PortalEventInputCategory;
+  startsAt: string;
+  /** @nullable */
+  endsAt?: string | null;
+  allDay: boolean;
+  /**
+     * Empty for the whole school
+     * @nullable
+     */
+  classId?: number | null;
+  published: boolean;
+}
+
+export type PortalEvent = PortalEventInput & ({
+  id: number;
+  /** @nullable */
+  className: string | null;
+}) & Required<Pick<PortalEventInput & ({
+  id: number;
+  /** @nullable */
+  className: string | null;
+}), 'details' | 'venue' | 'endsAt' | 'classId'>>;
+
+export interface StaffDirectoryEntry {
+  id: number;
+  name: string;
+  title: string;
+  subjects: string[];
+  classNames: string[];
+}
+
 export interface EnrolStudentInput {
   /**
      * @minLength 1
@@ -888,6 +942,17 @@ export interface PortalTeacher {
   name: string;
   classIds: number[];
   active: boolean;
+  /**
+     * Role shown in the staff directory
+     * @maxLength 80
+     */
+  title?: string;
+  /**
+     * @maxItems 12
+     * @items.maxLength 60
+     */
+  subjects?: string[];
+  showInDirectory?: boolean;
 }
 
 export type PortalQuestionType = typeof PortalQuestionType[keyof typeof PortalQuestionType];
@@ -1425,6 +1490,17 @@ export type PortalManagementTeachersItem = {
   name: string;
   classIds: number[];
   active: boolean;
+  /**
+     * Role shown in the staff directory
+     * @maxLength 80
+     */
+  title?: string;
+  /**
+     * @maxItems 12
+     * @items.maxLength 60
+     */
+  subjects?: string[];
+  showInDirectory?: boolean;
 };
 
 export type PortalManagementExamsItemMode = typeof PortalManagementExamsItemMode[keyof typeof PortalManagementExamsItemMode];
@@ -1719,6 +1795,17 @@ export type PortalCommandTeacher = {
   name: string;
   classIds: number[];
   active: boolean;
+  /**
+     * Role shown in the staff directory
+     * @maxLength 80
+     */
+  title?: string;
+  /**
+     * @maxItems 12
+     * @items.maxLength 60
+     */
+  subjects?: string[];
+  showInDirectory?: boolean;
 };
 
 export type PortalCommandExamMode = typeof PortalCommandExamMode[keyof typeof PortalCommandExamMode];

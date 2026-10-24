@@ -1,0 +1,95 @@
+paths:
+  events:
+    get:
+      operationId: listPortalEvents
+      responses:
+        "200":
+          description: Calendar events the signed-in person may see (students see published events for the school and their class)
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: "#/components/schemas/PortalEvent" } }
+    post:
+      operationId: createPortalEvent
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PortalEventInput" }
+      responses:
+        "200":
+          description: Event created (administrators)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PortalEvent" }
+  event:
+    put:
+      operationId: updatePortalEvent
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PortalEventInput" }
+      responses:
+        "200":
+          description: Event updated (administrators)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PortalEvent" }
+    delete:
+      operationId: deletePortalEvent
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      responses:
+        "200":
+          description: Event deleted (administrators)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PortalMessage" }
+  staffDirectory:
+    get:
+      operationId: getStaffDirectory
+      responses:
+        "200":
+          description: Staff shown in the directory; names, roles, subjects and classes only
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: "#/components/schemas/StaffDirectoryEntry" } }
+schemas:
+  PortalEventInput:
+    type: object
+    required: [title, startsAt, allDay, category, published]
+    properties:
+      title: { type: string, minLength: 1, maxLength: 200 }
+      details: { type: string, maxLength: 5000 }
+      venue: { type: string, maxLength: 200 }
+      category: { type: string, enum: [general, academic, exam, sports, holiday, meeting, cultural] }
+      startsAt: { type: string }
+      endsAt: { type: [string, "null"] }
+      allDay: { type: boolean }
+      classId: { type: [integer, "null"], description: Empty for the whole school }
+      published: { type: boolean }
+  PortalEvent:
+    allOf:
+      - { $ref: "#/components/schemas/PortalEventInput" }
+      - type: object
+        required: [id, details, venue, endsAt, classId, className]
+        properties:
+          id: { type: integer }
+          className: { type: [string, "null"] }
+  StaffDirectoryEntry:
+    type: object
+    required: [id, name, title, subjects, classNames]
+    properties:
+      id: { type: integer }
+      name: { type: string }
+      title: { type: string }
+      subjects: { type: array, items: { type: string } }
+      classNames: { type: array, items: { type: string } }
+components:
+  schemas:
+    PortalEventInput: { $ref: "#/schemas/PortalEventInput" }
+    PortalEvent: { $ref: "#/schemas/PortalEvent" }
+    StaffDirectoryEntry: { $ref: "#/schemas/StaffDirectoryEntry" }
+    PortalMessage: { $ref: "./portal.yaml#/schemas/PortalMessage" }

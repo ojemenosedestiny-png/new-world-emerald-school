@@ -59,6 +59,12 @@ paths:
     $ref: "./accounts.yaml#/paths/tokenComplete"
   /portal/accounts/forgot:
     $ref: "./accounts.yaml#/paths/forgot"
+  /portal/events:
+    $ref: "./community.yaml#/paths/events"
+  /portal/events/{id}:
+    $ref: "./community.yaml#/paths/event"
+  /portal/staff-directory:
+    $ref: "./community.yaml#/paths/staffDirectory"
   /website-admin/access:
     get:
       operationId: getWebsiteAdminAccess
@@ -831,6 +837,12 @@ paths:
           description: Authentication required.
 components:
   schemas:
+    PortalEventInput:
+      $ref: "./community.yaml#/schemas/PortalEventInput"
+    PortalEvent:
+      $ref: "./community.yaml#/schemas/PortalEvent"
+    StaffDirectoryEntry:
+      $ref: "./community.yaml#/schemas/StaffDirectoryEntry"
     EnrolStudentInput:
       $ref: "./accounts.yaml#/schemas/EnrolStudentInput"
     AccountLinkRequest:

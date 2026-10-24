@@ -6,7 +6,7 @@ import {
   getGetPortalSessionQueryKey,
   type PortalSession, type PortalDashboardExamsItem, type PortalDashboardAttemptsItem,
 } from "@workspace/api-client-react";
-import { Award, BookOpen, CalendarClock, ClipboardList, FileBarChart, FileText, Home, KeyRound, LayoutGrid, Megaphone, PlayCircle, Timer, UserRound } from "lucide-react";
+import { Award, BookOpen, CalendarClock, CalendarDays, ClipboardList, FileBarChart, FileText, Home, KeyRound, LayoutGrid, Megaphone, PlayCircle, Timer, UserRound, Users } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { EmptyState, ErrorPanel, Skeleton, StatusPill } from "./ui";
@@ -16,6 +16,8 @@ import { studentAverage } from "./manage/results";
 import { StudentReports } from "./reports/StudentReports";
 import { StudentHome, type StudentSection } from "./StudentHome";
 import { StudentProfile } from "./StudentProfile";
+import { StudentEvents } from "./StudentEvents";
+import { StaffDirectory } from "./StaffDirectory";
 import { AppShell, type NavGroup } from "./shell/AppShell";
 import { IdleSignOut } from "@/components/IdleSignOut";
 import type { usePortalTheme } from "./shell/theme";
@@ -95,7 +97,7 @@ export function StudentDashboard({ session, theme }: { session: PortalSession; t
   const exams = useMemo(() => sortStudentExams(data?.exams ?? [], data?.attempts ?? []), [data]);
   const average = studentAverage(data?.attempts ?? []);
 
-  const titles: Record<StudentSection, string> = { home: "Home", exams: "Exams", results: "GradeSheet", reports: "Report cards", revision: "Library", notices: "Notices", profile: "Profile" };
+  const titles: Record<StudentSection, string> = { home: "Home", exams: "Exams", results: "GradeSheet", reports: "Report cards", revision: "Library", notices: "Notices", profile: "Profile", events: "Events", staff: "Staffs" };
   const openCount = (data?.exams ?? []).filter((e) => examWindow(e.startsAt, e.endsAt) === "open" && attemptByExam.get(e.id)?.status !== "submitted" && attemptByExam.get(e.id)?.status !== "marked").length;
   const groups: NavGroup<StudentSection>[] = [
     { items: [{ key: "home", label: "Home", icon: Home, testId: "tab-home" }, { key: "profile", label: "Profile", icon: UserRound, testId: "tab-profile" }] },
@@ -106,12 +108,16 @@ export function StudentDashboard({ session, theme }: { session: PortalSession; t
       { key: "revision", label: "Library", icon: BookOpen, testId: "tab-revision" },
       { key: "notices", label: "Notices", icon: Megaphone, testId: "tab-notices" },
     ] },
+    { label: "School life", items: [
+      { key: "events", label: "Events", icon: CalendarDays, testId: "tab-events" },
+      { key: "staff", label: "Staffs", icon: Users, testId: "tab-staff" },
+    ] },
   ];
   // Phone bottom bar; "More" opens the full menu.
   const bottomNav = [
     { key: "home" as const, label: "Home", icon: Home },
+    { key: "events" as const, label: "Calendar", icon: CalendarDays },
     { key: "exams" as const, label: "Exams", icon: ClipboardList, badge: openCount },
-    { key: "results" as const, label: "Results", icon: Award },
     { key: "__menu" as StudentSection, label: "More", icon: LayoutGrid },
   ];
 
@@ -135,6 +141,8 @@ export function StudentDashboard({ session, theme }: { session: PortalSession; t
           <div className="portal-rise" key={section}>
             {section === "home" && <StudentHome data={data} name={session.name} studentId={session.studentId ?? ""} onGo={setSection} />}
             {section === "profile" && <StudentProfile session={session} className={data.className} />}
+            {section === "events" && <StudentEvents data={data} onGo={setSection} />}
+            {section === "staff" && <StaffDirectory />}
 
             {section === "exams" && <div className="space-y-3">
               {data.exams.length === 0 && orphanAttempts.length === 0 ? (

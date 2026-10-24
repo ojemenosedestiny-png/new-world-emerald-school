@@ -198,6 +198,9 @@ schemas:
       name: { type: string, minLength: 1, maxLength: 150 }
       classIds: { type: array, items: { type: integer } }
       active: { type: boolean }
+      title: { type: string, maxLength: 80, description: Role shown in the staff directory }
+      subjects: { type: array, maxItems: 12, items: { type: string, maxLength: 60 } }
+      showInDirectory: { type: boolean }
   PortalQuestion:
     type: object
     required: [id, type, text, options, marks]

@@ -14,7 +14,8 @@
     "test:auth": "node ./test-auth.mjs",
     "test:portal-reports": "node ./test-portal.mjs portal-reports",
     "test:portal-security": "node ./test-portal.mjs portal-security",
-    "test:portal-accounts": "node ./test-portal.mjs portal-accounts"
+    "test:portal-accounts": "node ./test-portal.mjs portal-accounts",
+    "test:portal-community": "node ./test-portal.mjs portal-community"
   },
   "dependencies": {
     "@clerk/express": "^2.1.75",

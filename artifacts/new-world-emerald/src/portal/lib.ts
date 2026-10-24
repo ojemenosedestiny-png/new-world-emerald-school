@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import type { QueryClient } from "@tanstack/react-query";
-import { ApiError, getGetPortalDashboardQueryKey, getGetStudentReportsQueryKey } from "@workspace/api-client-react";
+import { ApiError, getGetPortalDashboardQueryKey, getGetStaffDirectoryQueryKey, getGetStudentReportsQueryKey, getListPortalEventsQueryKey } from "@workspace/api-client-react";
 
 export const DRAFT_PREFIX = "nwe-portal-draft:";
 
@@ -37,6 +37,8 @@ export async function clearStudentQueries(queryClient: QueryClient) {
   });
   queryClient.removeQueries({ queryKey: getGetPortalDashboardQueryKey() });
   queryClient.removeQueries({ queryKey: getGetStudentReportsQueryKey() });
+  queryClient.removeQueries({ queryKey: getListPortalEventsQueryKey() });
+  queryClient.removeQueries({ queryKey: getGetStaffDirectoryQueryKey() });
   queryClient.removeQueries({
     predicate: (q) => typeof q.queryKey[0] === "string" && (q.queryKey[0] as string).startsWith("/api/portal/attempts"),
   });

@@ -8,6 +8,7 @@ import { ManagePortalBody } from "@workspace/api-zod";
 import { check, portalActor, staffOnly, classAllowed, hashPassword, type PortalActor } from "../lib/portal-auth";
 import { automaticMarks, attemptView, finalizeExpired, validateQuestions } from "../lib/portal-assessment";
 import { validEmail } from "../lib/accounts";
+import { cleanSubjects } from "../lib/community";
 
 export const portalManagementRouter = Router();
 function scoped(actor: PortalActor, column: typeof portalExams.classId | typeof portalClasses.id | typeof portalStudents.classId | typeof portalAttempts.examId | typeof portalMaterials.classId | typeof portalNotices.classId) {
@@ -87,7 +88,12 @@ portalManagementRouter.post("/manage", async (req, res) => {
       check(data && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email.trim()), "A valid teacher email is required.");
       check(data.name.trim(), "Teacher name required.");
       for (const id of data.classIds) await validClass(actor, id);
-      const values = { email: data.email.trim().toLowerCase(), name: data.name.trim(), classIds: [...new Set(data.classIds)], active: data.active };
+      const subjects = cleanSubjects(data.subjects);
+      const values = {
+        email: data.email.trim().toLowerCase(), name: data.name.trim(), classIds: [...new Set(data.classIds)], active: data.active,
+        ...(data.title !== undefined ? { title: data.title.trim() } : {}), ...(subjects ? { subjects } : {}),
+        ...(data.showInDirectory !== undefined ? { showInDirectory: data.showInDirectory } : {}),
+      };
       if (data.id) {
         const rows = await db.update(portalTeachers).set(values).where(eq(portalTeachers.id, data.id)).returning();
         check(rows.length, "Teacher not found.", 404);

@@ -20,4 +20,15 @@ export type PortalCommandTeacher = {
   name: string;
   classIds: number[];
   active: boolean;
+  /**
+     * Role shown in the staff directory
+     * @maxLength 80
+     */
+  title?: string;
+  /**
+     * @maxItems 12
+     * @items.maxLength 60
+     */
+  subjects?: string[];
+  showInDirectory?: boolean;
 };

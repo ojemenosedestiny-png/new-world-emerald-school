@@ -11,6 +11,7 @@ import { AppShell } from "../src/portal/shell/AppShell";
 vi.mock("@workspace/api-client-react", async (original) => ({
   ...await original<typeof import("@workspace/api-client-react")>(),
   useGetStudentReports: () => ({ data: { studentName: "Ada", studentId: "S1", className: "JSS 1", reports: [{ term: { id: 4, session: "2026/2027", term: "First Term", caMax: 40, examMax: 60, nextTermBegins: null } }] } }),
+  useListPortalEvents: () => ({ data: [{ id: 11, title: "Inter-house sports", details: "Bring water", venue: "Sports field", category: "sports", startsAt: new Date(Date.now() + 2 * 86_400_000).toISOString(), endsAt: null, allDay: false, classId: null, className: null, published: true }] }),
 }));
 const wrap = (c: ReactNode) => <QueryClientProvider client={new QueryClient()}>{c}</QueryClientProvider>;
 afterEach(() => { cleanup(); localStorage.clear(); });
@@ -55,16 +56,21 @@ describe("phone-style home", () => {
     render(wrap(<StudentHome data={data} name="Ada Obi" studentId="S1" onGo={onGo} />));
     expect(screen.getByTestId("text-student-name").textContent).toContain("Hello, Ada");
     expect(screen.getByTestId("button-avatar").textContent).toBe("AO");
-    expect(screen.getByTestId("badge-notifications").textContent).toBe("4");
+    expect(screen.getByTestId("badge-notifications").textContent).toBe("5");
     expect(screen.getByTestId("tile-exams").textContent).toContain("1");
     fireEvent.click(screen.getByTestId("tile-reports"));
     expect(onGo).toHaveBeenLastCalledWith("reports");
     fireEvent.change(screen.getByTestId("input-home-search"), { target: { value: "fraction" } });
     fireEvent.click(screen.getByText("Fractions notes"));
     expect(onGo).toHaveBeenLastCalledWith("revision");
-    expect(screen.getByTestId("upcoming-1").textContent).toContain("Open now");
-    expect(screen.getByTestId("upcoming-2").textContent).toContain("Upcoming");
-    expect(screen.queryByTestId("upcoming-3")).toBeNull();
+    expect(screen.getByTestId("upcoming-exam:1").textContent).toContain("Open now");
+    expect(screen.getByTestId("upcoming-exam:2").textContent).toContain("Exam");
+    expect(screen.getByTestId("upcoming-event:11").textContent).toContain("Sports field");
+    expect(screen.queryByTestId("upcoming-exam:3")).toBeNull();
+    fireEvent.click(screen.getByTestId("upcoming-event:11"));
+    expect(onGo).toHaveBeenLastCalledWith("events");
+    fireEvent.click(screen.getByTestId("tile-staff"));
+    expect(onGo).toHaveBeenLastCalledWith("staff");
     fireEvent.click(screen.getByTestId("button-notifications"));
     expect(await screen.findByTestId("panel-notifications")).toBeTruthy();
     fireEvent.keyDown(document.activeElement ?? document.body, { key: "Escape" });

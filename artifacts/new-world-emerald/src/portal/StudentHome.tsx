@@ -1,12 +1,13 @@
 import { useMemo, useState, type CSSProperties } from "react";
-import { useGetStudentReports, getGetStudentReportsQueryKey, type PortalDashboard } from "@workspace/api-client-react";
-import { Award, Bell, BookOpen, ChevronRight, ClipboardList, FileBarChart, Megaphone, Menu, MapPin, Search, Timer, UserRound, type LucideIcon } from "lucide-react";
+import { useGetStudentReports, getGetStudentReportsQueryKey, useListPortalEvents, getListPortalEventsQueryKey, type PortalDashboard } from "@workspace/api-client-react";
+import { Award, Bell, BookOpen, CalendarDays, ChevronRight, ClipboardList, FileBarChart, MapPin, Megaphone, Menu, Search, Timer, UserRound, Users, type LucideIcon } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useOpenShellMenu } from "./shell/AppShell";
 import { examWindow } from "./lib";
 import { markSeen, readSeen, searchPortal, studentNotifications } from "./notifications";
+import { calendarItems, upcomingItems, whenText } from "./events";
 
-export type StudentSection = "home" | "exams" | "results" | "reports" | "revision" | "notices" | "profile";
+export type StudentSection = "home" | "exams" | "results" | "reports" | "revision" | "notices" | "profile" | "events" | "staff";
 
 type Feature = { section: StudentSection; label: string; detail: string; icon: LucideIcon; tile: string; badge?: number };
 
@@ -18,14 +19,15 @@ function initials(name: string) {
 export function StudentHome({ data, name, studentId, onGo }: { data: PortalDashboard; name: string; studentId: string; onGo: (s: StudentSection) => void }) {
   const openMenu = useOpenShellMenu();
   const reports = useGetStudentReports({ query: { queryKey: getGetStudentReportsQueryKey() } });
+  const events = useListPortalEvents({ query: { queryKey: getListPortalEventsQueryKey() } });
   const [query, setQuery] = useState("");
   const [seenVersion, setSeenVersion] = useState(0);
   const now = Date.now();
   const firstName = name.split(" ")[0];
   const openExams = data.exams.filter((e) => examWindow(e.startsAt, e.endsAt, now) === "open" && !data.attempts.some((a) => a.examId === e.id && a.status !== "in_progress")).length;
-  const notifications = useMemo(() => studentNotifications(data, reports.data, readSeen(studentId), now),
+  const notifications = useMemo(() => studentNotifications(data, reports.data, readSeen(studentId), now, events.data),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [data, reports.data, studentId, seenVersion]);
+    [data, reports.data, events.data, studentId, seenVersion]);
   const unseen = notifications.filter((n) => n.unseen).length;
   const newNotices = notifications.filter((n) => n.kind === "notice" && n.unseen).length;
 
@@ -34,15 +36,14 @@ export function StudentHome({ data, name, studentId, onGo }: { data: PortalDashb
     { section: "exams", label: "Exams", detail: "Schedule and start", icon: ClipboardList, tile: "152 55% 36%", badge: openExams },
     { section: "results", label: "GradeSheet", detail: "Your exam results", icon: Award, tile: "41 80% 46%" },
     { section: "reports", label: "Report cards", detail: "Term results and PDF", icon: FileBarChart, tile: "212 75% 52%" },
+    { section: "events", label: "Events", detail: "School calendar", icon: CalendarDays, tile: "18 80% 50%" },
+    { section: "staff", label: "Staffs", detail: "Meet your teachers", icon: Users, tile: "95 45% 38%" },
     { section: "notices", label: "Notices", detail: "Latest updates", icon: Megaphone, tile: "330 65% 55%", badge: newNotices },
     { section: "revision", label: "Library", detail: "Notes and resources", icon: BookOpen, tile: "183 60% 36%" },
   ];
-  const hits = searchPortal(query, data, features);
-  const upcoming = data.exams
-    .filter((e) => examWindow(e.startsAt, e.endsAt, now) !== "closed")
-    .sort((a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime())
-    .slice(0, 4);
-  const day = (iso: string, opts: Intl.DateTimeFormatOptions) => new Intl.DateTimeFormat("en-NG", opts).format(new Date(iso));
+  const hits = searchPortal(query, data, features, events.data);
+  const upcoming = upcomingItems(calendarItems(events.data, data.exams.filter((e) => examWindow(e.startsAt, e.endsAt, now) !== "closed")), now, 4);
+  const day = (d: Date, opts: Intl.DateTimeFormatOptions) => new Intl.DateTimeFormat("en-NG", opts).format(d);
 
   return (
     <div className="space-y-6">
@@ -119,25 +120,26 @@ export function StudentHome({ data, name, studentId, onGo }: { data: PortalDashb
         </div>
       </section>
 
-      <section className="px-4 lg:px-0" aria-label="Upcoming exams">
-        <div className="mb-3 flex items-center justify-between"><h2 className="text-lg font-semibold">Upcoming</h2><button type="button" className="text-sm font-semibold text-[hsl(var(--p-emerald))]" onClick={() => onGo("exams")}>View all</button></div>
+      <section className="px-4 lg:px-0" aria-label="Upcoming events">
+        <div className="mb-3 flex items-center justify-between"><h2 className="text-lg font-semibold">Upcoming Events</h2><button type="button" className="text-sm font-semibold text-[hsl(var(--p-emerald))]" onClick={() => onGo("events")} data-testid="button-view-calendar">View all</button></div>
         {upcoming.length === 0 ? (
-          <p className="portal-card px-4 py-6 text-center text-sm text-[hsl(var(--p-ink)/0.6)]">Nothing scheduled. New exams appear here when your teacher publishes them.</p>
+          <p className="portal-card px-4 py-6 text-center text-sm text-[hsl(var(--p-ink)/0.6)]">Nothing scheduled. School events and new exams appear here.</p>
         ) : (
           <div className="portal-card divide-y divide-[hsl(var(--p-line))] overflow-hidden">
-            {upcoming.map((e, i) => {
-              const open = examWindow(e.startsAt, e.endsAt, now) === "open";
+            {upcoming.map((it, i) => {
+              const exam = it.kind === "exam";
+              const open = exam && it.start.getTime() <= now;
               return (
-                <button key={e.id} type="button" onClick={() => onGo("exams")} className="flex w-full items-center gap-4 p-4 text-left hover:bg-[hsl(var(--p-paper-2)/0.5)]" data-testid={"upcoming-" + e.id}>
+                <button key={it.key} type="button" onClick={() => onGo(exam ? "exams" : "events")} className="flex w-full items-center gap-4 p-4 text-left hover:bg-[hsl(var(--p-paper-2)/0.5)]" data-testid={"upcoming-" + it.key}>
                   <span className="grid h-16 w-14 shrink-0 place-items-center rounded-2xl text-center" style={{ background: i % 2 ? "hsl(var(--p-gold-soft))" : "hsl(var(--p-emerald-soft))" }}>
-                    <span className="leading-tight"><span className="block text-[10px] font-bold uppercase text-[hsl(var(--p-ink)/0.55)]">{day(e.startsAt, { month: "short" })}</span><span className="block text-xl font-bold">{day(e.startsAt, { day: "numeric" })}</span><span className="block text-[10px] text-[hsl(var(--p-ink)/0.55)]">{day(e.startsAt, { weekday: "short" })}</span></span>
+                    <span className="leading-tight"><span className="block text-[10px] font-bold uppercase text-[hsl(var(--p-ink)/0.55)]">{day(it.start, { month: "short" })}</span><span className="block text-xl font-bold">{day(it.start, { day: "numeric" })}</span><span className="block text-[10px] text-[hsl(var(--p-ink)/0.55)]">{day(it.start, { weekday: "short" })}</span></span>
                   </span>
                   <span className="min-w-0 flex-1">
-                    <span className="block truncate font-semibold">{e.title}</span>
-                    <span className="mt-0.5 flex items-center gap-1 text-xs text-[hsl(var(--p-ink)/0.6)]"><Timer size={12} /> {day(e.startsAt, { hour: "numeric", minute: "2-digit" })} - {day(e.endsAt, { hour: "numeric", minute: "2-digit" })} / {e.durationMinutes} min</span>
-                    <span className="mt-0.5 flex items-center gap-1 text-xs text-[hsl(var(--p-ink)/0.6)]"><MapPin size={12} /> {e.subject}</span>
+                    <span className="block truncate font-semibold">{it.title}</span>
+                    <span className="mt-0.5 flex items-center gap-1 text-xs text-[hsl(var(--p-ink)/0.6)]"><Timer size={12} /> {whenText(it)}</span>
+                    {it.venue && <span className="mt-0.5 flex items-center gap-1 text-xs text-[hsl(var(--p-ink)/0.6)]"><MapPin size={12} /> {it.venue}</span>}
                   </span>
-                  <span className={"shrink-0 rounded-full px-2.5 py-1 text-[11px] font-bold " + (open ? "bg-[hsl(var(--p-emerald-soft))] text-[hsl(var(--p-emerald))]" : "bg-[hsl(var(--p-gold-soft))] text-[hsl(var(--p-gold-ink))]")}>{open ? "Open now" : "Upcoming"}</span>
+                  <span className={"shrink-0 rounded-full px-2.5 py-1 text-[11px] font-bold " + (open ? "bg-[hsl(var(--p-emerald-soft))] text-[hsl(var(--p-emerald))]" : exam ? "bg-[hsl(var(--p-gold-soft))] text-[hsl(var(--p-gold-ink))]" : "")} style={exam ? undefined : { background: `hsl(${it.hue} / 0.12)`, color: `hsl(${it.hue})` }}>{open ? "Open now" : it.label}</span>
                 </button>
               );
             })}

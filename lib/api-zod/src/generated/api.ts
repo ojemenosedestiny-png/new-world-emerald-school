@@ -395,6 +395,12 @@ export const getPortalManagementResponseTeachersItemEmailMax = 200;
 
 export const getPortalManagementResponseTeachersItemNameMax = 150;
 
+export const getPortalManagementResponseTeachersItemTitleMax = 80;
+
+export const getPortalManagementResponseTeachersItemSubjectsItemMax = 60;
+
+export const getPortalManagementResponseTeachersItemSubjectsMax = 12;
+
 export const getPortalManagementResponseExamsItemTitleMax = 200;
 
 export const getPortalManagementResponseExamsItemSubjectMax = 100;
@@ -478,7 +484,10 @@ export const GetPortalManagementResponse = zod.object({
   "email": zod.string().min(getPortalManagementResponseTeachersItemEmailMin).max(getPortalManagementResponseTeachersItemEmailMax),
   "name": zod.string().min(1).max(getPortalManagementResponseTeachersItemNameMax),
   "classIds": zod.array(zod.number()),
-  "active": zod.boolean()
+  "active": zod.boolean(),
+  "title": zod.string().max(getPortalManagementResponseTeachersItemTitleMax).optional().describe('Role shown in the staff directory'),
+  "subjects": zod.array(zod.string().max(getPortalManagementResponseTeachersItemSubjectsItemMax)).max(getPortalManagementResponseTeachersItemSubjectsMax).optional(),
+  "showInDirectory": zod.boolean().optional()
 })),
   "exams": zod.array(zod.object({
   "id": zod.number().optional(),
@@ -583,6 +592,12 @@ export const managePortalBodyTeacherEmailMax = 200;
 
 export const managePortalBodyTeacherNameMax = 150;
 
+export const managePortalBodyTeacherTitleMax = 80;
+
+export const managePortalBodyTeacherSubjectsItemMax = 60;
+
+export const managePortalBodyTeacherSubjectsMax = 12;
+
 export const managePortalBodyExamTitleMax = 200;
 
 export const managePortalBodyExamSubjectMax = 100;
@@ -645,7 +660,10 @@ export const ManagePortalBody = zod.object({
   "email": zod.string().min(managePortalBodyTeacherEmailMin).max(managePortalBodyTeacherEmailMax),
   "name": zod.string().min(1).max(managePortalBodyTeacherNameMax),
   "classIds": zod.array(zod.number()),
-  "active": zod.boolean()
+  "active": zod.boolean(),
+  "title": zod.string().max(managePortalBodyTeacherTitleMax).optional().describe('Role shown in the staff directory'),
+  "subjects": zod.array(zod.string().max(managePortalBodyTeacherSubjectsItemMax)).max(managePortalBodyTeacherSubjectsMax).optional(),
+  "showInDirectory": zod.boolean().optional()
 }).optional(),
   "exam": zod.object({
   "id": zod.number().optional(),
@@ -1198,6 +1216,142 @@ export const RequestPasswordResetBody = zod.object({
 export const RequestPasswordResetResponse = zod.object({
   "message": zod.string()
 })
+
+
+export const listPortalEventsResponseOneTitleMax = 200;
+
+export const listPortalEventsResponseOneDetailsMax = 5000;
+
+export const listPortalEventsResponseOneVenueMax = 200;
+
+
+
+export const ListPortalEventsResponseItem = zod.object({
+  "title": zod.string().min(1).max(listPortalEventsResponseOneTitleMax),
+  "details": zod.string().max(listPortalEventsResponseOneDetailsMax),
+  "venue": zod.string().max(listPortalEventsResponseOneVenueMax),
+  "category": zod.enum(['general', 'academic', 'exam', 'sports', 'holiday', 'meeting', 'cultural']),
+  "startsAt": zod.string(),
+  "endsAt": zod.string().nullable(),
+  "allDay": zod.boolean(),
+  "classId": zod.number().nullable().describe('Empty for the whole school'),
+  "published": zod.boolean()
+}).and(zod.object({
+  "id": zod.number(),
+  "className": zod.string().nullable()
+}))
+export const ListPortalEventsResponse = zod.array(ListPortalEventsResponseItem)
+
+
+export const createPortalEventBodyTitleMax = 200;
+
+export const createPortalEventBodyDetailsMax = 5000;
+
+export const createPortalEventBodyVenueMax = 200;
+
+
+
+export const CreatePortalEventBody = zod.object({
+  "title": zod.string().min(1).max(createPortalEventBodyTitleMax),
+  "details": zod.string().max(createPortalEventBodyDetailsMax).optional(),
+  "venue": zod.string().max(createPortalEventBodyVenueMax).optional(),
+  "category": zod.enum(['general', 'academic', 'exam', 'sports', 'holiday', 'meeting', 'cultural']),
+  "startsAt": zod.string(),
+  "endsAt": zod.string().nullish(),
+  "allDay": zod.boolean(),
+  "classId": zod.number().nullish().describe('Empty for the whole school'),
+  "published": zod.boolean()
+})
+
+export const createPortalEventResponseOneTitleMax = 200;
+
+export const createPortalEventResponseOneDetailsMax = 5000;
+
+export const createPortalEventResponseOneVenueMax = 200;
+
+
+
+export const CreatePortalEventResponse = zod.object({
+  "title": zod.string().min(1).max(createPortalEventResponseOneTitleMax),
+  "details": zod.string().max(createPortalEventResponseOneDetailsMax),
+  "venue": zod.string().max(createPortalEventResponseOneVenueMax),
+  "category": zod.enum(['general', 'academic', 'exam', 'sports', 'holiday', 'meeting', 'cultural']),
+  "startsAt": zod.string(),
+  "endsAt": zod.string().nullable(),
+  "allDay": zod.boolean(),
+  "classId": zod.number().nullable().describe('Empty for the whole school'),
+  "published": zod.boolean()
+}).and(zod.object({
+  "id": zod.number(),
+  "className": zod.string().nullable()
+}))
+
+
+export const UpdatePortalEventParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const updatePortalEventBodyTitleMax = 200;
+
+export const updatePortalEventBodyDetailsMax = 5000;
+
+export const updatePortalEventBodyVenueMax = 200;
+
+
+
+export const UpdatePortalEventBody = zod.object({
+  "title": zod.string().min(1).max(updatePortalEventBodyTitleMax),
+  "details": zod.string().max(updatePortalEventBodyDetailsMax).optional(),
+  "venue": zod.string().max(updatePortalEventBodyVenueMax).optional(),
+  "category": zod.enum(['general', 'academic', 'exam', 'sports', 'holiday', 'meeting', 'cultural']),
+  "startsAt": zod.string(),
+  "endsAt": zod.string().nullish(),
+  "allDay": zod.boolean(),
+  "classId": zod.number().nullish().describe('Empty for the whole school'),
+  "published": zod.boolean()
+})
+
+export const updatePortalEventResponseOneTitleMax = 200;
+
+export const updatePortalEventResponseOneDetailsMax = 5000;
+
+export const updatePortalEventResponseOneVenueMax = 200;
+
+
+
+export const UpdatePortalEventResponse = zod.object({
+  "title": zod.string().min(1).max(updatePortalEventResponseOneTitleMax),
+  "details": zod.string().max(updatePortalEventResponseOneDetailsMax),
+  "venue": zod.string().max(updatePortalEventResponseOneVenueMax),
+  "category": zod.enum(['general', 'academic', 'exam', 'sports', 'holiday', 'meeting', 'cultural']),
+  "startsAt": zod.string(),
+  "endsAt": zod.string().nullable(),
+  "allDay": zod.boolean(),
+  "classId": zod.number().nullable().describe('Empty for the whole school'),
+  "published": zod.boolean()
+}).and(zod.object({
+  "id": zod.number(),
+  "className": zod.string().nullable()
+}))
+
+
+export const DeletePortalEventParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const DeletePortalEventResponse = zod.object({
+  "message": zod.string()
+})
+
+
+export const GetStaffDirectoryResponseItem = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "title": zod.string(),
+  "subjects": zod.array(zod.string()),
+  "classNames": zod.array(zod.string())
+})
+export const GetStaffDirectoryResponse = zod.array(GetStaffDirectoryResponseItem)
 
 
 /**

@@ -2,7 +2,7 @@ import { useState, type ReactNode } from "react";
 import { Link } from "wouter";
 import { useAuth, useClerk, useUser } from "@clerk/react";
 import { useGetPortalSession, getGetPortalSessionQueryKey, useGetPortalManagement, getGetPortalManagementQueryKey } from "@workspace/api-client-react";
-import { ArrowRight, BookOpen, CheckSquare, ClipboardList, FileBarChart, Globe, GraduationCap, LayoutDashboard, Megaphone, MonitorSmartphone, School, ScrollText, ShieldAlert, Users } from "lucide-react";
+import { ArrowRight, BookOpen, CalendarDays, CheckSquare, ClipboardList, FileBarChart, Globe, GraduationCap, LayoutDashboard, Megaphone, MonitorSmartphone, School, ScrollText, ShieldAlert, Users } from "lucide-react";
 import "@/portal/portal.css";
 import { BackToWebsite, ErrorPanel, Skeleton } from "@/portal/ui";
 import { errorMessage, usePortalMeta } from "@/portal/lib";
@@ -17,6 +17,7 @@ import { TwoFactorSetup } from "@/components/TwoFactorSetup";
 import { IdleSignOut } from "@/components/IdleSignOut";
 import { AuditLogPanel, SessionsPanel } from "@/portal/security/SecurityPanels";
 import { ReportsPanel } from "@/portal/reports/ReportsPanel";
+import { EventsPanel } from "@/portal/manage/EventsPanel";
 
 function Gate({ title, body, children }: { title: string; body: string; children?: ReactNode }) {
   return (
@@ -32,10 +33,10 @@ function Gate({ title, body, children }: { title: string; body: string; children
   );
 }
 
-type Section = "overview" | "exams" | "marking" | "reports" | "revision" | "notices" | "students" | "teachers" | "classes" | "sessions" | "audit";
+type Section = "overview" | "exams" | "marking" | "reports" | "revision" | "notices" | "events" | "students" | "teachers" | "classes" | "sessions" | "audit";
 const TITLES: Record<Section, string> = {
   overview: "Dashboard", exams: "Exams", marking: "Marking", reports: "Report cards", revision: "Revision notes",
-  notices: "Announcements", students: "Students", teachers: "Teachers", classes: "Classes", sessions: "Sessions", audit: "Audit log",
+  notices: "Announcements", events: "Events calendar", students: "Students", teachers: "Teachers", classes: "Classes", sessions: "Sessions", audit: "Audit log",
 };
 
 export default function PortalManage() {
@@ -73,6 +74,7 @@ export default function PortalManage() {
       { key: "notices", label: "Announcements", icon: Megaphone, testId: "tab-manage-notices" },
     ] },
     ...(isAdmin ? [{ label: "School", items: [
+      { key: "events" as const, label: "Events calendar", icon: CalendarDays, testId: "tab-manage-events" },
       { key: "students" as const, label: "Students", icon: GraduationCap, testId: "tab-manage-students" },
       { key: "teachers" as const, label: "Teachers", icon: Users, testId: "tab-manage-teachers" },
       { key: "classes" as const, label: "Classes", icon: School, testId: "tab-manage-classes" },
@@ -115,6 +117,7 @@ export default function PortalManage() {
             {section === "reports" && <ReportsPanel />}
             {section === "revision" && <MaterialsPanel data={d} />}
             {section === "notices" && <NoticesPanel data={d} />}
+            {isAdmin && section === "events" && <EventsPanel data={d} />}
             {isAdmin && section === "students" && <StudentsPanel data={d} />}
             {isAdmin && section === "teachers" && <TeachersPanel data={d} />}
             {isAdmin && section === "classes" && <ClassesPanel data={d} />}
