@@ -1,0 +1,67 @@
+paths:
+  myFees:
+    get:
+      operationId: getMyFees
+      responses:
+        "200":
+          description: The signed-in student's fee statement
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/FeeStatement" }
+  studentFees:
+    get:
+      operationId: getStudentFees
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      responses:
+        "200":
+          description: One student's fee statement (school office only)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/FeeStatement" }
+schemas:
+  FeeItem:
+    type: object
+    required: [key, kind, description, term, academicYear, amountKobo, reference, status]
+    properties:
+      key: { type: string }
+      kind: { type: string, enum: [class, individual] }
+      description: { type: string }
+      term: { type: string }
+      academicYear: { type: string }
+      amountKobo: { type: integer }
+      reference: { type: ["string", "null"] }
+      status: { type: string, enum: [due, pending, paid] }
+  FeeTotals:
+    type: object
+    required: [totalKobo, paidKobo, pendingKobo, outstandingKobo]
+    properties:
+      totalKobo: { type: integer }
+      paidKobo: { type: integer }
+      pendingKobo: { type: integer }
+      outstandingKobo: { type: integer }
+  FeePayment:
+    type: object
+    required: [reference, description, amountKobo, status, createdAt]
+    properties:
+      reference: { type: string }
+      description: { type: string }
+      amountKobo: { type: integer }
+      status: { type: string }
+      createdAt: { type: string, format: date-time }
+  FeeStatement:
+    type: object
+    required: [studentName, studentId, className, items, totals, payments]
+    properties:
+      studentName: { type: string }
+      studentId: { type: string }
+      className: { type: string }
+      items: { type: array, items: { $ref: "#/components/schemas/FeeItem" } }
+      totals: { $ref: "#/components/schemas/FeeTotals" }
+      payments: { type: array, items: { $ref: "#/components/schemas/FeePayment" } }
+components:
+  schemas:
+    FeeItem: { $ref: "#/schemas/FeeItem" }
+    FeeTotals: { $ref: "#/schemas/FeeTotals" }
+    FeePayment: { $ref: "#/schemas/FeePayment" }
+    FeeStatement: { $ref: "#/schemas/FeeStatement" }

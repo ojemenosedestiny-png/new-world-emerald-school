@@ -51,6 +51,7 @@ import type {
   FeePaymentReportInput,
   FeePaymentReportReceipt,
   FeePaymentReportUpdate,
+  FeeStatement,
   ForgotPasswordInput,
   GetAttendanceSheetParams,
   GetAttendanceSummaryParams,
@@ -3125,6 +3126,148 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       > => {
       return useMutation(getUploadAssignmentImageMutationOptions(options));
     }
+
+export const getGetMyFeesUrl = () => {
+
+
+
+
+  return `/api/portal/my-fees`
+}
+
+export const getMyFees = async ( options?: RequestInit): Promise<FeeStatement> => {
+
+  return customFetch<FeeStatement>(getGetMyFeesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetMyFeesQueryKey = () => {
+    return [
+    `/api/portal/my-fees`
+    ] as const;
+    }
+
+
+export const getGetMyFeesQueryOptions = <TData = Awaited<ReturnType<typeof getMyFees>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMyFees>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetMyFeesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMyFees>>> = ({ signal }) => getMyFees({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMyFees>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetMyFeesQueryResult = NonNullable<Awaited<ReturnType<typeof getMyFees>>>
+export type GetMyFeesQueryError = ErrorType<unknown>
+
+
+
+export function useGetMyFees<TData = Awaited<ReturnType<typeof getMyFees>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMyFees>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetMyFeesQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetStudentFeesUrl = (id: number,) => {
+
+
+
+
+  return `/api/portal/students/${id}/fees`
+}
+
+export const getStudentFees = async (id: number, options?: RequestInit): Promise<FeeStatement> => {
+
+  return customFetch<FeeStatement>(getGetStudentFeesUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetStudentFeesQueryKey = (id: number,) => {
+    return [
+    `/api/portal/students/${id}/fees`
+    ] as const;
+    }
+
+
+export const getGetStudentFeesQueryOptions = <TData = Awaited<ReturnType<typeof getStudentFees>>, TError = ErrorType<unknown>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getStudentFees>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetStudentFeesQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getStudentFees>>> = ({ signal }) => getStudentFees(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getStudentFees>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetStudentFeesQueryResult = NonNullable<Awaited<ReturnType<typeof getStudentFees>>>
+export type GetStudentFeesQueryError = ErrorType<unknown>
+
+
+
+export function useGetStudentFees<TData = Awaited<ReturnType<typeof getStudentFees>>, TError = ErrorType<unknown>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getStudentFees>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetStudentFeesQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 
 export const getGetMyMessagesUrl = () => {
 

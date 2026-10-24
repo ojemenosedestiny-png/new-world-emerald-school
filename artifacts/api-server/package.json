@@ -20,7 +20,8 @@
     "test:media-storage": "node ./test-portal.mjs media-storage",
     "test:school-payments": "node ./test-portal.mjs school-payments",
     "test:portal-learning": "node ./test-portal.mjs portal-learning",
-    "test:portal-messages": "node ./test-portal.mjs portal-messages"
+    "test:portal-messages": "node ./test-portal.mjs portal-messages",
+    "test:portal-fees": "node ./test-portal.mjs portal-fees"
   },
   "dependencies": {
     "@clerk/express": "^2.1.75",

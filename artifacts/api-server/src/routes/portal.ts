@@ -11,6 +11,7 @@ import { portalCommunityRouter } from "./portal-community";
 import { portalMediaRouter } from "./portal-media";
 import { portalLearningRouter } from "./portal-learning";
 import { portalMessagesRouter } from "./portal-messages";
+import { portalFeesRouter } from "./portal-fees";
 
 const portalRouter = Router();
 portalRouter.use(portalOriginGuard);
@@ -25,6 +26,7 @@ portalRouter.use(portalCommunityRouter);
 portalRouter.use(portalMediaRouter);
 portalRouter.use(portalLearningRouter);
 portalRouter.use(portalMessagesRouter);
+portalRouter.use(portalFeesRouter);
 const errors: ErrorRequestHandler = (error, req, res, _next) => {
   if (res.headersSent) { if (!res.destroyed) res.destroy(); return; }
   if (error instanceof PortalError) { res.status(error.status).json({ error: error.message }); return; }

@@ -1,7 +1,7 @@
 import { useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useSetTeacherPhoto, useRemoveTeacherPhoto, getGetPortalManagementQueryKey, type PortalManagement, type PortalManagementStudentsItem, type PortalManagementTeachersItem } from "@workspace/api-client-react";
-import { Activity, Camera, Copy, GraduationCap, KeyRound, Link2, ListPlus, Mail, Pencil, Plus, Printer, School, Trash2, UserCheck, Users } from "lucide-react";
+import { Activity, Camera, Copy, GraduationCap, KeyRound, Link2, ListPlus, Mail, Pencil, Plus, Printer, School, Trash2, UserCheck, Users, Wallet } from "lucide-react";
 import type { AccountLinkResult } from "@workspace/api-client-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
@@ -13,6 +13,7 @@ import { className, useCommand } from "./useCommand";
 import { BulkEnrol } from "./BulkEnrol";
 import { printLoginSlips, type IssuedLogin } from "./enrol";
 import { StudentActivityDialogBody } from "../security/SecurityPanels";
+import { OfficeFeeStatement } from "../FeeStatement";
 import { AccountLinkDialog, EnrolStudentDialog, useAccountLink } from "./accounts";
 
 export function ClassesPanel({ data }: { data: PortalManagement }) {
@@ -76,6 +77,7 @@ export function StudentsPanel({ data }: { data: PortalManagement }) {
   const [issued, setIssued] = useState<IssuedLogin | null>(null);
   const [bulk, setBulk] = useState(false);
   const [activity, setActivity] = useState<{ id: number; name: string } | null>(null);
+  const [fees, setFees] = useState<{ id: number; name: string } | null>(null);
   const [enrolling, setEnrolling] = useState(false);
   const [link, setLink] = useState<{ result: AccountLinkResult; purpose: "activate" | "reset" } | null>(null);
   const accountLink = useAccountLink();
@@ -118,6 +120,7 @@ export function StudentsPanel({ data }: { data: PortalManagement }) {
               <div className="flex flex-wrap gap-2">
                 <button className="portal-btn-ghost" onClick={() => setForm({ ...s })} data-testid={"button-edit-student-" + s.id}><Pencil size={13} /> Edit</button>
                 <button className="portal-btn-ghost" onClick={() => setActivity({ id: s.id as number, name: s.name })} data-testid={"button-activity-student-" + s.id}><Activity size={13} /> Activity</button>
+                <button className="portal-btn-ghost" onClick={() => setFees({ id: s.id as number, name: s.name })} data-testid={"button-fees-student-" + s.id}><Wallet size={13} /> Fees</button>
                 {s.active && (s.accountStatus === "pending"
                   ? <button className="portal-btn-ghost" disabled={accountLink.pending} onClick={() => void sendLink(s, "activate")} data-testid={"button-activation-link-" + s.id}><Link2 size={13} /> Activation link</button>
                   : <button className="portal-btn-ghost" disabled={accountLink.pending} onClick={() => void sendLink(s, "reset")} data-testid={"button-reset-link-" + s.id}><Mail size={13} /> Reset link</button>)}
@@ -150,6 +153,12 @@ export function StudentsPanel({ data }: { data: PortalManagement }) {
         <DialogContent className="portal !min-h-0 max-w-lg rounded-2xl">
           <DialogHeader><DialogTitle className="font-serif text-2xl">{activity?.name}</DialogTitle><DialogDescription>Sign-in history and active sessions</DialogDescription></DialogHeader>
           {activity && <StudentActivityDialogBody studentId={activity.id} name={activity.name} />}
+        </DialogContent>
+      </Dialog>
+      <Dialog open={!!fees} onOpenChange={(o) => !o && setFees(null)}>
+        <DialogContent className="portal !min-h-0 max-h-[90vh] max-w-2xl overflow-y-auto rounded-2xl">
+          <DialogHeader><DialogTitle className="font-serif text-2xl">{fees?.name}</DialogTitle><DialogDescription>Fee statement from class fees, individual charges and payment reports</DialogDescription></DialogHeader>
+          {fees && <OfficeFeeStatement studentId={fees.id} />}
         </DialogContent>
       </Dialog>
     </div>

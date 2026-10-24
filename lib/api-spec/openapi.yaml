@@ -85,6 +85,10 @@ paths:
     $ref: "./learning.yaml#/paths/submitAssignment"
   /portal/assignment-images:
     $ref: "./learning.yaml#/paths/assignmentImages"
+  /portal/my-fees:
+    $ref: "./fees.yaml#/paths/myFees"
+  /portal/students/{id}/fees:
+    $ref: "./fees.yaml#/paths/studentFees"
   /portal/my-messages:
     $ref: "./messages.yaml#/paths/myMessages"
   /portal/my-messages/read:
@@ -1011,6 +1015,14 @@ paths:
           description: Authentication required.
 components:
   schemas:
+    FeeItem:
+      $ref: "./fees.yaml#/schemas/FeeItem"
+    FeeTotals:
+      $ref: "./fees.yaml#/schemas/FeeTotals"
+    FeePayment:
+      $ref: "./fees.yaml#/schemas/FeePayment"
+    FeeStatement:
+      $ref: "./fees.yaml#/schemas/FeeStatement"
     MessageChannel:
       $ref: "./messages.yaml#/schemas/MessageChannel"
     PortalChatMessage:

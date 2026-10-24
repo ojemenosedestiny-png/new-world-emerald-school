@@ -5,6 +5,59 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+export type FeeItemKind = typeof FeeItemKind[keyof typeof FeeItemKind];
+
+
+export const FeeItemKind = {
+  class: 'class',
+  individual: 'individual',
+} as const;
+
+export type FeeItemStatus = typeof FeeItemStatus[keyof typeof FeeItemStatus];
+
+
+export const FeeItemStatus = {
+  due: 'due',
+  pending: 'pending',
+  paid: 'paid',
+} as const;
+
+export interface FeeItem {
+  key: string;
+  kind: FeeItemKind;
+  description: string;
+  term: string;
+  academicYear: string;
+  amountKobo: number;
+  /** @nullable */
+  reference: string | null;
+  status: FeeItemStatus;
+}
+
+export interface FeeTotals {
+  totalKobo: number;
+  paidKobo: number;
+  pendingKobo: number;
+  outstandingKobo: number;
+}
+
+export interface FeePayment {
+  reference: string;
+  description: string;
+  amountKobo: number;
+  status: string;
+  createdAt: string;
+}
+
+export interface FeeStatement {
+  studentName: string;
+  studentId: string;
+  className: string;
+  items: FeeItem[];
+  totals: FeeTotals;
+  payments: FeePayment[];
+}
+
 export type MessageChannel = typeof MessageChannel[keyof typeof MessageChannel];
 
 

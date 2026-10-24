@@ -1699,6 +1699,70 @@ export const UploadAssignmentImageResponse = zod.object({
 })
 
 
+export const GetMyFeesResponse = zod.object({
+  "studentName": zod.string(),
+  "studentId": zod.string(),
+  "className": zod.string(),
+  "items": zod.array(zod.object({
+  "key": zod.string(),
+  "kind": zod.enum(['class', 'individual']),
+  "description": zod.string(),
+  "term": zod.string(),
+  "academicYear": zod.string(),
+  "amountKobo": zod.number(),
+  "reference": zod.string().nullable(),
+  "status": zod.enum(['due', 'pending', 'paid'])
+})),
+  "totals": zod.object({
+  "totalKobo": zod.number(),
+  "paidKobo": zod.number(),
+  "pendingKobo": zod.number(),
+  "outstandingKobo": zod.number()
+}),
+  "payments": zod.array(zod.object({
+  "reference": zod.string(),
+  "description": zod.string(),
+  "amountKobo": zod.number(),
+  "status": zod.string(),
+  "createdAt": zod.coerce.date()
+}))
+})
+
+
+export const GetStudentFeesParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const GetStudentFeesResponse = zod.object({
+  "studentName": zod.string(),
+  "studentId": zod.string(),
+  "className": zod.string(),
+  "items": zod.array(zod.object({
+  "key": zod.string(),
+  "kind": zod.enum(['class', 'individual']),
+  "description": zod.string(),
+  "term": zod.string(),
+  "academicYear": zod.string(),
+  "amountKobo": zod.number(),
+  "reference": zod.string().nullable(),
+  "status": zod.enum(['due', 'pending', 'paid'])
+})),
+  "totals": zod.object({
+  "totalKobo": zod.number(),
+  "paidKobo": zod.number(),
+  "pendingKobo": zod.number(),
+  "outstandingKobo": zod.number()
+}),
+  "payments": zod.array(zod.object({
+  "reference": zod.string(),
+  "description": zod.string(),
+  "amountKobo": zod.number(),
+  "status": zod.string(),
+  "createdAt": zod.coerce.date()
+}))
+})
+
+
 export const GetMyMessagesResponse = zod.object({
   "threads": zod.array(zod.object({
   "channel": zod.enum(['class', 'office']),
