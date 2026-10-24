@@ -58,7 +58,7 @@ export function Programs() {
   ];
 
   return (
-    <section id="academics" className="py-14 md:py-20 bg-muted/30">
+    <section id="academics" className="py-14 md:py-20 section-sand">
       <div className="container mx-auto px-4 md:px-8">
         <div className="flex flex-col md:flex-row justify-between items-end mb-10 gap-6">
           <div className="max-w-2xl">
@@ -168,7 +168,7 @@ export function Facilities() {
   ];
 
   return (
-    <section className="py-14 md:py-20 bg-background">
+    <section className="py-14 md:py-20 bg-background section-premium">
       <div className="container mx-auto px-4 md:px-8">
         <div className="text-center max-w-2xl mx-auto mb-10">
           <AnimatedHeading as="h2" className="text-primary font-bold tracking-widest uppercase text-sm mb-3">Campus & Facilities</AnimatedHeading>

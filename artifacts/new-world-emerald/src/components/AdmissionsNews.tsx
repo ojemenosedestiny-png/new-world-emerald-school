@@ -30,7 +30,7 @@ export function NewsEvents() {
   ];
 
   return (
-    <section id="news" className="py-14 md:py-20 bg-muted/30">
+    <section id="news" className="py-14 md:py-20 section-sand">
       <div className="container mx-auto px-4 md:px-8">
         <div className="flex flex-col md:flex-row justify-between items-end mb-12 gap-6">
           <div>
@@ -112,7 +112,7 @@ export function AdmissionsFAQ() {
   ];
 
   return (
-    <section id="admissions" className="py-14 md:py-20 bg-background">
+    <section id="admissions" className="py-14 md:py-20 bg-background section-premium">
       <div className="container mx-auto px-4 md:px-8">
         <div className="grid lg:grid-cols-2 gap-10 lg:gap-12">
           <div>

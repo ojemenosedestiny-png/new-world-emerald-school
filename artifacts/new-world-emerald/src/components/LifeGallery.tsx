@@ -62,7 +62,7 @@ export function SchoolLife() {
   ];
 
   return (
-    <section id="school-life" className="py-14 md:py-20 bg-muted/30">
+    <section id="school-life" className="py-14 md:py-20 section-sand">
       <div className="container mx-auto px-4 md:px-8">
         <div className="grid lg:grid-cols-2 gap-10 lg:gap-12 items-center">
           <div>
@@ -170,7 +170,7 @@ export function Gallery() {
   const shownImages = showAll ? filteredImages : filteredImages.slice(0, 8);
 
   return (
-    <section id="gallery" className="py-14 md:py-20 bg-background scroll-mt-28">
+    <section id="gallery" className="py-14 md:py-20 bg-background section-premium scroll-mt-28">
       <div className="container mx-auto px-4 md:px-8">
         <div className="text-center max-w-2xl mx-auto mb-8">
           <AnimatedHeading as="h2" className="text-primary font-bold tracking-widest uppercase text-sm mb-3">Our Gallery</AnimatedHeading>

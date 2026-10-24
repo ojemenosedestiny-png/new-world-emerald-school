@@ -73,7 +73,7 @@ export function About() {
   const isInView = useInView(ref, { once: true, margin: "-100px" });
 
   return (
-    <section id="about" className="py-14 md:py-20 bg-background relative overflow-hidden" ref={ref}>
+    <section id="about" className="py-14 md:py-20 bg-background section-premium relative overflow-hidden" ref={ref}>
       {/* Decorative elements */}
       <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-primary/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none" />
       

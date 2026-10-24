@@ -32,7 +32,7 @@ export function LiveUpdates() {
   );
 
   return (
-    <section id="live-updates" className="relative overflow-hidden bg-background py-14 md:py-20">
+    <section id="live-updates" className="relative overflow-hidden bg-background section-premium py-14 md:py-20">
       <div className="pointer-events-none absolute -left-28 top-24 h-72 w-72 rounded-full bg-accent/10 blur-3xl" />
       <div className="pointer-events-none absolute -right-36 bottom-0 h-96 w-96 rounded-full bg-primary/10 blur-3xl" />
       <div className="container relative mx-auto px-4 md:px-8">

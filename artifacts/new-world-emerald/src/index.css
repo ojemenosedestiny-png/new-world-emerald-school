@@ -60,21 +60,21 @@
   --elevate-2: rgba(0, 0, 0, 0.08);
 
   /* Light Theme */
-  /* Background: Off-white / Pearl */
-  --background: 0 0% 98%;
+  /* Background: warm ivory, so white cards lift gently off the page */
+  --background: 42 38% 97%;
   --foreground: 222 47% 11%;
   
-  --border: 214 32% 91%;
-  --input: 214 32% 91%;
+  --border: 38 24% 87%;
+  --input: 38 24% 87%;
   --ring: 152 76% 23%;
 
   --card: 0 0% 100%;
   --card-foreground: 222 47% 11%;
-  --card-border: 214 32% 91%;
+  --card-border: 38 24% 87%;
 
   --popover: 0 0% 100%;
   --popover-foreground: 222 47% 11%;
-  --popover-border: 214 32% 91%;
+  --popover-border: 38 24% 87%;
 
   /* Primary: Emerald Green */
   --primary: 152 76% 23%;
@@ -88,8 +88,9 @@
   --accent: 46 65% 52%;
   --accent-foreground: 0 0% 100%;
 
-  --muted: 210 40% 96%;
-  --muted-foreground: 215.4 16.3% 46.9%;
+  /* Muted: soft sand for alternate sections and chips */
+  --muted: 40 33% 93%;
+  --muted-foreground: 25 9% 40%;
 
   --destructive: 0 84.2% 60.2%;
   --destructive-foreground: 210 40% 98%;
@@ -176,5 +177,20 @@
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+  }
+}
+
+/* Plain homepage sections: a faint emerald glow, a hint of gold and a barely visible dot grid. */
+@layer components {
+  .section-premium {
+    background-image:
+      radial-gradient(ellipse 55% 45% at 0% 0%, hsl(var(--primary) / 0.06), transparent 70%),
+      radial-gradient(ellipse 45% 40% at 100% 100%, hsl(var(--accent) / 0.08), transparent 70%),
+      radial-gradient(hsl(var(--primary) / 0.07) 1px, transparent 1.2px);
+    background-size: 100% 100%, 100% 100%, 26px 26px;
+  }
+  .section-sand {
+    background-color: hsl(var(--muted) / 0.65);
+    border-block: 1px solid hsl(var(--border) / 0.6);
   }
 }
