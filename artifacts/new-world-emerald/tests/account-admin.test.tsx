@@ -289,7 +289,7 @@ describe("Administrator access screen", () => {
     expect(requestsTo(accessUrl)).toHaveLength(1);
     responses.set(accessUrl, () => json({ isAdmin: true }));
     fireEvent.click(screen.getByRole("button", { name: "Retry access check" }));
-    expect(await screen.findByRole("heading", { name: "Good morning, school office." })).toBeTruthy();
+    expect(await screen.findByRole("heading", { name: /^Good (morning|afternoon|evening), school office\.$/ })).toBeTruthy();
     expect(requestsTo(accessUrl)).toHaveLength(2);
     await waitFor(() => expect(requestsTo(applicationsUrl)).toHaveLength(1));
   });
@@ -312,14 +312,14 @@ describe.each([
     signIn("fixture-clerk-a", "fixture-local-a");
     responses.set(url, () => json({ isAdmin: true }));
     const view = openPage(<Page />);
-    await screen.findByText(Page === Account ? "Approved school administrator" : "Good morning, school office.");
+    await screen.findByText(Page === Account ? "Approved school administrator" : /^Good (morning|afternoon|evening), school office\.$/);
     // Keep the same mounted page and QueryClient, as during an account switch.
     let resolve!: (response: Response) => void;
     responses.set(url, () => new Promise<Response>((done) => { resolve = done; }));
     signIn("fixture-clerk-b", "fixture-local-b");
     view.rerenderPage();
     expect(screen.queryByText("Approved school administrator")).toBeNull();
-    expect(screen.queryByText("Good morning, school office.")).toBeNull();
+    expect(screen.queryByText(/^Good (morning|afternoon|evening), school office\.$/)).toBeNull();
     expectNoManagement();
     expect(client.getQueryState([...baseKey, "fixture-local-a"])?.data).toEqual({ isAdmin: true });
     expect(client.getQueryState([...baseKey, "fixture-local-b"])?.data).toBeUndefined();
