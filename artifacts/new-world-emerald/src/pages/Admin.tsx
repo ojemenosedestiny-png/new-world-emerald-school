@@ -3,17 +3,25 @@ import React, { useMemo, useState } from "react";
 import { Link, useLocation } from "wouter";
 import {
   ArrowLeft,
+  ArrowRight,
+  BookOpenCheck,
   CalendarDays,
-  CheckCircle2,
+  ChevronRight,
+  Clapperboard,
   Clock3,
   ExternalLink,
   FileText,
+  Globe,
   GraduationCap,
+  LayoutDashboard,
   Loader2,
-  LogOut,
   Mail,
+  Palette,
+  PenSquare,
   Phone,
+  School,
   ShieldCheck,
+  Sparkles,
   Store,
   Users,
 } from "lucide-react";
@@ -25,16 +33,23 @@ import {
   useUpdateAdmissionApplication,
   useGetWebsiteAdminAccess,
   getGetWebsiteAdminAccessQueryKey,
+  useGetPortalManagement,
+  getGetPortalManagementQueryKey,
+  type AdmissionApplication,
 } from "@workspace/api-client-react";
 import { useAuth, useClerk, useUser } from "@clerk/react";
 import { useQueryClient } from "@tanstack/react-query";
+import "@/portal/portal.css";
 import { LiveUpdatesManager } from "@/components/LiveUpdatesManager";
 import { GraphicsStudio } from "@/components/GraphicsStudio";
 import { SchoolCommerceManager } from "@/components/SchoolCommerceManager";
 import { SiteContentManager } from "@/components/SiteContentManager";
 import { AcademicCalendar } from "@/components/AcademicCalendar";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { AppShell, type NavGroup } from "@/portal/shell/AppShell";
+import { usePortalTheme } from "@/portal/shell/theme";
 import { trackEvent } from "@/lib/analytics";
+import { TwoFactorSetup } from "@/components/TwoFactorSetup";
+import { IdleSignOut } from "@/components/IdleSignOut";
 
 const statuses = ["new", "contacted", "invited", "accepted", "declined"];
 
@@ -57,14 +72,58 @@ function statusClass(status: string) {
   return "bg-blue-100 text-blue-700";
 }
 
-import { TwoFactorSetup } from "@/components/TwoFactorSetup";
-import { IdleSignOut } from "@/components/IdleSignOut";
+export function greeting(hour = new Date().getHours()) {
+  return hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
+}
+
+type Section = "dashboard" | "admissions" | "updates" | "content" | "calendar" | "store" | "graphics";
+const TITLES: Record<Section, string> = {
+  dashboard: "Dashboard", admissions: "Admission applications", updates: "Live school updates", content: "Website content",
+  calendar: "Academic calendar", store: "School store and fees", graphics: "Graphics studio",
+};
+
+function ApplicationList({ applications, onStatus, limit }: { applications: AdmissionApplication[]; onStatus: (id: number, status: string) => void; limit?: number }) {
+  return (
+    <div className="divide-y divide-[hsl(var(--p-line))]">
+      {applications.slice(0, limit).map((application) => (
+        <article key={application.id} className="p-5">
+          <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-start">
+            <div className="flex min-w-0 gap-4">
+              <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-[hsl(var(--p-emerald-soft))] font-bold text-[hsl(var(--p-emerald))]" aria-hidden="true">
+                {(application.studentFirstName[0] ?? "") + (application.studentLastName[0] ?? "")}
+              </span>
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <h3 className="font-serif text-lg font-semibold">{application.studentFirstName} {application.studentLastName}</h3>
+                  <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wide ${statusClass(application.status)}`}>{statusLabel(application.status)}</span>
+                </div>
+                <p className="mt-0.5 text-sm text-[hsl(var(--p-ink)/0.6)]">{application.grade} · Entry {application.entryYear} · Submitted {formatDate(application.submittedAt)}</p>
+                <div className="mt-2 flex flex-col gap-1.5 text-sm text-[hsl(var(--p-ink)/0.65)] sm:flex-row sm:gap-5">
+                  <a href={`mailto:${application.guardianEmail}`} className="inline-flex min-w-0 items-center gap-2 hover:text-[hsl(var(--p-emerald))]"><Mail size={14} /> <span className="truncate">{application.guardianEmail}</span></a>
+                  <a href={`tel:${application.guardianPhone}`} className="inline-flex items-center gap-2 hover:text-[hsl(var(--p-emerald))]"><Phone size={14} /> {application.guardianPhone}</a>
+                </div>
+              </div>
+            </div>
+            <label className="text-[11px] font-bold uppercase tracking-wider text-[hsl(var(--p-ink)/0.55)]">
+              Status
+              <select value={application.status} onChange={(event) => onStatus(application.id, event.target.value)} className="portal-input mt-1.5 block !py-2 text-sm normal-case tracking-normal">
+                {statuses.map((status) => <option key={status} value={status}>{statusLabel(status)}</option>)}
+              </select>
+            </label>
+          </div>
+        </article>
+      ))}
+    </div>
+  );
+}
 
 export default function Admin() {
   const { isLoaded, isSignedIn } = useAuth();
   const { user } = useUser();
   const { signOut } = useClerk();
   const [, setLocation] = useLocation();
+  const theme = usePortalTheme();
+  const [section, setSection] = useState<Section>("dashboard");
   const isAuthenticated = isLoaded && isSignedIn === true;
   const isAuthLoading = !isLoaded;
   const login = () => setLocation("/sign-in");
@@ -78,9 +137,9 @@ export default function Admin() {
       enabled: isAuthenticated && isAdmin,
     },
   });
+  const portalQuery = useGetPortalManagement({ query: { queryKey: getGetPortalManagementQueryKey(), enabled: isAuthenticated && isAdmin, retry: false } });
   const calendarsQuery = useListAcademicCalendar();
   const updateApplication = useUpdateAdmissionApplication();
-  const [calendarManagerOpen, setCalendarManagerOpen] = useState(false);
 
   const applications = applicationsQuery.data ?? [];
   const newApplications = useMemo(
@@ -154,171 +213,170 @@ export default function Admin() {
     );
   }
 
+  const email = user?.primaryEmailAddress?.emailAddress ?? "";
+  const groups: NavGroup<Section>[] = [
+    { items: [{ key: "dashboard", label: "Dashboard", icon: LayoutDashboard, testId: "tab-admin-dashboard" }] },
+    { label: "Families", items: [{ key: "admissions", label: "Admissions", icon: GraduationCap, badge: newApplications, testId: "tab-admin-admissions" }] },
+    { label: "Website", items: [
+      { key: "updates", label: "Live updates", icon: Clapperboard, testId: "tab-admin-updates" },
+      { key: "content", label: "Website content", icon: PenSquare, testId: "tab-admin-content" },
+      { key: "calendar", label: "Academic calendar", icon: CalendarDays, testId: "tab-admin-calendar" },
+      { key: "graphics", label: "Graphics studio", icon: Palette, testId: "tab-admin-graphics" },
+    ] },
+    { label: "Business", items: [{ key: "store", label: "Store and fees", icon: Store, testId: "tab-admin-store" }] },
+  ];
+  const portal = portalQuery.data;
+  const portalStats: [string, number][] = portal ? [
+    ["Classes", portal.classes.length],
+    ["Students", portal.students.filter((s) => s.active).length],
+    ["Teachers", portal.teachers.filter((t) => t.active).length],
+    ["Exams", portal.exams.length],
+  ] : [];
+  const quick: { label: string; detail: string; icon: typeof Store; go: Section; tile: string; testId?: string }[] = [
+    { label: "Publish a video", detail: "Live school updates", icon: Clapperboard, go: "updates", tile: "330 65% 52%" },
+    { label: "Edit website", detail: "Pages, news and photos", icon: PenSquare, go: "content", tile: "212 75% 48%" },
+    { label: "School store", detail: "Orders and fee payments", icon: Store, go: "store", tile: "41 80% 42%", testId: "link-admin-school-store" },
+    { label: "Upload calendar", detail: "Weekly calendar PDF", icon: CalendarDays, go: "calendar", tile: "152 55% 36%" },
+    { label: "Graphics studio", detail: "Flyers and banners", icon: Palette, go: "graphics", tile: "262 55% 55%" },
+    { label: "Admissions", detail: newApplications ? `${newApplications} waiting for you` : "Review families", icon: Users, go: "admissions", tile: "18 80% 50%" },
+  ];
+  const today = new Intl.DateTimeFormat("en-NG", { weekday: "long", day: "numeric", month: "long", year: "numeric" }).format(new Date());
+
+  const applicationsCard = (limit?: number) => (
+    <section className="portal-card overflow-hidden">
+      <div className="flex flex-col justify-between gap-3 border-b border-[hsl(var(--p-line))] p-5 sm:flex-row sm:items-center">
+        <div>
+          <h2 className="font-serif text-2xl font-semibold">Admission applications</h2>
+          <p className="mt-0.5 text-sm text-[hsl(var(--p-ink)/0.6)]">Follow up with families and track every application.</p>
+        </div>
+        {limit && applications.length > limit
+          ? <button type="button" className="portal-btn-ghost w-fit" onClick={() => setSection("admissions")}>View all {applications.length} <ArrowRight size={14} /></button>
+          : <span className="w-fit rounded-full bg-[hsl(var(--p-emerald-soft))] px-3 py-1 text-xs font-bold text-[hsl(var(--p-emerald))]">{applications.length} total</span>}
+      </div>
+      {applicationsQuery.isLoading ? (
+        <div className="flex items-center gap-3 p-8 text-[hsl(var(--p-ink)/0.6)]"><Loader2 className="animate-spin" size={19} /> Loading applications…</div>
+      ) : applicationsQuery.isError ? (
+        <p className="p-8 text-sm text-[hsl(var(--p-red))]">Applications could not be loaded. Refresh and try again.</p>
+      ) : applications.length === 0 ? (
+        <div className="p-10 text-center">
+          <GraduationCap className="mx-auto mb-4 text-[hsl(var(--p-ink)/0.4)]" size={34} />
+          <h3 className="font-serif text-xl font-semibold">No applications yet</h3>
+          <p className="mt-2 text-sm text-[hsl(var(--p-ink)/0.6)]">New submissions from the website will appear here.</p>
+        </div>
+      ) : <ApplicationList applications={applications} limit={limit} onStatus={(id, status) => void handleStatusChange(id, status)} />}
+    </section>
+  );
+
   return (
-    <div className="min-h-screen bg-muted/40 text-foreground">
+    <AppShell<Section>
+      subtitle="School office"
+      groups={groups} active={section} onNavigate={setSection}
+      title={TITLES[section]} eyebrow="Website management"
+      user={{ name: user?.firstName || "School office", detail: email || "Administrator" }}
+      theme={theme.theme} onTheme={theme.setTheme}
+      onSignOut={logout}
+      actions={<>
+        <Link href="/portal/manage" className="portal-btn !px-3 !py-2" data-testid="link-portal-manage"><BookOpenCheck size={16} /> <span className="sm:hidden">Portal</span><span className="hidden sm:inline">Learning portal</span></Link>
+        {/* Wrapper carries the breakpoint: .portal-btn-ghost sets display and would override it. */}
+        <div className="hidden sm:block"><a href={import.meta.env.BASE_URL} target="_blank" rel="noreferrer" className="portal-btn-ghost !px-2.5" aria-label="View the website"><ExternalLink size={16} /></a></div>
+      </>}
+      sidebarFooter={<>
+        <Link href="/portal/manage" className="portal-nav-item" data-testid="link-sidebar-portal"><BookOpenCheck size={17} aria-hidden="true" /><span>Learning portal</span></Link>
+        <a href={import.meta.env.BASE_URL} target="_blank" rel="noreferrer" className="portal-nav-item"><Globe size={17} aria-hidden="true" /><span>View website</span></a>
+      </>}
+    >
       <IdleSignOut enabled={isAdmin} onSignOut={logout} />
-      <header className="border-b border-border bg-secondary text-white">
-        <div className="container mx-auto flex items-center justify-between gap-5 px-4 py-5 md:px-8">
-          <Link href="/" className="flex items-center gap-3">
-            <img src={asset("/logo.jpg")} alt="New World Emerald logo" className="h-11 w-11 object-contain" />
-            <div>
-              <p className="font-serif text-lg font-bold">New World Emerald</p>
-              <p className="text-[10px] uppercase tracking-[0.2em] text-white/60">School office</p>
+      <div className="portal-rise space-y-6" key={section}>
+        {section === "dashboard" && <>
+          <section className="portal-hero relative overflow-hidden rounded-[28px] px-6 py-7 md:px-8 md:py-9">
+            <Sparkles className="absolute -right-4 -top-4 h-36 w-36 text-white/[0.06]" aria-hidden="true" />
+            <p className="text-xs font-bold uppercase tracking-[0.22em] text-[hsl(41_80%_70%)]">{today}</p>
+            <h2 className="mt-2 font-serif text-3xl font-semibold md:text-[40px] md:leading-tight">{greeting()}, school office.</h2>
+            <p className="mt-2 max-w-xl text-white/75">Review prospective families, keep the public website fresh and run the Learning portal from one place.</p>
+            <div className="mt-6 grid gap-3 sm:grid-cols-3">
+              {[
+                { icon: Users, value: applications.length, label: "Applications received", go: "admissions" as Section },
+                { icon: Clock3, value: newApplications, label: "New, needs attention", go: "admissions" as Section },
+                { icon: CalendarDays, value: calendarsQuery.data?.length ?? 0, label: "Calendar updates online", go: "calendar" as Section },
+              ].map((k) => (
+                <button key={k.label} type="button" onClick={() => setSection(k.go)} className="flex items-center gap-3 rounded-2xl bg-white/10 p-4 text-left ring-1 ring-white/10 transition-colors hover:bg-white/15">
+                  <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-white/10"><k.icon size={19} /></span>
+                  <span><span className="block text-2xl font-bold leading-none">{k.value}</span><span className="mt-1 block text-xs text-white/70">{k.label}</span></span>
+                </button>
+              ))}
             </div>
-          </Link>
-          <div className="flex items-center gap-3">
-            <span className="hidden text-sm text-white/60 sm:block">{user?.primaryEmailAddress?.emailAddress}</span>
-            <Link href="/portal/manage" className="rounded-full border border-white/20 px-4 py-2 text-sm font-semibold text-white/80 transition-colors hover:border-accent hover:text-accent" data-testid="link-portal-manage">Learning portal</Link>
-            <Link href="/" className="rounded-full border border-white/20 p-2.5 text-white/70 transition-colors hover:border-accent hover:text-accent" aria-label="Back to website">
-              <ExternalLink size={17} />
-            </Link>
-            <button onClick={logout} className="rounded-full border border-white/20 p-2.5 text-white/70 transition-colors hover:border-accent hover:text-accent" aria-label="Log out">
-              <LogOut size={17} />
-            </button>
-          </div>
-        </div>
-      </header>
+          </section>
 
-      <main className="container mx-auto px-4 py-10 md:px-8">
-        <div className="mb-10">
-          <p className="mb-2 text-sm font-bold uppercase tracking-[0.22em] text-primary">Website management</p>
-          <h1 className="font-serif text-4xl font-bold text-foreground md:text-5xl">Good morning, school office.</h1>
-          <p className="mt-3 max-w-2xl text-muted-foreground">
-            Review prospective families and keep the public website current from one place.
-          </p>
-          <a href="#school-store" data-testid="link-admin-school-store" className="mt-5 inline-flex items-center gap-2 rounded-xl border border-primary/20 bg-primary/5 px-4 py-2.5 text-sm font-bold text-primary transition-colors hover:border-primary/40 hover:bg-primary/10">
-            <Store size={16} /> Open School Store
-          </a>
-        </div>
-
-        <div className="mb-10 grid gap-4 sm:grid-cols-3">
-          <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
-            <div className="mb-5 flex items-center justify-between text-primary"><Users size={21} /><span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">All applications</span></div>
-            <p className="text-3xl font-bold">{applications.length}</p>
-            <p className="mt-1 text-sm text-muted-foreground">Submissions received</p>
-          </div>
-          <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
-            <div className="mb-5 flex items-center justify-between text-accent"><Clock3 size={21} /><span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Needs attention</span></div>
-            <p className="text-3xl font-bold">{newApplications}</p>
-            <p className="mt-1 text-sm text-muted-foreground">New applications</p>
-          </div>
-          <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
-            <div className="mb-5 flex items-center justify-between text-primary"><CalendarDays size={21} /><span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Published</span></div>
-            <p className="text-3xl font-bold">{calendarsQuery.data?.length ?? 0}</p>
-            <p className="mt-1 text-sm text-muted-foreground">Calendar updates online</p>
-          </div>
-        </div>
-
-        <div className="mb-8">
-          <LiveUpdatesManager />
-        </div>
-
-         <div className="mb-8">
-           <SiteContentManager />
-         </div>
-
-         <div className="mb-8">
-           <SchoolCommerceManager />
-         </div>
-
-        <div className="mb-8">
-          <GraphicsStudio />
-        </div>
-
-        <div className="grid gap-8 xl:grid-cols-[1.3fr_0.7fr]">
-          <section className="rounded-3xl border border-border bg-card shadow-sm">
-            <div className="flex flex-col justify-between gap-3 border-b border-border p-6 sm:flex-row sm:items-center">
-              <div>
-                <h2 className="font-serif text-2xl font-bold">Admission applications</h2>
-                <p className="mt-1 text-sm text-muted-foreground">Follow up with families and track every application.</p>
+          <section className="portal-card relative overflow-hidden border-l-4 border-l-[hsl(var(--p-gold))] p-6 md:p-7" data-testid="card-learning-portal">
+            <div className="flex flex-col gap-6 lg:flex-row lg:items-center">
+              <div className="flex min-w-0 flex-1 gap-4">
+                <span className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-[hsl(var(--p-gold-soft))] text-[hsl(var(--p-gold-ink))]"><School size={26} /></span>
+                <div className="min-w-0">
+                  <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-[hsl(var(--p-gold-ink))]">Learning portal</p>
+                  <h2 className="font-serif text-2xl font-semibold">Exams, results and student life</h2>
+                  <p className="mt-1 text-sm text-[hsl(var(--p-ink)/0.65)]">Students, teachers, CBT exams, report cards, events, gallery and photo approvals.</p>
+                </div>
               </div>
-              <span className="w-fit rounded-full bg-primary/10 px-3 py-1.5 text-xs font-bold text-primary">{applications.length} total</span>
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <Link href="/portal/manage" className="portal-btn justify-center" data-testid="button-open-learning-portal">Open Learning portal <ArrowRight size={15} /></Link>
+                <Link href="/portal" className="portal-btn-ghost justify-center">Student login page</Link>
+              </div>
             </div>
-            {applicationsQuery.isLoading ? (
-              <div className="flex items-center gap-3 p-8 text-muted-foreground"><Loader2 className="animate-spin" size={19} /> Loading applications…</div>
-            ) : applicationsQuery.isError ? (
-              <p className="p-8 text-sm text-destructive">Applications could not be loaded. Refresh and try again.</p>
-            ) : applications.length === 0 ? (
-              <div className="p-10 text-center">
-                <GraduationCap className="mx-auto mb-4 text-muted-foreground" size={34} />
-                <h3 className="font-serif text-xl font-bold">No applications yet</h3>
-                <p className="mt-2 text-sm text-muted-foreground">New submissions from the website will appear here.</p>
-              </div>
-            ) : (
-              <div className="divide-y divide-border">
-                {applications.map((application) => (
-                  <article key={application.id} className="p-6">
-                    <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-start">
-                      <div>
-                        <div className="flex flex-wrap items-center gap-3">
-                          <h3 className="font-serif text-xl font-bold">{application.studentFirstName} {application.studentLastName}</h3>
-                          <span className={`rounded-full px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide ${statusClass(application.status)}`}>{statusLabel(application.status)}</span>
-                        </div>
-                        <p className="mt-1 text-sm text-muted-foreground">{application.grade} · Entry {application.entryYear} · Submitted {formatDate(application.submittedAt)}</p>
-                        <div className="mt-4 flex flex-col gap-2 text-sm text-muted-foreground sm:flex-row sm:gap-5">
-                          <a href={`mailto:${application.guardianEmail}`} className="inline-flex items-center gap-2 hover:text-primary"><Mail size={15} /> {application.guardianEmail}</a>
-                          <a href={`tel:${application.guardianPhone}`} className="inline-flex items-center gap-2 hover:text-primary"><Phone size={15} /> {application.guardianPhone}</a>
-                        </div>
-                      </div>
-                      <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                        Update status
-                        <select value={application.status} onChange={(event) => void handleStatusChange(application.id, event.target.value)} className="mt-2 block rounded-xl border border-border bg-background px-3 py-2.5 text-sm font-medium normal-case tracking-normal text-foreground outline-none focus:ring-2 focus:ring-primary/30">
-                          {statuses.map((status) => <option key={status} value={status}>{statusLabel(status)}</option>)}
-                        </select>
-                      </label>
-                    </div>
-                  </article>
+            {portalStats.length > 0 && (
+              <dl className="mt-6 grid grid-cols-2 gap-3 border-t border-[hsl(var(--p-line))] pt-5 sm:grid-cols-4" data-testid="portal-stats">
+                {portalStats.map(([label, value]) => (
+                  <div key={label} className="rounded-xl bg-[hsl(var(--p-paper-2)/0.6)] px-4 py-3">
+                    <dt className="text-xs font-semibold text-[hsl(var(--p-ink)/0.6)]">{label}</dt>
+                    <dd className="text-2xl font-bold">{value}</dd>
+                  </div>
                 ))}
-              </div>
+              </dl>
             )}
           </section>
 
-          <aside className="space-y-8">
-            <section className="rounded-3xl border border-border bg-card p-6 shadow-sm">
-              <div className="mb-6 flex items-start justify-between gap-4">
-                <div>
-                  <h2 className="font-serif text-2xl font-bold">Academic calendar</h2>
-                  <p className="mt-1 text-sm text-muted-foreground">Manage what families see on the website.</p>
-                </div>
-                <CalendarDays className="text-primary" size={23} />
+          <section aria-label="Quick actions">
+            <h2 className="mb-3 text-lg font-semibold">Quick actions</h2>
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
+              {quick.map((q) => (
+                <button key={q.label} type="button" onClick={() => setSection(q.go)} className="portal-tile !min-h-[118px]" style={{ "--tile": q.tile } as React.CSSProperties} data-testid={q.testId}>
+                  <span className="portal-tile-icon"><q.icon size={19} aria-hidden="true" /></span>
+                  <span className="mt-auto flex items-end justify-between gap-2">
+                    <span className="min-w-0"><span className="block font-semibold">{q.label}</span><span className="block truncate text-xs text-[hsl(var(--p-ink)/0.6)]">{q.detail}</span></span>
+                    <ChevronRight size={16} className="shrink-0 opacity-50" />
+                  </span>
+                </button>
+              ))}
+            </div>
+          </section>
+
+          <div className="grid gap-6 xl:grid-cols-[1.4fr_0.6fr]">
+            {applicationsCard(4)}
+            <section className="portal-card p-5">
+              <div className="mb-4 flex items-start justify-between gap-4">
+                <div><h2 className="font-serif text-xl font-semibold">Academic calendar</h2><p className="mt-0.5 text-sm text-[hsl(var(--p-ink)/0.6)]">What families see this week.</p></div>
+                <CalendarDays className="text-[hsl(var(--p-emerald))]" size={21} />
               </div>
-              <div className="space-y-3">
+              <div className="space-y-2">
                 {(calendarsQuery.data ?? []).slice(0, 4).map((calendar) => (
-                  <a key={calendar.id} href={`/api/storage${calendar.objectPath}`} target="_blank" rel="noreferrer" className="flex items-center gap-3 rounded-xl border border-border p-3 transition-colors hover:border-primary/40 hover:bg-primary/5">
-                    <FileText className="shrink-0 text-primary" size={18} />
+                  <a key={calendar.id} href={`/api/storage${calendar.objectPath}`} target="_blank" rel="noreferrer" className="flex items-center gap-3 rounded-xl border border-[hsl(var(--p-line))] p-3 transition-colors hover:border-[hsl(var(--p-emerald)/0.4)]">
+                    <FileText className="shrink-0 text-[hsl(var(--p-emerald))]" size={17} />
                     <span className="min-w-0 flex-1 truncate text-sm font-medium">{calendar.title}</span>
-                    <ExternalLink className="shrink-0 text-muted-foreground" size={15} />
+                    <ExternalLink className="shrink-0 opacity-50" size={14} />
                   </a>
                 ))}
-                {(calendarsQuery.data ?? []).length === 0 && <p className="rounded-xl bg-muted/60 p-4 text-sm text-muted-foreground">No weekly calendars published yet.</p>}
+                {(calendarsQuery.data ?? []).length === 0 && <p className="rounded-xl bg-[hsl(var(--p-paper-2)/0.6)] p-4 text-sm text-[hsl(var(--p-ink)/0.6)]">No weekly calendars published yet.</p>}
               </div>
-              <button type="button" onClick={() => setCalendarManagerOpen(true)} data-testid="button-office-calendar-manager" className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-bold text-primary-foreground transition-colors hover:bg-primary/90">
-                <CalendarDays size={17} /> Open calendar uploader
-              </button>
+              <button type="button" onClick={() => setSection("calendar")} data-testid="button-office-calendar-manager" className="portal-btn mt-4 w-full justify-center"><CalendarDays size={16} /> Open calendar uploader</button>
             </section>
-
-            <section className="rounded-3xl bg-primary p-6 text-primary-foreground">
-              <CheckCircle2 className="mb-5 text-accent" size={24} />
-              <h2 className="font-serif text-2xl font-bold">Website is live</h2>
-              <p className="mt-2 text-sm leading-relaxed text-primary-foreground/75">
-                Calendar updates and admission submissions are connected to the public website in real time.
-              </p>
-              <Link href="/" className="mt-6 inline-flex items-center gap-2 text-sm font-bold text-accent hover:text-white">
-                Preview website <ExternalLink size={15} />
-              </Link>
-            </section>
-          </aside>
-        </div>
-      </main>
-      <Dialog open={calendarManagerOpen} onOpenChange={setCalendarManagerOpen}>
-        <DialogContent className="max-w-5xl" data-testid="dialog-office-calendar-manager">
-          <DialogHeader>
-            <DialogTitle>Manage academic calendars</DialogTitle>
-            <DialogDescription>Publish weekly updates for families from the School Office area.</DialogDescription>
-          </DialogHeader>
-          <AcademicCalendar officeMode />
-        </DialogContent>
-      </Dialog>
-    </div>
+          </div>
+        </>}
+        {section === "admissions" && applicationsCard()}
+        {section === "updates" && <LiveUpdatesManager />}
+        {section === "content" && <SiteContentManager />}
+        {section === "calendar" && <div className="portal-card p-5 md:p-6"><AcademicCalendar officeMode /></div>}
+        {section === "store" && <div id="school-store"><SchoolCommerceManager /></div>}
+        {section === "graphics" && <GraphicsStudio />}
+      </div>
+    </AppShell>
   );
 }

@@ -239,13 +239,20 @@ describe("Administrator access screen", () => {
     signIn();
     responses.set(accessUrl, () => json({ isAdmin: true }));
     openPage(<Admin />);
-    expect(await screen.findByRole("heading", { name: "Good morning, school office." })).toBeTruthy();
-    for (const name of ["updates", "content", "commerce", "graphics"]) {
-      expect(screen.getByTestId(`${name}-manager`)).toBeTruthy();
-    }
+    expect(await screen.findByRole("heading", { name: /^Good (morning|afternoon|evening), school office\.$/ })).toBeTruthy();
+    expect(screen.getByTestId("link-portal-manage").getAttribute("href")).toBe("/portal/manage");
+    expect(screen.getByTestId("card-learning-portal")).toBeTruthy();
     expect(await screen.findByText("No applications yet")).toBeTruthy();
     expect(requestsTo(applicationsUrl)).toHaveLength(1);
-    fireEvent.click(screen.getByRole("button", { name: "Log out" }));
+    // Each website tool has its own section in the sidebar.
+    for (const [tab, name] of [["updates", "updates"], ["content", "content"], ["store", "commerce"], ["graphics", "graphics"]]) {
+      fireEvent.click(screen.getByTestId(`tab-admin-${tab}`));
+      expect(screen.getByTestId(`${name}-manager`)).toBeTruthy();
+    }
+    fireEvent.click(screen.getByTestId("tab-admin-dashboard"));
+    fireEvent.click(screen.getByTestId("link-admin-school-store"));
+    expect(screen.getByTestId("commerce-manager")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Sign out" }));
     expect(clerk.signOut).toHaveBeenCalledWith({ redirectUrl: import.meta.env.BASE_URL });
   });
 
