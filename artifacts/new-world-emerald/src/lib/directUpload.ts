@@ -1,9 +1,28 @@
 // Admin-only upload code, kept apart from videoSources so the homepage does not load it.
 import { completeDirectUpload, signDirectUploadChunk, startDirectUpload } from "@workspace/api-client-react";
 
-/** Videos above this go straight to Cloudinary in pieces; smaller ones use the normal upload. */
-export const DIRECT_UPLOAD_FROM_BYTES = 95 * 1024 * 1024;
 export const MAX_VIDEO_BYTES = 500 * 1024 * 1024;
+const NETWORK_ERROR = "The internet connection dropped while uploading. Check your connection and try again; a strong Wi-Fi signal works best for videos.";
+
+/** The browser's own wording for a request that never got an answer ("Failed to fetch", "Load failed", ...). */
+export function isNetworkError(error: unknown) {
+  return error instanceof TypeError && /fetch|network|load failed/i.test(error.message);
+}
+
+/** Retries short steps (signing, confirming) after a dropped connection, a server hiccup or, when allowed, "not ready yet". */
+async function retrying<T>(step: () => Promise<T>, retryOn: number[] = [], tries = 4): Promise<T> {
+  for (let attempt = 1; ; attempt++) {
+    try {
+      return await step();
+    } catch (error) {
+      const status = (error as { status?: number }).status ?? 0;
+      // 503 means Cloudinary is not set up, which waiting will not fix.
+      const again = isNetworkError(error) || (status >= 500 && status !== 503) || retryOn.includes(status);
+      if (!again || attempt >= tries) throw isNetworkError(error) ? new Error(NETWORK_ERROR) : error;
+      await new Promise((r) => setTimeout(r, 1500 * attempt));
+    }
+  }
+}
 
 /**
  * Sends a big video from the browser to Cloudinary in pieces (Cloudinary's chunked
@@ -11,11 +30,11 @@ export const MAX_VIDEO_BYTES = 500 * 1024 * 1024;
  * Each piece is signed just before it is sent, so slow uploads do not expire.
  */
 export async function uploadVideoDirect(file: File, onProgress: (fraction: number) => void, fetchImpl: typeof fetch = fetch): Promise<string> {
-  const grant = await startDirectUpload({ name: file.name, size: file.size, contentType: file.type });
+  const grant = await retrying(() => startDirectUpload({ name: file.name, size: file.size, contentType: file.type }));
   const uploadId = `nwe-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
   for (let start = 0; start < file.size; start += grant.chunkSize) {
     const end = Math.min(start + grant.chunkSize, file.size);
-    const signed = await signDirectUploadChunk({ token: grant.token });
+    const signed = await retrying(() => signDirectUploadChunk({ token: grant.token }));
     const form = new FormData();
     form.append("file", file.slice(start, end), file.name);
     form.append("api_key", signed.apiKey);
@@ -33,7 +52,7 @@ export async function uploadVideoDirect(file: File, onProgress: (fraction: numbe
       } catch { response = null; }
       await new Promise((r) => setTimeout(r, 1500 * (attempt + 1)));
     }
-    if (!response) throw new Error("The connection dropped while uploading. Please try again.");
+    if (!response) throw new Error(NETWORK_ERROR);
     if (!response.ok) {
       let message = `HTTP ${response.status}`;
       try { message = ((await response.json()) as { error?: { message?: string } }).error?.message ?? message; } catch { /* not JSON */ }
@@ -43,6 +62,7 @@ export async function uploadVideoDirect(file: File, onProgress: (fraction: numbe
     }
     onProgress(end / file.size);
   }
-  const done = await completeDirectUpload({ token: grant.token });
+  // Cloudinary can take a moment to finish a big video after the last piece.
+  const done = await retrying(() => completeDirectUpload({ token: grant.token }), [409], 6);
   return done.objectPath;
 }

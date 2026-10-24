@@ -25,7 +25,7 @@ import {
   useUpdateLiveUpdate,
 } from "@workspace/api-client-react";
 import { YOUTUBE_CONTENT_TYPE, parseYouTubeId } from "@/lib/videoSources";
-import { DIRECT_UPLOAD_FROM_BYTES, MAX_VIDEO_BYTES, uploadVideoDirect } from "@/lib/directUpload";
+import { MAX_VIDEO_BYTES, isNetworkError, uploadVideoDirect } from "@/lib/directUpload";
 
 const MAX_VIDEO_SIZE = MAX_VIDEO_BYTES;
 const TOO_BIG = "Choose a video under 500 MB, or paste a YouTube link for longer videos.";
@@ -155,13 +155,17 @@ export function LiveUpdatesManager() {
     setFormError("");
     setUploadStage("preparing");
     try {
-      let objectPath: string;
-      if (selectedFile.size > DIRECT_UPLOAD_FROM_BYTES) {
-        // Big videos go from this browser straight to Cloudinary in pieces.
-        setUploadStage("uploading");
-        setProgress(0);
+      let objectPath: string | null = null;
+      // Videos go from this browser straight to Cloudinary in small pieces, each retried if the connection drops.
+      // Only when Cloudinary is not set up (503) does it fall back to one upload through the server.
+      setUploadStage("uploading");
+      setProgress(0);
+      try {
         objectPath = await uploadVideoDirect(selectedFile, setProgress);
-      } else {
+      } catch (error) {
+        if ((error as { status?: number }).status !== 503) throw error;
+      }
+      if (!objectPath) {
         const upload = await requestUploadUrl.mutateAsync({
           data: {
             name: selectedFile.name,
@@ -196,7 +200,9 @@ export function LiveUpdatesManager() {
       setIsComposerOpen(false);
       setSuccessMessage("Your video is now live on the website.");
     } catch (error) {
-      setFormError(error instanceof Error ? error.message : "Publishing failed. Please try again.");
+      setFormError(isNetworkError(error)
+        ? "The internet connection dropped while uploading. Check your connection and try again."
+        : error instanceof Error ? error.message : "Publishing failed. Please try again.");
       setUploadStage("idle");
     }
   };

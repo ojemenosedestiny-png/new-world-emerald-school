@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { parseYouTubeId, youTubeEmbedUrl, youTubeIdFromPath } from "../src/lib/videoSources";
-import { uploadVideoDirect } from "../src/lib/directUpload";
+import { isNetworkError, uploadVideoDirect } from "../src/lib/directUpload";
 
 const api = vi.hoisted(() => ({
   start: vi.fn(),
@@ -82,5 +82,38 @@ describe("big video uploads straight to Cloudinary", () => {
     const refused = (async () => new Response(JSON.stringify({ error: { message: "File size too large. Got 431000000. Maximum is 104857600." } }), { status: 400 })) as unknown as typeof fetch;
     await expect(uploadVideoDirect(file, () => {}, refused)).rejects.toThrow(/paste a YouTube link instead/);
     expect(api.complete).toHaveBeenCalledTimes(1);
+  });
+
+  it("rides out a dropped signing request and a video Cloudinary is still finishing", async () => {
+    setup();
+    api.sign.mockRejectedValueOnce(new TypeError("Failed to fetch"));
+    api.complete.mockReset();
+    api.complete.mockRejectedValueOnce(Object.assign(new Error("not finished"), { status: 409 })).mockResolvedValue({ objectPath: "/objects/uploads/xyz", bytes: 25 });
+    const ok = (async () => new Response("{}", { status: 200 })) as unknown as typeof fetch;
+    vi.useFakeTimers();
+    const run = uploadVideoDirect(file, () => {}, ok);
+    await vi.runAllTimersAsync();
+    await expect(run).resolves.toBe("/objects/uploads/xyz");
+    vi.useRealTimers();
+    expect(api.complete).toHaveBeenCalledTimes(2);
+  });
+
+  it("gives up quickly when Cloudinary is not set up, and explains a lost connection", async () => {
+    setup();
+    api.start.mockReset();
+    api.start.mockRejectedValue(Object.assign(new Error("Big video uploads need Cloudinary"), { status: 503 }));
+    await expect(uploadVideoDirect(file, () => {})).rejects.toMatchObject({ status: 503 });
+    expect(api.start).toHaveBeenCalledTimes(1);
+
+    setup();
+    const offline = (async () => { throw new TypeError("Failed to fetch"); }) as unknown as typeof fetch;
+    vi.useFakeTimers();
+    const run = uploadVideoDirect(file, () => {}, offline);
+    const check = expect(run).rejects.toThrow(/internet connection dropped/);
+    await vi.runAllTimersAsync();
+    await check;
+    vi.useRealTimers();
+    expect(isNetworkError(new TypeError("Failed to fetch"))).toBe(true);
+    expect(isNetworkError(new Error("HTTP 400"))).toBe(false);
   });
 });
