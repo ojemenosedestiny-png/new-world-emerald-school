@@ -12,9 +12,24 @@ import { v2 as cloudinary, type UploadApiResponse } from "cloudinary";
 export type ResourceType = "image" | "video" | "raw";
 export type Visibility = "public" | "private";
 
+// API keys are numbers; the secret and cloud name never contain "<" or ">", which
+// catches the "<your_api_key>:<your_api_secret>" placeholders Cloudinary's dashboard shows.
+const CLOUDINARY_URL_FORMAT = /^cloudinary:\/\/(\d{6,}):([^@\s<>]+)@([a-z0-9_-]+)\/?$/i;
+
 export function cloudinaryCredentials(url = process.env.CLOUDINARY_URL) {
-  const match = /^cloudinary:\/\/([^:@\s]+):([^@\s]+)@([a-z0-9_-]+)\/?$/i.exec(url?.trim() ?? "");
+  const match = CLOUDINARY_URL_FORMAT.exec(url?.trim() ?? "");
   return match ? { apiKey: match[1], apiSecret: decodeURIComponent(match[2]), cloudName: match[3] } : null;
+}
+
+/** Why a set CLOUDINARY_URL cannot be used, in words the school office can act on; null if fine or unset. */
+export function cloudinaryUrlProblem(url = process.env.CLOUDINARY_URL): string | null {
+  const value = url?.trim();
+  if (!value || CLOUDINARY_URL_FORMAT.test(value)) return null;
+  if (/[<>]|your_api|api_key|api_secret/i.test(value)) {
+    return "CLOUDINARY_URL still contains the <your_api_key> / <your_api_secret> placeholders. In Cloudinary open Settings → API Keys, copy the real API key and secret, and put them in place of the placeholders in Render.";
+  }
+  if (/^CLOUDINARY_URL\s*=/i.test(value)) return "CLOUDINARY_URL in Render starts with \"CLOUDINARY_URL=\". Paste only the part that starts with cloudinary://";
+  return "CLOUDINARY_URL has the wrong format. It must look like cloudinary://123456789012345:your-secret@your-cloud-name";
 }
 export const cloudinaryReady = () => cloudinaryCredentials() !== null;
 
@@ -72,7 +87,10 @@ export async function uploadToCloudinary(body: Buffer | Readable, opts: { public
 function friendlyError(error: unknown) {
   const message = (error as { message?: string } | undefined)?.message ?? "";
   if (/file size too large|too large/i.test(message)) return Object.assign(new Error("This file is larger than your Cloudinary plan allows."), { status: 413 });
-  return Object.assign(new Error("The file could not be saved to Cloudinary. Please try again."), { status: 502, cause: error });
+  // Cloudinary's reason (e.g. "Invalid Signature", "Unknown API key") tells the office what to fix; it holds no secrets.
+  const reason = message.split(/\. String to sign/i)[0].trim().slice(0, 160);
+  const hint = /signature|api_key|api key|cloud_name|cloud name/i.test(reason) ? " Check CLOUDINARY_URL in Render (API key, secret and cloud name)." : "";
+  return Object.assign(new Error(reason ? `Cloudinary refused the file: ${reason}.${hint}` : "The file could not be saved to Cloudinary. Please try again."), { status: 502, cause: error });
 }
 
 export async function deleteFromCloudinary(publicId: string, resourceType: ResourceType, visibility: Visibility) {

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { cloudinaryCredentials, cloudinaryReady, publicIdFor, resourceTypeFor, signUploadGrant, verifyUploadGrant } from "./cloudinary";
+import { cloudinaryCredentials, cloudinaryReady, cloudinaryUrlProblem, publicIdFor, resourceTypeFor, signUploadGrant, verifyUploadGrant } from "./cloudinary";
 
 const FAKE = "cloudinary://123456789012345:fake-secret-for-tests@demo-school";
 
@@ -45,3 +45,14 @@ test("upload links are signed, expire and cannot be altered", () => {
     if (saved === undefined) delete process.env.CLOUDINARY_URL; else process.env.CLOUDINARY_URL = saved;
   }
 });
+
+test("explains unusable CLOUDINARY_URL values, including the dashboard placeholders", () => {
+  assert.equal(cloudinaryCredentials("cloudinary://<your_api_key>:<your_api_secret>@demo-school"), null, "placeholders are not credentials");
+  assert.match(cloudinaryUrlProblem("cloudinary://<your_api_key>:<your_api_secret>@demo-school")!, /placeholders/);
+  assert.match(cloudinaryUrlProblem("cloudinary://123456789012345:<your_api_secret>@demo-school")!, /placeholders/);
+  assert.match(cloudinaryUrlProblem("CLOUDINARY_URL=" + FAKE)!, /starts with "CLOUDINARY_URL="/);
+  assert.match(cloudinaryUrlProblem("https://demo-school.cloudinary.com")!, /wrong format/);
+  assert.equal(cloudinaryUrlProblem(FAKE), null);
+  assert.equal(cloudinaryUrlProblem(""), null, "unset is not a problem");
+});
+

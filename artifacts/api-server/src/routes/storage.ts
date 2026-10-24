@@ -14,7 +14,7 @@ import { serveObject } from '../lib/serve-object';
 import { requireAuthentication } from '../lib/requireAuthentication';
 import { isWebsiteAdmin } from '../lib/website-admin';
 import {
-  cloudinaryCredentials, deleteFromCloudinary,
+  cloudinaryCredentials, cloudinaryUrlProblem, deleteFromCloudinary,
   cloudinaryReady, downloadUrl, pipeFromCloudinary, publicIdFor, publicUrl, resourceTypeFor,
   signUploadGrant, uploadToCloudinary, verifyUploadGrant, type ResourceType,
 } from '../lib/cloudinary';
@@ -98,6 +98,8 @@ router.get('/storage/status', (req: Request, res: Response) => {
 router.post('/storage/status', async (req: Request, res: Response) => {
   if (!adminOnly(req, res)) return;
   if (!cloudinaryReady()) {
+    const problem = cloudinaryUrlProblem();
+    if (problem) { res.json({ ok: false, detail: problem }); return; }
     res.json({ ok: false, detail: process.env.PRIVATE_OBJECT_DIR ? 'Bucket storage is configured. Upload a photo to try it.' : 'No media storage is configured yet. Add CLOUDINARY_URL in Render.' });
     return;
   }

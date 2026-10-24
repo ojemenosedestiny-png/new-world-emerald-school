@@ -4,7 +4,7 @@ import { eq } from "drizzle-orm";
 import { db, portalImages } from "@workspace/db";
 import { ObjectStorageService, objectStorageClient } from "./objectStorage";
 import { serveObject } from "./serve-object";
-import { check } from "./portal-auth";
+import { check, PortalError } from "./portal-auth";
 import { cloudinaryReady, deleteFromCloudinary, downloadUrl, pipeFromCloudinary, uploadToCloudinary } from "./cloudinary";
 
 export const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
@@ -45,7 +45,11 @@ const CLOUDINARY_PREFIX = "cloudinary:";
 const cloudinaryPublicId = (name: string) => `nwe/portal/images/${name.slice(CLOUDINARY_PREFIX.length)}`;
 const cloudinaryStore: ImageStore = {
   ready: cloudinaryReady,
-  save: async (name, body) => { await uploadToCloudinary(body, { publicId: cloudinaryPublicId(name), resourceType: "image", visibility: "private", maxBytes: MAX_IMAGE_BYTES }); },
+  save: async (name, body) => {
+    // Turn Cloudinary's reason into a message the portal shows instead of a generic error.
+    try { await uploadToCloudinary(body, { publicId: cloudinaryPublicId(name), resourceType: "image", visibility: "private", maxBytes: MAX_IMAGE_BYTES }); }
+    catch (error) { throw new PortalError((error as { status?: number }).status ?? 502, (error as Error).message); }
+  },
   remove: async (name) => { await deleteFromCloudinary(cloudinaryPublicId(name), "image", "private"); },
   serve: (_req, res, name, contentType) => pipeFromCloudinary(res, downloadUrl(cloudinaryPublicId(name), "image", "private", contentType), { "Content-Type": contentType }),
 };

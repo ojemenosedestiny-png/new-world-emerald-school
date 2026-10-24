@@ -26,8 +26,13 @@ fi
 if [ -n "${CLERK_WEBHOOK_SIGNING_SECRET:-}" ]; then
   check_key CLERK_WEBHOOK_SIGNING_SECRET '^whsec_[A-Za-z0-9+/=]+$'
 fi
+# Media storage is optional, so a bad value only warns: uploads explain the problem at runtime.
 if [ -n "${CLOUDINARY_URL:-}" ]; then
-  check_key CLOUDINARY_URL '^cloudinary://[^:@[:space:]]+:[^@[:space:]]+@[A-Za-z0-9_-]+/?$'
+  if [[ "$CLOUDINARY_URL" == *"<"* || "$CLOUDINARY_URL" == *">"* || "$CLOUDINARY_URL" == *your_api* ]]; then
+    echo "WARNING: CLOUDINARY_URL still contains the <your_api_key> / <your_api_secret> placeholders; uploads stay off until the real API key and secret (Cloudinary -> Settings -> API Keys) replace them." >&2
+  elif ! [[ "$CLOUDINARY_URL" =~ ^cloudinary://[0-9]{6,}:[^@\<\>[:space:]]+@[A-Za-z0-9_-]+/?$ ]]; then
+    echo "WARNING: CLOUDINARY_URL has the wrong format (expected cloudinary://API_KEY:API_SECRET@CLOUD_NAME); uploads stay off until it is fixed." >&2
+  fi
 fi
 
 # Render sets NODE_ENV=production for the build too; build tools are devDependencies.
