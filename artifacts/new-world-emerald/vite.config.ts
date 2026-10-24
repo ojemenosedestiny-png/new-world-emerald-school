@@ -66,6 +66,22 @@ export default defineConfig({
     manifest: true,
     outDir: path.resolve(import.meta.dirname, 'dist/public'),
     emptyOutDir: true,
+    rollupOptions: {
+      output: {
+        // Large libraries get their own long-cached files, so a deploy only changes
+        // the app's own code for returning visitors. Charts load only with the staff portal.
+        manualChunks(id) {
+          // Vite module ids always use forward slashes, on Windows too.
+          if (!id.includes('node_modules')) return undefined;
+          // clsx is used across the site; named here so it is not folded into the charts file.
+          if (/\/node_modules\/(react|react-dom|scheduler|clsx)\//.test(id)) return 'vendor-core';
+          if (/\/node_modules\/(framer-motion|motion-dom|motion-utils)\//.test(id)) return 'vendor-motion';
+          if (/\/node_modules\/@clerk\//.test(id)) return 'vendor-clerk';
+          if (/\/node_modules\/(recharts|recharts-scale|react-smooth|victory-vendor|d3-[^/]+|decimal\.js-light|lodash|fast-equals|eventemitter3)\//.test(id)) return 'vendor-charts';
+          return undefined;
+        },
+      },
+    },
   },
   server: {
     port,

@@ -1,3 +1,4 @@
+import "./lib/clerk-telemetry-off";
 import app from "./app";
 import { logger } from "./lib/logger";
 
