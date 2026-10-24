@@ -167,6 +167,29 @@ paths:
                     type: boolean
         "401":
           description: Authentication required
+  /storage/status:
+    get:
+      tags: [Website]
+      operationId: getMediaStorageStatus
+      summary: Which media storage is configured (website administrators)
+      responses:
+        "200":
+          description: Storage status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MediaStorageStatus"
+    post:
+      tags: [Website]
+      operationId: testMediaStorage
+      summary: Upload, load and delete a tiny test image to prove storage works (website administrators)
+      responses:
+        "200":
+          description: Test result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MediaStorageTest"
   /storage/uploads/request-url:
     post:
       tags: [Academic Calendar]
@@ -857,6 +880,19 @@ paths:
           description: Authentication required.
 components:
   schemas:
+    MediaStorageStatus:
+      type: object
+      required: [provider, ready, cloudName]
+      properties:
+        provider: { type: string, enum: [cloudinary, bucket, none] }
+        ready: { type: boolean }
+        cloudName: { type: [string, "null"] }
+    MediaStorageTest:
+      type: object
+      required: [ok, detail]
+      properties:
+        ok: { type: boolean }
+        detail: { type: string }
     PortalAlbumInput:
       $ref: "./media.yaml#/schemas/PortalAlbumInput"
     PortalAlbumPhoto:

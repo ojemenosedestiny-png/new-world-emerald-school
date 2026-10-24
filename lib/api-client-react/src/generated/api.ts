@@ -52,6 +52,8 @@ import type {
   LiveUpdate,
   LiveUpdateInput,
   LiveUpdateUpdate,
+  MediaStorageStatus,
+  MediaStorageTest,
   MyPhoto,
   PhotoCaption,
   PhotoDecision,
@@ -3646,6 +3648,154 @@ export function useGetLocalAccount<TData = Awaited<ReturnType<typeof getLocalAcc
 
 
 
+
+export const getGetMediaStorageStatusUrl = () => {
+
+
+
+
+  return `/api/storage/status`
+}
+
+/**
+ * @summary Which media storage is configured (website administrators)
+ */
+export const getMediaStorageStatus = async ( options?: RequestInit): Promise<MediaStorageStatus> => {
+
+  return customFetch<MediaStorageStatus>(getGetMediaStorageStatusUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetMediaStorageStatusQueryKey = () => {
+    return [
+    `/api/storage/status`
+    ] as const;
+    }
+
+
+export const getGetMediaStorageStatusQueryOptions = <TData = Awaited<ReturnType<typeof getMediaStorageStatus>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMediaStorageStatus>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetMediaStorageStatusQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMediaStorageStatus>>> = ({ signal }) => getMediaStorageStatus({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMediaStorageStatus>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetMediaStorageStatusQueryResult = NonNullable<Awaited<ReturnType<typeof getMediaStorageStatus>>>
+export type GetMediaStorageStatusQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Which media storage is configured (website administrators)
+ */
+
+export function useGetMediaStorageStatus<TData = Awaited<ReturnType<typeof getMediaStorageStatus>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMediaStorageStatus>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetMediaStorageStatusQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getTestMediaStorageUrl = () => {
+
+
+
+
+  return `/api/storage/status`
+}
+
+/**
+ * @summary Upload, load and delete a tiny test image to prove storage works (website administrators)
+ */
+export const testMediaStorage = async ( options?: RequestInit): Promise<MediaStorageTest> => {
+
+  return customFetch<MediaStorageTest>(getTestMediaStorageUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getTestMediaStorageMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof testMediaStorage>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof testMediaStorage>>, TError,void, TContext> => {
+
+const mutationKey = ['testMediaStorage'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof testMediaStorage>>, void> = () => {
+
+
+          return  testMediaStorage(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type TestMediaStorageMutationResult = NonNullable<Awaited<ReturnType<typeof testMediaStorage>>>
+
+    export type TestMediaStorageMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Upload, load and delete a tiny test image to prove storage works (website administrators)
+ */
+export const useTestMediaStorage = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof testMediaStorage>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof testMediaStorage>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getTestMediaStorageMutationOptions(options));
+    }
 
 export const getRequestUploadUrlUrl = () => {
 

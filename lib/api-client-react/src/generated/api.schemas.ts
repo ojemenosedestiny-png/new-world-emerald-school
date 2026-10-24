@@ -5,6 +5,27 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+export type MediaStorageStatusProvider = typeof MediaStorageStatusProvider[keyof typeof MediaStorageStatusProvider];
+
+
+export const MediaStorageStatusProvider = {
+  cloudinary: 'cloudinary',
+  bucket: 'bucket',
+  none: 'none',
+} as const;
+
+export interface MediaStorageStatus {
+  provider: MediaStorageStatusProvider;
+  ready: boolean;
+  /** @nullable */
+  cloudName: string | null;
+}
+
+export interface MediaStorageTest {
+  ok: boolean;
+  detail: string;
+}
+
 export interface PortalAlbumInput {
   /**
      * @minLength 1

@@ -45,6 +45,7 @@ import { GraphicsStudio } from "@/components/GraphicsStudio";
 import { SchoolCommerceManager } from "@/components/SchoolCommerceManager";
 import { SiteContentManager } from "@/components/SiteContentManager";
 import { AcademicCalendar } from "@/components/AcademicCalendar";
+import { MediaStorageCard } from "@/components/MediaStorageCard";
 import { AppShell, type NavGroup } from "@/portal/shell/AppShell";
 import { usePortalTheme } from "@/portal/shell/theme";
 import { trackEvent } from "@/lib/analytics";
@@ -351,6 +352,7 @@ export default function Admin() {
 
           <div className="grid gap-6 xl:grid-cols-[1.4fr_0.6fr]">
             {applicationsCard(4)}
+            <div className="space-y-6">
             <section className="portal-card p-5">
               <div className="mb-4 flex items-start justify-between gap-4">
                 <div><h2 className="font-serif text-xl font-semibold">Academic calendar</h2><p className="mt-0.5 text-sm text-[hsl(var(--p-ink)/0.6)]">What families see this week.</p></div>
@@ -368,6 +370,8 @@ export default function Admin() {
               </div>
               <button type="button" onClick={() => setSection("calendar")} data-testid="button-office-calendar-manager" className="portal-btn mt-4 w-full justify-center"><CalendarDays size={16} /> Open calendar uploader</button>
             </section>
+            <MediaStorageCard />
+            </div>
           </div>
         </>}
         {section === "admissions" && applicationsCard()}

@@ -1,10 +1,29 @@
 # Deploying to Render
 
-The website and API run as **one Render web service** (the API serves the built site), with a **Render Postgres** database. Uploaded photos and PDFs go to a **Google Cloud Storage** bucket, and sign-in uses **your own Clerk app**.
+The website and API run as **one Render web service** (the API serves the built site), with a **Render Postgres** database. Uploaded photos, videos and PDFs go to **Cloudinary** (or, alternatively, a Google Cloud Storage bucket), and sign-in uses **your own Clerk app**.
 
 Replit keeps working unchanged: every Render-only behaviour is switched on by an environment variable Replit does not set.
 
-## 1. Google Cloud Storage (photos and PDFs)
+## 1. Media storage: Cloudinary (recommended)
+
+Cloudinary stores every upload: website photos, live-update videos, calendar PDFs, store photos, and the Learning portal's exam PDFs and student/staff photos.
+
+1. Create a free account at <https://cloudinary.com> (choose the **Programmable Media** product).
+2. Open **Dashboard** (or **Settings → API Keys**) and copy the **API environment variable**. It looks like `CLOUDINARY_URL=cloudinary://123456789012345:abcdEFGH...@your-cloud-name`.
+3. In Render → your service → **Environment**, add `CLOUDINARY_URL` and paste only the part **after** `CLOUDINARY_URL=` (it starts with `cloudinary://`). Save; Render redeploys.
+4. Sign in to `/admin`. On the dashboard, the **Media storage** card should say **Cloudinary**. Press **Test connection**: it uploads a tiny image, loads it back (publicly and privately) and deletes it.
+5. Upload a real photo (for example a store product) and check it shows on the site.
+
+How files are kept:
+- **Website media** is public and served from Cloudinary's fast CDN (`res.cloudinary.com`).
+- **Portal files** (exam PDFs, student and staff photos) are stored as Cloudinary *authenticated* (private) files and only reach people through the portal's permission checks.
+- Everything lives under the `nwe/` folder in your Media Library. Do not rename or delete those files there, or the site will lose them.
+
+Limits on the free plan: images and PDFs up to 10 MB, videos up to 100 MB. If uploads stop working, the Test connection button shows Cloudinary's own error message. Never paste the API secret anywhere except Render.
+
+If `CLOUDINARY_URL` is not set, the site uses the Google Cloud bucket below instead.
+
+## 1b. Google Cloud Storage (alternative to Cloudinary)
 
 1. In Google Cloud Console, create a bucket (e.g. `nwe-school-files`). Keep **public access prevention** on; the API serves files itself.
 2. Create a service account, then grant it **Storage Object Admin** on that bucket only.

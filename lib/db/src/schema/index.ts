@@ -14,5 +14,7 @@ export * from "./portal-materials";
 export * from "./portal-notices";
 export * from "./portal-files";
 export * from "./portal-reports";
-export * from "./portal-security";export * from "./portal-community";
+export * from "./portal-security";
+export * from "./portal-community";
 export * from "./portal-media";
+export * from "./media-objects";

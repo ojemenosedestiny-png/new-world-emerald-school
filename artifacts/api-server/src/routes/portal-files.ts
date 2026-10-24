@@ -6,6 +6,11 @@ import { check, classAllowed, portalActor, studentOnly } from "../lib/portal-aut
 import { ObjectStorageService, objectStorageClient } from "../lib/objectStorage";
 import { serveObject } from "../lib/serve-object";
 import { extractPdfText, questionsFromText } from "../lib/portal-pdf";
+import { cloudinaryReady, deleteFromCloudinary, downloadUrl, pipeFromCloudinary, uploadToCloudinary } from "../lib/cloudinary";
+
+// PDFs stored on Cloudinary are private and named "cloudinary:<public id>"; others are in the bucket.
+const CLOUDINARY_PREFIX = "cloudinary:";
+const MAX_PDF_BYTES = 15 * 1024 * 1024;
 
 export const portalFilesRouter = Router();
 const storage = new ObjectStorageService();
@@ -42,10 +47,20 @@ portalFilesRouter.post("/import", async (req, res, next) => {
     const questions = text ? questionsFromText(text) : [];
     if (!questions.length && !warning) warning = "No numbered questions were detected. This may be a scanned paper. Use original-PDF mode with answer slots, or upload a text-based PDF.";
     if (questions.length) warning = "Draft extraction only: review every question, choice, mark and answer key. Scanned images, diagrams and complex layouts are not converted. The original PDF must not contain an answer key if shown to students.";
-    const file = objectFile(id);
-    await file.save(req.body, { contentType: "application/pdf", resumable: false, metadata: { cacheControl: "private, no-store" } });
-    try { await db.insert(portalFiles).values({ id, classId, objectName: id }); }
-    catch (error) { await file.delete({ ignoreNotFound: true }); throw error; }
+    let objectName = id;
+    let discard: () => Promise<unknown>;
+    if (cloudinaryReady()) {
+      const publicId = `nwe/portal/files/${id}.pdf`;
+      await uploadToCloudinary(req.body, { publicId, resourceType: "raw", visibility: "private", maxBytes: MAX_PDF_BYTES });
+      objectName = CLOUDINARY_PREFIX + publicId;
+      discard = () => deleteFromCloudinary(publicId, "raw", "private");
+    } else {
+      const file = objectFile(id);
+      await file.save(req.body, { contentType: "application/pdf", resumable: false, metadata: { cacheControl: "private, no-store" } });
+      discard = () => file.delete({ ignoreNotFound: true });
+    }
+    try { await db.insert(portalFiles).values({ id, classId, objectName }); }
+    catch (error) { await discard().catch(() => {}); throw error; }
     res.json({ fileId: id, questions, warning, extractedText: text });
   } finally { importing.delete(importKey); }
 });
@@ -68,5 +83,11 @@ portalFilesRouter.get("/files/:id", async (req, res) => {
   }
   res.setHeader("X-Content-Type-Options", "nosniff");
   res.setHeader("Content-Disposition", 'inline; filename="school-document.pdf"');
+  if (file.objectName.startsWith(CLOUDINARY_PREFIX)) {
+    await pipeFromCloudinary(res, downloadUrl(file.objectName.slice(CLOUDINARY_PREFIX.length), "raw", "private", "application/pdf"), {
+      "Content-Type": "application/pdf", "Cache-Control": "private, no-store",
+    });
+    return;
+  }
   await serveObject(req, res, storage, async () => objectFile(file.objectName), { noStore: true });
 });

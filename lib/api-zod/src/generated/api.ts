@@ -1656,6 +1656,25 @@ export const GetLocalAccountResponse = zod.object({
 
 
 /**
+ * @summary Which media storage is configured (website administrators)
+ */
+export const GetMediaStorageStatusResponse = zod.object({
+  "provider": zod.enum(['cloudinary', 'bucket', 'none']),
+  "ready": zod.boolean(),
+  "cloudName": zod.string().nullable()
+})
+
+
+/**
+ * @summary Upload, load and delete a tiny test image to prove storage works (website administrators)
+ */
+export const TestMediaStorageResponse = zod.object({
+  "ok": zod.boolean(),
+  "detail": zod.string()
+})
+
+
+/**
  * @summary Request a protected upload URL
  */
 

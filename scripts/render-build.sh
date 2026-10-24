@@ -22,6 +22,10 @@ if [ "$VITE_CLERK_PUBLISHABLE_KEY" != "$CLERK_PUBLISHABLE_KEY" ]; then
   echo "ERROR: VITE_CLERK_PUBLISHABLE_KEY and CLERK_PUBLISHABLE_KEY must be the same key." >&2
   exit 1
 fi
+# Optional: Cloudinary media storage, checked only when set.
+if [ -n "${CLOUDINARY_URL:-}" ]; then
+  check_key CLOUDINARY_URL '^cloudinary://[^:@[:space:]]+:[^@[:space:]]+@[A-Za-z0-9_-]+/?$'
+fi
 
 # Render sets NODE_ENV=production for the build too; build tools are devDependencies.
 pnpm install --frozen-lockfile --prod=false

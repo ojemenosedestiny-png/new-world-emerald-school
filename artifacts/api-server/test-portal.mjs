@@ -14,7 +14,7 @@ try {
   await build({
     entryPoints: [fileURLToPath(new URL(`./src/lib/${suite}.test.ts`, import.meta.url))],
     outfile: filename, bundle: true, platform: "node", format: "esm",
-    external: ["pdfjs-dist", "pdfjs-dist/*", "@google-cloud/*", "google-auth-library"],
+    external: ["cloudinary", "pdfjs-dist", "pdfjs-dist/*", "@google-cloud/*", "google-auth-library"],
     banner: { js: `import { createRequire as __createRequire } from "node:module"; const require = __createRequire(${JSON.stringify(fileURLToPath(new URL("./package.json", import.meta.url)))});` },
   });
   // Resolve external packages from the app rather than the temporary output.

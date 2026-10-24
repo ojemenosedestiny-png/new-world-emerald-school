@@ -38,6 +38,9 @@ services:
         sync: false
       - key: VITE_CLERK_PUBLISHABLE_KEY
         sync: false
+      # Media storage: Cloudinary (recommended). Takes priority over the bucket below.
+      - key: CLOUDINARY_URL
+        sync: false
       - key: GCS_SERVICE_ACCOUNT_JSON
         sync: false
       - key: PRIVATE_OBJECT_DIR

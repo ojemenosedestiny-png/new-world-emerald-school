@@ -17,10 +17,12 @@ try {
     platform: 'node',
     format: 'esm',
     outExtension: { '.js': '.mjs' },
+    // Bundled CommonJS packages (Clerk, Cloudinary helpers) call require(); give them one.
+    banner: { js: `import { createRequire as __createRequire } from "node:module"; const require = __createRequire(${JSON.stringify(fileURLToPath(new URL('./package.json', import.meta.url)))});` },
     plugins: [{
       name: 'resolve-storage-test-externals',
       setup(build) {
-        build.onResolve({ filter: /^(@google-cloud\/storage|express)$/ }, (args) => ({
+        build.onResolve({ filter: /^(@google-cloud\/storage|express|cloudinary)$/ }, (args) => ({
           // A file:// URL is a valid ESM specifier on every OS; a bare C:\ path is not.
           path: import.meta.resolve(args.path), external: true,
         }));

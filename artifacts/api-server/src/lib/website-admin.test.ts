@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import type { Request, Response } from "express";
-import { isWebsiteAdmin, protectWebsiteManagement } from "./website-admin";
+import { isPublicWebsiteRequest, isWebsiteAdmin, protectWebsiteManagement } from "./website-admin";
 
 // Synthetic settings are local to this isolated test process.
 process.env.SCHOOL_ADMIN_EMAILS = "approved@example.com";
@@ -89,6 +89,13 @@ test("routes that are not explicitly public fail closed", () => {
     assert.deepEqual(check(path, method, "guest"), { status: 401, allowed: false });
     assert.deepEqual(check(path, method, "visitor"), { status: 403, allowed: false });
     assert.deepEqual(check(path, method, "admin"), { status: undefined, allowed: true });
+  }
+});
+
+test("only signed upload addresses accept files without signing in", () => {
+  assert.equal(isPublicWebsiteRequest("PUT", "/storage/uploads/eyJpZCI6IjEifQ.c2lnbmF0dXJl"), true);
+  for (const [method, path] of [["PUT", "/storage/uploads/no-signature"], ["PUT", "/storage/uploads/a.b/extra"], ["POST", "/storage/uploads/a.b"], ["DELETE", "/storage/uploads/a.b"]]) {
+    assert.equal(isPublicWebsiteRequest(method, path), false, `${method} ${path}`);
   }
 });
 

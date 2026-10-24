@@ -64,6 +64,9 @@ export function isPublicWebsiteRequest(method: string, rawPath: string): boolean
   const normalizedMethod = method === "HEAD" ? "GET" : method;
   if (normalizedMethod === "GET") return publicReads.includes(path) || publicReadPatterns.some((pattern) => pattern.test(path));
   if (normalizedMethod === "POST") return publicSubmissions.includes(path);
+  // Cloudinary uploads: the browser sends the file without cookies to a signed address,
+  // and the route itself verifies that signature (see routes/storage.ts).
+  if (normalizedMethod === "PUT") return /^\/storage\/uploads\/[a-z0-9_-]+\.[a-z0-9_-]+$/.test(path);
   return false;
 }
 
