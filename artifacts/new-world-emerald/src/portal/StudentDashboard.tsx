@@ -6,7 +6,7 @@ import {
   getGetPortalSessionQueryKey,
   type PortalSession, type PortalDashboardExamsItem, type PortalDashboardAttemptsItem,
 } from "@workspace/api-client-react";
-import { Award, BookOpen, CalendarClock, CalendarDays, ClipboardList, FileBarChart, FileText, Home, Images, KeyRound, LayoutGrid, Megaphone, PlayCircle, Timer, UserRound, Users } from "lucide-react";
+import { Award, BookOpen, CalendarCheck, CalendarClock, CalendarDays, ClipboardList, FileBarChart, FileText, Home, Images, KeyRound, LayoutGrid, Megaphone, NotebookPen, PlayCircle, Timer, UserRound, Users } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { EmptyState, ErrorPanel, Skeleton, StatusPill } from "./ui";
@@ -19,6 +19,8 @@ import { StudentProfile } from "./StudentProfile";
 import { StudentEvents } from "./StudentEvents";
 import { StaffDirectory } from "./StaffDirectory";
 import { StudentGallery } from "./StudentGallery";
+import { StudentAssignments } from "./StudentAssignments";
+import { StudentAttendance } from "./StudentAttendance";
 import { AppShell, type NavGroup } from "./shell/AppShell";
 import { IdleSignOut } from "@/components/IdleSignOut";
 import type { usePortalTheme } from "./shell/theme";
@@ -98,18 +100,20 @@ export function StudentDashboard({ session, theme }: { session: PortalSession; t
   const exams = useMemo(() => sortStudentExams(data?.exams ?? [], data?.attempts ?? []), [data]);
   const average = studentAverage(data?.attempts ?? []);
 
-  const titles: Record<StudentSection, string> = { home: "Home", exams: "Exams", results: "GradeSheet", reports: "Report cards", revision: "Library", notices: "Notices", profile: "Profile", events: "Events", staff: "Staffs", gallery: "Gallery" };
+  const titles: Record<StudentSection, string> = { home: "Home", exams: "Exams", results: "GradeSheet", reports: "Report cards", revision: "Library", notices: "Notices", profile: "Profile", events: "Events", staff: "Staffs", gallery: "Gallery", attendance: "Attendance", assignments: "Assignments" };
   const openCount = (data?.exams ?? []).filter((e) => examWindow(e.startsAt, e.endsAt) === "open" && attemptByExam.get(e.id)?.status !== "submitted" && attemptByExam.get(e.id)?.status !== "marked").length;
   const groups: NavGroup<StudentSection>[] = [
     { items: [{ key: "home", label: "Home", icon: Home, testId: "tab-home" }, { key: "profile", label: "Profile", icon: UserRound, testId: "tab-profile" }] },
     { label: "Learning", items: [
       { key: "exams", label: "Exams", icon: ClipboardList, badge: openCount, testId: "tab-exams" },
+      { key: "assignments", label: "Assignments", icon: NotebookPen, testId: "tab-assignments" },
       { key: "results", label: "GradeSheet", icon: Award, testId: "tab-results" },
       { key: "reports", label: "Report cards", icon: FileBarChart, testId: "tab-reports" },
       { key: "revision", label: "Library", icon: BookOpen, testId: "tab-revision" },
       { key: "notices", label: "Notices", icon: Megaphone, testId: "tab-notices" },
     ] },
     { label: "School life", items: [
+      { key: "attendance", label: "Attendance", icon: CalendarCheck, testId: "tab-attendance" },
       { key: "events", label: "Events", icon: CalendarDays, testId: "tab-events" },
       { key: "staff", label: "Staffs", icon: Users, testId: "tab-staff" },
       { key: "gallery", label: "Gallery", icon: Images, testId: "tab-gallery" },
@@ -146,6 +150,8 @@ export function StudentDashboard({ session, theme }: { session: PortalSession; t
             {section === "events" && <StudentEvents data={data} onGo={setSection} />}
             {section === "staff" && <StaffDirectory />}
             {section === "gallery" && <StudentGallery />}
+            {section === "attendance" && <StudentAttendance />}
+            {section === "assignments" && <StudentAssignments />}
 
             {section === "exams" && <div className="space-y-3">
               {data.exams.length === 0 && orphanAttempts.length === 0 ? (

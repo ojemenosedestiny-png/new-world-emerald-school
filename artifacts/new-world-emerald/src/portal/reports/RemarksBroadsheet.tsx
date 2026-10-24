@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
-import type { ReportWorkspace, ReportTerm } from "@workspace/api-client-react";
+import { getAttendanceSummary, type ReportWorkspace, type ReportTerm } from "@workspace/api-client-react";
 import { Eye, Printer, Save, Sparkles } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { EmptyState } from "../ui";
+import { errorMessage } from "../lib";
 import { ordinal, printReportCards, type PrintableReport } from "./reportCard";
 import { suggestedRemarks } from "./scoreSheet";
 import { useReportCommand } from "./useReportCommand";
@@ -23,6 +24,25 @@ export function RemarksEditor({ ws, term, locked }: { ws: ReportWorkspace; term:
   }, [ws.students, ws.cards]);
   const [draft, setDraft] = useState(saved);
   const [daysOpenAll, setDaysOpenAll] = useState("");
+  const { toast } = useToast();
+  const [range, setRange] = useState({ from: "", to: "" });
+  const [filling, setFilling] = useState(false);
+  // Days present and days opened from the class register for the term's dates; staff can still adjust before saving.
+  const fillFromRegister = async () => {
+    if (!ws.classId || !range.from || !range.to) return;
+    setFilling(true);
+    try {
+      const summary = await getAttendanceSummary({ classId: ws.classId, from: range.from, to: range.to });
+      setDraft((p) => {
+        const next = { ...p };
+        for (const row of summary.students) if (next[row.id]) next[row.id] = { ...next[row.id], daysPresent: String(row.daysPresent), daysOpen: String(summary.daysOpen) };
+        return next;
+      });
+      toast({ title: summary.daysOpen ? `Filled from ${summary.daysOpen} register days` : "No register was taken in those dates", description: summary.daysOpen ? "Check the numbers, then save." : undefined });
+    } catch (error) {
+      toast({ variant: "destructive", title: "Could not read the register", description: errorMessage(error) });
+    } finally { setFilling(false); }
+  };
   useEffect(() => { setDraft(saved); }, [saved]);
   if (!ws.students.length) return <EmptyState icon={<Users size={22} />} title="No active students" body="Enrol students in this class to write their remarks." />;
 
@@ -41,6 +61,10 @@ export function RemarksEditor({ ws, term, locked }: { ws: ReportWorkspace; term:
           <input inputMode="numeric" className="portal-input !w-24 !py-1.5" value={daysOpenAll} disabled={locked} onChange={(e) => setDaysOpenAll(e.target.value)} data-testid="input-days-open-all" />
         </label>
         <button className="portal-btn-ghost" disabled={locked || !daysOpenAll.trim()} onClick={() => setDraft((p) => Object.fromEntries(Object.entries(p).map(([k, v]) => [k, { ...v, daysOpen: daysOpenAll.trim() }])))} data-testid="button-apply-days-open">Apply to all</button>
+        <span className="hidden h-6 w-px bg-[hsl(var(--p-line))] sm:block" aria-hidden="true" />
+        <label className="flex items-center gap-2 text-sm">Register from<input type="date" className="portal-input !w-auto !py-1.5" value={range.from} disabled={locked} onChange={(e) => setRange({ ...range, from: e.target.value })} data-testid="input-register-from" /></label>
+        <label className="flex items-center gap-2 text-sm">to<input type="date" className="portal-input !w-auto !py-1.5" value={range.to} disabled={locked} onChange={(e) => setRange({ ...range, to: e.target.value })} data-testid="input-register-to" /></label>
+        <button className="portal-btn-ghost" disabled={locked || filling || !range.from || !range.to || range.from > range.to || !ws.classId} onClick={() => void fillFromRegister()} data-testid="button-fill-register">{filling ? "Reading..." : "Fill from attendance register"}</button>
         <button className="portal-btn ml-auto" disabled={locked || !changed.length || invalid || cmd.pending} onClick={() => void save()} data-testid="button-save-remarks"><Save size={14} /> {cmd.pending ? "Saving..." : changed.length ? `Save ${changed.length} ${changed.length === 1 ? "change" : "changes"}` : "Saved"}</button>
       </div>
       {invalid && <p className="text-xs text-[hsl(var(--p-red))]">Days must be whole numbers, and days present cannot exceed days opened.</p>}

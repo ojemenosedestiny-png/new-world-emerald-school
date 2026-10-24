@@ -31,6 +31,11 @@ import type {
   AdmissionApplicationInput,
   AdmissionApplicationReceipt,
   AdmissionApplicationStatusUpdate,
+  AssignmentImage,
+  AssignmentInput,
+  AttendanceSave,
+  AttendanceSheet,
+  AttendanceSummary,
   AuditPage,
   ClassFeeSchedule,
   ClassFeeScheduleInput,
@@ -47,6 +52,8 @@ import type {
   FeePaymentReportReceipt,
   FeePaymentReportUpdate,
   ForgotPasswordInput,
+  GetAttendanceSheetParams,
+  GetAttendanceSummaryParams,
   GetAuditLogParams,
   GetLocalAccount200,
   GetReportWorkspaceParams,
@@ -60,6 +67,7 @@ import type {
   LiveUpdateUpdate,
   MediaStorageStatus,
   MediaStorageTest,
+  MyAttendance,
   MyPhoto,
   PaymentProof,
   PaymentProofAttach,
@@ -91,6 +99,7 @@ import type {
   SecuritySessions,
   SiteContent,
   SiteContentInput,
+  StaffAssignment,
   StaffDirectoryEntry,
   StoreOrder,
   StoreOrderInput,
@@ -100,7 +109,11 @@ import type {
   StoreProductInput,
   StoreProductUpdate,
   StudentActivity,
+  StudentAssignment,
   StudentReports,
+  SubmissionInput,
+  SubmissionMark,
+  SubmissionRow,
   UploadMetadata,
   UploadUrlResponse,
   WebsiteAdminAccess
@@ -2207,6 +2220,904 @@ export function useGetStaffDirectory<TData = Awaited<ReturnType<typeof getStaffD
 
 
 
+
+export const getGetAttendanceSheetUrl = (params: GetAttendanceSheetParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/portal/attendance?${stringifiedParams}` : `/api/portal/attendance`
+}
+
+export const getAttendanceSheet = async (params: GetAttendanceSheetParams, options?: RequestInit): Promise<AttendanceSheet> => {
+
+  return customFetch<AttendanceSheet>(getGetAttendanceSheetUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetAttendanceSheetQueryKey = (params?: GetAttendanceSheetParams,) => {
+    return [
+    `/api/portal/attendance`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetAttendanceSheetQueryOptions = <TData = Awaited<ReturnType<typeof getAttendanceSheet>>, TError = ErrorType<unknown>>(params: GetAttendanceSheetParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAttendanceSheet>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetAttendanceSheetQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAttendanceSheet>>> = ({ signal }) => getAttendanceSheet(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAttendanceSheet>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetAttendanceSheetQueryResult = NonNullable<Awaited<ReturnType<typeof getAttendanceSheet>>>
+export type GetAttendanceSheetQueryError = ErrorType<unknown>
+
+
+
+export function useGetAttendanceSheet<TData = Awaited<ReturnType<typeof getAttendanceSheet>>, TError = ErrorType<unknown>>(
+ params: GetAttendanceSheetParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAttendanceSheet>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetAttendanceSheetQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getSaveAttendanceSheetUrl = () => {
+
+
+
+
+  return `/api/portal/attendance`
+}
+
+export const saveAttendanceSheet = async (attendanceSave: AttendanceSave, options?: RequestInit): Promise<AttendanceSheet> => {
+
+  return customFetch<AttendanceSheet>(getSaveAttendanceSheetUrl(),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(attendanceSave)
+  }
+);}
+
+
+
+
+
+export const getSaveAttendanceSheetMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof saveAttendanceSheet>>, TError,{data: BodyType<AttendanceSave>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof saveAttendanceSheet>>, TError,{data: BodyType<AttendanceSave>}, TContext> => {
+
+const mutationKey = ['saveAttendanceSheet'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof saveAttendanceSheet>>, {data: BodyType<AttendanceSave>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  saveAttendanceSheet(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SaveAttendanceSheetMutationResult = NonNullable<Awaited<ReturnType<typeof saveAttendanceSheet>>>
+    export type SaveAttendanceSheetMutationBody = BodyType<AttendanceSave>
+    export type SaveAttendanceSheetMutationError = ErrorType<unknown>
+
+    export const useSaveAttendanceSheet = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof saveAttendanceSheet>>, TError,{data: BodyType<AttendanceSave>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof saveAttendanceSheet>>,
+        TError,
+        {data: BodyType<AttendanceSave>},
+        TContext
+      > => {
+      return useMutation(getSaveAttendanceSheetMutationOptions(options));
+    }
+
+export const getGetAttendanceSummaryUrl = (params: GetAttendanceSummaryParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/portal/attendance/summary?${stringifiedParams}` : `/api/portal/attendance/summary`
+}
+
+export const getAttendanceSummary = async (params: GetAttendanceSummaryParams, options?: RequestInit): Promise<AttendanceSummary> => {
+
+  return customFetch<AttendanceSummary>(getGetAttendanceSummaryUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetAttendanceSummaryQueryKey = (params?: GetAttendanceSummaryParams,) => {
+    return [
+    `/api/portal/attendance/summary`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetAttendanceSummaryQueryOptions = <TData = Awaited<ReturnType<typeof getAttendanceSummary>>, TError = ErrorType<unknown>>(params: GetAttendanceSummaryParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAttendanceSummary>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetAttendanceSummaryQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAttendanceSummary>>> = ({ signal }) => getAttendanceSummary(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAttendanceSummary>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetAttendanceSummaryQueryResult = NonNullable<Awaited<ReturnType<typeof getAttendanceSummary>>>
+export type GetAttendanceSummaryQueryError = ErrorType<unknown>
+
+
+
+export function useGetAttendanceSummary<TData = Awaited<ReturnType<typeof getAttendanceSummary>>, TError = ErrorType<unknown>>(
+ params: GetAttendanceSummaryParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAttendanceSummary>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetAttendanceSummaryQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetMyAttendanceUrl = () => {
+
+
+
+
+  return `/api/portal/attendance/me`
+}
+
+export const getMyAttendance = async ( options?: RequestInit): Promise<MyAttendance> => {
+
+  return customFetch<MyAttendance>(getGetMyAttendanceUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetMyAttendanceQueryKey = () => {
+    return [
+    `/api/portal/attendance/me`
+    ] as const;
+    }
+
+
+export const getGetMyAttendanceQueryOptions = <TData = Awaited<ReturnType<typeof getMyAttendance>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMyAttendance>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetMyAttendanceQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMyAttendance>>> = ({ signal }) => getMyAttendance({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMyAttendance>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetMyAttendanceQueryResult = NonNullable<Awaited<ReturnType<typeof getMyAttendance>>>
+export type GetMyAttendanceQueryError = ErrorType<unknown>
+
+
+
+export function useGetMyAttendance<TData = Awaited<ReturnType<typeof getMyAttendance>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMyAttendance>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetMyAttendanceQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getListStaffAssignmentsUrl = () => {
+
+
+
+
+  return `/api/portal/assignments`
+}
+
+export const listStaffAssignments = async ( options?: RequestInit): Promise<StaffAssignment[]> => {
+
+  return customFetch<StaffAssignment[]>(getListStaffAssignmentsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListStaffAssignmentsQueryKey = () => {
+    return [
+    `/api/portal/assignments`
+    ] as const;
+    }
+
+
+export const getListStaffAssignmentsQueryOptions = <TData = Awaited<ReturnType<typeof listStaffAssignments>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listStaffAssignments>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListStaffAssignmentsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listStaffAssignments>>> = ({ signal }) => listStaffAssignments({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listStaffAssignments>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListStaffAssignmentsQueryResult = NonNullable<Awaited<ReturnType<typeof listStaffAssignments>>>
+export type ListStaffAssignmentsQueryError = ErrorType<unknown>
+
+
+
+export function useListStaffAssignments<TData = Awaited<ReturnType<typeof listStaffAssignments>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listStaffAssignments>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListStaffAssignmentsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateAssignmentUrl = () => {
+
+
+
+
+  return `/api/portal/assignments`
+}
+
+export const createAssignment = async (assignmentInput: AssignmentInput, options?: RequestInit): Promise<StaffAssignment> => {
+
+  return customFetch<StaffAssignment>(getCreateAssignmentUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(assignmentInput)
+  }
+);}
+
+
+
+
+
+export const getCreateAssignmentMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createAssignment>>, TError,{data: BodyType<AssignmentInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createAssignment>>, TError,{data: BodyType<AssignmentInput>}, TContext> => {
+
+const mutationKey = ['createAssignment'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createAssignment>>, {data: BodyType<AssignmentInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createAssignment(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateAssignmentMutationResult = NonNullable<Awaited<ReturnType<typeof createAssignment>>>
+    export type CreateAssignmentMutationBody = BodyType<AssignmentInput>
+    export type CreateAssignmentMutationError = ErrorType<unknown>
+
+    export const useCreateAssignment = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createAssignment>>, TError,{data: BodyType<AssignmentInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createAssignment>>,
+        TError,
+        {data: BodyType<AssignmentInput>},
+        TContext
+      > => {
+      return useMutation(getCreateAssignmentMutationOptions(options));
+    }
+
+export const getUpdateAssignmentUrl = (id: number,) => {
+
+
+
+
+  return `/api/portal/assignments/${id}`
+}
+
+export const updateAssignment = async (id: number,
+    assignmentInput: AssignmentInput, options?: RequestInit): Promise<StaffAssignment> => {
+
+  return customFetch<StaffAssignment>(getUpdateAssignmentUrl(id),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(assignmentInput)
+  }
+);}
+
+
+
+
+
+export const getUpdateAssignmentMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateAssignment>>, TError,{id: number;data: BodyType<AssignmentInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateAssignment>>, TError,{id: number;data: BodyType<AssignmentInput>}, TContext> => {
+
+const mutationKey = ['updateAssignment'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateAssignment>>, {id: number;data: BodyType<AssignmentInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateAssignment(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateAssignmentMutationResult = NonNullable<Awaited<ReturnType<typeof updateAssignment>>>
+    export type UpdateAssignmentMutationBody = BodyType<AssignmentInput>
+    export type UpdateAssignmentMutationError = ErrorType<unknown>
+
+    export const useUpdateAssignment = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateAssignment>>, TError,{id: number;data: BodyType<AssignmentInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateAssignment>>,
+        TError,
+        {id: number;data: BodyType<AssignmentInput>},
+        TContext
+      > => {
+      return useMutation(getUpdateAssignmentMutationOptions(options));
+    }
+
+export const getDeleteAssignmentUrl = (id: number,) => {
+
+
+
+
+  return `/api/portal/assignments/${id}`
+}
+
+export const deleteAssignment = async (id: number, options?: RequestInit): Promise<PortalMessage> => {
+
+  return customFetch<PortalMessage>(getDeleteAssignmentUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getDeleteAssignmentMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteAssignment>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteAssignment>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['deleteAssignment'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteAssignment>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteAssignment(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteAssignmentMutationResult = NonNullable<Awaited<ReturnType<typeof deleteAssignment>>>
+
+    export type DeleteAssignmentMutationError = ErrorType<unknown>
+
+    export const useDeleteAssignment = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteAssignment>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteAssignment>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getDeleteAssignmentMutationOptions(options));
+    }
+
+export const getListAssignmentSubmissionsUrl = (id: number,) => {
+
+
+
+
+  return `/api/portal/assignments/${id}/submissions`
+}
+
+export const listAssignmentSubmissions = async (id: number, options?: RequestInit): Promise<SubmissionRow[]> => {
+
+  return customFetch<SubmissionRow[]>(getListAssignmentSubmissionsUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListAssignmentSubmissionsQueryKey = (id: number,) => {
+    return [
+    `/api/portal/assignments/${id}/submissions`
+    ] as const;
+    }
+
+
+export const getListAssignmentSubmissionsQueryOptions = <TData = Awaited<ReturnType<typeof listAssignmentSubmissions>>, TError = ErrorType<unknown>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAssignmentSubmissions>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListAssignmentSubmissionsQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listAssignmentSubmissions>>> = ({ signal }) => listAssignmentSubmissions(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listAssignmentSubmissions>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListAssignmentSubmissionsQueryResult = NonNullable<Awaited<ReturnType<typeof listAssignmentSubmissions>>>
+export type ListAssignmentSubmissionsQueryError = ErrorType<unknown>
+
+
+
+export function useListAssignmentSubmissions<TData = Awaited<ReturnType<typeof listAssignmentSubmissions>>, TError = ErrorType<unknown>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAssignmentSubmissions>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListAssignmentSubmissionsQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getMarkSubmissionUrl = (id: number,) => {
+
+
+
+
+  return `/api/portal/submissions/${id}/mark`
+}
+
+export const markSubmission = async (id: number,
+    submissionMark: SubmissionMark, options?: RequestInit): Promise<PortalMessage> => {
+
+  return customFetch<PortalMessage>(getMarkSubmissionUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(submissionMark)
+  }
+);}
+
+
+
+
+
+export const getMarkSubmissionMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof markSubmission>>, TError,{id: number;data: BodyType<SubmissionMark>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof markSubmission>>, TError,{id: number;data: BodyType<SubmissionMark>}, TContext> => {
+
+const mutationKey = ['markSubmission'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof markSubmission>>, {id: number;data: BodyType<SubmissionMark>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  markSubmission(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type MarkSubmissionMutationResult = NonNullable<Awaited<ReturnType<typeof markSubmission>>>
+    export type MarkSubmissionMutationBody = BodyType<SubmissionMark>
+    export type MarkSubmissionMutationError = ErrorType<unknown>
+
+    export const useMarkSubmission = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof markSubmission>>, TError,{id: number;data: BodyType<SubmissionMark>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof markSubmission>>,
+        TError,
+        {id: number;data: BodyType<SubmissionMark>},
+        TContext
+      > => {
+      return useMutation(getMarkSubmissionMutationOptions(options));
+    }
+
+export const getListMyAssignmentsUrl = () => {
+
+
+
+
+  return `/api/portal/my-assignments`
+}
+
+export const listMyAssignments = async ( options?: RequestInit): Promise<StudentAssignment[]> => {
+
+  return customFetch<StudentAssignment[]>(getListMyAssignmentsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListMyAssignmentsQueryKey = () => {
+    return [
+    `/api/portal/my-assignments`
+    ] as const;
+    }
+
+
+export const getListMyAssignmentsQueryOptions = <TData = Awaited<ReturnType<typeof listMyAssignments>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listMyAssignments>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListMyAssignmentsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listMyAssignments>>> = ({ signal }) => listMyAssignments({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listMyAssignments>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListMyAssignmentsQueryResult = NonNullable<Awaited<ReturnType<typeof listMyAssignments>>>
+export type ListMyAssignmentsQueryError = ErrorType<unknown>
+
+
+
+export function useListMyAssignments<TData = Awaited<ReturnType<typeof listMyAssignments>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listMyAssignments>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListMyAssignmentsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getSubmitAssignmentUrl = (id: number,) => {
+
+
+
+
+  return `/api/portal/my-assignments/${id}/submit`
+}
+
+export const submitAssignment = async (id: number,
+    submissionInput: SubmissionInput, options?: RequestInit): Promise<StudentAssignment> => {
+
+  return customFetch<StudentAssignment>(getSubmitAssignmentUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(submissionInput)
+  }
+);}
+
+
+
+
+
+export const getSubmitAssignmentMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof submitAssignment>>, TError,{id: number;data: BodyType<SubmissionInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof submitAssignment>>, TError,{id: number;data: BodyType<SubmissionInput>}, TContext> => {
+
+const mutationKey = ['submitAssignment'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof submitAssignment>>, {id: number;data: BodyType<SubmissionInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  submitAssignment(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SubmitAssignmentMutationResult = NonNullable<Awaited<ReturnType<typeof submitAssignment>>>
+    export type SubmitAssignmentMutationBody = BodyType<SubmissionInput>
+    export type SubmitAssignmentMutationError = ErrorType<unknown>
+
+    export const useSubmitAssignment = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof submitAssignment>>, TError,{id: number;data: BodyType<SubmissionInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof submitAssignment>>,
+        TError,
+        {id: number;data: BodyType<SubmissionInput>},
+        TContext
+      > => {
+      return useMutation(getSubmitAssignmentMutationOptions(options));
+    }
+
+export const getUploadAssignmentImageUrl = () => {
+
+
+
+
+  return `/api/portal/assignment-images`
+}
+
+export const uploadAssignmentImage = async (uploadAssignmentImageBody: Blob, options?: RequestInit): Promise<AssignmentImage> => {
+
+  return customFetch<AssignmentImage>(getUploadAssignmentImageUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'image/jpeg', ...options?.headers },
+    body: uploadAssignmentImageBody
+  }
+);}
+
+
+
+
+
+export const getUploadAssignmentImageMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof uploadAssignmentImage>>, TError,{data: BodyType<Blob>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof uploadAssignmentImage>>, TError,{data: BodyType<Blob>}, TContext> => {
+
+const mutationKey = ['uploadAssignmentImage'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof uploadAssignmentImage>>, {data: BodyType<Blob>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  uploadAssignmentImage(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UploadAssignmentImageMutationResult = NonNullable<Awaited<ReturnType<typeof uploadAssignmentImage>>>
+    export type UploadAssignmentImageMutationBody = BodyType<Blob>
+    export type UploadAssignmentImageMutationError = ErrorType<unknown>
+
+    export const useUploadAssignmentImage = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof uploadAssignmentImage>>, TError,{data: BodyType<Blob>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof uploadAssignmentImage>>,
+        TError,
+        {data: BodyType<Blob>},
+        TContext
+      > => {
+      return useMutation(getUploadAssignmentImageMutationOptions(options));
+    }
 
 export const getListPortalAlbumsUrl = () => {
 

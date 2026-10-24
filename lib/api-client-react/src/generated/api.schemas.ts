@@ -5,6 +5,170 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+export type AttendanceStatus = typeof AttendanceStatus[keyof typeof AttendanceStatus];
+
+
+export const AttendanceStatus = {
+  present: 'present',
+  late: 'late',
+  absent: 'absent',
+  excused: 'excused',
+} as const;
+
+export interface AttendanceRow {
+  id: number;
+  name: string;
+  studentId: string;
+  status: AttendanceStatus | null;
+  note: string;
+}
+
+export interface AttendanceSheet {
+  classId: number;
+  date: string;
+  taken: boolean;
+  students: AttendanceRow[];
+}
+
+export type AttendanceSaveRecordsItem = {
+  studentId: number;
+  status: AttendanceStatus;
+  /** @maxLength 200 */
+  note?: string;
+};
+
+export interface AttendanceSave {
+  classId: number;
+  /** @pattern ^\d{4}-\d{2}-\d{2}$ */
+  date: string;
+  /** @maxItems 300 */
+  records: AttendanceSaveRecordsItem[];
+}
+
+export interface AttendanceTotals {
+  present: number;
+  late: number;
+  absent: number;
+  excused: number;
+  /** Present or late */
+  daysPresent: number;
+  daysRecorded: number;
+}
+
+export type AttendanceSummaryRow = AttendanceTotals & {
+  id: number;
+  name: string;
+  studentId: string;
+};
+
+export interface AttendanceSummary {
+  classId: number;
+  from: string;
+  to: string;
+  /** School days the register was taken for this class */
+  daysOpen: number;
+  students: AttendanceSummaryRow[];
+}
+
+export type MyAttendanceRecordsItem = {
+  date: string;
+  status: AttendanceStatus;
+  note: string;
+};
+
+export interface MyAttendance {
+  totals: AttendanceTotals;
+  records: MyAttendanceRecordsItem[];
+}
+
+export interface AssignmentInput {
+  classId: number;
+  /**
+     * @minLength 1
+     * @maxLength 80
+     */
+  subject: string;
+  /**
+     * @minLength 1
+     * @maxLength 160
+     */
+  title: string;
+  /** @maxLength 5000 */
+  instructions?: string;
+  dueAt: string;
+  /**
+     * @minimum 1
+     * @maximum 1000
+     */
+  maxScore: number;
+  published: boolean;
+}
+
+export type StaffAssignment = AssignmentInput & {
+  id: number;
+  className: string;
+  submitted: number;
+  marked: number;
+  students: number;
+} & Required<Pick<AssignmentInput & {
+  id: number;
+  className: string;
+  submitted: number;
+  marked: number;
+  students: number;
+}, 'instructions'>>;
+
+export interface SubmissionView {
+  id: number;
+  text: string;
+  imageIds: string[];
+  submittedAt: string;
+  late: boolean;
+  /** @nullable */
+  score: number | null;
+  feedback: string;
+  /** @nullable */
+  markedAt: string | null;
+}
+
+export interface SubmissionRow {
+  studentId: number;
+  name: string;
+  studentCode: string;
+  submission: SubmissionView | null;
+}
+
+export interface SubmissionMark {
+  /** @minimum 0 */
+  score: number;
+  /** @maxLength 2000 */
+  feedback: string;
+}
+
+export interface StudentAssignment {
+  id: number;
+  subject: string;
+  title: string;
+  instructions: string;
+  dueAt: string;
+  maxScore: number;
+  submission: SubmissionView | null;
+}
+
+export interface SubmissionInput {
+  /** @maxLength 10000 */
+  text: string;
+  /**
+     * @maxItems 5
+     * @items.maxLength 40
+     */
+  imageIds: string[];
+}
+
+export interface AssignmentImage {
+  imageId: string;
+}
+
 export interface BankAccount {
   /** @maxLength 60 */
   label: string;
@@ -2874,6 +3038,26 @@ export const GetAuditLogOutcome = {
   denied: 'denied',
   failed: 'failed',
 } as const;
+
+export type GetAttendanceSheetParams = {
+classId: number;
+/**
+ * @pattern ^\d{4}-\d{2}-\d{2}$
+ */
+date: string;
+};
+
+export type GetAttendanceSummaryParams = {
+classId: number;
+/**
+ * @pattern ^\d{4}-\d{2}-\d{2}$
+ */
+from: string;
+/**
+ * @pattern ^\d{4}-\d{2}-\d{2}$
+ */
+to: string;
+};
 
 export type GetLocalAccount200 = {
   id: string;

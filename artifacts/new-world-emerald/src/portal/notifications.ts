@@ -1,8 +1,8 @@
-import type { PortalDashboard, PortalEvent, StudentReports } from "@workspace/api-client-react";
+import type { PortalDashboard, PortalEvent, StudentAssignment, StudentReports } from "@workspace/api-client-react";
 import { examWindow } from "./lib";
 import type { StudentSection } from "./StudentHome";
 
-export type PortalNotice = { key: string; kind: "exam" | "notice" | "result" | "report" | "event"; title: string; detail: string; section: StudentSection; unseen: boolean };
+export type PortalNotice = { key: string; kind: "exam" | "notice" | "result" | "report" | "event" | "assignment"; title: string; detail: string; section: StudentSection; unseen: boolean };
 type Seen = Record<string, true>;
 
 const storageKey = (studentId: string) => "nwe-seen:" + studentId;
@@ -16,7 +16,7 @@ export function markSeen(studentId: string, keys: string[]) {
 }
 
 /** Everything worth a student's attention, newest-relevant first; `unseen` drives the bell badge. */
-export function studentNotifications(data: PortalDashboard, reports: StudentReports | undefined, seen: Seen, now = Date.now(), events: PortalEvent[] = []): PortalNotice[] {
+export function studentNotifications(data: PortalDashboard, reports: StudentReports | undefined, seen: Seen, now = Date.now(), events: PortalEvent[] = [], assignments: StudentAssignment[] = []): PortalNotice[] {
   const attempted = new Map(data.attempts.map((a) => [a.examId, a]));
   const list: PortalNotice[] = [];
   for (const e of data.exams) {
@@ -30,6 +30,16 @@ export function studentNotifications(data: PortalDashboard, reports: StudentRepo
     if (a.status === "marked" && a.resultsReleased && typeof a.score === "number") {
       const key = "result:" + a.id;
       list.push({ key, kind: "result", title: `Result released: ${a.title}`, detail: `${a.score} / ${a.totalMarks}`, section: "results", unseen: !seen[key] });
+    }
+  }
+  for (const a of assignments) {
+    if (a.submission?.markedAt) {
+      const key = "assignment-marked:" + a.id;
+      list.push({ key, kind: "assignment", title: `Marked: ${a.title}`, detail: `${a.submission.score ?? "-"} / ${a.maxScore}`, section: "assignments", unseen: !seen[key] });
+    } else if (!a.submission && new Date(a.dueAt).getTime() > now) {
+      const key = "assignment:" + a.id;
+      const due = new Intl.DateTimeFormat("en-NG", { weekday: "short", day: "numeric", month: "short", hour: "numeric", minute: "2-digit" }).format(new Date(a.dueAt));
+      list.push({ key, kind: "assignment", title: `New assignment: ${a.title}`, detail: `${a.subject} / due ${due}`, section: "assignments", unseen: !seen[key] });
     }
   }
   for (const r of reports?.reports ?? []) {

@@ -1,0 +1,330 @@
+paths:
+  attendance:
+    get:
+      operationId: getAttendanceSheet
+      parameters:
+        - { name: classId, in: query, required: true, schema: { type: integer } }
+        - { name: date, in: query, required: true, schema: { type: string, pattern: "^\\d{4}-\\d{2}-\\d{2}$" } }
+      responses:
+        "200":
+          description: The class register for one day (administrators and the class's teachers)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AttendanceSheet" }
+    put:
+      operationId: saveAttendanceSheet
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AttendanceSave" }
+      responses:
+        "200":
+          description: Register saved
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AttendanceSheet" }
+  attendanceSummary:
+    get:
+      operationId: getAttendanceSummary
+      parameters:
+        - { name: classId, in: query, required: true, schema: { type: integer } }
+        - { name: from, in: query, required: true, schema: { type: string, pattern: "^\\d{4}-\\d{2}-\\d{2}$" } }
+        - { name: to, in: query, required: true, schema: { type: string, pattern: "^\\d{4}-\\d{2}-\\d{2}$" } }
+      responses:
+        "200":
+          description: Attendance totals per student for a date range (staff)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AttendanceSummary" }
+  myAttendance:
+    get:
+      operationId: getMyAttendance
+      responses:
+        "200":
+          description: The signed-in student's recent attendance and totals
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MyAttendance" }
+  assignments:
+    get:
+      operationId: listStaffAssignments
+      responses:
+        "200":
+          description: Assignments in the classes the signed-in staff member can manage, with submission counts
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: "#/components/schemas/StaffAssignment" } }
+    post:
+      operationId: createAssignment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AssignmentInput" }
+      responses:
+        "200":
+          description: Assignment created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/StaffAssignment" }
+  assignment:
+    put:
+      operationId: updateAssignment
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AssignmentInput" }
+      responses:
+        "200":
+          description: Assignment updated
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/StaffAssignment" }
+    delete:
+      operationId: deleteAssignment
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      responses:
+        "200":
+          description: Assignment and its submissions deleted
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PortalMessage" }
+  assignmentSubmissions:
+    get:
+      operationId: listAssignmentSubmissions
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      responses:
+        "200":
+          description: Every student in the class with their submission, if any
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: "#/components/schemas/SubmissionRow" } }
+  markSubmission:
+    post:
+      operationId: markSubmission
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SubmissionMark" }
+      responses:
+        "200":
+          description: Score and feedback saved
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PortalMessage" }
+  myAssignments:
+    get:
+      operationId: listMyAssignments
+      responses:
+        "200":
+          description: Published assignments for the signed-in student's class, with their own submission
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: "#/components/schemas/StudentAssignment" } }
+  submitAssignment:
+    post:
+      operationId: submitAssignment
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SubmissionInput" }
+      responses:
+        "200":
+          description: Submission saved (can be changed until it is marked)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/StudentAssignment" }
+  assignmentImages:
+    post:
+      operationId: uploadAssignmentImage
+      requestBody:
+        required: true
+        content:
+          image/jpeg:
+            schema: { type: string, format: binary }
+      responses:
+        "200":
+          description: Photo of written work stored privately; send its id with the submission
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AssignmentImage" }
+schemas:
+  AttendanceStatus:
+    type: string
+    enum: [present, late, absent, excused]
+  AttendanceRow:
+    type: object
+    required: [id, name, studentId, status, note]
+    properties:
+      id: { type: integer }
+      name: { type: string }
+      studentId: { type: string }
+      status: { oneOf: [{ $ref: "#/components/schemas/AttendanceStatus" }, { type: "null" }] }
+      note: { type: string }
+  AttendanceSheet:
+    type: object
+    required: [classId, date, taken, students]
+    properties:
+      classId: { type: integer }
+      date: { type: string }
+      taken: { type: boolean }
+      students: { type: array, items: { $ref: "#/components/schemas/AttendanceRow" } }
+  AttendanceSave:
+    type: object
+    required: [classId, date, records]
+    properties:
+      classId: { type: integer }
+      date: { type: string, pattern: "^\\d{4}-\\d{2}-\\d{2}$" }
+      records:
+        type: array
+        maxItems: 300
+        items:
+          type: object
+          required: [studentId, status]
+          properties:
+            studentId: { type: integer }
+            status: { $ref: "#/components/schemas/AttendanceStatus" }
+            note: { type: string, maxLength: 200 }
+  AttendanceTotals:
+    type: object
+    required: [present, late, absent, excused, daysPresent, daysRecorded]
+    properties:
+      present: { type: integer }
+      late: { type: integer }
+      absent: { type: integer }
+      excused: { type: integer }
+      daysPresent: { type: integer, description: Present or late }
+      daysRecorded: { type: integer }
+  AttendanceSummaryRow:
+    allOf:
+      - { $ref: "#/components/schemas/AttendanceTotals" }
+      - type: object
+        required: [id, name, studentId]
+        properties:
+          id: { type: integer }
+          name: { type: string }
+          studentId: { type: string }
+  AttendanceSummary:
+    type: object
+    required: [classId, from, to, daysOpen, students]
+    properties:
+      classId: { type: integer }
+      from: { type: string }
+      to: { type: string }
+      daysOpen: { type: integer, description: School days the register was taken for this class }
+      students: { type: array, items: { $ref: "#/components/schemas/AttendanceSummaryRow" } }
+  MyAttendance:
+    type: object
+    required: [totals, records]
+    properties:
+      totals: { $ref: "#/components/schemas/AttendanceTotals" }
+      records:
+        type: array
+        items:
+          type: object
+          required: [date, status, note]
+          properties:
+            date: { type: string }
+            status: { $ref: "#/components/schemas/AttendanceStatus" }
+            note: { type: string }
+  AssignmentInput:
+    type: object
+    required: [classId, subject, title, dueAt, maxScore, published]
+    properties:
+      classId: { type: integer }
+      subject: { type: string, minLength: 1, maxLength: 80 }
+      title: { type: string, minLength: 1, maxLength: 160 }
+      instructions: { type: string, maxLength: 5000 }
+      dueAt: { type: string }
+      maxScore: { type: integer, minimum: 1, maximum: 1000 }
+      published: { type: boolean }
+  StaffAssignment:
+    allOf:
+      - { $ref: "#/components/schemas/AssignmentInput" }
+      - type: object
+        required: [id, instructions, className, submitted, marked, students]
+        properties:
+          id: { type: integer }
+          className: { type: string }
+          submitted: { type: integer }
+          marked: { type: integer }
+          students: { type: integer }
+  SubmissionView:
+    type: object
+    required: [id, text, imageIds, submittedAt, late, score, feedback, markedAt]
+    properties:
+      id: { type: integer }
+      text: { type: string }
+      imageIds: { type: array, items: { type: string } }
+      submittedAt: { type: string }
+      late: { type: boolean }
+      score: { type: [number, "null"] }
+      feedback: { type: string }
+      markedAt: { type: [string, "null"] }
+  SubmissionRow:
+    type: object
+    required: [studentId, name, studentCode, submission]
+    properties:
+      studentId: { type: integer }
+      name: { type: string }
+      studentCode: { type: string }
+      submission: { oneOf: [{ $ref: "#/components/schemas/SubmissionView" }, { type: "null" }] }
+  SubmissionMark:
+    type: object
+    required: [score, feedback]
+    properties:
+      score: { type: number, minimum: 0 }
+      feedback: { type: string, maxLength: 2000 }
+  StudentAssignment:
+    type: object
+    required: [id, subject, title, instructions, dueAt, maxScore, submission]
+    properties:
+      id: { type: integer }
+      subject: { type: string }
+      title: { type: string }
+      instructions: { type: string }
+      dueAt: { type: string }
+      maxScore: { type: integer }
+      submission: { oneOf: [{ $ref: "#/components/schemas/SubmissionView" }, { type: "null" }] }
+  SubmissionInput:
+    type: object
+    required: [text, imageIds]
+    properties:
+      text: { type: string, maxLength: 10000 }
+      imageIds: { type: array, maxItems: 5, items: { type: string, maxLength: 40 } }
+  AssignmentImage:
+    type: object
+    required: [imageId]
+    properties:
+      imageId: { type: string }
+components:
+  schemas:
+    AttendanceStatus: { $ref: "#/schemas/AttendanceStatus" }
+    AttendanceRow: { $ref: "#/schemas/AttendanceRow" }
+    AttendanceSheet: { $ref: "#/schemas/AttendanceSheet" }
+    AttendanceSave: { $ref: "#/schemas/AttendanceSave" }
+    AttendanceTotals: { $ref: "#/schemas/AttendanceTotals" }
+    AttendanceSummaryRow: { $ref: "#/schemas/AttendanceSummaryRow" }
+    AttendanceSummary: { $ref: "#/schemas/AttendanceSummary" }
+    MyAttendance: { $ref: "#/schemas/MyAttendance" }
+    AssignmentInput: { $ref: "#/schemas/AssignmentInput" }
+    StaffAssignment: { $ref: "#/schemas/StaffAssignment" }
+    SubmissionView: { $ref: "#/schemas/SubmissionView" }
+    SubmissionRow: { $ref: "#/schemas/SubmissionRow" }
+    SubmissionMark: { $ref: "#/schemas/SubmissionMark" }
+    StudentAssignment: { $ref: "#/schemas/StudentAssignment" }
+    SubmissionInput: { $ref: "#/schemas/SubmissionInput" }
+    AssignmentImage: { $ref: "#/schemas/AssignmentImage" }
+    PortalMessage: { $ref: "./portal.yaml#/schemas/PortalMessage" }

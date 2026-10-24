@@ -1,6 +1,6 @@
 import express, { Router, type NextFunction, type Request, type Response } from "express";
-import { and, asc, desc, eq, inArray, isNotNull, or } from "drizzle-orm";
-import { db, portalAlbumPhotos, portalAlbums, portalClasses, portalImages, portalStudents, portalTeachers, type PortalAlbumRecord } from "@workspace/db";
+import { and, asc, desc, eq, inArray, isNotNull, or, sql } from "drizzle-orm";
+import { db, portalAlbumPhotos, portalAlbums, portalAssignments, portalClasses, portalImages, portalStudents, portalSubmissions, portalTeachers, type PortalAlbumRecord } from "@workspace/db";
 import { CreatePortalAlbumBody, DecidePhotoReviewBody, UpdatePortalAlbumPhotoBody } from "@workspace/api-zod";
 import { check, classAllowed, portalActor, staffOnly, studentOnly, type PortalActor } from "../lib/portal-auth";
 import { MAX_IMAGE_BYTES, removeImage, saveImage, serveImage, uploadsEnabled } from "../lib/images";
@@ -113,7 +113,7 @@ portalMediaRouter.delete("/album-photos/:id", async (req, res) => {
 });
 
 // ---- Serving: every photo is private and checked against who is asking.
-async function mayView(actor: PortalActor, imageId: string, purpose: string) {
+async function mayView(actor: PortalActor, imageId: string, purpose: string, uploadedBy: string | null = null) {
   if (actor.role === "admin") return true;
   if (purpose === "staff") return true; // directory portraits are for anyone signed in
   if (purpose === "gallery") {
@@ -128,6 +128,15 @@ async function mayView(actor: PortalActor, imageId: string, purpose: string) {
     if (actor.role === "teacher") return actor.classIds.includes(owner.classId);
     return actor.student?.id === owner.id;
   }
+  if (purpose === "assignment") {
+    // The student who uploaded it, or staff teaching the assignment's class.
+    if (actor.role === "student") return uploadedBy === `student:${actor.student?.id}`;
+    if (actor.role !== "teacher") return false;
+    const rows = await db.select({ classId: portalAssignments.classId }).from(portalSubmissions)
+      .innerJoin(portalAssignments, eq(portalAssignments.id, portalSubmissions.assignmentId))
+      .where(sql`${imageId} = any(${portalSubmissions.imageIds})`);
+    return rows.some((r) => actor.classIds.includes(r.classId));
+  }
   return false;
 }
 portalMediaRouter.get("/images/:id", async (req, res) => {
@@ -135,7 +144,7 @@ portalMediaRouter.get("/images/:id", async (req, res) => {
   const id = String(req.params.id);
   check(/^[0-9a-f-]{36}$/.test(id), "Photo not found.", 404);
   const [row] = await db.select().from(portalImages).where(eq(portalImages.id, id));
-  check(row && await mayView(actor, row.id, row.purpose), "Photo not found.", 404);
+  check(row && await mayView(actor, row.id, row.purpose, row.uploadedBy), "Photo not found.", 404);
   await serveImage(req, res, row);
 });
 

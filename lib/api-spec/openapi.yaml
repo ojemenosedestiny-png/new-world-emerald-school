@@ -65,6 +65,26 @@ paths:
     $ref: "./community.yaml#/paths/event"
   /portal/staff-directory:
     $ref: "./community.yaml#/paths/staffDirectory"
+  /portal/attendance:
+    $ref: "./learning.yaml#/paths/attendance"
+  /portal/attendance/summary:
+    $ref: "./learning.yaml#/paths/attendanceSummary"
+  /portal/attendance/me:
+    $ref: "./learning.yaml#/paths/myAttendance"
+  /portal/assignments:
+    $ref: "./learning.yaml#/paths/assignments"
+  /portal/assignments/{id}:
+    $ref: "./learning.yaml#/paths/assignment"
+  /portal/assignments/{id}/submissions:
+    $ref: "./learning.yaml#/paths/assignmentSubmissions"
+  /portal/submissions/{id}/mark:
+    $ref: "./learning.yaml#/paths/markSubmission"
+  /portal/my-assignments:
+    $ref: "./learning.yaml#/paths/myAssignments"
+  /portal/my-assignments/{id}/submit:
+    $ref: "./learning.yaml#/paths/submitAssignment"
+  /portal/assignment-images:
+    $ref: "./learning.yaml#/paths/assignmentImages"
   /portal/albums:
     $ref: "./media.yaml#/paths/albums"
   /portal/albums/{id}:
@@ -983,6 +1003,38 @@ paths:
           description: Authentication required.
 components:
   schemas:
+    AttendanceStatus:
+      $ref: "./learning.yaml#/schemas/AttendanceStatus"
+    AttendanceRow:
+      $ref: "./learning.yaml#/schemas/AttendanceRow"
+    AttendanceSheet:
+      $ref: "./learning.yaml#/schemas/AttendanceSheet"
+    AttendanceSave:
+      $ref: "./learning.yaml#/schemas/AttendanceSave"
+    AttendanceTotals:
+      $ref: "./learning.yaml#/schemas/AttendanceTotals"
+    AttendanceSummaryRow:
+      $ref: "./learning.yaml#/schemas/AttendanceSummaryRow"
+    AttendanceSummary:
+      $ref: "./learning.yaml#/schemas/AttendanceSummary"
+    MyAttendance:
+      $ref: "./learning.yaml#/schemas/MyAttendance"
+    AssignmentInput:
+      $ref: "./learning.yaml#/schemas/AssignmentInput"
+    StaffAssignment:
+      $ref: "./learning.yaml#/schemas/StaffAssignment"
+    SubmissionView:
+      $ref: "./learning.yaml#/schemas/SubmissionView"
+    SubmissionRow:
+      $ref: "./learning.yaml#/schemas/SubmissionRow"
+    SubmissionMark:
+      $ref: "./learning.yaml#/schemas/SubmissionMark"
+    StudentAssignment:
+      $ref: "./learning.yaml#/schemas/StudentAssignment"
+    SubmissionInput:
+      $ref: "./learning.yaml#/schemas/SubmissionInput"
+    AssignmentImage:
+      $ref: "./learning.yaml#/schemas/AssignmentImage"
     BankAccount:
       type: object
       required: [label, bankName, accountName, accountNumber]

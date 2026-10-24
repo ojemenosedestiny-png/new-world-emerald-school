@@ -9,7 +9,7 @@ import { cloudinaryReady, deleteFromCloudinary, downloadUrl, pipeFromCloudinary,
 
 export const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 export const UPLOADS_OFF = "Photo uploads are not set up yet. The school office needs to connect Cloudinary or file storage (see DEPLOY-RENDER.md, section 6).";
-export type ImagePurpose = "gallery" | "student" | "staff" | "payment";
+export type ImagePurpose = "gallery" | "student" | "staff" | "payment" | "assignment";
 
 /** Real type from the file's first bytes; the browser's Content-Type header is never trusted. */
 export function detectImage(buf: Buffer): "image/jpeg" | "image/png" | "image/webp" | null {

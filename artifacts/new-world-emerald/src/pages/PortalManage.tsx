@@ -2,7 +2,7 @@ import { useState, type ReactNode } from "react";
 import { Link } from "wouter";
 import { useAuth, useClerk, useUser } from "@clerk/react";
 import { useGetPortalSession, getGetPortalSessionQueryKey, useGetPortalManagement, getGetPortalManagementQueryKey, useListPhotoReviews, getListPhotoReviewsQueryKey } from "@workspace/api-client-react";
-import { ArrowRight, BookOpen, CalendarDays, Camera, CheckSquare, Images, ClipboardList, FileBarChart, Globe, GraduationCap, LayoutDashboard, Megaphone, MonitorSmartphone, School, ScrollText, ShieldAlert, Users } from "lucide-react";
+import { ArrowRight, BookOpen, CalendarCheck, CalendarDays, Camera, CheckSquare, Images, NotebookPen, ClipboardList, FileBarChart, Globe, GraduationCap, LayoutDashboard, Megaphone, MonitorSmartphone, School, ScrollText, ShieldAlert, Users } from "lucide-react";
 import "@/portal/portal.css";
 import { BackToWebsite, ErrorPanel, Skeleton } from "@/portal/ui";
 import { errorMessage, usePortalMeta } from "@/portal/lib";
@@ -19,6 +19,8 @@ import { AuditLogPanel, SessionsPanel } from "@/portal/security/SecurityPanels";
 import { ReportsPanel } from "@/portal/reports/ReportsPanel";
 import { EventsPanel } from "@/portal/manage/EventsPanel";
 import { GalleryPanel, PhotoReviewsPanel } from "@/portal/manage/GalleryPanel";
+import { AttendancePanel } from "@/portal/manage/AttendancePanel";
+import { AssignmentsPanel } from "@/portal/manage/AssignmentsPanel";
 
 function Gate({ title, body, children }: { title: string; body: string; children?: ReactNode }) {
   return (
@@ -34,9 +36,9 @@ function Gate({ title, body, children }: { title: string; body: string; children
   );
 }
 
-type Section = "overview" | "exams" | "marking" | "reports" | "revision" | "notices" | "events" | "gallery" | "photos" | "students" | "teachers" | "classes" | "sessions" | "audit";
+type Section = "overview" | "attendance" | "assignments" | "exams" | "marking" | "reports" | "revision" | "notices" | "events" | "gallery" | "photos" | "students" | "teachers" | "classes" | "sessions" | "audit";
 const TITLES: Record<Section, string> = {
-  overview: "Dashboard", exams: "Exams", marking: "Marking", reports: "Report cards", revision: "Revision notes",
+  overview: "Dashboard", attendance: "Attendance", assignments: "Assignments", exams: "Exams", marking: "Marking", reports: "Report cards", revision: "Revision notes",
   notices: "Announcements", events: "Events calendar", gallery: "Gallery", photos: "Photo approvals", students: "Students", teachers: "Teachers", classes: "Classes", sessions: "Sessions", audit: "Audit log",
 };
 
@@ -69,6 +71,8 @@ export default function PortalManage() {
   const groups: NavGroup<Section>[] = [
     { items: [{ key: "overview", label: "Dashboard", icon: LayoutDashboard, testId: "tab-manage-overview" }] },
     { label: "Teaching", items: [
+      { key: "attendance", label: "Attendance", icon: CalendarCheck, testId: "tab-manage-attendance" },
+      { key: "assignments", label: "Assignments", icon: NotebookPen, testId: "tab-manage-assignments" },
       { key: "exams", label: "Exams", icon: ClipboardList, badge: writing, testId: "tab-manage-exams" },
       { key: "marking", label: "Marking", icon: CheckSquare, badge: toMark, testId: "tab-manage-marking" },
       { key: "reports", label: "Report cards", icon: FileBarChart, testId: "tab-manage-reports" },
@@ -116,6 +120,8 @@ export default function PortalManage() {
               </div>
             )}
             {section === "overview" && <Dashboard data={d} dark={theme.resolved === "dark"} onGo={setSection} />}
+            {section === "attendance" && <AttendancePanel data={d} />}
+            {section === "assignments" && <AssignmentsPanel data={d} />}
             {section === "exams" && <ExamsPanel data={d} isAdmin={isAdmin} />}
             {section === "marking" && <MarkingPanel data={d} />}
             {section === "reports" && <ReportsPanel />}

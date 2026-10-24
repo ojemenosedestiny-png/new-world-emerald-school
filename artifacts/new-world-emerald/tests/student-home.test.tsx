@@ -12,6 +12,7 @@ vi.mock("@workspace/api-client-react", async (original) => ({
   ...await original<typeof import("@workspace/api-client-react")>(),
   useGetStudentReports: () => ({ data: { studentName: "Ada", studentId: "S1", className: "JSS 1", reports: [{ term: { id: 4, session: "2026/2027", term: "First Term", caMax: 40, examMax: 60, nextTermBegins: null } }] } }),
   useGetMyPhoto: () => ({ data: { photoId: null, pendingPhotoId: null, uploadsEnabled: true } }),
+  useListMyAssignments: () => ({ data: [{ id: 21, subject: "Mathematics", title: "Fractions homework", instructions: "", dueAt: new Date(Date.now() + 86_400_000).toISOString(), maxScore: 10, submission: null }] }),
   useListPortalEvents: () => ({ data: [{ id: 11, title: "Inter-house sports", details: "Bring water", venue: "Sports field", category: "sports", startsAt: new Date(Date.now() + 2 * 86_400_000).toISOString(), endsAt: null, allDay: false, classId: null, className: null, published: true }] }),
 }));
 const wrap = (c: ReactNode) => <QueryClientProvider client={new QueryClient()}>{c}</QueryClientProvider>;
@@ -57,7 +58,8 @@ describe("phone-style home", () => {
     render(wrap(<StudentHome data={data} name="Ada Obi" studentId="S1" onGo={onGo} />));
     expect(screen.getByTestId("text-student-name").textContent).toContain("Hello, Ada");
     expect(screen.getByTestId("button-avatar").textContent).toBe("AO");
-    expect(screen.getByTestId("badge-notifications").textContent).toBe("5");
+    expect(screen.getByTestId("badge-notifications").textContent).toBe("6");
+    expect(screen.getByTestId("tile-assignments").textContent).toContain("1");
     expect(screen.getByTestId("tile-exams").textContent).toContain("1");
     fireEvent.click(screen.getByTestId("tile-reports"));
     expect(onGo).toHaveBeenLastCalledWith("reports");

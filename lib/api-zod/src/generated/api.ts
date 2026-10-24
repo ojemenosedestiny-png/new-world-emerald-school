@@ -1359,6 +1359,346 @@ export const GetStaffDirectoryResponseItem = zod.object({
 export const GetStaffDirectoryResponse = zod.array(GetStaffDirectoryResponseItem)
 
 
+export const getAttendanceSheetQueryDateRegExp = new RegExp('^\\d{4}-\\d{2}-\\d{2}$');
+
+
+export const GetAttendanceSheetQueryParams = zod.object({
+  "classId": zod.coerce.number(),
+  "date": zod.coerce.string().regex(getAttendanceSheetQueryDateRegExp)
+})
+
+export const GetAttendanceSheetResponse = zod.object({
+  "classId": zod.number(),
+  "date": zod.string(),
+  "taken": zod.boolean(),
+  "students": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "studentId": zod.string(),
+  "status": zod.union([zod.enum(['present', 'late', 'absent', 'excused']),zod.null()]),
+  "note": zod.string()
+}))
+})
+
+
+export const saveAttendanceSheetBodyDateRegExp = new RegExp('^\\d{4}-\\d{2}-\\d{2}$');
+export const saveAttendanceSheetBodyRecordsItemNoteMax = 200;
+
+export const saveAttendanceSheetBodyRecordsMax = 300;
+
+
+
+export const SaveAttendanceSheetBody = zod.object({
+  "classId": zod.number(),
+  "date": zod.string().regex(saveAttendanceSheetBodyDateRegExp),
+  "records": zod.array(zod.object({
+  "studentId": zod.number(),
+  "status": zod.enum(['present', 'late', 'absent', 'excused']),
+  "note": zod.string().max(saveAttendanceSheetBodyRecordsItemNoteMax).optional()
+})).max(saveAttendanceSheetBodyRecordsMax)
+})
+
+export const SaveAttendanceSheetResponse = zod.object({
+  "classId": zod.number(),
+  "date": zod.string(),
+  "taken": zod.boolean(),
+  "students": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "studentId": zod.string(),
+  "status": zod.union([zod.enum(['present', 'late', 'absent', 'excused']),zod.null()]),
+  "note": zod.string()
+}))
+})
+
+
+export const getAttendanceSummaryQueryFromRegExp = new RegExp('^\\d{4}-\\d{2}-\\d{2}$');
+export const getAttendanceSummaryQueryToRegExp = new RegExp('^\\d{4}-\\d{2}-\\d{2}$');
+
+
+export const GetAttendanceSummaryQueryParams = zod.object({
+  "classId": zod.coerce.number(),
+  "from": zod.coerce.string().regex(getAttendanceSummaryQueryFromRegExp),
+  "to": zod.coerce.string().regex(getAttendanceSummaryQueryToRegExp)
+})
+
+export const GetAttendanceSummaryResponse = zod.object({
+  "classId": zod.number(),
+  "from": zod.string(),
+  "to": zod.string(),
+  "daysOpen": zod.number().describe('School days the register was taken for this class'),
+  "students": zod.array(zod.object({
+  "present": zod.number(),
+  "late": zod.number(),
+  "absent": zod.number(),
+  "excused": zod.number(),
+  "daysPresent": zod.number().describe('Present or late'),
+  "daysRecorded": zod.number()
+}).and(zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "studentId": zod.string()
+})))
+})
+
+
+export const GetMyAttendanceResponse = zod.object({
+  "totals": zod.object({
+  "present": zod.number(),
+  "late": zod.number(),
+  "absent": zod.number(),
+  "excused": zod.number(),
+  "daysPresent": zod.number().describe('Present or late'),
+  "daysRecorded": zod.number()
+}),
+  "records": zod.array(zod.object({
+  "date": zod.string(),
+  "status": zod.enum(['present', 'late', 'absent', 'excused']),
+  "note": zod.string()
+}))
+})
+
+
+export const listStaffAssignmentsResponseOneSubjectMax = 80;
+
+export const listStaffAssignmentsResponseOneTitleMax = 160;
+
+export const listStaffAssignmentsResponseOneInstructionsMax = 5000;
+
+export const listStaffAssignmentsResponseOneMaxScoreMax = 1000;
+
+
+
+export const ListStaffAssignmentsResponseItem = zod.object({
+  "classId": zod.number(),
+  "subject": zod.string().min(1).max(listStaffAssignmentsResponseOneSubjectMax),
+  "title": zod.string().min(1).max(listStaffAssignmentsResponseOneTitleMax),
+  "instructions": zod.string().max(listStaffAssignmentsResponseOneInstructionsMax),
+  "dueAt": zod.string(),
+  "maxScore": zod.number().min(1).max(listStaffAssignmentsResponseOneMaxScoreMax),
+  "published": zod.boolean()
+}).and(zod.object({
+  "id": zod.number(),
+  "className": zod.string(),
+  "submitted": zod.number(),
+  "marked": zod.number(),
+  "students": zod.number()
+}))
+export const ListStaffAssignmentsResponse = zod.array(ListStaffAssignmentsResponseItem)
+
+
+export const createAssignmentBodySubjectMax = 80;
+
+export const createAssignmentBodyTitleMax = 160;
+
+export const createAssignmentBodyInstructionsMax = 5000;
+
+export const createAssignmentBodyMaxScoreMax = 1000;
+
+
+
+export const CreateAssignmentBody = zod.object({
+  "classId": zod.number(),
+  "subject": zod.string().min(1).max(createAssignmentBodySubjectMax),
+  "title": zod.string().min(1).max(createAssignmentBodyTitleMax),
+  "instructions": zod.string().max(createAssignmentBodyInstructionsMax).optional(),
+  "dueAt": zod.string(),
+  "maxScore": zod.number().min(1).max(createAssignmentBodyMaxScoreMax),
+  "published": zod.boolean()
+})
+
+export const createAssignmentResponseOneSubjectMax = 80;
+
+export const createAssignmentResponseOneTitleMax = 160;
+
+export const createAssignmentResponseOneInstructionsMax = 5000;
+
+export const createAssignmentResponseOneMaxScoreMax = 1000;
+
+
+
+export const CreateAssignmentResponse = zod.object({
+  "classId": zod.number(),
+  "subject": zod.string().min(1).max(createAssignmentResponseOneSubjectMax),
+  "title": zod.string().min(1).max(createAssignmentResponseOneTitleMax),
+  "instructions": zod.string().max(createAssignmentResponseOneInstructionsMax),
+  "dueAt": zod.string(),
+  "maxScore": zod.number().min(1).max(createAssignmentResponseOneMaxScoreMax),
+  "published": zod.boolean()
+}).and(zod.object({
+  "id": zod.number(),
+  "className": zod.string(),
+  "submitted": zod.number(),
+  "marked": zod.number(),
+  "students": zod.number()
+}))
+
+
+export const UpdateAssignmentParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const updateAssignmentBodySubjectMax = 80;
+
+export const updateAssignmentBodyTitleMax = 160;
+
+export const updateAssignmentBodyInstructionsMax = 5000;
+
+export const updateAssignmentBodyMaxScoreMax = 1000;
+
+
+
+export const UpdateAssignmentBody = zod.object({
+  "classId": zod.number(),
+  "subject": zod.string().min(1).max(updateAssignmentBodySubjectMax),
+  "title": zod.string().min(1).max(updateAssignmentBodyTitleMax),
+  "instructions": zod.string().max(updateAssignmentBodyInstructionsMax).optional(),
+  "dueAt": zod.string(),
+  "maxScore": zod.number().min(1).max(updateAssignmentBodyMaxScoreMax),
+  "published": zod.boolean()
+})
+
+export const updateAssignmentResponseOneSubjectMax = 80;
+
+export const updateAssignmentResponseOneTitleMax = 160;
+
+export const updateAssignmentResponseOneInstructionsMax = 5000;
+
+export const updateAssignmentResponseOneMaxScoreMax = 1000;
+
+
+
+export const UpdateAssignmentResponse = zod.object({
+  "classId": zod.number(),
+  "subject": zod.string().min(1).max(updateAssignmentResponseOneSubjectMax),
+  "title": zod.string().min(1).max(updateAssignmentResponseOneTitleMax),
+  "instructions": zod.string().max(updateAssignmentResponseOneInstructionsMax),
+  "dueAt": zod.string(),
+  "maxScore": zod.number().min(1).max(updateAssignmentResponseOneMaxScoreMax),
+  "published": zod.boolean()
+}).and(zod.object({
+  "id": zod.number(),
+  "className": zod.string(),
+  "submitted": zod.number(),
+  "marked": zod.number(),
+  "students": zod.number()
+}))
+
+
+export const DeleteAssignmentParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const DeleteAssignmentResponse = zod.object({
+  "message": zod.string()
+})
+
+
+export const ListAssignmentSubmissionsParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const ListAssignmentSubmissionsResponseItem = zod.object({
+  "studentId": zod.number(),
+  "name": zod.string(),
+  "studentCode": zod.string(),
+  "submission": zod.union([zod.object({
+  "id": zod.number(),
+  "text": zod.string(),
+  "imageIds": zod.array(zod.string()),
+  "submittedAt": zod.string(),
+  "late": zod.boolean(),
+  "score": zod.number().nullable(),
+  "feedback": zod.string(),
+  "markedAt": zod.string().nullable()
+}),zod.null()])
+})
+export const ListAssignmentSubmissionsResponse = zod.array(ListAssignmentSubmissionsResponseItem)
+
+
+export const MarkSubmissionParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const markSubmissionBodyScoreMin = 0;
+
+export const markSubmissionBodyFeedbackMax = 2000;
+
+
+
+export const MarkSubmissionBody = zod.object({
+  "score": zod.number().min(markSubmissionBodyScoreMin),
+  "feedback": zod.string().max(markSubmissionBodyFeedbackMax)
+})
+
+export const MarkSubmissionResponse = zod.object({
+  "message": zod.string()
+})
+
+
+export const ListMyAssignmentsResponseItem = zod.object({
+  "id": zod.number(),
+  "subject": zod.string(),
+  "title": zod.string(),
+  "instructions": zod.string(),
+  "dueAt": zod.string(),
+  "maxScore": zod.number(),
+  "submission": zod.union([zod.object({
+  "id": zod.number(),
+  "text": zod.string(),
+  "imageIds": zod.array(zod.string()),
+  "submittedAt": zod.string(),
+  "late": zod.boolean(),
+  "score": zod.number().nullable(),
+  "feedback": zod.string(),
+  "markedAt": zod.string().nullable()
+}),zod.null()])
+})
+export const ListMyAssignmentsResponse = zod.array(ListMyAssignmentsResponseItem)
+
+
+export const SubmitAssignmentParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const submitAssignmentBodyTextMax = 10000;
+
+export const submitAssignmentBodyImageIdsItemMax = 40;
+
+export const submitAssignmentBodyImageIdsMax = 5;
+
+
+
+export const SubmitAssignmentBody = zod.object({
+  "text": zod.string().max(submitAssignmentBodyTextMax),
+  "imageIds": zod.array(zod.string().max(submitAssignmentBodyImageIdsItemMax)).max(submitAssignmentBodyImageIdsMax)
+})
+
+export const SubmitAssignmentResponse = zod.object({
+  "id": zod.number(),
+  "subject": zod.string(),
+  "title": zod.string(),
+  "instructions": zod.string(),
+  "dueAt": zod.string(),
+  "maxScore": zod.number(),
+  "submission": zod.union([zod.object({
+  "id": zod.number(),
+  "text": zod.string(),
+  "imageIds": zod.array(zod.string()),
+  "submittedAt": zod.string(),
+  "late": zod.boolean(),
+  "score": zod.number().nullable(),
+  "feedback": zod.string(),
+  "markedAt": zod.string().nullable()
+}),zod.null()])
+})
+
+
+export const UploadAssignmentImageResponse = zod.object({
+  "imageId": zod.string()
+})
+
+
 export const listPortalAlbumsResponseOneTitleMax = 150;
 
 export const listPortalAlbumsResponseOneDescriptionMax = 2000;
