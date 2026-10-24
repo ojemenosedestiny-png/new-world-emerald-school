@@ -9,8 +9,8 @@ export const EMAIL_FROM_HELP = "EMAIL_FROM has the wrong format. In Render use n
 
 /**
  * The sender Resend expects ("a@b.com" or "Name <a@b.com>"), forgiving the usual
- * paste mistakes: a copied "EMAIL_FROM=" prefix, surrounding quotes, or a name with
- * no angle brackets. Null when it still is not an address.
+ * paste mistakes: a copied "EMAIL_FROM=" prefix, surrounding quotes, a name with
+ * no angle brackets, or only the domain. Null when it still is not an address.
  */
 export function emailSender(raw: string | undefined): string | null {
   let value = (raw ?? "").trim().replace(/^EMAIL_FROM\s*=\s*/i, "").trim();
@@ -18,6 +18,8 @@ export function emailSender(raw: string | undefined): string | null {
   if (quoted) value = quoted[2].trim();
   value = value.replace(/\s+/g, " ");
   if (ADDRESS.test(value)) return value;
+  // Just the domain (e.g. "school.com"): send from noreply@ on it under the school's name.
+  if (/^(?!-)[a-z0-9-]+(\.[a-z0-9-]+)*\.[a-z]{2,}$/i.test(value)) return `New World Emerald <noreply@${value.toLowerCase()}>`;
   const named = /^(.*?)\s*<\s*([^<>\s]+)\s*>$/.exec(value);
   if (named && ADDRESS.test(named[2])) return named[1].replace(/["']/g, "").trim() ? `${named[1].replace(/["']/g, "").trim()} <${named[2]}>` : named[2];
   const trailing = /^(.+?)\s+([^\s<>]+)$/.exec(value);

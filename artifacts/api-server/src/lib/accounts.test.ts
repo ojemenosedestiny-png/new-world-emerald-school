@@ -73,7 +73,8 @@ test("the email sender forgives common paste mistakes and explains real ones", a
   assert.equal(emailSender("New World Emerald noreply@school.ng"), "New World Emerald <noreply@school.ng>", "missing angle brackets");
   assert.equal(emailSender('"New World Emerald" <noreply@school.ng>'), "New World Emerald <noreply@school.ng>", "quoted name");
   assert.equal(emailSender("  <noreply@school.ng>  "), "noreply@school.ng");
-  for (const bad of ["New World Emerald", "noreply@", "school.ng", "", "two@at@signs.ng"]) assert.equal(emailSender(bad), null, bad);
+  assert.equal(emailSender("newworldemeraldprivateschool.com"), "New World Emerald <noreply@newworldemeraldprivateschool.com>", "only the domain");
+  for (const bad of ["New World Emerald", "noreply@", "", "two@at@signs.ng", "-bad.com"]) assert.equal(emailSender(bad), null, bad);
   let calls = 0;
   const counting = (async () => { calls++; return new Response("{}"); }) as unknown as typeof fetch;
   const result = await sendEmail({ to: "p@x.y", subject: "s", html: "h", text: "t" }, { RESEND_API_KEY: "re_x", EMAIL_FROM: "New World Emerald" }, counting);
