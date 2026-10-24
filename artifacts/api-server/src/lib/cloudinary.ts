@@ -113,11 +113,6 @@ export function playableVideoUrl(publicId: string) {
   return client().url(publicId, { resource_type: "video", type: "upload", secure: true, transformation: [PLAYABLE_VIDEO], format: "mp4" });
 }
 
-/** True when a Cloudinary "derived" entry is the H.264 copy. */
-export function isPlayableDerived(transformation: string | undefined) {
-  return !!transformation && /(^|,)vc_h264(,|\/|$)/.test(transformation) && /(^|,)q_auto(,|\/|$)/.test(transformation);
-}
-
 /**
  * Asks Cloudinary to make the H.264 copy in the background. Big videos cannot be converted on the fly,
  * so this runs once after upload (and on first view for videos uploaded earlier).
@@ -126,27 +121,35 @@ export async function requestPlayableVideo(publicId: string) {
   await client().uploader.explicit(publicId, { type: "upload", resource_type: "video", eager: [{ ...PLAYABLE_VIDEO, format: "mp4" }], eager_async: true });
 }
 
-// publicId -> when to check again; Infinity once the copy exists. Keeps Admin API calls rare.
+// publicId -> when to check again; Infinity once the copy exists. Keeps checks rare.
 const playableState = new Map<string, number>();
 const requested = new Set<string>();
+
+type DeliveryDeps = { copyExists: (url: string) => Promise<boolean>; request: (publicId: string) => Promise<unknown> };
+// Asks for the first byte of the copy itself: 200/206 means it exists (Cloudinary answers 423 while it is still being made).
+const copyExists = async (url: string) => {
+  const res = await fetch(url, { headers: { Range: "bytes=0-0" }, signal: AbortSignal.timeout(5_000) });
+  void res.body?.cancel();
+  return res.status === 200 || res.status === 206;
+};
 
 /**
  * Where to send a visitor for a video: the H.264 copy once Cloudinary has made it, otherwise the original
  * (and the copy is requested). The second value says whether the copy is ready, for caching.
  */
-export async function videoDeliveryUrl(publicId: string, now = Date.now()): Promise<[string, boolean]> {
+export async function videoDeliveryUrl(publicId: string, now = Date.now(), deps: DeliveryDeps = { copyExists, request: requestPlayableVideo }): Promise<[string, boolean]> {
+  const playable = playableVideoUrl(publicId);
   const state = playableState.get(publicId);
-  if (state === Infinity) return [playableVideoUrl(publicId), true];
+  if (state === Infinity) return [playable, true];
   if (state === undefined || state <= now) {
     playableState.set(publicId, now + 60_000);
     try {
-      const found = await client().api.resource(publicId, { resource_type: "video", type: "upload" }) as { derived?: { transformation?: string }[] };
-      if (found.derived?.some((d) => isPlayableDerived(d.transformation))) {
+      if (await deps.copyExists(playable)) {
         playableState.set(publicId, Infinity);
-        return [playableVideoUrl(publicId), true];
+        return [playable, true];
       }
-      if (!requested.has(publicId)) { requested.add(publicId); await requestPlayableVideo(publicId); }
-    } catch { /* Cloudinary busy or rate-limited: serve the original and try again in a minute */ }
+      if (!requested.has(publicId)) { requested.add(publicId); await deps.request(publicId); }
+    } catch { /* Cloudinary busy or unreachable: serve the original and try again in a minute */ }
   }
   return [publicUrl(publicId, "video"), false];
 }
