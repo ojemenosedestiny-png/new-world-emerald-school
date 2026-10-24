@@ -2,11 +2,11 @@ import { useMemo, useState } from "react";
 import { useLocation } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
 import {
-  useGetPortalDashboard, getGetPortalDashboardQueryKey, useStartPortalExam, useLogoutPortalStudent,
+  useGetPortalDashboard, getGetPortalDashboardQueryKey, useGetMyMessages, getGetMyMessagesQueryKey, useStartPortalExam, useLogoutPortalStudent,
   getGetPortalSessionQueryKey,
   type PortalSession, type PortalDashboardExamsItem, type PortalDashboardAttemptsItem,
 } from "@workspace/api-client-react";
-import { Award, BookOpen, CalendarCheck, CalendarClock, CalendarDays, ClipboardList, FileBarChart, FileText, Home, Images, KeyRound, LayoutGrid, Megaphone, NotebookPen, PlayCircle, Timer, UserRound, Users } from "lucide-react";
+import { Award, BookOpen, CalendarCheck, CalendarClock, CalendarDays, ClipboardList, FileBarChart, FileText, Home, Images, KeyRound, LayoutGrid, Megaphone, MessagesSquare, NotebookPen, PlayCircle, Timer, UserRound, Users } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { EmptyState, ErrorPanel, Skeleton, StatusPill } from "./ui";
@@ -21,6 +21,7 @@ import { StaffDirectory } from "./StaffDirectory";
 import { StudentGallery } from "./StudentGallery";
 import { StudentAssignments } from "./StudentAssignments";
 import { StudentAttendance } from "./StudentAttendance";
+import { StudentMessages } from "./StudentMessages";
 import { AppShell, type NavGroup } from "./shell/AppShell";
 import { IdleSignOut } from "@/components/IdleSignOut";
 import type { usePortalTheme } from "./shell/theme";
@@ -89,6 +90,8 @@ function ExamRow({ exam, attempt }: { exam: PortalDashboardExamsItem; attempt?: 
 
 export function StudentDashboard({ session, theme }: { session: PortalSession; theme: ReturnType<typeof usePortalTheme> }) {
   const dash = useGetPortalDashboard({ query: { queryKey: getGetPortalDashboardQueryKey(), refetchInterval: 20000 } });
+  const messages = useGetMyMessages({ query: { queryKey: getGetMyMessagesQueryKey(), refetchInterval: 30000 } });
+  const unreadMessages = (messages.data?.threads ?? []).reduce((n, t) => n + t.unread, 0);
   const logout = useStudentLogout();
   const [, setLocation] = useLocation();
   const [pwOpen, setPwOpen] = useState(false);
@@ -100,10 +103,10 @@ export function StudentDashboard({ session, theme }: { session: PortalSession; t
   const exams = useMemo(() => sortStudentExams(data?.exams ?? [], data?.attempts ?? []), [data]);
   const average = studentAverage(data?.attempts ?? []);
 
-  const titles: Record<StudentSection, string> = { home: "Home", exams: "Exams", results: "GradeSheet", reports: "Report cards", revision: "Library", notices: "Notices", profile: "Profile", events: "Events", staff: "Staffs", gallery: "Gallery", attendance: "Attendance", assignments: "Assignments" };
+  const titles: Record<StudentSection, string> = { home: "Home", exams: "Exams", results: "GradeSheet", reports: "Report cards", revision: "Library", notices: "Notices", profile: "Profile", events: "Events", staff: "Staffs", gallery: "Gallery", attendance: "Attendance", assignments: "Assignments", messages: "Messages" };
   const openCount = (data?.exams ?? []).filter((e) => examWindow(e.startsAt, e.endsAt) === "open" && attemptByExam.get(e.id)?.status !== "submitted" && attemptByExam.get(e.id)?.status !== "marked").length;
   const groups: NavGroup<StudentSection>[] = [
-    { items: [{ key: "home", label: "Home", icon: Home, testId: "tab-home" }, { key: "profile", label: "Profile", icon: UserRound, testId: "tab-profile" }] },
+    { items: [{ key: "home", label: "Home", icon: Home, testId: "tab-home" }, { key: "profile", label: "Profile", icon: UserRound, testId: "tab-profile" }, { key: "messages", label: "Messages", icon: MessagesSquare, badge: unreadMessages, testId: "tab-messages" }] },
     { label: "Learning", items: [
       { key: "exams", label: "Exams", icon: ClipboardList, badge: openCount, testId: "tab-exams" },
       { key: "assignments", label: "Assignments", icon: NotebookPen, testId: "tab-assignments" },
@@ -152,6 +155,7 @@ export function StudentDashboard({ session, theme }: { session: PortalSession; t
             {section === "gallery" && <StudentGallery />}
             {section === "attendance" && <StudentAttendance />}
             {section === "assignments" && <StudentAssignments />}
+            {section === "messages" && <StudentMessages />}
 
             {section === "exams" && <div className="space-y-3">
               {data.exams.length === 0 && orphanAttempts.length === 0 ? (

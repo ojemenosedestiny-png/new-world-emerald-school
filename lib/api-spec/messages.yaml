@@ -1,0 +1,151 @@
+paths:
+  myMessages:
+    get:
+      operationId: getMyMessages
+      responses:
+        "200":
+          description: The signed-in student's conversations with their class teacher and the school office
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MyMessages" }
+    post:
+      operationId: sendMyMessage
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/StudentMessageInput" }
+      responses:
+        "200":
+          description: Message sent; returns the updated conversations
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MyMessages" }
+  myMessagesRead:
+    post:
+      operationId: markMyMessagesRead
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/MessageReadInput" }
+      responses:
+        "200":
+          description: Staff replies in that conversation are marked read
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MyMessages" }
+  messageThreads:
+    get:
+      operationId: listMessageThreads
+      responses:
+        "200":
+          description: Conversations the signed-in staff member can answer, newest first
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: "#/components/schemas/MessageThreadSummary" } }
+  messageThread:
+    get:
+      operationId: getMessageThread
+      parameters:
+        - { name: studentId, in: path, required: true, schema: { type: integer } }
+        - { name: channel, in: path, required: true, schema: { $ref: "#/components/schemas/MessageChannel" } }
+      responses:
+        "200":
+          description: One conversation; opening it marks the student's messages read
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/StaffMessageThread" }
+    post:
+      operationId: replyMessageThread
+      parameters:
+        - { name: studentId, in: path, required: true, schema: { type: integer } }
+        - { name: channel, in: path, required: true, schema: { $ref: "#/components/schemas/MessageChannel" } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/MessageBodyInput" }
+      responses:
+        "200":
+          description: Reply sent
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/StaffMessageThread" }
+schemas:
+  MessageChannel:
+    type: string
+    enum: [class, office]
+  PortalChatMessage:
+    type: object
+    required: [id, fromStaff, senderName, body, createdAt, read]
+    properties:
+      id: { type: integer }
+      fromStaff: { type: boolean }
+      senderName: { type: string }
+      body: { type: string }
+      createdAt: { type: string, format: date-time }
+      read: { type: boolean }
+  StudentThread:
+    type: object
+    required: [channel, title, unread, messages]
+    properties:
+      channel: { $ref: "#/components/schemas/MessageChannel" }
+      title: { type: string }
+      unread: { type: integer }
+      messages: { type: array, items: { $ref: "#/components/schemas/PortalChatMessage" } }
+  MyMessages:
+    type: object
+    required: [threads]
+    properties:
+      threads: { type: array, items: { $ref: "#/components/schemas/StudentThread" } }
+  MessageBodyInput:
+    type: object
+    required: [body]
+    properties:
+      body: { type: string, minLength: 1, maxLength: 1000 }
+  StudentMessageInput:
+    type: object
+    required: [channel, body]
+    properties:
+      channel: { $ref: "#/components/schemas/MessageChannel" }
+      body: { type: string, minLength: 1, maxLength: 1000 }
+  MessageReadInput:
+    type: object
+    required: [channel]
+    properties:
+      channel: { $ref: "#/components/schemas/MessageChannel" }
+  MessageThreadSummary:
+    type: object
+    required: [studentId, studentName, studentCode, className, channel, lastBody, lastAt, lastFromStaff, unread]
+    properties:
+      studentId: { type: integer }
+      studentName: { type: string }
+      studentCode: { type: string }
+      className: { type: string }
+      channel: { $ref: "#/components/schemas/MessageChannel" }
+      lastBody: { type: string }
+      lastAt: { type: string, format: date-time }
+      lastFromStaff: { type: boolean }
+      unread: { type: integer }
+  StaffMessageThread:
+    type: object
+    required: [studentId, studentName, studentCode, className, channel, messages]
+    properties:
+      studentId: { type: integer }
+      studentName: { type: string }
+      studentCode: { type: string }
+      className: { type: string }
+      channel: { $ref: "#/components/schemas/MessageChannel" }
+      messages: { type: array, items: { $ref: "#/components/schemas/PortalChatMessage" } }
+components:
+  schemas:
+    MessageChannel: { $ref: "#/schemas/MessageChannel" }
+    PortalChatMessage: { $ref: "#/schemas/PortalChatMessage" }
+    StudentThread: { $ref: "#/schemas/StudentThread" }
+    MyMessages: { $ref: "#/schemas/MyMessages" }
+    MessageBodyInput: { $ref: "#/schemas/MessageBodyInput" }
+    StudentMessageInput: { $ref: "#/schemas/StudentMessageInput" }
+    MessageReadInput: { $ref: "#/schemas/MessageReadInput" }
+    MessageThreadSummary: { $ref: "#/schemas/MessageThreadSummary" }
+    StaffMessageThread: { $ref: "#/schemas/StaffMessageThread" }

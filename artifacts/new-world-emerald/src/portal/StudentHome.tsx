@@ -1,6 +1,6 @@
 import { useMemo, useState, type CSSProperties } from "react";
-import { useGetStudentReports, getGetStudentReportsQueryKey, useListMyAssignments, getListMyAssignmentsQueryKey, useListPortalEvents, getListPortalEventsQueryKey, useGetMyPhoto, getGetMyPhotoQueryKey, type PortalDashboard } from "@workspace/api-client-react";
-import { Award, Bell, BookOpen, CalendarCheck, CalendarDays, ChevronRight, ClipboardList, FileBarChart, Images, MapPin, Megaphone, Menu, NotebookPen, Search, Timer, UserRound, Users, type LucideIcon } from "lucide-react";
+import { useGetStudentReports, getGetStudentReportsQueryKey, useListMyAssignments, getListMyAssignmentsQueryKey, useGetMyMessages, getGetMyMessagesQueryKey, useListPortalEvents, getListPortalEventsQueryKey, useGetMyPhoto, getGetMyPhotoQueryKey, type PortalDashboard } from "@workspace/api-client-react";
+import { Award, Bell, BookOpen, CalendarCheck, CalendarDays, ChevronRight, ClipboardList, FileBarChart, Images, MapPin, Megaphone, Menu, MessagesSquare, NotebookPen, Search, Timer, UserRound, Users, type LucideIcon } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useOpenShellMenu } from "./shell/AppShell";
 import { examWindow } from "./lib";
@@ -8,7 +8,7 @@ import { markSeen, readSeen, searchPortal, studentNotifications } from "./notifi
 import { calendarItems, upcomingItems, whenText } from "./events";
 import { Avatar } from "./photos";
 
-export type StudentSection = "home" | "exams" | "results" | "reports" | "revision" | "notices" | "profile" | "events" | "staff" | "gallery" | "attendance" | "assignments";
+export type StudentSection = "home" | "exams" | "results" | "reports" | "revision" | "notices" | "profile" | "events" | "staff" | "gallery" | "attendance" | "assignments" | "messages";
 
 type Feature = { section: StudentSection; label: string; detail: string; icon: LucideIcon; tile: string; badge?: number };
 
@@ -18,23 +18,26 @@ export function StudentHome({ data, name, studentId, onGo }: { data: PortalDashb
   const reports = useGetStudentReports({ query: { queryKey: getGetStudentReportsQueryKey() } });
   const events = useListPortalEvents({ query: { queryKey: getListPortalEventsQueryKey() } });
   const assignments = useListMyAssignments({ query: { queryKey: getListMyAssignmentsQueryKey() } });
+  const messages = useGetMyMessages({ query: { queryKey: getGetMyMessagesQueryKey() } });
   const photo = useGetMyPhoto({ query: { queryKey: getGetMyPhotoQueryKey() } });
   const [query, setQuery] = useState("");
   const [seenVersion, setSeenVersion] = useState(0);
   const now = Date.now();
   const firstName = name.split(" ")[0];
   const openExams = data.exams.filter((e) => examWindow(e.startsAt, e.endsAt, now) === "open" && !data.attempts.some((a) => a.examId === e.id && a.status !== "in_progress")).length;
-  const notifications = useMemo(() => studentNotifications(data, reports.data, readSeen(studentId), now, events.data, assignments.data),
+  const notifications = useMemo(() => studentNotifications(data, reports.data, readSeen(studentId), now, events.data, assignments.data, messages.data),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [data, reports.data, events.data, assignments.data, studentId, seenVersion]);
+    [data, reports.data, events.data, assignments.data, messages.data, studentId, seenVersion]);
   const unseen = notifications.filter((n) => n.unseen).length;
   const toDo = (assignments.data ?? []).filter((a) => !a.submission).length;
+  const unreadMessages = (messages.data?.threads ?? []).reduce((n, t) => n + t.unread, 0);
   const newNotices = notifications.filter((n) => n.kind === "notice" && n.unseen).length;
 
   const features: Feature[] = [
     { section: "profile", label: "Profile", detail: "Your details and password", icon: UserRound, tile: "262 60% 55%" },
     { section: "exams", label: "Exams", detail: "Schedule and start", icon: ClipboardList, tile: "152 55% 36%", badge: openExams },
     { section: "assignments", label: "Assignments", detail: "Homework and feedback", icon: NotebookPen, tile: "4 66% 50%", badge: toDo },
+    { section: "messages", label: "Messages", detail: "Class teacher and office", icon: MessagesSquare, tile: "168 60% 34%", badge: unreadMessages },
     { section: "attendance", label: "Attendance", detail: "Your register record", icon: CalendarCheck, tile: "200 70% 42%" },
     { section: "results", label: "GradeSheet", detail: "Your exam results", icon: Award, tile: "41 80% 46%" },
     { section: "reports", label: "Report cards", detail: "Term results and PDF", icon: FileBarChart, tile: "212 75% 52%" },

@@ -19,3 +19,4 @@ export * from "./portal-community";
 export * from "./portal-media";
 export * from "./media-objects";
 export * from "./portal-learning";
+export * from "./portal-messages";

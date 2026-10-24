@@ -85,6 +85,14 @@ paths:
     $ref: "./learning.yaml#/paths/submitAssignment"
   /portal/assignment-images:
     $ref: "./learning.yaml#/paths/assignmentImages"
+  /portal/my-messages:
+    $ref: "./messages.yaml#/paths/myMessages"
+  /portal/my-messages/read:
+    $ref: "./messages.yaml#/paths/myMessagesRead"
+  /portal/message-threads:
+    $ref: "./messages.yaml#/paths/messageThreads"
+  /portal/message-threads/{studentId}/{channel}:
+    $ref: "./messages.yaml#/paths/messageThread"
   /portal/albums:
     $ref: "./media.yaml#/paths/albums"
   /portal/albums/{id}:
@@ -1003,6 +1011,24 @@ paths:
           description: Authentication required.
 components:
   schemas:
+    MessageChannel:
+      $ref: "./messages.yaml#/schemas/MessageChannel"
+    PortalChatMessage:
+      $ref: "./messages.yaml#/schemas/PortalChatMessage"
+    StudentThread:
+      $ref: "./messages.yaml#/schemas/StudentThread"
+    MyMessages:
+      $ref: "./messages.yaml#/schemas/MyMessages"
+    MessageBodyInput:
+      $ref: "./messages.yaml#/schemas/MessageBodyInput"
+    StudentMessageInput:
+      $ref: "./messages.yaml#/schemas/StudentMessageInput"
+    MessageReadInput:
+      $ref: "./messages.yaml#/schemas/MessageReadInput"
+    MessageThreadSummary:
+      $ref: "./messages.yaml#/schemas/MessageThreadSummary"
+    StaffMessageThread:
+      $ref: "./messages.yaml#/schemas/StaffMessageThread"
     AttendanceStatus:
       $ref: "./learning.yaml#/schemas/AttendanceStatus"
     AttendanceRow:

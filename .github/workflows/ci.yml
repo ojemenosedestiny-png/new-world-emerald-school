@@ -77,5 +77,6 @@ jobs:
           pnpm --filter @workspace/api-server run test:media-storage
           pnpm --filter @workspace/api-server run test:school-payments
           pnpm --filter @workspace/api-server run test:portal-learning
+          pnpm --filter @workspace/api-server run test:portal-messages
 
       # test:portal also needs Replit object storage, so it is run on Replit.

@@ -5,6 +5,76 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+export type MessageChannel = typeof MessageChannel[keyof typeof MessageChannel];
+
+
+export const MessageChannel = {
+  class: 'class',
+  office: 'office',
+} as const;
+
+export interface PortalChatMessage {
+  id: number;
+  fromStaff: boolean;
+  senderName: string;
+  body: string;
+  createdAt: string;
+  read: boolean;
+}
+
+export interface StudentThread {
+  channel: MessageChannel;
+  title: string;
+  unread: number;
+  messages: PortalChatMessage[];
+}
+
+export interface MyMessages {
+  threads: StudentThread[];
+}
+
+export interface MessageBodyInput {
+  /**
+     * @minLength 1
+     * @maxLength 1000
+     */
+  body: string;
+}
+
+export interface StudentMessageInput {
+  channel: MessageChannel;
+  /**
+     * @minLength 1
+     * @maxLength 1000
+     */
+  body: string;
+}
+
+export interface MessageReadInput {
+  channel: MessageChannel;
+}
+
+export interface MessageThreadSummary {
+  studentId: number;
+  studentName: string;
+  studentCode: string;
+  className: string;
+  channel: MessageChannel;
+  lastBody: string;
+  lastAt: string;
+  lastFromStaff: boolean;
+  unread: number;
+}
+
+export interface StaffMessageThread {
+  studentId: number;
+  studentName: string;
+  studentCode: string;
+  className: string;
+  channel: MessageChannel;
+  messages: PortalChatMessage[];
+}
+
 export type AttendanceStatus = typeof AttendanceStatus[keyof typeof AttendanceStatus];
 
 

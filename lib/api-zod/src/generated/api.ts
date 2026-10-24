@@ -1699,6 +1699,136 @@ export const UploadAssignmentImageResponse = zod.object({
 })
 
 
+export const GetMyMessagesResponse = zod.object({
+  "threads": zod.array(zod.object({
+  "channel": zod.enum(['class', 'office']),
+  "title": zod.string(),
+  "unread": zod.number(),
+  "messages": zod.array(zod.object({
+  "id": zod.number(),
+  "fromStaff": zod.boolean(),
+  "senderName": zod.string(),
+  "body": zod.string(),
+  "createdAt": zod.coerce.date(),
+  "read": zod.boolean()
+}))
+}))
+})
+
+
+export const sendMyMessageBodyBodyMax = 1000;
+
+
+
+export const SendMyMessageBody = zod.object({
+  "channel": zod.enum(['class', 'office']),
+  "body": zod.string().min(1).max(sendMyMessageBodyBodyMax)
+})
+
+export const SendMyMessageResponse = zod.object({
+  "threads": zod.array(zod.object({
+  "channel": zod.enum(['class', 'office']),
+  "title": zod.string(),
+  "unread": zod.number(),
+  "messages": zod.array(zod.object({
+  "id": zod.number(),
+  "fromStaff": zod.boolean(),
+  "senderName": zod.string(),
+  "body": zod.string(),
+  "createdAt": zod.coerce.date(),
+  "read": zod.boolean()
+}))
+}))
+})
+
+
+export const MarkMyMessagesReadBody = zod.object({
+  "channel": zod.enum(['class', 'office'])
+})
+
+export const MarkMyMessagesReadResponse = zod.object({
+  "threads": zod.array(zod.object({
+  "channel": zod.enum(['class', 'office']),
+  "title": zod.string(),
+  "unread": zod.number(),
+  "messages": zod.array(zod.object({
+  "id": zod.number(),
+  "fromStaff": zod.boolean(),
+  "senderName": zod.string(),
+  "body": zod.string(),
+  "createdAt": zod.coerce.date(),
+  "read": zod.boolean()
+}))
+}))
+})
+
+
+export const ListMessageThreadsResponseItem = zod.object({
+  "studentId": zod.number(),
+  "studentName": zod.string(),
+  "studentCode": zod.string(),
+  "className": zod.string(),
+  "channel": zod.enum(['class', 'office']),
+  "lastBody": zod.string(),
+  "lastAt": zod.coerce.date(),
+  "lastFromStaff": zod.boolean(),
+  "unread": zod.number()
+})
+export const ListMessageThreadsResponse = zod.array(ListMessageThreadsResponseItem)
+
+
+export const GetMessageThreadParams = zod.object({
+  "studentId": zod.coerce.number(),
+  "channel": zod.enum(['class', 'office'])
+})
+
+export const GetMessageThreadResponse = zod.object({
+  "studentId": zod.number(),
+  "studentName": zod.string(),
+  "studentCode": zod.string(),
+  "className": zod.string(),
+  "channel": zod.enum(['class', 'office']),
+  "messages": zod.array(zod.object({
+  "id": zod.number(),
+  "fromStaff": zod.boolean(),
+  "senderName": zod.string(),
+  "body": zod.string(),
+  "createdAt": zod.coerce.date(),
+  "read": zod.boolean()
+}))
+})
+
+
+export const ReplyMessageThreadParams = zod.object({
+  "studentId": zod.coerce.number(),
+  "channel": zod.enum(['class', 'office'])
+})
+
+export const replyMessageThreadBodyBodyMax = 1000;
+
+
+
+export const ReplyMessageThreadBody = zod.object({
+  "body": zod.string().min(1).max(replyMessageThreadBodyBodyMax)
+})
+
+export const ReplyMessageThreadResponse = zod.object({
+  "studentId": zod.number(),
+  "studentName": zod.string(),
+  "studentCode": zod.string(),
+  "className": zod.string(),
+  "channel": zod.enum(['class', 'office']),
+  "messages": zod.array(zod.object({
+  "id": zod.number(),
+  "fromStaff": zod.boolean(),
+  "senderName": zod.string(),
+  "body": zod.string(),
+  "createdAt": zod.coerce.date(),
+  "read": zod.boolean()
+}))
+})
+
+
 export const listPortalAlbumsResponseOneTitleMax = 150;
 
 export const listPortalAlbumsResponseOneDescriptionMax = 2000;
