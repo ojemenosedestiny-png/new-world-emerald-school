@@ -23,6 +23,9 @@ if [ "$VITE_CLERK_PUBLISHABLE_KEY" != "$CLERK_PUBLISHABLE_KEY" ]; then
   exit 1
 fi
 # Optional: Cloudinary media storage, checked only when set.
+if [ -n "${CLERK_WEBHOOK_SIGNING_SECRET:-}" ]; then
+  check_key CLERK_WEBHOOK_SIGNING_SECRET '^whsec_[A-Za-z0-9+/=]+$'
+fi
 if [ -n "${CLOUDINARY_URL:-}" ]; then
   check_key CLOUDINARY_URL '^cloudinary://[^:@[:space:]]+:[^@[:space:]]+@[A-Za-z0-9_-]+/?$'
 fi

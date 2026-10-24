@@ -143,3 +143,19 @@ Old WordPress addresses (`/about-us/`, `/faqs/`, `/shop/`, `/my-account/`, blog 
 
 To undo the switch, put the old `A` records back (`@` and `www` → `159.198.64.225`).
 
+## 9. Sending Clerk's sign-in emails through Resend
+
+Staff sign in with Clerk. Clerk's emails (verification codes, password resets, invitations) can be sent from the school's address through Resend instead of Clerk's mail service. Do the steps **in this order**, so no code is lost in between:
+
+1. Resend must already work: `RESEND_API_KEY` and `EMAIL_FROM` set in Render, and the domain verified in Resend.
+2. **Clerk** → **Configure → Webhooks** → **Add Endpoint**:
+   - Endpoint URL: `https://newworldemeraldprivateschool.com/api/webhooks/clerk-email`
+   - Subscribe to the event **`email.created`** only. Create it.
+3. Open the new endpoint and copy its **Signing Secret** (starts with `whsec_`).
+4. **Render** → **Environment**: add `CLERK_WEBHOOK_SIGNING_SECRET` with that value. Wait for the deploy.
+5. In Clerk, open the endpoint's **Testing** tab and send an `email.created` test. It should show a 200 response.
+6. **Clerk** → **Customization → Emails**: open each email you want Resend to send (for example *Verification code*, *Reset password code*, *Invitation*) and switch **Delivered by Clerk** off.
+7. Sign out, use "Forgot password" on the staff sign-in, and check the code arrives from your school address.
+
+If Resend refuses an email, the site answers with an error and Clerk retries it automatically; the reason appears in the Render logs ("Clerk email not sent through Resend"). To go back, switch **Delivered by Clerk** on again.
+

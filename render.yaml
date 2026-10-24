@@ -44,6 +44,9 @@ services:
       # "true" only after the school domain shows this site: sends the onrender.com address there.
       - key: FORWARD_TO_DOMAIN
         sync: false
+      # Signing secret of the Clerk webhook that sends Clerk's emails through Resend (whsec_...).
+      - key: CLERK_WEBHOOK_SIGNING_SECRET
+        sync: false
       - key: GCS_SERVICE_ACCOUNT_JSON
         sync: false
       - key: PRIVATE_OBJECT_DIR

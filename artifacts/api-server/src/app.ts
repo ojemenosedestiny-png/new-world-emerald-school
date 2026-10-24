@@ -12,6 +12,7 @@ import { serveFrontend } from "./lib/frontend";
 import { mountCspReports, securityHeaders } from "./lib/security-headers";
 import { auditStaffChanges } from "./lib/audit";
 import { siteRedirects } from "./lib/site-redirects";
+import { clerkEmailWebhook } from "./routes/clerk-email-webhook";
 
 const app: Express = express();
 
@@ -42,6 +43,8 @@ app.use(siteRedirects());
 // Website files need no auth, so they are served before the Clerk middleware.
 serveFrontend(app);
 app.use(cors({ credentials: true, origin: true }));
+// Clerk's signed email webhook needs the raw body, so it is mounted before the JSON parser.
+app.post("/api/webhooks/clerk-email", express.raw({ type: "application/json", limit: "1mb" }), clerkEmailWebhook);
 app.use(express.json({ limit: "2mb" }));
 app.use(express.urlencoded({ extended: true }));
 app.use(
