@@ -26,6 +26,7 @@ import {
 } from "@workspace/api-client-react";
 import { YOUTUBE_CONTENT_TYPE, parseYouTubeId } from "@/lib/videoSources";
 import { MAX_VIDEO_BYTES, isNetworkError, uploadVideoDirect } from "@/lib/directUpload";
+import { useKeepAlive } from "@/components/IdleSignOut";
 
 const MAX_VIDEO_SIZE = MAX_VIDEO_BYTES;
 const TOO_BIG = "Choose a video under 500 MB, or paste a YouTube link for longer videos.";
@@ -82,6 +83,8 @@ export function LiveUpdatesManager() {
     [updatesQuery.data],
   );
   const isPublishing = uploadStage !== "idle";
+  // A long video upload counts as activity, so the idle sign-out never cuts it off halfway.
+  useKeepAlive(isPublishing);
 
   const invalidateUpdates = async () => {
     await queryClient.invalidateQueries({ queryKey: getListLiveUpdatesQueryKey() });
