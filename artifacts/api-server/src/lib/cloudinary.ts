@@ -97,9 +97,58 @@ export async function deleteFromCloudinary(publicId: string, resourceType: Resou
   await client().uploader.destroy(publicId, { resource_type: resourceType, type: visibility === "private" ? "authenticated" : "upload", invalidate: true });
 }
 
-/** CDN address of a public image or video. */
+// Photos: at most 1920 px wide, in the best format the visitor's browser supports (WebP or AVIF), at
+// automatic quality. A 2 MB phone photo usually arrives as 150 to 300 KB, which matters on mobile data.
+const WEB_IMAGE = { fetch_format: "auto", quality: "auto", width: 1920, crop: "limit" } as const;
+// Videos: an H.264 MP4 copy. Phones often record HEVC (H.265), which most browsers on Windows cannot play.
+const PLAYABLE_VIDEO = { video_codec: "h264", quality: "auto" } as const;
+
+/** CDN address of a public image (resized and compressed) or video (the original). */
 export function publicUrl(publicId: string, resourceType: ResourceType) {
-  return client().url(publicId, { resource_type: resourceType, type: "upload", secure: true });
+  return client().url(publicId, { resource_type: resourceType, type: "upload", secure: true, ...(resourceType === "image" ? { transformation: [WEB_IMAGE] } : {}) });
+}
+
+/** CDN address of the H.264 copy of a video, made by {@link requestPlayableVideo}. */
+export function playableVideoUrl(publicId: string) {
+  return client().url(publicId, { resource_type: "video", type: "upload", secure: true, transformation: [PLAYABLE_VIDEO], format: "mp4" });
+}
+
+/** True when a Cloudinary "derived" entry is the H.264 copy. */
+export function isPlayableDerived(transformation: string | undefined) {
+  return !!transformation && /(^|,)vc_h264(,|\/|$)/.test(transformation) && /(^|,)q_auto(,|\/|$)/.test(transformation);
+}
+
+/**
+ * Asks Cloudinary to make the H.264 copy in the background. Big videos cannot be converted on the fly,
+ * so this runs once after upload (and on first view for videos uploaded earlier).
+ */
+export async function requestPlayableVideo(publicId: string) {
+  await client().uploader.explicit(publicId, { type: "upload", resource_type: "video", eager: [{ ...PLAYABLE_VIDEO, format: "mp4" }], eager_async: true });
+}
+
+// publicId -> when to check again; Infinity once the copy exists. Keeps Admin API calls rare.
+const playableState = new Map<string, number>();
+const requested = new Set<string>();
+
+/**
+ * Where to send a visitor for a video: the H.264 copy once Cloudinary has made it, otherwise the original
+ * (and the copy is requested). The second value says whether the copy is ready, for caching.
+ */
+export async function videoDeliveryUrl(publicId: string, now = Date.now()): Promise<[string, boolean]> {
+  const state = playableState.get(publicId);
+  if (state === Infinity) return [playableVideoUrl(publicId), true];
+  if (state === undefined || state <= now) {
+    playableState.set(publicId, now + 60_000);
+    try {
+      const found = await client().api.resource(publicId, { resource_type: "video", type: "upload" }) as { derived?: { transformation?: string }[] };
+      if (found.derived?.some((d) => isPlayableDerived(d.transformation))) {
+        playableState.set(publicId, Infinity);
+        return [playableVideoUrl(publicId), true];
+      }
+      if (!requested.has(publicId)) { requested.add(publicId); await requestPlayableVideo(publicId); }
+    } catch { /* Cloudinary busy or rate-limited: serve the original and try again in a minute */ }
+  }
+  return [publicUrl(publicId, "video"), false];
 }
 
 /** Short-lived signed download address for the original file (private files and PDFs). */

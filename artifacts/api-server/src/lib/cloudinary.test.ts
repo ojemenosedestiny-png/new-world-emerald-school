@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { cloudinaryCredentials, cloudinaryReady, cloudinaryUrlProblem, publicIdFor, resourceTypeFor, signUploadGrant, verifyUploadGrant } from "./cloudinary";
+import { cloudinaryCredentials, cloudinaryReady, cloudinaryUrlProblem, isPlayableDerived, playableVideoUrl, publicIdFor, publicUrl, resourceTypeFor, signUploadGrant, verifyUploadGrant } from "./cloudinary";
 
 const FAKE = "cloudinary://123456789012345:fake-secret-for-tests@demo-school";
 
@@ -56,3 +56,24 @@ test("explains unusable CLOUDINARY_URL values, including the dashboard placehold
   assert.equal(cloudinaryUrlProblem(""), null, "unset is not a problem");
 });
 
+
+test("photos are resized and compressed; videos get an H.264 copy that every browser plays", () => {
+  const saved = process.env.CLOUDINARY_URL;
+  process.env.CLOUDINARY_URL = FAKE;
+  try {
+    const photo = publicUrl("nwe/site/abc", "image");
+    assert.match(photo, /\/image\/upload\/[^/]*c_limit[^/]*\//);
+    assert.match(photo, /f_auto/);
+    assert.match(photo, /q_auto/);
+    assert.match(photo, /w_1920/);
+    assert.doesNotMatch(publicUrl("nwe/site/abc", "video"), /vc_h264|f_auto/, "the original video is unchanged");
+    const video = playableVideoUrl("nwe/site/abc");
+    assert.match(video, /\/video\/upload\/q_auto,vc_h264\/.*abc\.mp4$/);
+    assert.equal(isPlayableDerived("q_auto,vc_h264/mp4"), true);
+    assert.equal(isPlayableDerived("vc_h264,q_auto"), true);
+    assert.equal(isPlayableDerived("q_auto/mp4"), false);
+    assert.equal(isPlayableDerived(undefined), false);
+  } finally {
+    if (saved === undefined) delete process.env.CLOUDINARY_URL; else process.env.CLOUDINARY_URL = saved;
+  }
+});

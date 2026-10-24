@@ -65,7 +65,7 @@ test("website uploads with Cloudinary: signed links, checks, CDN delivery and ad
     await db.insert(mediaObjects).values({ id: photo, publicId: `nwe/site/${photo}`, resourceType: "image", contentType: "image/jpeg", size: 10 });
     const served = await call(`/api/storage/objects/uploads/${photo}`);
     assert.equal(served.status, 302);
-    assert.equal(served.headers.get("location"), `https://res.cloudinary.com/demo-school/image/upload/v1/nwe/site/${photo}`);
+    assert.equal(served.headers.get("location"), `https://res.cloudinary.com/demo-school/image/upload/c_limit,f_auto,q_auto,w_1920/v1/nwe/site/${photo}`);
 
     // A used upload link cannot be replayed.
     const reused = signUploadGrant({ id: photo, contentType: "image/jpeg", size: 16, expires: Date.now() + 60_000 });

@@ -18,7 +18,7 @@ import { requireAuthentication } from '../lib/requireAuthentication';
 import { isWebsiteAdmin } from '../lib/website-admin';
 import {
   cloudinaryCredentials, cloudinaryResourceBytes, cloudinaryUrlProblem, deleteFromCloudinary, signDirectUpload,
-  cloudinaryReady, downloadUrl, pipeFromCloudinary, publicIdFor, publicUrl, resourceTypeFor,
+  cloudinaryReady, downloadUrl, pipeFromCloudinary, publicIdFor, publicUrl, requestPlayableVideo, resourceTypeFor, videoDeliveryUrl,
   signUploadGrant, uploadToCloudinary, verifyUploadGrant, type ResourceType,
 } from '../lib/cloudinary';
 
@@ -145,6 +145,8 @@ router.post('/storage/direct-uploads/complete', async (req: Request, res: Respon
     const bytes = await cloudinaryResourceBytes(publicId, 'video');
     if (bytes === null) { res.status(409).json({ error: 'The video has not finished uploading to Cloudinary yet. Please try again.' }); return; }
     await records.recordMediaObject({ id: grant.id, publicId, resourceType: 'video', contentType: grant.contentType, size: bytes || grant.size });
+    // Start the browser-friendly H.264 copy now, so it is usually ready by the time families watch.
+    requestPlayableVideo(publicId).catch((err) => req.log.warn({ err }, 'Could not request the H.264 copy'));
     res.json({ objectPath, bytes: bytes || grant.size });
   } catch (error) {
     req.log.error({ err: error }, 'Could not confirm direct upload');
@@ -272,8 +274,13 @@ router.get('/storage/objects/*path', async (req: Request, res: Response) => {
         await pipeFromCloudinary(res, downloadUrl(media.publicId, type, 'public', media.contentType), {
           'Content-Type': media.contentType, 'Cache-Control': 'public, max-age=3600', 'X-Content-Type-Options': 'nosniff', 'Content-Disposition': 'inline',
         });
+      } else if (type === 'video') {
+        // Videos come from Cloudinary's CDN as an H.264 copy once it exists; until then the original, re-checked often.
+        const [url, playable] = await videoDeliveryUrl(media.publicId);
+        res.setHeader('Cache-Control', playable ? 'public, max-age=3600' : 'public, max-age=60');
+        res.redirect(302, url);
       } else {
-        // Photos and videos come straight from Cloudinary's CDN.
+        // Photos come straight from Cloudinary's CDN, resized and compressed.
         res.setHeader('Cache-Control', 'public, max-age=3600');
         res.redirect(302, publicUrl(media.publicId, type));
       }
