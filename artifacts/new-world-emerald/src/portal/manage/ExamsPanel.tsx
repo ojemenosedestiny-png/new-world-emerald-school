@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { PortalManagement, PortalExam } from "@workspace/api-client-react";
-import { BarChart3, ClipboardList, Copy, Eye, EyeOff, FileText, Lock, Pencil, Plus, Send, Trash2, Undo2 } from "lucide-react";
+import { BarChart3, ClipboardList, Copy, Eye, EyeOff, FileText, Lock, Pencil, Plus, Send, Sparkles, Trash2, Undo2 } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { EmptyState, StatusPill } from "../ui";
 import { fileUrl, formatDateTime } from "../lib";
@@ -31,7 +31,9 @@ export function ExamsPanel({ data, isAdmin = false }: { data: PortalManagement; 
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-end"><button className="portal-btn" disabled={!data.classes.length} onClick={() => setEditing(blankExam(data.classes[0]?.id ?? 0))} data-testid="button-add-exam"><Plus size={15} /> New exam</button></div>
+      <div className="flex flex-wrap justify-end gap-2">
+        {isAdmin && <button className="portal-btn-ghost" disabled={cmd.pending || !data.classes.length} onClick={() => void cmd.run({ action: "addPracticeExams" }, "Practice CBT")} title="Adds a published 15-minute practice test, open for 7 days, to every class" data-testid="button-add-practice-exams"><Sparkles size={15} /> Add practice CBT to every class</button>}
+        <button className="portal-btn" disabled={!data.classes.length} onClick={() => setEditing(blankExam(data.classes[0]?.id ?? 0))} data-testid="button-add-exam"><Plus size={15} /> New exam</button></div>
       {data.exams.length === 0 ? <EmptyState icon={<ClipboardList size={22} />} title="No exams yet" body="Build an exam on screen, or upload a PDF paper and add answer slots. Students see it only after you publish." /> : (
         <div className="space-y-3">{data.exams.map((e) => {
           const attempts = data.attempts.filter((a) => a.examId === e.id);

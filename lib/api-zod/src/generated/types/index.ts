@@ -187,6 +187,7 @@ export * from './reportCommandScoresEntriesItem';
 export * from './reportCommandSubject';
 export * from './reportCommandTarget';
 export * from './reportCommandTerm';
+export * from './reportPortalFocusLoss200';
 export * from './reportScore';
 export * from './reportStudent';
 export * from './reportStudentResult';

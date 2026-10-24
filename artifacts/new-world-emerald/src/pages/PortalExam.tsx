@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useParams } from "wouter";
 import { useGetPortalAttempt, getGetPortalAttemptQueryKey, useGetPortalSession, getGetPortalSessionQueryKey } from "@workspace/api-client-react";
-import { ArrowLeft, CheckCircle2, ChevronDown, ChevronUp, CloudOff, FileText, Hourglass, ListChecks, Loader2, Send } from "lucide-react";
+import { ArrowLeft, CheckCircle2, ChevronDown, ChevronUp, CloudOff, FileText, Hourglass, ListChecks, Loader2, Maximize, Send, ShieldAlert } from "lucide-react";
 import "@/portal/portal.css";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { ErrorPanel, PortalHeader, Skeleton, StatusPill } from "@/portal/ui";
@@ -12,6 +12,7 @@ import { QuestionNavigator, unansweredNumbers } from "@/portal/exam/QuestionNavi
 import { useAttemptSync, type SaveState } from "@/portal/exam/useAttemptSync";
 import { Countdown, useRemaining } from "@/portal/exam/Countdown";
 import { QuestionCard } from "@/portal/exam/QuestionCard";
+import { useLockdown } from "@/portal/exam/useLockdown";
 
 function SaveBadge({ state, savedAt, error, onRetry }: { state: SaveState; savedAt: string | null; error: string | null; onRetry: () => void }) {
   let text = "";
@@ -57,6 +58,7 @@ export default function PortalExam() {
   const locked = !inProgress || expired;
   // An exam in progress counts as activity, so the idle sign-out in other tabs never ends it.
   useKeepAlive(inProgress && !expired);
+  const lockdown = useLockdown(id, !!attempt?.lockdown && inProgress && !expired);
 
   useEffect(() => {
     if (!inProgress || !expired || autoSubmitted.current) return;
@@ -101,7 +103,21 @@ export default function PortalExam() {
         {!inProgress && back}
       </PortalHeader>
 
+      {lockdown.needsFullscreen && (
+        <div className="fixed inset-0 z-40 grid place-items-center bg-[hsl(var(--p-ink)/0.85)] px-4" role="dialog" aria-modal="true" aria-labelledby="lockdown-title" data-testid="panel-lockdown">
+          <div className="portal-card max-w-md p-7 text-center">
+            <ShieldAlert className="mx-auto text-[hsl(var(--p-emerald))]" size={34} />
+            <h2 id="lockdown-title" className="mt-3 font-serif text-2xl font-semibold">Full screen exam</h2>
+            <p className="mt-2 text-sm leading-relaxed text-[hsl(var(--p-ink)/0.7)]">Your teacher has turned on lockdown. Stay on this screen until you submit. Copy and paste are off, and every time you leave the exam screen is recorded{lockdown.exits ? ` (so far: ${lockdown.exits})` : ""}.</p>
+            <button type="button" className="portal-btn mt-5 w-full justify-center" onClick={() => void lockdown.enterFullscreen()} data-testid="button-enter-fullscreen"><Maximize size={15} /> {lockdown.exits ? "Return to full screen" : "Start in full screen"}</button>
+          </div>
+        </div>
+      )}
+
       <main className={"mx-auto px-4 py-8 md:px-8 " + (pdf ? "max-w-7xl" : "max-w-3xl")}>
+        {attempt.lockdown && inProgress && !expired && lockdown.exits > 0 && (
+          <p className="mb-4 rounded-xl bg-[hsl(var(--p-gold-soft))] p-3 text-sm font-semibold" role="status" data-testid="text-lockdown-exits">You have left the exam screen {lockdown.exits} {lockdown.exits === 1 ? "time" : "times"}. Your teacher can see this.</p>
+        )}
         <div className="portal-rise mb-6">
           <p className="text-xs font-bold uppercase tracking-[0.22em] text-[hsl(var(--p-emerald))]">{attempt.subject} / {attempt.totalMarks} marks</p>
           <h1 className="mt-2 font-serif text-3xl font-semibold md:text-4xl" data-testid="text-exam-title">{attempt.title}</h1>

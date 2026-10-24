@@ -98,6 +98,7 @@ import type {
   PortalSession,
   PublicIndividualFeeCharge,
   ReportCommand,
+  ReportPortalFocusLoss200,
   ReportWorkspace,
   RevokeRequest,
   SchoolCommerceSettings,
@@ -784,6 +785,71 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
         TContext
       > => {
       return useMutation(getSubmitPortalAttemptMutationOptions(options));
+    }
+
+export const getReportPortalFocusLossUrl = (id: number,) => {
+
+
+
+
+  return `/api/portal/attempts/${id}/focus-loss`
+}
+
+export const reportPortalFocusLoss = async (id: number, options?: RequestInit): Promise<ReportPortalFocusLoss200> => {
+
+  return customFetch<ReportPortalFocusLoss200>(getReportPortalFocusLossUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getReportPortalFocusLossMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reportPortalFocusLoss>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof reportPortalFocusLoss>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['reportPortalFocusLoss'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof reportPortalFocusLoss>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  reportPortalFocusLoss(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ReportPortalFocusLossMutationResult = NonNullable<Awaited<ReturnType<typeof reportPortalFocusLoss>>>
+
+    export type ReportPortalFocusLossMutationError = ErrorType<unknown>
+
+    export const useReportPortalFocusLoss = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reportPortalFocusLoss>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof reportPortalFocusLoss>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getReportPortalFocusLossMutationOptions(options));
     }
 
 export const getGetPortalManagementUrl = () => {

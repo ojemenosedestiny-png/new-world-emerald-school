@@ -54,6 +54,8 @@ export type PortalStaffAttempt = ({
   /** @maxLength 3000 */
   feedback: string;
 }[];
+  lockdown?: boolean;
+  focusLosses?: number;
 }) & ({
   studentName: string;
   studentId: string;

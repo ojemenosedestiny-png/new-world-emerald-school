@@ -30,4 +30,6 @@ export interface PortalAttempt {
   resultsReleased: boolean;
   score?: number;
   marks?: PortalAttemptMarksItem[];
+  lockdown?: boolean;
+  focusLosses?: number;
 }

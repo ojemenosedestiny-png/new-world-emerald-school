@@ -17,4 +17,5 @@ export type PortalDashboardExamsItem = {
   instructions: string;
   questionCount: number;
   totalMarks: number;
+  lockdown?: boolean;
 };

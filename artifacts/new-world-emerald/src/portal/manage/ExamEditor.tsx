@@ -26,6 +26,11 @@ export function validateExam(e: PortalExam, publishing: boolean): string[] {
   if (!e.startsAt || !e.endsAt || new Date(e.endsAt) <= new Date(e.startsAt)) errs.push("The window must end after it starts.");
   if (e.mode === "pdf" && !e.fileId) errs.push("PDF mode needs an uploaded exam paper.");
   if (e.questions.length === 0) errs.push("Add at least one question or answer slot.");
+  const draw = e.drawCount ?? 0;
+  if ((e.shuffleQuestions || e.shuffleOptions || draw > 0) && e.mode === "pdf") errs.push("Shuffling and question banks only work with on-screen questions.");
+  if (!Number.isInteger(draw) || draw < 0) errs.push("Questions per student must be a whole number.");
+  else if (draw > e.questions.length) errs.push(`Questions per student cannot be more than the ${e.questions.length} in the bank.`);
+  else if (draw > 0 && new Set(e.questions.map((q) => q.marks)).size > 1) errs.push("For a question bank, give every question the same marks.");
   e.questions.forEach((q, i) => {
     if (!q.text.trim()) errs.push("Question " + (i + 1) + " has no text.");
     if (!(q.marks >= 0.5 && q.marks <= 100)) errs.push("Question " + (i + 1) + " marks must be 0.5 to 100.");
@@ -167,6 +172,18 @@ export function ExamEditor({ data, initial, onClose }: { data: PortalManagement;
               </div>
             )}
           </fieldset>
+
+          {exam.mode === "interactive" && (
+            <fieldset className="rounded-2xl bg-[hsl(var(--p-paper-2)/0.7)] p-4" data-testid="fieldset-cbt">
+              <legend className="portal-label px-1">Computer-based test options</legend>
+              <div className="grid gap-2 text-sm sm:grid-cols-2">
+                <label className="flex items-start gap-2"><input type="checkbox" className="mt-1" checked={exam.shuffleQuestions ?? false} onChange={(e) => set({ shuffleQuestions: e.target.checked })} data-testid="checkbox-shuffle-questions" /> <span>Shuffle question order<span className="block text-xs text-[hsl(var(--p-ink)/0.6)]">Each student sees the questions in a different order.</span></span></label>
+                <label className="flex items-start gap-2"><input type="checkbox" className="mt-1" checked={exam.shuffleOptions ?? false} onChange={(e) => set({ shuffleOptions: e.target.checked })} data-testid="checkbox-shuffle-options" /> <span>Shuffle answer options<span className="block text-xs text-[hsl(var(--p-ink)/0.6)]">A to D are mixed for each student; marking stays correct.</span></span></label>
+                <label className="flex items-start gap-2"><input type="checkbox" className="mt-1" checked={exam.lockdown ?? false} onChange={(e) => set({ lockdown: e.target.checked })} data-testid="checkbox-lockdown" /> <span>Lockdown mode<span className="block text-xs text-[hsl(var(--p-ink)/0.6)]">Full screen, no copy, paste or right-click. Every time a student leaves the exam screen is counted and shown to you when marking. A browser cannot fully block other apps, so supervise in the room too.</span></span></label>
+                <label className="flex items-start gap-2"><span className="flex-1">Question bank: questions per student<span className="block text-xs text-[hsl(var(--p-ink)/0.6)]">0 gives everyone every question. A smaller number draws that many at random for each student (all questions need the same marks).</span></span><input type="number" min={0} max={exam.questions.length} className="portal-input !w-20 !py-1.5" value={exam.drawCount ?? 0} onChange={(e) => set({ drawCount: Math.max(0, Math.floor(Number(e.target.value) || 0)) })} data-testid="input-draw-count" /></label>
+              </div>
+            </fieldset>
+          )}
 
           <div>
             <div className="mb-3 flex flex-wrap items-center justify-between gap-2">

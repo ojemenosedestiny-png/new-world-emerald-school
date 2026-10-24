@@ -100,7 +100,8 @@ export const GetPortalDashboardResponse = zod.object({
   "mode": zod.string(),
   "instructions": zod.string(),
   "questionCount": zod.number(),
-  "totalMarks": zod.number()
+  "totalMarks": zod.number(),
+  "lockdown": zod.boolean().optional()
 })),
   "attempts": zod.array(zod.object({
   "id": zod.number(),
@@ -130,7 +131,9 @@ export const GetPortalDashboardResponse = zod.object({
   "questionId": zod.string(),
   "score": zod.number().min(getPortalDashboardResponseAttemptsItemMarksItemScoreMin),
   "feedback": zod.string().max(getPortalDashboardResponseAttemptsItemMarksItemFeedbackMax)
-})).optional()
+})).optional(),
+  "lockdown": zod.boolean().optional(),
+  "focusLosses": zod.number().optional()
 })),
   "materials": zod.array(zod.object({
   "id": zod.number().optional(),
@@ -200,7 +203,9 @@ export const StartPortalExamResponse = zod.object({
   "questionId": zod.string(),
   "score": zod.number().min(startPortalExamResponseMarksItemScoreMin),
   "feedback": zod.string().max(startPortalExamResponseMarksItemFeedbackMax)
-})).optional()
+})).optional(),
+  "lockdown": zod.boolean().optional(),
+  "focusLosses": zod.number().optional()
 })
 
 
@@ -253,7 +258,9 @@ export const GetPortalAttemptResponse = zod.object({
   "questionId": zod.string(),
   "score": zod.number().min(getPortalAttemptResponseMarksItemScoreMin),
   "feedback": zod.string().max(getPortalAttemptResponseMarksItemFeedbackMax)
-})).optional()
+})).optional(),
+  "lockdown": zod.boolean().optional(),
+  "focusLosses": zod.number().optional()
 })
 
 
@@ -314,7 +321,9 @@ export const SavePortalAnswersResponse = zod.object({
   "questionId": zod.string(),
   "score": zod.number().min(savePortalAnswersResponseMarksItemScoreMin),
   "feedback": zod.string().max(savePortalAnswersResponseMarksItemFeedbackMax)
-})).optional()
+})).optional(),
+  "lockdown": zod.boolean().optional(),
+  "focusLosses": zod.number().optional()
 })
 
 
@@ -375,7 +384,18 @@ export const SubmitPortalAttemptResponse = zod.object({
   "questionId": zod.string(),
   "score": zod.number().min(submitPortalAttemptResponseMarksItemScoreMin),
   "feedback": zod.string().max(submitPortalAttemptResponseMarksItemFeedbackMax)
-})).optional()
+})).optional(),
+  "lockdown": zod.boolean().optional(),
+  "focusLosses": zod.number().optional()
+})
+
+
+export const ReportPortalFocusLossParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const ReportPortalFocusLossResponse = zod.object({
+  "focusLosses": zod.number()
 })
 
 
@@ -423,6 +443,9 @@ export const getPortalManagementResponseExamsItemQuestionsItemOneMarksMax = 100;
 export const getPortalManagementResponseExamsItemQuestionsItemTwoRubricMax = 5000;
 
 export const getPortalManagementResponseExamsItemQuestionsMax = 200;
+
+export const getPortalManagementResponseExamsItemDrawCountMin = 0;
+export const getPortalManagementResponseExamsItemDrawCountMax = 200;
 
 export const getPortalManagementResponseAttemptsItemOneQuestionsItemIdMax = 80;
 
@@ -513,7 +536,11 @@ export const GetPortalManagementResponse = zod.object({
   "rubric": zod.string().max(getPortalManagementResponseExamsItemQuestionsItemTwoRubricMax).optional()
 }))).max(getPortalManagementResponseExamsItemQuestionsMax),
   "published": zod.boolean(),
-  "resultsReleased": zod.boolean()
+  "resultsReleased": zod.boolean(),
+  "shuffleQuestions": zod.boolean().optional().describe('Each student gets the questions in a different order'),
+  "shuffleOptions": zod.boolean().optional().describe('Each student gets multiple-choice options in a different order'),
+  "drawCount": zod.number().min(getPortalManagementResponseExamsItemDrawCountMin).max(getPortalManagementResponseExamsItemDrawCountMax).optional().describe('Question bank: questions per student, drawn at random (0 = all)'),
+  "lockdown": zod.boolean().optional().describe('Full screen, no copy or paste, and exits from the exam screen are recorded')
 })),
   "attempts": zod.array(zod.object({
   "id": zod.number(),
@@ -543,7 +570,9 @@ export const GetPortalManagementResponse = zod.object({
   "questionId": zod.string(),
   "score": zod.number().min(getPortalManagementResponseAttemptsItemOneMarksItemScoreMin),
   "feedback": zod.string().max(getPortalManagementResponseAttemptsItemOneMarksItemFeedbackMax)
-})).optional()
+})).optional(),
+  "lockdown": zod.boolean().optional(),
+  "focusLosses": zod.number().optional()
 }).and(zod.object({
   "studentName": zod.string(),
   "studentId": zod.string(),
@@ -623,6 +652,9 @@ export const managePortalBodyExamQuestionsItemTwoRubricMax = 5000;
 
 export const managePortalBodyExamQuestionsMax = 200;
 
+export const managePortalBodyExamDrawCountMin = 0;
+export const managePortalBodyExamDrawCountMax = 200;
+
 export const managePortalBodyMaterialTitleMax = 200;
 
 export const managePortalBodyMaterialSubjectMax = 100;
@@ -642,7 +674,7 @@ export const managePortalBodyAttemptControlMinutesMax = 240;
 
 
 export const ManagePortalBody = zod.object({
-  "action": zod.enum(['saveClass', 'saveStudent', 'saveTeacher', 'saveExam', 'saveMaterial', 'saveNotice', 'grade', 'examStatus', 'deleteExam', 'deleteMaterial', 'deleteNotice', 'extendAttempt', 'resetAttempt']),
+  "action": zod.enum(['saveClass', 'saveStudent', 'saveTeacher', 'saveExam', 'saveMaterial', 'saveNotice', 'grade', 'examStatus', 'deleteExam', 'deleteMaterial', 'deleteNotice', 'extendAttempt', 'resetAttempt', 'addPracticeExams']),
   "schoolClass": zod.object({
   "id": zod.number().optional(),
   "name": zod.string().min(1).max(managePortalBodySchoolClassNameMax)
@@ -691,7 +723,11 @@ export const ManagePortalBody = zod.object({
   "rubric": zod.string().max(managePortalBodyExamQuestionsItemTwoRubricMax).optional()
 }))).max(managePortalBodyExamQuestionsMax),
   "published": zod.boolean(),
-  "resultsReleased": zod.boolean()
+  "resultsReleased": zod.boolean(),
+  "shuffleQuestions": zod.boolean().optional().describe('Each student gets the questions in a different order'),
+  "shuffleOptions": zod.boolean().optional().describe('Each student gets multiple-choice options in a different order'),
+  "drawCount": zod.number().min(managePortalBodyExamDrawCountMin).max(managePortalBodyExamDrawCountMax).optional().describe('Question bank: questions per student, drawn at random (0 = all)'),
+  "lockdown": zod.boolean().optional().describe('Full screen, no copy or paste, and exits from the exam screen are recorded')
 }).optional(),
   "material": zod.object({
   "id": zod.number().optional(),

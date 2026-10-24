@@ -1,9 +1,10 @@
 import { Router } from "express";
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import { db, portalStudents, portalExams, portalAttempts, portalMaterials, portalNotices, portalClasses } from "@workspace/db";
 import { SavePortalAnswersBody } from "@workspace/api-zod";
 import { check, portalActor, studentOnly } from "../lib/portal-auth";
 import { automaticMarks, attemptView, finalizeExpired, validAnswers } from "../lib/portal-assessment";
+import { buildPaper, MAX_FOCUS_LOSSES, paperSize } from "../lib/cbt";
 
 export const portalStudentRouter = Router();
 portalStudentRouter.get("/student", async (req, res) => {
@@ -20,8 +21,7 @@ portalStudentRouter.get("/student", async (req, res) => {
   res.json({
     className: schoolClass?.name ?? "", exams: exams.filter((e) => e.published).map((e) => ({
       id: e.id, title: e.title, subject: e.subject, durationMinutes: e.durationMinutes, startsAt: e.startsAt.toISOString(),
-      endsAt: e.endsAt.toISOString(), mode: e.mode, instructions: e.instructions, questionCount: e.questions.length,
-      totalMarks: e.questions.reduce((s, q) => s + q.marks, 0),
+      endsAt: e.endsAt.toISOString(), mode: e.mode, instructions: e.instructions, ...paperSize(e.questions, e.drawCount), lockdown: e.lockdown,
     })), attempts: attempts.filter(Boolean), materials, notices,
   });
 });
@@ -39,7 +39,7 @@ portalStudentRouter.post("/exams/:id/start", async (req, res) => {
     check(exam.published && now >= exam.startsAt && now < exam.endsAt, "This exam is not open.", 403);
     check(!exam.resultsReleased, "This assessment is closed.", 403);
     const [attempt] = await tx.insert(portalAttempts).values({
-      examId: exam.id, studentId: student.id, questions: exam.questions,
+      examId: exam.id, studentId: student.id, questions: buildPaper(exam.questions, exam),
       startedAt: now, deadline: new Date(Math.min(exam.endsAt.getTime(), now.getTime() + exam.durationMinutes * 60_000)),
     }).returning();
     return { exam, attempt };
@@ -74,5 +74,14 @@ async function updateAttempt(req: import("express").Request, submit: boolean) {
     return attemptView(updated, exam);
   });
 }
+// Lockdown exams: the page reports each time the student leaves the exam screen; staff see the count.
+portalStudentRouter.post("/attempts/:id/focus-loss", async (req, res) => {
+  const student = studentOnly(await portalActor(req));
+  const [attempt] = await db.update(portalAttempts).set({ focusLosses: sql`least(${portalAttempts.focusLosses} + 1, ${MAX_FOCUS_LOSSES})` })
+    .where(and(eq(portalAttempts.id, Number(req.params.id) || 0), eq(portalAttempts.studentId, student.id), eq(portalAttempts.status, "in_progress")))
+    .returning({ focusLosses: portalAttempts.focusLosses });
+  check(attempt, "Attempt not found or already submitted.", 404);
+  res.json(attempt);
+});
 portalStudentRouter.put("/attempts/:id", async (req, res) => { res.json(await updateAttempt(req, false)); });
 portalStudentRouter.post("/attempts/:id/submit", async (req, res) => { res.json(await updateAttempt(req, true)); });

@@ -71,6 +71,7 @@ function ExamRow({ exam, attempt }: { exam: PortalDashboardExamsItem; attempt?: 
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-[11px] font-bold uppercase tracking-[0.16em] text-[hsl(var(--p-ink)/0.55)]">{exam.subject}</span>
           {done ? <StatusPill tone="ink">Submitted</StatusPill> : inProgress ? <StatusPill tone="gold">In progress</StatusPill> : win === "open" ? <StatusPill tone="green">Open now</StatusPill> : win === "upcoming" ? <StatusPill tone="muted">Upcoming</StatusPill> : <StatusPill tone="red">Closed</StatusPill>}
+          {exam.lockdown && !done && <StatusPill tone="muted">Full screen</StatusPill>}
         </div>
         <h3 className="mt-1 font-serif text-xl font-semibold">{exam.title}</h3>
         <p className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-sm text-[hsl(var(--p-ink)/0.62)]">

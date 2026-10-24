@@ -28,7 +28,7 @@ function GradeDialog({ attempt, onClose }: { attempt: PortalManagementAttemptsIt
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="portal !min-h-0 max-h-[94dvh] max-w-3xl overflow-y-auto rounded-2xl">
         <DialogHeader><DialogTitle className="font-serif text-2xl">{attempt.studentName}</DialogTitle>
-          <DialogDescription>{attempt.title} / {attempt.studentId} / submitted answers{attempt.fileId ? "" : ""}</DialogDescription></DialogHeader>
+          <DialogDescription>{attempt.title} / {attempt.studentId} / submitted answers{attempt.focusLosses ? ` / left the exam screen ${attempt.focusLosses} ${attempt.focusLosses === 1 ? "time" : "times"}` : ""}</DialogDescription></DialogHeader>
         {attempt.fileId && <a className="portal-btn-ghost w-fit" href={fileUrl(attempt.fileId)} target="_blank" rel="noreferrer">Open exam paper</a>}
         <div className="space-y-3">{attempt.questionKeys.map((q, i) => {
           const ans = attempt.answers[q.id] ?? "";
@@ -76,6 +76,7 @@ export function MarkingPanel({ data }: { data: PortalManagement }) {
             <div className="min-w-0 flex-1">
               <p className="font-semibold">{a.studentName} <span className="font-mono text-xs text-[hsl(var(--p-ink)/0.5)]">{a.studentId}</span></p>
               <p className="text-xs text-[hsl(var(--p-ink)/0.55)]">{a.title} / {className(data.classes, a.classId)} / saved {formatDateTime(a.savedAt)}</p>
+              {(a.focusLosses ?? 0) > 0 && <p className="text-xs font-semibold text-[hsl(var(--p-red))]" data-testid={"text-focus-losses-" + a.id}>Left the exam screen {a.focusLosses} {a.focusLosses === 1 ? "time" : "times"}</p>}
             </div>
             {a.status === "marked" ? <StatusPill tone="green">{a.score ?? "-"} / {a.totalMarks}</StatusPill> : <StatusPill tone="gold">To mark</StatusPill>}
             <button className="portal-btn-ghost" onClick={() => setOpen(a.id)} data-testid={"button-grade-" + a.id}>{a.status === "marked" ? "Review marks" : "Mark"}</button>

@@ -30,4 +30,6 @@ export type PortalDashboardAttemptsItem = {
   resultsReleased: boolean;
   score?: number;
   marks?: PortalDashboardAttemptsItemMarksItem[];
+  lockdown?: boolean;
+  focusLosses?: number;
 };

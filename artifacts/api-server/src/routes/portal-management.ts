@@ -9,6 +9,8 @@ import { check, portalActor, staffOnly, classAllowed, hashPassword, type PortalA
 import { automaticMarks, attemptView, finalizeExpired, validateQuestions } from "../lib/portal-assessment";
 import { validEmail } from "../lib/accounts";
 import { cleanSubjects } from "../lib/community";
+import { paperSettingsProblem } from "../lib/cbt";
+import { PRACTICE_TITLE, practiceExam } from "../lib/practice-exam";
 
 export const portalManagementRouter = Router();
 function scoped(actor: PortalActor, column: typeof portalExams.classId | typeof portalClasses.id | typeof portalStudents.classId | typeof portalAttempts.examId | typeof portalMaterials.classId | typeof portalNotices.classId) {
@@ -36,7 +38,7 @@ portalManagementRouter.get("/manage", async (req, res) => {
     const attempt = await finalizeExpired(raw);
     const exam = exams.find((e) => e.id === raw.examId)!;
     const student = students.find((s) => s.id === raw.studentId);
-    return { ...attemptView(attempt, exam, true), classId: exam.classId, studentName: student?.name ?? "Former enrolment", studentId: student?.studentId ?? "", questionKeys: attempt.questions };
+    return { ...attemptView(attempt, exam, true), classId: exam.classId, studentName: student?.name ?? "Former enrolment", studentId: student?.studentId ?? "", questionKeys: attempt.questions, focusLosses: attempt.focusLosses };
   }));
   const materials = await db.select().from(portalMaterials).where(scoped(actor, portalMaterials.classId));
   const notices = await db.select().from(portalNotices).where(scoped(actor, portalNotices.classId));
@@ -46,7 +48,7 @@ portalManagementRouter.post("/manage", async (req, res) => {
   const actor = await portalActor(req);
   staffOnly(actor);
   const body = ManagePortalBody.parse(req.body);
-  if (["saveClass", "saveStudent", "saveTeacher"].includes(body.action)) check(actor.role === "admin", "Only school administrators can manage enrolments and staff access.", 403);
+  if (["saveClass", "saveStudent", "saveTeacher", "addPracticeExams"].includes(body.action)) check(actor.role === "admin", "Only school administrators can manage enrolments and staff access.", 403);
   if (body.action === "resetAttempt") check(actor.role === "admin", "Only school administrators can reset a student's attempt.", 403);
   switch (body.action) {
     case "saveClass": {
@@ -111,8 +113,11 @@ portalManagementRouter.post("/manage", async (req, res) => {
       await validFile(data.fileId, data.classId);
       check(data.mode !== "pdf" || data.fileId, "Upload the original PDF for PDF mode.");
       check(!data.resultsReleased, "Save the exam first; release results after marking through the result controls.");
+      const paper = { shuffleQuestions: data.shuffleQuestions ?? false, shuffleOptions: data.shuffleOptions ?? false, drawCount: data.drawCount ?? 0 };
+      const paperProblem = paperSettingsProblem(data.mode, data.questions, paper);
+      check(!paperProblem, paperProblem ?? "");
       const { id, ...rest } = data;
-      const values = { ...rest, title: data.title.trim(), subject: data.subject.trim(), startsAt, endsAt, fileId: data.fileId || null };
+      const values = { ...rest, ...paper, lockdown: data.lockdown ?? false, title: data.title.trim(), subject: data.subject.trim(), startsAt, endsAt, fileId: data.fileId || null };
       await db.transaction(async (tx) => {
         if (id) {
           const [old] = await tx.select().from(portalExams).where(eq(portalExams.id, id)).for("update");
@@ -191,6 +196,16 @@ portalManagementRouter.post("/manage", async (req, res) => {
         await tx.update(portalAttempts).set({ marks: [...automaticMarks(attempt.questions, attempt.answers), ...data.marks], status: "marked" }).where(eq(portalAttempts.id, attempt.id));
       });
       break;
+    }
+    case "addPracticeExams": {
+      // One practice test per class (skipped where it already exists), so the office can try the CBT features.
+      const classes = await db.select({ id: portalClasses.id }).from(portalClasses);
+      const existing = new Set((await db.select({ classId: portalExams.classId }).from(portalExams).where(eq(portalExams.title, PRACTICE_TITLE))).map((e) => e.classId));
+      const missing = classes.filter((c) => !existing.has(c.id));
+      check(classes.length, "Create a class first.");
+      if (missing.length) await db.insert(portalExams).values(missing.map((c) => practiceExam(c.id)));
+      res.json({ message: missing.length ? `Practice CBT added to ${missing.length} ${missing.length === 1 ? "class" : "classes"}.` : "Every class already has the practice CBT." });
+      return;
     }
     case "deleteExam": {
       const data = body.target;

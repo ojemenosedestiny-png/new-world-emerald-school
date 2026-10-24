@@ -1556,6 +1556,18 @@ export interface PortalExam {
   questions: PortalExamQuestionsItem[];
   published: boolean;
   resultsReleased: boolean;
+  /** Each student gets the questions in a different order */
+  shuffleQuestions?: boolean;
+  /** Each student gets multiple-choice options in a different order */
+  shuffleOptions?: boolean;
+  /**
+     * Question bank: questions per student, drawn at random (0 = all)
+     * @minimum 0
+     * @maximum 200
+     */
+  drawCount?: number;
+  /** Full screen, no copy or paste, and exits from the exam screen are recorded */
+  lockdown?: boolean;
 }
 
 export interface PortalExamSummary {
@@ -1569,6 +1581,7 @@ export interface PortalExamSummary {
   instructions: string;
   questionCount: number;
   totalMarks: number;
+  lockdown?: boolean;
 }
 
 export interface PortalMark {
@@ -1650,6 +1663,8 @@ export interface PortalAttempt {
   resultsReleased: boolean;
   score?: number;
   marks?: PortalAttemptMarksItem[];
+  lockdown?: boolean;
+  focusLosses?: number;
 }
 
 export type PortalAnswerInputAnswers = {[key: string]: string};
@@ -1705,6 +1720,7 @@ export type PortalDashboardExamsItem = {
   instructions: string;
   questionCount: number;
   totalMarks: number;
+  lockdown?: boolean;
 };
 
 export type PortalDashboardAttemptsItemQuestionsItemType = typeof PortalDashboardAttemptsItemQuestionsItemType[keyof typeof PortalDashboardAttemptsItemQuestionsItemType];
@@ -1778,6 +1794,8 @@ export type PortalDashboardAttemptsItem = {
   resultsReleased: boolean;
   score?: number;
   marks?: PortalDashboardAttemptsItemMarksItem[];
+  lockdown?: boolean;
+  focusLosses?: number;
 };
 
 export type PortalDashboardMaterialsItem = {
@@ -1872,6 +1890,8 @@ export type PortalStaffAttempt = ({
   /** @maxLength 3000 */
   feedback: string;
 }[];
+  lockdown?: boolean;
+  focusLosses?: number;
 }) & ({
   studentName: string;
   studentId: string;
@@ -2050,6 +2070,18 @@ export type PortalManagementExamsItem = {
   questions: PortalManagementExamsItemQuestionsItem[];
   published: boolean;
   resultsReleased: boolean;
+  /** Each student gets the questions in a different order */
+  shuffleQuestions?: boolean;
+  /** Each student gets multiple-choice options in a different order */
+  shuffleOptions?: boolean;
+  /**
+     * Question bank: questions per student, drawn at random (0 = all)
+     * @minimum 0
+     * @maximum 200
+     */
+  drawCount?: number;
+  /** Full screen, no copy or paste, and exits from the exam screen are recorded */
+  lockdown?: boolean;
 };
 
 export type PortalManagementAttemptsItem = ({
@@ -2100,6 +2132,8 @@ export type PortalManagementAttemptsItem = ({
   /** @maxLength 3000 */
   feedback: string;
 }[];
+  lockdown?: boolean;
+  focusLosses?: number;
 }) & ({
   studentName: string;
   studentId: string;
@@ -2216,6 +2250,7 @@ export const PortalCommandAction = {
   deleteNotice: 'deleteNotice',
   extendAttempt: 'extendAttempt',
   resetAttempt: 'resetAttempt',
+  addPracticeExams: 'addPracticeExams',
 } as const;
 
 export type PortalCommandSchoolClass = {
@@ -2362,6 +2397,18 @@ export type PortalCommandExam = {
   questions: PortalCommandExamQuestionsItem[];
   published: boolean;
   resultsReleased: boolean;
+  /** Each student gets the questions in a different order */
+  shuffleQuestions?: boolean;
+  /** Each student gets multiple-choice options in a different order */
+  shuffleOptions?: boolean;
+  /**
+     * Question bank: questions per student, drawn at random (0 = all)
+     * @minimum 0
+     * @maximum 200
+     */
+  drawCount?: number;
+  /** Full screen, no copy or paste, and exits from the exam screen are recorded */
+  lockdown?: boolean;
 };
 
 export type PortalCommandMaterial = {
@@ -3114,6 +3161,10 @@ export interface SchoolCommerceSettingsUpdate {
   /** @maxItems 3 */
   bankAccounts?: BankAccount[];
 }
+
+export type ReportPortalFocusLoss200 = {
+  focusLosses: number;
+};
 
 export type ImportPortalPdfParams = {
 classId: number;

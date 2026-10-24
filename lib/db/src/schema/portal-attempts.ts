@@ -14,6 +14,8 @@ export const portalAttempts = pgTable("portal_attempts", {
   startedAt: timestamp("started_at", { withTimezone: true }).notNull().defaultNow(),
   deadline: timestamp("deadline", { withTimezone: true }).notNull(),
   savedAt: timestamp("saved_at", { withTimezone: true }).notNull().defaultNow(),
+  // Times the student left the exam screen (tab switch, other app, leaving full screen) during a lockdown exam.
+  focusLosses: integer("focus_losses").notNull().default(0),
 }, (t) => [uniqueIndex("portal_one_exam_attempt").on(t.studentId, t.examId)]);
 export const insertPortalAttemptSchema = createInsertSchema(portalAttempts).omit({ id: true });
 export type PortalAttemptRecord = typeof portalAttempts.$inferSelect;

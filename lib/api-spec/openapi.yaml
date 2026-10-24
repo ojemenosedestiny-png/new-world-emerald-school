@@ -31,6 +31,8 @@ paths:
     $ref: "./portal.yaml#/paths/attempt"
   /portal/attempts/{id}/submit:
     $ref: "./portal.yaml#/paths/submit"
+  /portal/attempts/{id}/focus-loss:
+    $ref: "./portal.yaml#/paths/focusLoss"
   /portal/manage:
     $ref: "./portal.yaml#/paths/manage"
   /portal/import:

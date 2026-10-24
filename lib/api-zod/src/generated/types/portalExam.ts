@@ -37,4 +37,16 @@ export interface PortalExam {
   questions: PortalExamQuestionsItem[];
   published: boolean;
   resultsReleased: boolean;
+  /** Each student gets the questions in a different order */
+  shuffleQuestions?: boolean;
+  /** Each student gets multiple-choice options in a different order */
+  shuffleOptions?: boolean;
+  /**
+     * Question bank: questions per student, drawn at random (0 = all)
+     * @minimum 0
+     * @maximum 200
+     */
+  drawCount?: number;
+  /** Full screen, no copy or paste, and exits from the exam screen are recorded */
+  lockdown?: boolean;
 }

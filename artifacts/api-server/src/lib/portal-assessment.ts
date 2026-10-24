@@ -51,7 +51,7 @@ export function attemptView(attempt: PortalAttemptRecord, exam: PortalExamRecord
     questions: attempt.questions.map(({ correctAnswer: _key, rubric: _rubric, ...q }) => q),
     answers: attempt.answers, startedAt: attempt.startedAt.toISOString(), deadline: attempt.deadline.toISOString(),
     serverNow: new Date().toISOString(), savedAt: attempt.savedAt.toISOString(), status: attempt.status,
-    totalMarks: attempt.questions.reduce((sum, q) => sum + q.marks, 0), resultsReleased: released,
+    totalMarks: attempt.questions.reduce((sum, q) => sum + q.marks, 0), resultsReleased: released, lockdown: exam.lockdown,
     ...((staff || released) ? { score: attempt.marks.reduce((s, m) => s + m.score, 0), marks: attempt.marks } : {}),
   };
 }

@@ -24,6 +24,13 @@ export const portalExams = pgTable("portal_exams", {
   questions: jsonb("questions").$type<PortalQuestionData[]>().notNull(),
   published: boolean("published").notNull().default(false),
   resultsReleased: boolean("results_released").notNull().default(false),
+  // Computer-based test options: each student's paper can be drawn from the question bank and shuffled.
+  shuffleQuestions: boolean("shuffle_questions").notNull().default(false),
+  shuffleOptions: boolean("shuffle_options").notNull().default(false),
+  // 0 = every question; otherwise each student gets this many, drawn at random.
+  drawCount: integer("draw_count").notNull().default(0),
+  // Full screen, no copy or paste, and every exit from the exam screen is recorded for the teacher.
+  lockdown: boolean("lockdown").notNull().default(false),
 });
 export const insertPortalExamSchema = createInsertSchema(portalExams).omit({ id: true });
 export type PortalExamRecord = typeof portalExams.$inferSelect;

@@ -97,6 +97,21 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/PortalAttempt" }
+  focusLoss:
+    post:
+      operationId: reportPortalFocusLoss
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      responses:
+        "200":
+          description: The student left the exam screen during a lockdown exam; returns the running count
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [focusLosses]
+                properties:
+                  focusLosses: { type: integer }
   manage:
     get:
       operationId: getPortalManagement
@@ -236,6 +251,10 @@ schemas:
       questions: { type: array, items: { $ref: "#/schemas/PortalQuestionKey" }, maxItems: 200 }
       published: { type: boolean }
       resultsReleased: { type: boolean }
+      shuffleQuestions: { type: boolean, description: Each student gets the questions in a different order }
+      shuffleOptions: { type: boolean, description: Each student gets multiple-choice options in a different order }
+      drawCount: { type: integer, minimum: 0, maximum: 200, description: "Question bank: questions per student, drawn at random (0 = all)" }
+      lockdown: { type: boolean, description: "Full screen, no copy or paste, and exits from the exam screen are recorded" }
   PortalExamSummary:
     type: object
     required: [id, title, subject, durationMinutes, startsAt, endsAt, mode, instructions, questionCount, totalMarks]
@@ -250,6 +269,7 @@ schemas:
       instructions: { type: string }
       questionCount: { type: integer }
       totalMarks: { type: number }
+      lockdown: { type: boolean }
   PortalMark:
     type: object
     required: [questionId, score, feedback]
@@ -279,6 +299,8 @@ schemas:
       resultsReleased: { type: boolean }
       score: { type: number }
       marks: { type: array, items: { $ref: "#/schemas/PortalMark" } }
+      lockdown: { type: boolean }
+      focusLosses: { type: integer }
   PortalAnswerInput:
     type: object
     required: [answers]
@@ -351,7 +373,7 @@ schemas:
     type: object
     required: [action]
     properties:
-      action: { type: string, enum: [saveClass, saveStudent, saveTeacher, saveExam, saveMaterial, saveNotice, grade, examStatus, deleteExam, deleteMaterial, deleteNotice, extendAttempt, resetAttempt] }
+      action: { type: string, enum: [saveClass, saveStudent, saveTeacher, saveExam, saveMaterial, saveNotice, grade, examStatus, deleteExam, deleteMaterial, deleteNotice, extendAttempt, resetAttempt, addPracticeExams] }
       schoolClass: { $ref: "#/schemas/PortalClass" }
       student: { $ref: "#/schemas/PortalStudent" }
       teacher: { $ref: "#/schemas/PortalTeacher" }
