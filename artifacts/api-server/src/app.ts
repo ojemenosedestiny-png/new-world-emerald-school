@@ -11,6 +11,7 @@ import { startApprovedIdentityRefresh } from "./lib/approved-identities";
 import { serveFrontend } from "./lib/frontend";
 import { mountCspReports, securityHeaders } from "./lib/security-headers";
 import { auditStaffChanges } from "./lib/audit";
+import { siteRedirects } from "./lib/site-redirects";
 
 const app: Express = express();
 
@@ -36,6 +37,8 @@ app.use(
 app.use(securityHeaders());
 app.use(CLERK_PROXY_PATH, clerkProxyMiddleware());
 mountCspReports(app);
+// Old WordPress addresses and the Render address forward to the right place first.
+app.use(siteRedirects());
 // Website files need no auth, so they are served before the Clerk middleware.
 serveFrontend(app);
 app.use(cors({ credentials: true, origin: true }));

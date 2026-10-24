@@ -120,3 +120,26 @@ How it works:
 - **Reset link** (Students tab) and **Email a reset link** (student sign-in page) send a password-reset link valid for 24 hours. The sign-in page always gives the same reply, so it cannot reveal which Student IDs exist.
 - Existing students keep their current passwords. The old **Temporary password** option remains for families without email.
 - If an email cannot be sent, staff see why (for example an unverified domain) and can share the link instead.
+
+## 8. Moving the school domain to this site (replacing the old WordPress site)
+
+The domain's DNS is managed in **Cloudflare**. The old WordPress site and the **school email** (`mail.newworldemeraldprivateschool.com`) are on the old hosting server (`159.198.64.225`).
+
+**Do not change** the `MX` record, the `mail` record or the SPF `TXT` record, and **do not cancel the old hosting plan** while school email runs on it.
+
+1. **Back up the old site** first (old host's cPanel → Backup, or a WordPress backup plugin).
+2. **Render** → your service → Settings → **Custom Domains** → add `newworldemeraldprivateschool.com` and `www.newworldemeraldprivateschool.com`.
+3. **Cloudflare** → the domain → **DNS**:
+   - Edit the root records (`@`, now `A` records to the old server): delete them and add `CNAME` `@` → `new-world-emerald-school.onrender.com`.
+   - Edit `www`: `CNAME` `www` → `new-world-emerald-school.onrender.com`.
+   - Set both to **DNS only** (grey cloud) so Render can issue the HTTPS certificate.
+   - Optional: keep the old site reachable for reference with `A` `old` → `159.198.64.225`.
+4. Wait until Render shows both domains as **Verified** with a certificate (minutes, sometimes up to an hour), then open the domain.
+5. Render → **Environment**: `PUBLIC_SITE_URL=https://newworldemeraldprivateschool.com`, then `FORWARD_TO_DOMAIN=true` (sends visitors on the onrender.com address to the domain).
+6. **Clerk**: for the live site, create the Clerk **production** instance for this domain, add the DNS records Clerk lists in Cloudflare (DNS only), then replace the three Clerk keys in Render with the `pk_live_` / `sk_live_` ones. Administrators sign up once more on the production instance with their approved email.
+7. **Resend**: Domains → add the domain and put its DNS records in Cloudflare (they use a `send` subdomain, so school email is unaffected). Then `EMAIL_FROM=New World Emerald <noreply@newworldemeraldprivateschool.com>`.
+
+Old WordPress addresses (`/about-us/`, `/faqs/`, `/shop/`, `/my-account/`, blog posts, categories and theme pages) redirect to the matching part of the new site automatically.
+
+To undo the switch, put the old `A` records back (`@` and `www` → `159.198.64.225`).
+
