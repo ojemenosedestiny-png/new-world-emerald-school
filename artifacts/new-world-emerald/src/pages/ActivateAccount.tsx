@@ -57,11 +57,13 @@ export default function ActivateAccount() {
             <div><p className="font-serif text-lg font-bold">New World Emerald</p><p className="text-[10px] font-semibold uppercase tracking-[0.22em] opacity-60">Student portal</p></div>
           </div>
           {!token ? (
-            <ErrorPanel title="This link is incomplete" message="Open the full link from the email, or ask the school office for a new one." />
+            <><h1 className="sr-only">Student account link</h1>
+              <ErrorPanel title="This link is incomplete" message="Open the full link from the email, or ask the school office for a new one." /></>
           ) : check.isPending || (!info && !check.isError) ? (
             <div className="space-y-3"><Skeleton className="h-8 w-2/3" /><Skeleton className="h-24" /></div>
           ) : check.isError || !info ? (
-            <ErrorPanel title="This link cannot be used" message={errorMessage(check.error, "This link is invalid, already used or expired. Ask the school office for a new one.")} />
+            <><h1 className="sr-only">Student account link</h1>
+              <ErrorPanel title="This link cannot be used" message={errorMessage(check.error, "This link is invalid, already used or expired. Ask the school office for a new one.")} /></>
           ) : (
             <form onSubmit={submit} className="space-y-5" noValidate>
               <div>

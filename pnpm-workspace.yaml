@@ -43,6 +43,11 @@ onlyBuiltDependencies:
   - unrs-resolver
 
 overrides:
+  # Security fixes for API dependencies (pnpm audit).
+  proxy-addr: '^2.0.8'
+  body-parser: '^2.4.0'
+  qs: '^6.16.0'
+  uuid: '^11.1.1'
   '@esbuild-kit/esm-loader': npm:tsx@^4.21.0
   '@expo/ngrok-bin>@expo/ngrok-bin-darwin-arm64': '-'
   '@expo/ngrok-bin>@expo/ngrok-bin-darwin-x64': '-'

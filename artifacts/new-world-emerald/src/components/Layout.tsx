@@ -3,15 +3,14 @@ import { asset } from "@/lib/asset";
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'wouter';
-import { Menu, X, ChevronDown, MapPin, Phone, Mail, ArrowRight } from 'lucide-react';
+import { Menu, X, MapPin, Phone, Mail, ArrowRight, GraduationCap, ShieldCheck } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { PortalsModal } from './Widgets';
 
 export function Navbar({ solid = false }: { solid?: boolean }) {
   const [isScrolled, setIsScrolled] = useState(false);
-  const hasSolidBackground = isScrolled || solid;
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isPortalsOpen, setIsPortalsOpen] = useState(false);
+  // The open phone menu is a light sheet, so the logo text and close button switch to dark.
+  const hasSolidBackground = isScrolled || solid || isMobileMenuOpen;
 
   useEffect(() => {
     const handleScroll = () => {
@@ -39,15 +38,13 @@ export function Navbar({ solid = false }: { solid?: boolean }) {
           <a href="tel:+2348136037074" className="flex items-center gap-2 hover:text-primary transition-colors"><Phone size={14} /> +234 813 603 7074</a>
           <a href="mailto:info@newworldemeraldprivateschool.com" className="flex items-center gap-2 hover:text-primary transition-colors"><Mail size={14} /> info@newworldemeraldprivateschool.com</a>
         </div>
-        <div className="flex items-center gap-4">
-          <button onClick={() => setIsPortalsOpen(true)} className="hover:text-primary transition-colors flex items-center gap-1">
-            <UserIcon size={14} /> Portals Login
-          </button>
-          <a href="#calendar" className="hover:text-primary transition-colors">Calendar</a>
-          <a href={asset("/#anniversary")} className="hover:text-primary transition-colors">5th anniversary</a>
-          <Link href="/commerce?section=fees" className="hover:text-primary transition-colors" data-testid="link-uniform-shop-desktop">Uniforms &amp; School Payments</Link>
-          <Link href="/portal" className="hover:text-primary transition-colors" data-testid="link-student-portal-desktop">Student Portal</Link>
-          <a href={asset("/admin")} className="hover:text-primary transition-colors">Admin Panel</a>
+        <div className="flex items-center gap-2">
+          <Link href="/portal" className="inline-flex items-center gap-1.5 rounded-full border border-white/15 px-3.5 py-1 font-semibold transition-colors hover:border-primary hover:text-primary" data-testid="link-student-portal-desktop">
+            <GraduationCap size={14} aria-hidden="true" /> Student Portal
+          </Link>
+          <a href={asset("/admin")} className="inline-flex items-center gap-1.5 rounded-full border border-white/15 px-3.5 py-1 font-semibold transition-colors hover:border-primary hover:text-primary" data-testid="link-admin-portal-desktop">
+            <ShieldCheck size={14} aria-hidden="true" /> Admin Portal
+          </a>
         </div>
       </div>
 
@@ -87,7 +84,7 @@ export function Navbar({ solid = false }: { solid?: boolean }) {
               ))}
             </ul>
             <a 
-              href="#admissions" 
+              href={solid ? asset("/#admissions") : "#admissions"}
               className={cn(
                 "px-6 py-2.5 rounded-full font-semibold text-sm transition-all shadow-lg hover:-translate-y-0.5",
                 isScrolled 
@@ -103,6 +100,9 @@ export function Navbar({ solid = false }: { solid?: boolean }) {
           <button 
             className="lg:hidden z-50 p-2"
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            aria-label={isMobileMenuOpen ? "Close menu" : "Open menu"}
+            aria-expanded={isMobileMenuOpen}
+            data-testid="button-mobile-menu"
           >
             {isMobileMenuOpen ? (
               <X size={24} className={hasSolidBackground ? "text-foreground" : "text-white"} />
@@ -139,22 +139,6 @@ export function Navbar({ solid = false }: { solid?: boolean }) {
                 ))}
               </ul>
               <div className="mt-8 flex flex-col gap-4">
-                <a
-                  href={asset("/#anniversary")}
-                  onClick={() => setIsMobileMenuOpen(false)}
-                  className="flex items-center justify-between rounded-xl border border-primary/20 bg-primary/5 px-4 py-3 font-semibold text-primary"
-                  data-testid="link-mobile-anniversary"
-                >
-                  5th anniversary <ArrowRight size={18} aria-hidden="true" />
-                </a>
-                <Link
-                  href="/commerce?section=fees"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                  className="flex items-center justify-between gap-4 rounded-xl border border-primary/15 bg-primary/5 px-4 py-3 font-semibold leading-5 text-primary"
-                  data-testid="link-mobile-fees-store"
-                >
-                  Uniforms &amp; School Payments <ArrowRight className="shrink-0" size={18} aria-hidden="true" />
-                </Link>
                 <Link
                   href="/portal"
                   onClick={() => setIsMobileMenuOpen(false)}
@@ -163,10 +147,15 @@ export function Navbar({ solid = false }: { solid?: boolean }) {
                 >
                   Student Portal <ArrowRight className="shrink-0" size={18} aria-hidden="true" />
                 </Link>
-                <button onClick={() => {setIsPortalsOpen(true); setIsMobileMenuOpen(false);}} className="text-left font-medium flex items-center gap-2 text-muted-foreground">
-                  <UserIcon size={18} /> Portals Login
-                </button>
-                <a href="#admissions" onClick={() => setIsMobileMenuOpen(false)} className="bg-primary text-primary-foreground text-center py-4 rounded-xl font-bold mt-4">
+                <a
+                  href={asset("/admin")}
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="flex items-center justify-between gap-4 rounded-xl border border-primary/15 bg-primary/5 px-4 py-3 font-semibold leading-5 text-primary"
+                  data-testid="link-mobile-admin-portal"
+                >
+                  Admin Portal <ArrowRight className="shrink-0" size={18} aria-hidden="true" />
+                </a>
+                <a href={solid ? asset("/#admissions") : "#admissions"} onClick={() => setIsMobileMenuOpen(false)} className="bg-primary text-primary-foreground text-center py-4 rounded-xl font-bold mt-4">
                   Apply Now
                 </a>
               </div>
@@ -175,7 +164,6 @@ export function Navbar({ solid = false }: { solid?: boolean }) {
         </AnimatePresence>
       </motion.nav>
 
-      <PortalsModal isOpen={isPortalsOpen} onClose={() => setIsPortalsOpen(false)} />
     </>
   );
 }
@@ -205,7 +193,8 @@ export function Footer() {
               <li><a href={asset("/#academics")} className="hover:text-primary transition-colors flex items-center gap-2"><ArrowRight size={14} /> Academic Programs</a></li>
               <li><a href={asset("/#admissions")} className="hover:text-primary transition-colors flex items-center gap-2"><ArrowRight size={14} /> Admissions</a></li>
               <li><a href={asset("/commerce?section=fees")} className="hover:text-primary transition-colors flex items-center gap-2"><ArrowRight size={14} /> Uniforms &amp; School Payments</a></li>
-              <li><a href={asset("/admin")} className="hover:text-primary transition-colors flex items-center gap-2"><ArrowRight size={14} /> Admin Panel</a></li>
+              <li><a href={asset("/portal")} className="hover:text-primary transition-colors flex items-center gap-2"><ArrowRight size={14} /> Student Portal</a></li>
+              <li><a href={asset("/admin")} className="hover:text-primary transition-colors flex items-center gap-2"><ArrowRight size={14} /> Admin Portal</a></li>
               <li><a href={asset("/#school-life")} className="hover:text-primary transition-colors flex items-center gap-2"><ArrowRight size={14} /> School Life</a></li>
             </ul>
           </div>
@@ -249,26 +238,5 @@ export function Footer() {
         </div>
       </div>
     </footer>
-  );
-}
-
-// Simple internal icon to avoid large imports just for one user icon
-function UserIcon(props: any) {
-  return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
-      <circle cx="12" cy="7" r="4" />
-    </svg>
   );
 }
