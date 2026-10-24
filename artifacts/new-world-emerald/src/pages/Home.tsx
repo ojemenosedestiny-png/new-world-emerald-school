@@ -18,7 +18,6 @@ import { isSchoolSectionVisible, useSchoolContentRevision } from '@/lib/siteCont
 
 const schoolSections = [
   { name: "Hero", Component: Hero },
-  { name: "FifthAnniversary", Component: FifthAnniversary },
   { name: "DirectorWelcome", Component: DirectorWelcome },
   { name: "About", Component: About },
   { name: "WhyChooseUs", Component: WhyChooseUs },
@@ -32,6 +31,7 @@ const schoolSections = [
   { name: "AcademicCalendar", Component: AcademicCalendar },
   { name: "AdmissionsFAQ", Component: AdmissionsFAQ },
   { name: "ParentServices", Component: ParentServices },
+  { name: "FifthAnniversary", Component: FifthAnniversary },
   { name: "FinalCTA", Component: FinalCTA },
 ];
 
