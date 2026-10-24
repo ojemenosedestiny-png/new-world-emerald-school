@@ -80,6 +80,15 @@ test("website uploads with Cloudinary: signed links, checks, CDN delivery and ad
     delete process.env.CLOUDINARY_URL;
     assert.equal(((await (await call("/api/storage/status", { user: "admin" })).json()) as { provider: string }).provider, process.env.PRIVATE_OBJECT_DIR ? "bucket" : "none");
     assert.equal((await put(link.uploadURL, "video/mp4")).status, 404, "Cloudinary upload address is off without CLOUDINARY_URL");
+    // With no storage at all, asking to upload explains what to fix instead of failing with a server error.
+    const savedDir = process.env.PRIVATE_OBJECT_DIR;
+    delete process.env.PRIVATE_OBJECT_DIR;
+    process.env.CLOUDINARY_URL = "cloudinary://<your_api_key>:123456789012345<your_api_secret>abc@demo-school";
+    const noStorage = await call("/api/storage/uploads/request-url", { method: "POST", headers: { "Content-Type": "application/json" }, body, user: "admin" });
+    assert.equal(noStorage.status, 503);
+    assert.match((await noStorage.json() as { error: string }).error, /placeholders/);
+    delete process.env.CLOUDINARY_URL;
+    if (savedDir !== undefined) process.env.PRIVATE_OBJECT_DIR = savedDir;
   } finally {
     await new Promise<void>((resolve, reject) => server.close((e) => (e ? reject(e) : resolve())));
     for (const id of ids) await db.delete(mediaObjects).where(eq(mediaObjects.id, id));

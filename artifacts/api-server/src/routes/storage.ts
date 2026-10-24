@@ -56,6 +56,11 @@ router.post(
         }));
         return;
       }
+      if (!process.env.PRIVATE_OBJECT_DIR?.trim()) {
+        // Neither Cloudinary nor a bucket is usable: say what to fix instead of a server error.
+        res.status(503).json({ error: cloudinaryUrlProblem() ?? 'Uploads are not set up yet. Add CLOUDINARY_URL in Render (see the Media storage card in /admin).' });
+        return;
+      }
       const uploadURL = await objectStorageService.getObjectEntityUploadURL();
       const objectPath =
         objectStorageService.normalizeObjectEntityPath(uploadURL);
