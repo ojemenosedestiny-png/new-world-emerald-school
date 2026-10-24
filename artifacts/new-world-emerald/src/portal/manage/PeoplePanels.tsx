@@ -1,11 +1,13 @@
-import { useState } from "react";
-import type { PortalManagement, PortalManagementStudentsItem, PortalManagementTeachersItem } from "@workspace/api-client-react";
-import { Activity, Copy, GraduationCap, KeyRound, Link2, ListPlus, Mail, Pencil, Plus, Printer, School, UserCheck, Users } from "lucide-react";
+import { useRef, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { useSetTeacherPhoto, useRemoveTeacherPhoto, getGetPortalManagementQueryKey, type PortalManagement, type PortalManagementStudentsItem, type PortalManagementTeachersItem } from "@workspace/api-client-react";
+import { Activity, Camera, Copy, GraduationCap, KeyRound, Link2, ListPlus, Mail, Pencil, Plus, Printer, School, Trash2, UserCheck, Users } from "lucide-react";
 import type { AccountLinkResult } from "@workspace/api-client-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { EmptyState, Field, StatusPill } from "../ui";
-import { generateTempPassword } from "../lib";
+import { errorMessage, generateTempPassword } from "../lib";
+import { Avatar, preparePhoto } from "../photos";
 import { ClassSelect } from "./ClassSelect";
 import { className, useCommand } from "./useCommand";
 import { BulkEnrol } from "./BulkEnrol";
@@ -154,6 +156,36 @@ export function StudentsPanel({ data }: { data: PortalManagement }) {
   );
 }
 
+/** Staff portrait for the student directory: upload, replace or remove. */
+function TeacherPhoto({ teacher }: { teacher: PortalManagementTeachersItem }) {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const set = useSetTeacherPhoto();
+  const remove = useRemoveTeacherPhoto();
+  const input = useRef<HTMLInputElement>(null);
+  const busy = set.isPending || remove.isPending;
+  const done = () => queryClient.invalidateQueries({ queryKey: getGetPortalManagementQueryKey() });
+  const choose = async (file: File | undefined) => {
+    if (input.current) input.current.value = "";
+    if (!file || teacher.id == null) return;
+    try { await set.mutateAsync({ id: teacher.id, data: await preparePhoto(file, 800) }); toast({ title: "Staff photo saved" }); await done(); }
+    catch (e) { toast({ variant: "destructive", title: "Photo not uploaded", description: errorMessage(e) }); }
+  };
+  const clear = async () => {
+    if (teacher.id == null) return;
+    try { await remove.mutateAsync({ id: teacher.id }); toast({ title: "Staff photo removed" }); await done(); }
+    catch (e) { toast({ variant: "destructive", title: "Not removed", description: errorMessage(e) }); }
+  };
+  return (
+    <div className="flex items-center gap-2">
+      <Avatar name={teacher.name} photoId={teacher.photoFileId} size={40} className="bg-[hsl(var(--p-emerald-soft))] text-[hsl(var(--p-emerald))]" />
+      <input ref={input} type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={(e) => void choose(e.target.files?.[0])} data-testid={"input-teacher-photo-" + teacher.id} />
+      <button className="portal-btn-ghost" disabled={busy} onClick={() => input.current?.click()} data-testid={"button-teacher-photo-" + teacher.id}><Camera size={13} /> {set.isPending ? "Uploading..." : teacher.photoFileId ? "Change photo" : "Add photo"}</button>
+      {teacher.photoFileId && <button className="portal-btn-ghost" disabled={busy} onClick={() => void clear()} aria-label="Remove photo"><Trash2 size={13} /></button>}
+    </div>
+  );
+}
+
 export function TeachersPanel({ data }: { data: PortalManagement }) {
   const cmd = useCommand();
   const [form, setFormState] = useState<PortalManagementTeachersItem | null>(null);
@@ -184,6 +216,7 @@ export function TeachersPanel({ data }: { data: PortalManagement }) {
                 <UserCheck size={18} className={t.active ? "text-[hsl(var(--p-emerald))]" : "text-[hsl(var(--p-ink)/0.3)]"} />
               </div>
               <div className="mt-3 flex flex-wrap gap-1.5">{t.classIds.length ? t.classIds.map((c) => <StatusPill key={c} tone="green">{className(data.classes, c)}</StatusPill>) : <span className="text-xs text-[hsl(var(--p-ink)/0.5)]">No classes assigned</span>}</div>
+              <div className="mt-3"><TeacherPhoto teacher={t} /></div>
               <div className="mt-4 flex gap-2">
                 <button className="portal-btn-ghost" onClick={() => setForm({ ...t })} data-testid={"button-edit-teacher-" + t.id}><Pencil size={13} /> Edit</button>
                 <button className="portal-btn-ghost" disabled={cmd.pending} onClick={() => cmd.run({ action: "saveTeacher", teacher: { ...t, active: !t.active } }, t.active ? "Teacher deactivated" : "Teacher reactivated")} data-testid={"button-toggle-teacher-" + t.id}>{t.active ? "Deactivate" : "Reactivate"}</button>

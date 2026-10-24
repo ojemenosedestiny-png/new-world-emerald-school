@@ -32,4 +32,6 @@ export interface PortalStudent {
      */
   guardianEmail?: string | null;
   accountStatus?: PortalStudentAccountStatus;
+  /** @nullable */
+  readonly photoImageId?: string | null;
 }

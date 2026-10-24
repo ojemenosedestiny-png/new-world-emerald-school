@@ -91,7 +91,7 @@ test("community: events by class, admin-only writes, and a contact-free staff di
     const directory = await call("/staff-directory", "GET", undefined, student);
     assert.equal(directory.status, 200);
     const listed = directory.data.filter((t: { id: number }) => teacherIds.includes(t.id));
-    assert.deepEqual(listed, [{ id: bello.id, name: "Mrs Bello", title: "Class Teacher", subjects: ["Mathematics", "Basic Science"], classNames: [marker + " A"] }]);
+    assert.deepEqual(listed, [{ id: bello.id, name: "Mrs Bello", title: "Class Teacher", subjects: ["Mathematics", "Basic Science"], classNames: [marker + " A"], photoId: null }]);
     assert.ok(!JSON.stringify(directory.data).includes("@"), "no email addresses in the directory");
     assert.equal((await call("/staff-directory")).status, 401);
   } finally {

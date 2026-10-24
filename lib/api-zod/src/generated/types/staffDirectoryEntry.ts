@@ -12,4 +12,6 @@ export interface StaffDirectoryEntry {
   title: string;
   subjects: string[];
   classNames: string[];
+  /** @nullable */
+  photoId?: string | null;
 }

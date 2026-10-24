@@ -52,6 +52,13 @@ import type {
   LiveUpdate,
   LiveUpdateInput,
   LiveUpdateUpdate,
+  MyPhoto,
+  PhotoCaption,
+  PhotoDecision,
+  PhotoReview,
+  PortalAlbum,
+  PortalAlbumInput,
+  PortalAlbumPhoto,
   PortalAnswerInput,
   PortalAttempt,
   PortalCommand,
@@ -90,6 +97,33 @@ import type {
 
 import { customFetch } from '../custom-fetch';
 import type { ErrorType , BodyType } from '../custom-fetch';
+
+// https://stackoverflow.com/questions/49579094/typescript-conditional-types-filter-out-readonly-properties-pick-only-requir/49579497#49579497
+type IfEquals<X, Y, A = X, B = never> = (<T>() => T extends X ? 1 : 2) extends <
+T,
+>() => T extends Y ? 1 : 2
+? A
+: B;
+
+type WritableKeys<T> = {
+[P in keyof T]-?: IfEquals<
+  { [Q in P]: T[P] },
+  { -readonly [Q in P]: T[P] },
+  P
+>;
+}[keyof T];
+
+type UnionToIntersection<U> =
+  (U extends any ? (k: U)=>void : never) extends ((k: infer I)=>void) ? I : never;
+type DistributeReadOnlyOverUnions<T> = T extends any ? NonReadonly<T> : never;
+
+type Writable<T> = Pick<T, WritableKeys<T>>;
+type NonReadonly<T> = [T] extends [UnionToIntersection<T>] ? {
+  [P in keyof Writable<T>]: T[P] extends object
+    ? NonReadonly<NonNullable<T[P]>>
+    : T[P];
+} : DistributeReadOnlyOverUnions<T>;
+
 
 type AwaitedInput<T> = PromiseLike<T> | T;
 
@@ -799,7 +833,7 @@ export const getManagePortalUrl = () => {
   return `/api/portal/manage`
 }
 
-export const managePortal = async (portalCommand: PortalCommand, options?: RequestInit): Promise<PortalMessage> => {
+export const managePortal = async (portalCommand: NonReadonly<PortalCommand>, options?: RequestInit): Promise<PortalMessage> => {
 
   return customFetch<PortalMessage>(getManagePortalUrl(),
   {
@@ -815,8 +849,8 @@ export const managePortal = async (portalCommand: PortalCommand, options?: Reque
 
 
 export const getManagePortalMutationOptions = <TError = ErrorType<unknown>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof managePortal>>, TError,{data: BodyType<PortalCommand>}, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof managePortal>>, TError,{data: BodyType<PortalCommand>}, TContext> => {
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof managePortal>>, TError,{data: BodyType<NonReadonly<PortalCommand>>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof managePortal>>, TError,{data: BodyType<NonReadonly<PortalCommand>>}, TContext> => {
 
 const mutationKey = ['managePortal'];
 const {mutation: mutationOptions, request: requestOptions} = options ?
@@ -828,7 +862,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof managePortal>>, {data: BodyType<PortalCommand>}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof managePortal>>, {data: BodyType<NonReadonly<PortalCommand>>}> = (props) => {
           const {data} = props ?? {};
 
           return  managePortal(data,requestOptions)
@@ -842,15 +876,15 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
   return  { mutationFn, ...mutationOptions }}
 
     export type ManagePortalMutationResult = NonNullable<Awaited<ReturnType<typeof managePortal>>>
-    export type ManagePortalMutationBody = BodyType<PortalCommand>
+    export type ManagePortalMutationBody = BodyType<NonReadonly<PortalCommand>>
     export type ManagePortalMutationError = ErrorType<unknown>
 
     export const useManagePortal = <TError = ErrorType<unknown>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof managePortal>>, TError,{data: BodyType<PortalCommand>}, TContext>, request?: SecondParameter<typeof customFetch>}
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof managePortal>>, TError,{data: BodyType<NonReadonly<PortalCommand>>}, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof managePortal>>,
         TError,
-        {data: BodyType<PortalCommand>},
+        {data: BodyType<NonReadonly<PortalCommand>>},
         TContext
       > => {
       return useMutation(getManagePortalMutationOptions(options));
@@ -2162,6 +2196,1076 @@ export function useGetStaffDirectory<TData = Awaited<ReturnType<typeof getStaffD
 
 
 
+
+export const getListPortalAlbumsUrl = () => {
+
+
+
+
+  return `/api/portal/albums`
+}
+
+export const listPortalAlbums = async ( options?: RequestInit): Promise<PortalAlbum[]> => {
+
+  return customFetch<PortalAlbum[]>(getListPortalAlbumsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListPortalAlbumsQueryKey = () => {
+    return [
+    `/api/portal/albums`
+    ] as const;
+    }
+
+
+export const getListPortalAlbumsQueryOptions = <TData = Awaited<ReturnType<typeof listPortalAlbums>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listPortalAlbums>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListPortalAlbumsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listPortalAlbums>>> = ({ signal }) => listPortalAlbums({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listPortalAlbums>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListPortalAlbumsQueryResult = NonNullable<Awaited<ReturnType<typeof listPortalAlbums>>>
+export type ListPortalAlbumsQueryError = ErrorType<unknown>
+
+
+
+export function useListPortalAlbums<TData = Awaited<ReturnType<typeof listPortalAlbums>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listPortalAlbums>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListPortalAlbumsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreatePortalAlbumUrl = () => {
+
+
+
+
+  return `/api/portal/albums`
+}
+
+export const createPortalAlbum = async (portalAlbumInput: PortalAlbumInput, options?: RequestInit): Promise<PortalAlbum> => {
+
+  return customFetch<PortalAlbum>(getCreatePortalAlbumUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(portalAlbumInput)
+  }
+);}
+
+
+
+
+
+export const getCreatePortalAlbumMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createPortalAlbum>>, TError,{data: BodyType<PortalAlbumInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createPortalAlbum>>, TError,{data: BodyType<PortalAlbumInput>}, TContext> => {
+
+const mutationKey = ['createPortalAlbum'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createPortalAlbum>>, {data: BodyType<PortalAlbumInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createPortalAlbum(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreatePortalAlbumMutationResult = NonNullable<Awaited<ReturnType<typeof createPortalAlbum>>>
+    export type CreatePortalAlbumMutationBody = BodyType<PortalAlbumInput>
+    export type CreatePortalAlbumMutationError = ErrorType<unknown>
+
+    export const useCreatePortalAlbum = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createPortalAlbum>>, TError,{data: BodyType<PortalAlbumInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createPortalAlbum>>,
+        TError,
+        {data: BodyType<PortalAlbumInput>},
+        TContext
+      > => {
+      return useMutation(getCreatePortalAlbumMutationOptions(options));
+    }
+
+export const getUpdatePortalAlbumUrl = (id: number,) => {
+
+
+
+
+  return `/api/portal/albums/${id}`
+}
+
+export const updatePortalAlbum = async (id: number,
+    portalAlbumInput: PortalAlbumInput, options?: RequestInit): Promise<PortalAlbum> => {
+
+  return customFetch<PortalAlbum>(getUpdatePortalAlbumUrl(id),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(portalAlbumInput)
+  }
+);}
+
+
+
+
+
+export const getUpdatePortalAlbumMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updatePortalAlbum>>, TError,{id: number;data: BodyType<PortalAlbumInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updatePortalAlbum>>, TError,{id: number;data: BodyType<PortalAlbumInput>}, TContext> => {
+
+const mutationKey = ['updatePortalAlbum'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updatePortalAlbum>>, {id: number;data: BodyType<PortalAlbumInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updatePortalAlbum(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdatePortalAlbumMutationResult = NonNullable<Awaited<ReturnType<typeof updatePortalAlbum>>>
+    export type UpdatePortalAlbumMutationBody = BodyType<PortalAlbumInput>
+    export type UpdatePortalAlbumMutationError = ErrorType<unknown>
+
+    export const useUpdatePortalAlbum = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updatePortalAlbum>>, TError,{id: number;data: BodyType<PortalAlbumInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updatePortalAlbum>>,
+        TError,
+        {id: number;data: BodyType<PortalAlbumInput>},
+        TContext
+      > => {
+      return useMutation(getUpdatePortalAlbumMutationOptions(options));
+    }
+
+export const getDeletePortalAlbumUrl = (id: number,) => {
+
+
+
+
+  return `/api/portal/albums/${id}`
+}
+
+export const deletePortalAlbum = async (id: number, options?: RequestInit): Promise<PortalMessage> => {
+
+  return customFetch<PortalMessage>(getDeletePortalAlbumUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getDeletePortalAlbumMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deletePortalAlbum>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deletePortalAlbum>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['deletePortalAlbum'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deletePortalAlbum>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deletePortalAlbum(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeletePortalAlbumMutationResult = NonNullable<Awaited<ReturnType<typeof deletePortalAlbum>>>
+
+    export type DeletePortalAlbumMutationError = ErrorType<unknown>
+
+    export const useDeletePortalAlbum = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deletePortalAlbum>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deletePortalAlbum>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getDeletePortalAlbumMutationOptions(options));
+    }
+
+export const getAddPortalAlbumPhotoUrl = (id: number,) => {
+
+
+
+
+  return `/api/portal/albums/${id}/photos`
+}
+
+export const addPortalAlbumPhoto = async (id: number,
+    addPortalAlbumPhotoBody: Blob, options?: RequestInit): Promise<PortalAlbumPhoto> => {
+
+  return customFetch<PortalAlbumPhoto>(getAddPortalAlbumPhotoUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'image/jpeg', ...options?.headers },
+    body: addPortalAlbumPhotoBody
+  }
+);}
+
+
+
+
+
+export const getAddPortalAlbumPhotoMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addPortalAlbumPhoto>>, TError,{id: number;data: BodyType<Blob>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof addPortalAlbumPhoto>>, TError,{id: number;data: BodyType<Blob>}, TContext> => {
+
+const mutationKey = ['addPortalAlbumPhoto'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof addPortalAlbumPhoto>>, {id: number;data: BodyType<Blob>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  addPortalAlbumPhoto(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AddPortalAlbumPhotoMutationResult = NonNullable<Awaited<ReturnType<typeof addPortalAlbumPhoto>>>
+    export type AddPortalAlbumPhotoMutationBody = BodyType<Blob>
+    export type AddPortalAlbumPhotoMutationError = ErrorType<unknown>
+
+    export const useAddPortalAlbumPhoto = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addPortalAlbumPhoto>>, TError,{id: number;data: BodyType<Blob>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof addPortalAlbumPhoto>>,
+        TError,
+        {id: number;data: BodyType<Blob>},
+        TContext
+      > => {
+      return useMutation(getAddPortalAlbumPhotoMutationOptions(options));
+    }
+
+export const getUpdatePortalAlbumPhotoUrl = (id: number,) => {
+
+
+
+
+  return `/api/portal/album-photos/${id}`
+}
+
+export const updatePortalAlbumPhoto = async (id: number,
+    photoCaption: PhotoCaption, options?: RequestInit): Promise<PortalAlbumPhoto> => {
+
+  return customFetch<PortalAlbumPhoto>(getUpdatePortalAlbumPhotoUrl(id),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(photoCaption)
+  }
+);}
+
+
+
+
+
+export const getUpdatePortalAlbumPhotoMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updatePortalAlbumPhoto>>, TError,{id: number;data: BodyType<PhotoCaption>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updatePortalAlbumPhoto>>, TError,{id: number;data: BodyType<PhotoCaption>}, TContext> => {
+
+const mutationKey = ['updatePortalAlbumPhoto'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updatePortalAlbumPhoto>>, {id: number;data: BodyType<PhotoCaption>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updatePortalAlbumPhoto(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdatePortalAlbumPhotoMutationResult = NonNullable<Awaited<ReturnType<typeof updatePortalAlbumPhoto>>>
+    export type UpdatePortalAlbumPhotoMutationBody = BodyType<PhotoCaption>
+    export type UpdatePortalAlbumPhotoMutationError = ErrorType<unknown>
+
+    export const useUpdatePortalAlbumPhoto = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updatePortalAlbumPhoto>>, TError,{id: number;data: BodyType<PhotoCaption>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updatePortalAlbumPhoto>>,
+        TError,
+        {id: number;data: BodyType<PhotoCaption>},
+        TContext
+      > => {
+      return useMutation(getUpdatePortalAlbumPhotoMutationOptions(options));
+    }
+
+export const getDeletePortalAlbumPhotoUrl = (id: number,) => {
+
+
+
+
+  return `/api/portal/album-photos/${id}`
+}
+
+export const deletePortalAlbumPhoto = async (id: number, options?: RequestInit): Promise<PortalMessage> => {
+
+  return customFetch<PortalMessage>(getDeletePortalAlbumPhotoUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getDeletePortalAlbumPhotoMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deletePortalAlbumPhoto>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deletePortalAlbumPhoto>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['deletePortalAlbumPhoto'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deletePortalAlbumPhoto>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deletePortalAlbumPhoto(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeletePortalAlbumPhotoMutationResult = NonNullable<Awaited<ReturnType<typeof deletePortalAlbumPhoto>>>
+
+    export type DeletePortalAlbumPhotoMutationError = ErrorType<unknown>
+
+    export const useDeletePortalAlbumPhoto = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deletePortalAlbumPhoto>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deletePortalAlbumPhoto>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getDeletePortalAlbumPhotoMutationOptions(options));
+    }
+
+export const getGetPortalImageUrl = (id: string,) => {
+
+
+
+
+  return `/api/portal/images/${id}`
+}
+
+export const getPortalImage = async (id: string, options?: RequestInit): Promise<Blob> => {
+
+  return customFetch<Blob>(getGetPortalImageUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetPortalImageQueryKey = (id: string,) => {
+    return [
+    `/api/portal/images/${id}`
+    ] as const;
+    }
+
+
+export const getGetPortalImageQueryOptions = <TData = Awaited<ReturnType<typeof getPortalImage>>, TError = ErrorType<unknown>>(id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPortalImage>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetPortalImageQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getPortalImage>>> = ({ signal }) => getPortalImage(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getPortalImage>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetPortalImageQueryResult = NonNullable<Awaited<ReturnType<typeof getPortalImage>>>
+export type GetPortalImageQueryError = ErrorType<unknown>
+
+
+
+export function useGetPortalImage<TData = Awaited<ReturnType<typeof getPortalImage>>, TError = ErrorType<unknown>>(
+ id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPortalImage>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetPortalImageQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetMyPhotoUrl = () => {
+
+
+
+
+  return `/api/portal/me/photo`
+}
+
+export const getMyPhoto = async ( options?: RequestInit): Promise<MyPhoto> => {
+
+  return customFetch<MyPhoto>(getGetMyPhotoUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetMyPhotoQueryKey = () => {
+    return [
+    `/api/portal/me/photo`
+    ] as const;
+    }
+
+
+export const getGetMyPhotoQueryOptions = <TData = Awaited<ReturnType<typeof getMyPhoto>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMyPhoto>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetMyPhotoQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMyPhoto>>> = ({ signal }) => getMyPhoto({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMyPhoto>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetMyPhotoQueryResult = NonNullable<Awaited<ReturnType<typeof getMyPhoto>>>
+export type GetMyPhotoQueryError = ErrorType<unknown>
+
+
+
+export function useGetMyPhoto<TData = Awaited<ReturnType<typeof getMyPhoto>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMyPhoto>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetMyPhotoQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getUploadMyPhotoUrl = () => {
+
+
+
+
+  return `/api/portal/me/photo`
+}
+
+export const uploadMyPhoto = async (uploadMyPhotoBody: Blob, options?: RequestInit): Promise<MyPhoto> => {
+
+  return customFetch<MyPhoto>(getUploadMyPhotoUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'image/jpeg', ...options?.headers },
+    body: uploadMyPhotoBody
+  }
+);}
+
+
+
+
+
+export const getUploadMyPhotoMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof uploadMyPhoto>>, TError,{data: BodyType<Blob>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof uploadMyPhoto>>, TError,{data: BodyType<Blob>}, TContext> => {
+
+const mutationKey = ['uploadMyPhoto'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof uploadMyPhoto>>, {data: BodyType<Blob>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  uploadMyPhoto(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UploadMyPhotoMutationResult = NonNullable<Awaited<ReturnType<typeof uploadMyPhoto>>>
+    export type UploadMyPhotoMutationBody = BodyType<Blob>
+    export type UploadMyPhotoMutationError = ErrorType<unknown>
+
+    export const useUploadMyPhoto = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof uploadMyPhoto>>, TError,{data: BodyType<Blob>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof uploadMyPhoto>>,
+        TError,
+        {data: BodyType<Blob>},
+        TContext
+      > => {
+      return useMutation(getUploadMyPhotoMutationOptions(options));
+    }
+
+export const getListPhotoReviewsUrl = () => {
+
+
+
+
+  return `/api/portal/photo-reviews`
+}
+
+export const listPhotoReviews = async ( options?: RequestInit): Promise<PhotoReview[]> => {
+
+  return customFetch<PhotoReview[]>(getListPhotoReviewsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListPhotoReviewsQueryKey = () => {
+    return [
+    `/api/portal/photo-reviews`
+    ] as const;
+    }
+
+
+export const getListPhotoReviewsQueryOptions = <TData = Awaited<ReturnType<typeof listPhotoReviews>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listPhotoReviews>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListPhotoReviewsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listPhotoReviews>>> = ({ signal }) => listPhotoReviews({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listPhotoReviews>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListPhotoReviewsQueryResult = NonNullable<Awaited<ReturnType<typeof listPhotoReviews>>>
+export type ListPhotoReviewsQueryError = ErrorType<unknown>
+
+
+
+export function useListPhotoReviews<TData = Awaited<ReturnType<typeof listPhotoReviews>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listPhotoReviews>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListPhotoReviewsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getDecidePhotoReviewUrl = (id: number,) => {
+
+
+
+
+  return `/api/portal/photo-reviews/${id}`
+}
+
+export const decidePhotoReview = async (id: number,
+    photoDecision: PhotoDecision, options?: RequestInit): Promise<PortalMessage> => {
+
+  return customFetch<PortalMessage>(getDecidePhotoReviewUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(photoDecision)
+  }
+);}
+
+
+
+
+
+export const getDecidePhotoReviewMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof decidePhotoReview>>, TError,{id: number;data: BodyType<PhotoDecision>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof decidePhotoReview>>, TError,{id: number;data: BodyType<PhotoDecision>}, TContext> => {
+
+const mutationKey = ['decidePhotoReview'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof decidePhotoReview>>, {id: number;data: BodyType<PhotoDecision>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  decidePhotoReview(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DecidePhotoReviewMutationResult = NonNullable<Awaited<ReturnType<typeof decidePhotoReview>>>
+    export type DecidePhotoReviewMutationBody = BodyType<PhotoDecision>
+    export type DecidePhotoReviewMutationError = ErrorType<unknown>
+
+    export const useDecidePhotoReview = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof decidePhotoReview>>, TError,{id: number;data: BodyType<PhotoDecision>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof decidePhotoReview>>,
+        TError,
+        {id: number;data: BodyType<PhotoDecision>},
+        TContext
+      > => {
+      return useMutation(getDecidePhotoReviewMutationOptions(options));
+    }
+
+export const getSetStudentPhotoUrl = (id: number,) => {
+
+
+
+
+  return `/api/portal/students/${id}/photo`
+}
+
+export const setStudentPhoto = async (id: number,
+    setStudentPhotoBody: Blob, options?: RequestInit): Promise<PortalMessage> => {
+
+  return customFetch<PortalMessage>(getSetStudentPhotoUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'image/jpeg', ...options?.headers },
+    body: setStudentPhotoBody
+  }
+);}
+
+
+
+
+
+export const getSetStudentPhotoMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setStudentPhoto>>, TError,{id: number;data: BodyType<Blob>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof setStudentPhoto>>, TError,{id: number;data: BodyType<Blob>}, TContext> => {
+
+const mutationKey = ['setStudentPhoto'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof setStudentPhoto>>, {id: number;data: BodyType<Blob>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  setStudentPhoto(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SetStudentPhotoMutationResult = NonNullable<Awaited<ReturnType<typeof setStudentPhoto>>>
+    export type SetStudentPhotoMutationBody = BodyType<Blob>
+    export type SetStudentPhotoMutationError = ErrorType<unknown>
+
+    export const useSetStudentPhoto = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setStudentPhoto>>, TError,{id: number;data: BodyType<Blob>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof setStudentPhoto>>,
+        TError,
+        {id: number;data: BodyType<Blob>},
+        TContext
+      > => {
+      return useMutation(getSetStudentPhotoMutationOptions(options));
+    }
+
+export const getRemoveStudentPhotoUrl = (id: number,) => {
+
+
+
+
+  return `/api/portal/students/${id}/photo`
+}
+
+export const removeStudentPhoto = async (id: number, options?: RequestInit): Promise<PortalMessage> => {
+
+  return customFetch<PortalMessage>(getRemoveStudentPhotoUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getRemoveStudentPhotoMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof removeStudentPhoto>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof removeStudentPhoto>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['removeStudentPhoto'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof removeStudentPhoto>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  removeStudentPhoto(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RemoveStudentPhotoMutationResult = NonNullable<Awaited<ReturnType<typeof removeStudentPhoto>>>
+
+    export type RemoveStudentPhotoMutationError = ErrorType<unknown>
+
+    export const useRemoveStudentPhoto = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof removeStudentPhoto>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof removeStudentPhoto>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getRemoveStudentPhotoMutationOptions(options));
+    }
+
+export const getSetTeacherPhotoUrl = (id: number,) => {
+
+
+
+
+  return `/api/portal/teachers/${id}/photo`
+}
+
+export const setTeacherPhoto = async (id: number,
+    setTeacherPhotoBody: Blob, options?: RequestInit): Promise<PortalMessage> => {
+
+  return customFetch<PortalMessage>(getSetTeacherPhotoUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'image/jpeg', ...options?.headers },
+    body: setTeacherPhotoBody
+  }
+);}
+
+
+
+
+
+export const getSetTeacherPhotoMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setTeacherPhoto>>, TError,{id: number;data: BodyType<Blob>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof setTeacherPhoto>>, TError,{id: number;data: BodyType<Blob>}, TContext> => {
+
+const mutationKey = ['setTeacherPhoto'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof setTeacherPhoto>>, {id: number;data: BodyType<Blob>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  setTeacherPhoto(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SetTeacherPhotoMutationResult = NonNullable<Awaited<ReturnType<typeof setTeacherPhoto>>>
+    export type SetTeacherPhotoMutationBody = BodyType<Blob>
+    export type SetTeacherPhotoMutationError = ErrorType<unknown>
+
+    export const useSetTeacherPhoto = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setTeacherPhoto>>, TError,{id: number;data: BodyType<Blob>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof setTeacherPhoto>>,
+        TError,
+        {id: number;data: BodyType<Blob>},
+        TContext
+      > => {
+      return useMutation(getSetTeacherPhotoMutationOptions(options));
+    }
+
+export const getRemoveTeacherPhotoUrl = (id: number,) => {
+
+
+
+
+  return `/api/portal/teachers/${id}/photo`
+}
+
+export const removeTeacherPhoto = async (id: number, options?: RequestInit): Promise<PortalMessage> => {
+
+  return customFetch<PortalMessage>(getRemoveTeacherPhotoUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getRemoveTeacherPhotoMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof removeTeacherPhoto>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof removeTeacherPhoto>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['removeTeacherPhoto'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof removeTeacherPhoto>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  removeTeacherPhoto(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RemoveTeacherPhotoMutationResult = NonNullable<Awaited<ReturnType<typeof removeTeacherPhoto>>>
+
+    export type RemoveTeacherPhotoMutationError = ErrorType<unknown>
+
+    export const useRemoveTeacherPhoto = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof removeTeacherPhoto>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof removeTeacherPhoto>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getRemoveTeacherPhotoMutationOptions(options));
+    }
 
 export const getGetWebsiteAdminAccessUrl = () => {
 

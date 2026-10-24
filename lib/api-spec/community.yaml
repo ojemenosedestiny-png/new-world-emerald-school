@@ -87,6 +87,7 @@ schemas:
       title: { type: string }
       subjects: { type: array, items: { type: string } }
       classNames: { type: array, items: { type: string } }
+      photoId: { type: [string, "null"] }
 components:
   schemas:
     PortalEventInput: { $ref: "#/schemas/PortalEventInput" }

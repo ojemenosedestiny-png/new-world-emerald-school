@@ -1,0 +1,264 @@
+paths:
+  albums:
+    get:
+      operationId: listPortalAlbums
+      responses:
+        "200":
+          description: Gallery albums the signed-in person may see, with their photos
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: "#/components/schemas/PortalAlbum" } }
+    post:
+      operationId: createPortalAlbum
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PortalAlbumInput" }
+      responses:
+        "200":
+          description: Album created (administrators)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PortalAlbum" }
+  album:
+    put:
+      operationId: updatePortalAlbum
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PortalAlbumInput" }
+      responses:
+        "200":
+          description: Album updated (administrators)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PortalAlbum" }
+    delete:
+      operationId: deletePortalAlbum
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      responses:
+        "200":
+          description: Album and its photos deleted (administrators)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PortalMessage" }
+  albumPhotos:
+    post:
+      operationId: addPortalAlbumPhoto
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      requestBody:
+        required: true
+        content:
+          image/jpeg:
+            schema: { type: string, format: binary }
+      responses:
+        "200":
+          description: Photo added to the album (administrators; JPEG, PNG or WebP up to 5MB)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PortalAlbumPhoto" }
+  albumPhoto:
+    put:
+      operationId: updatePortalAlbumPhoto
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PhotoCaption" }
+      responses:
+        "200":
+          description: Caption saved (administrators)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PortalAlbumPhoto" }
+    delete:
+      operationId: deletePortalAlbumPhoto
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      responses:
+        "200":
+          description: Photo removed (administrators)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PortalMessage" }
+  image:
+    get:
+      operationId: getPortalImage
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: An authorized photo
+          content:
+            image/jpeg:
+              schema: { type: string, format: binary }
+  myPhoto:
+    get:
+      operationId: getMyPhoto
+      responses:
+        "200":
+          description: The signed-in student's approved and pending photo
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MyPhoto" }
+    post:
+      operationId: uploadMyPhoto
+      requestBody:
+        required: true
+        content:
+          image/jpeg:
+            schema: { type: string, format: binary }
+      responses:
+        "200":
+          description: Photo sent to staff for approval
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MyPhoto" }
+  photoReviews:
+    get:
+      operationId: listPhotoReviews
+      responses:
+        "200":
+          description: Student photos waiting for approval (administrators and class teachers)
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: "#/components/schemas/PhotoReview" } }
+  photoReview:
+    post:
+      operationId: decidePhotoReview
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PhotoDecision" }
+      responses:
+        "200":
+          description: Photo approved or declined
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PortalMessage" }
+  studentPhoto:
+    post:
+      operationId: setStudentPhoto
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      requestBody:
+        required: true
+        content:
+          image/jpeg:
+            schema: { type: string, format: binary }
+      responses:
+        "200":
+          description: Photo set directly by staff
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PortalMessage" }
+    delete:
+      operationId: removeStudentPhoto
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      responses:
+        "200":
+          description: Photo removed
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PortalMessage" }
+  teacherPhoto:
+    post:
+      operationId: setTeacherPhoto
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      requestBody:
+        required: true
+        content:
+          image/jpeg:
+            schema: { type: string, format: binary }
+      responses:
+        "200":
+          description: Staff photo set (administrators)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PortalMessage" }
+    delete:
+      operationId: removeTeacherPhoto
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      responses:
+        "200":
+          description: Staff photo removed (administrators)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PortalMessage" }
+schemas:
+  PortalAlbumInput:
+    type: object
+    required: [title, published]
+    properties:
+      title: { type: string, minLength: 1, maxLength: 150 }
+      description: { type: string, maxLength: 2000 }
+      classId: { type: [integer, "null"], description: Empty for the whole school }
+      published: { type: boolean }
+  PortalAlbumPhoto:
+    type: object
+    required: [id, imageId, caption]
+    properties:
+      id: { type: integer }
+      imageId: { type: string }
+      caption: { type: string }
+  PortalAlbum:
+    allOf:
+      - { $ref: "#/components/schemas/PortalAlbumInput" }
+      - type: object
+        required: [id, description, classId, className, photos, createdAt]
+        properties:
+          id: { type: integer }
+          className: { type: [string, "null"] }
+          createdAt: { type: string }
+          photos: { type: array, items: { $ref: "#/components/schemas/PortalAlbumPhoto" } }
+  MyPhoto:
+    type: object
+    required: [photoId, pendingPhotoId, uploadsEnabled]
+    properties:
+      photoId: { type: [string, "null"] }
+      pendingPhotoId: { type: [string, "null"] }
+      uploadsEnabled: { type: boolean }
+  PhotoReview:
+    type: object
+    required: [id, name, studentId, className, photoId, pendingPhotoId]
+    properties:
+      id: { type: integer }
+      name: { type: string }
+      studentId: { type: string }
+      className: { type: string }
+      photoId: { type: [string, "null"] }
+      pendingPhotoId: { type: string }
+  PhotoCaption:
+    type: object
+    required: [caption]
+    properties:
+      caption: { type: string, maxLength: 200 }
+  PhotoDecision:
+    type: object
+    required: [approve]
+    properties:
+      approve: { type: boolean }
+components:
+  schemas:
+    PortalAlbumInput: { $ref: "#/schemas/PortalAlbumInput" }
+    PortalAlbumPhoto: { $ref: "#/schemas/PortalAlbumPhoto" }
+    PortalAlbum: { $ref: "#/schemas/PortalAlbum" }
+    MyPhoto: { $ref: "#/schemas/MyPhoto" }
+    PhotoReview: { $ref: "#/schemas/PhotoReview" }
+    PhotoDecision: { $ref: "#/schemas/PhotoDecision" }
+    PhotoCaption: { $ref: "#/schemas/PhotoCaption" }
+    PortalMessage: { $ref: "./portal.yaml#/schemas/PortalMessage" }

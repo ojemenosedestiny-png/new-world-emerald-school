@@ -5,6 +5,69 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+export interface PortalAlbumInput {
+  /**
+     * @minLength 1
+     * @maxLength 150
+     */
+  title: string;
+  /** @maxLength 2000 */
+  description?: string;
+  /**
+     * Empty for the whole school
+     * @nullable
+     */
+  classId?: number | null;
+  published: boolean;
+}
+
+export interface PortalAlbumPhoto {
+  id: number;
+  imageId: string;
+  caption: string;
+}
+
+export type PortalAlbum = PortalAlbumInput & ({
+  id: number;
+  /** @nullable */
+  className: string | null;
+  createdAt: string;
+  photos: PortalAlbumPhoto[];
+}) & Required<Pick<PortalAlbumInput & ({
+  id: number;
+  /** @nullable */
+  className: string | null;
+  createdAt: string;
+  photos: PortalAlbumPhoto[];
+}), 'description' | 'classId'>>;
+
+export interface MyPhoto {
+  /** @nullable */
+  photoId: string | null;
+  /** @nullable */
+  pendingPhotoId: string | null;
+  uploadsEnabled: boolean;
+}
+
+export interface PhotoReview {
+  id: number;
+  name: string;
+  studentId: string;
+  className: string;
+  /** @nullable */
+  photoId: string | null;
+  pendingPhotoId: string;
+}
+
+export interface PhotoDecision {
+  approve: boolean;
+}
+
+export interface PhotoCaption {
+  /** @maxLength 200 */
+  caption: string;
+}
+
 export type PortalEventInputCategory = typeof PortalEventInputCategory[keyof typeof PortalEventInputCategory];
 
 
@@ -57,6 +120,8 @@ export interface StaffDirectoryEntry {
   title: string;
   subjects: string[];
   classNames: string[];
+  /** @nullable */
+  photoId?: string | null;
 }
 
 export interface EnrolStudentInput {
@@ -926,6 +991,8 @@ export interface PortalStudent {
      */
   guardianEmail?: string | null;
   accountStatus?: PortalStudentAccountStatus;
+  /** @nullable */
+  readonly photoImageId?: string | null;
 }
 
 export interface PortalTeacher {
@@ -953,6 +1020,11 @@ export interface PortalTeacher {
      */
   subjects?: string[];
   showInDirectory?: boolean;
+  /**
+     * Set through the staff photo upload
+     * @nullable
+     */
+  readonly photoFileId?: string | null;
 }
 
 export type PortalQuestionType = typeof PortalQuestionType[keyof typeof PortalQuestionType];
@@ -1474,6 +1546,8 @@ export type PortalManagementStudentsItem = {
      */
   guardianEmail?: string | null;
   accountStatus?: PortalManagementStudentsItemAccountStatus;
+  /** @nullable */
+  readonly photoImageId?: string | null;
 };
 
 export type PortalManagementTeachersItem = {
@@ -1501,6 +1575,11 @@ export type PortalManagementTeachersItem = {
      */
   subjects?: string[];
   showInDirectory?: boolean;
+  /**
+     * Set through the staff photo upload
+     * @nullable
+     */
+  readonly photoFileId?: string | null;
 };
 
 export type PortalManagementExamsItemMode = typeof PortalManagementExamsItemMode[keyof typeof PortalManagementExamsItemMode];
@@ -1779,6 +1858,8 @@ export type PortalCommandStudent = {
      */
   guardianEmail?: string | null;
   accountStatus?: PortalCommandStudentAccountStatus;
+  /** @nullable */
+  readonly photoImageId?: string | null;
 };
 
 export type PortalCommandTeacher = {
@@ -1806,6 +1887,11 @@ export type PortalCommandTeacher = {
      */
   subjects?: string[];
   showInDirectory?: boolean;
+  /**
+     * Set through the staff photo upload
+     * @nullable
+     */
+  readonly photoFileId?: string | null;
 };
 
 export type PortalCommandExamMode = typeof PortalCommandExamMode[keyof typeof PortalCommandExamMode];

@@ -32,4 +32,6 @@ export type PortalManagementStudentsItem = {
      */
   guardianEmail?: string | null;
   accountStatus?: PortalManagementStudentsItemAccountStatus;
+  /** @nullable */
+  readonly photoImageId?: string | null;
 };

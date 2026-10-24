@@ -24,7 +24,7 @@ test("directory hides inactive, hidden and contact details", () => {
   const t = (over: Partial<PortalTeacherRecord>): PortalTeacherRecord => ({ id: 1, email: "x@y.z", name: "N", classIds: [1, 9], active: true, title: "", subjects: [], showInDirectory: true, photoFileId: null, ...over });
   const rows = directoryEntries([t({ id: 2, name: "Zainab" }), t({ id: 3, name: "Ade", title: "Head" }), t({ id: 4, active: false }), t({ id: 5, showInDirectory: false })], new Map([[1, "JSS 1"]]));
   assert.deepEqual(rows.map((r) => r.id), [3, 2]);
-  assert.deepEqual(rows[0], { id: 3, name: "Ade", title: "Head", subjects: [], classNames: ["JSS 1"] });
+  assert.deepEqual(rows[0], { id: 3, name: "Ade", title: "Head", subjects: [], classNames: ["JSS 1"], photoId: null });
   assert.deepEqual(cleanSubjects([" Maths", "maths", "", "English"]), ["Maths", "English"]);
   assert.equal(cleanSubjects(undefined), undefined);
 });

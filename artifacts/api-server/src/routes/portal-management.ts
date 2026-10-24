@@ -28,7 +28,7 @@ portalManagementRouter.get("/manage", async (req, res) => {
   const actor = await portalActor(req);
   staffOnly(actor);
   const classes = await db.select().from(portalClasses).where(scoped(actor, portalClasses.id));
-  const students = await db.select({ id: portalStudents.id, studentId: portalStudents.studentId, name: portalStudents.name, classId: portalStudents.classId, active: portalStudents.active, guardianEmail: portalStudents.guardianEmail, accountStatus: portalStudents.accountStatus }).from(portalStudents).where(scoped(actor, portalStudents.classId));
+  const students = await db.select({ id: portalStudents.id, studentId: portalStudents.studentId, name: portalStudents.name, classId: portalStudents.classId, active: portalStudents.active, guardianEmail: portalStudents.guardianEmail, accountStatus: portalStudents.accountStatus, photoImageId: portalStudents.photoImageId }).from(portalStudents).where(scoped(actor, portalStudents.classId));
   const teachers = actor.role === "admin" ? await db.select().from(portalTeachers) : [];
   const exams = await db.select().from(portalExams).where(scoped(actor, portalExams.classId));
   const rawAttempts = exams.length ? await db.select().from(portalAttempts).where(inArray(portalAttempts.examId, exams.map((e) => e.id))) : [];

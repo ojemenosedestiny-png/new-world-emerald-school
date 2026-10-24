@@ -3,6 +3,7 @@ import { useGetStaffDirectory, getGetStaffDirectoryQueryKey } from "@workspace/a
 import { Search, Users } from "lucide-react";
 import { EmptyState, ErrorPanel, Skeleton } from "./ui";
 import { errorMessage } from "./lib";
+import { Avatar } from "./photos";
 
 const HUES = ["152 55% 36%", "41 80% 42%", "212 75% 48%", "330 65% 52%", "262 55% 55%", "183 60% 34%"];
 
@@ -28,10 +29,9 @@ export function StaffDirectory() {
           <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3" data-testid="list-staff">
             {rows.map((t) => {
               const hue = HUES[t.id % HUES.length];
-              const initials = t.name.replace(/^(mr|mrs|ms|miss|dr|prof)\.?\s+/i, "").split(/\s+/).filter(Boolean).slice(0, 2).map((p) => p[0]!.toUpperCase()).join("");
               return (
                 <li key={t.id} className="portal-card flex gap-4 p-4" data-testid={"staff-" + t.id}>
-                  <span className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl text-lg font-bold text-white" style={{ background: `hsl(${hue})` }} aria-hidden="true">{initials || "?"}</span>
+                  <Avatar name={t.name} photoId={t.photoId} size={56} hue={hue} style={{ borderRadius: 16 }} />
                   <div className="min-w-0 flex-1">
                     <p className="truncate font-semibold">{t.name}</p>
                     <p className="truncate text-sm text-[hsl(var(--p-ink)/0.62)]">{t.title || "Teacher"}</p>

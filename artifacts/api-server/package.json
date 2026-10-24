@@ -15,7 +15,8 @@
     "test:portal-reports": "node ./test-portal.mjs portal-reports",
     "test:portal-security": "node ./test-portal.mjs portal-security",
     "test:portal-accounts": "node ./test-portal.mjs portal-accounts",
-    "test:portal-community": "node ./test-portal.mjs portal-community"
+    "test:portal-community": "node ./test-portal.mjs portal-community",
+    "test:portal-media": "node ./test-portal.mjs portal-media"
   },
   "dependencies": {
     "@clerk/express": "^2.1.75",

@@ -477,7 +477,8 @@ export const GetPortalManagementResponse = zod.object({
   "active": zod.boolean(),
   "password": zod.string().min(getPortalManagementResponseStudentsItemPasswordMin).max(getPortalManagementResponseStudentsItemPasswordMax).optional(),
   "guardianEmail": zod.string().max(getPortalManagementResponseStudentsItemGuardianEmailMax).nullish(),
-  "accountStatus": zod.enum(['pending', 'active']).optional()
+  "accountStatus": zod.enum(['pending', 'active']).optional(),
+  "photoImageId": zod.string().nullish()
 })),
   "teachers": zod.array(zod.object({
   "id": zod.number().optional(),
@@ -487,7 +488,8 @@ export const GetPortalManagementResponse = zod.object({
   "active": zod.boolean(),
   "title": zod.string().max(getPortalManagementResponseTeachersItemTitleMax).optional().describe('Role shown in the staff directory'),
   "subjects": zod.array(zod.string().max(getPortalManagementResponseTeachersItemSubjectsItemMax)).max(getPortalManagementResponseTeachersItemSubjectsMax).optional(),
-  "showInDirectory": zod.boolean().optional()
+  "showInDirectory": zod.boolean().optional(),
+  "photoFileId": zod.string().nullish().describe('Set through the staff photo upload')
 })),
   "exams": zod.array(zod.object({
   "id": zod.number().optional(),
@@ -653,7 +655,8 @@ export const ManagePortalBody = zod.object({
   "active": zod.boolean(),
   "password": zod.string().min(managePortalBodyStudentPasswordMin).max(managePortalBodyStudentPasswordMax).optional(),
   "guardianEmail": zod.string().max(managePortalBodyStudentGuardianEmailMax).nullish(),
-  "accountStatus": zod.enum(['pending', 'active']).optional()
+  "accountStatus": zod.enum(['pending', 'active']).optional(),
+  "photoImageId": zod.string().nullish()
 }).optional(),
   "teacher": zod.object({
   "id": zod.number().optional(),
@@ -663,7 +666,8 @@ export const ManagePortalBody = zod.object({
   "active": zod.boolean(),
   "title": zod.string().max(managePortalBodyTeacherTitleMax).optional().describe('Role shown in the staff directory'),
   "subjects": zod.array(zod.string().max(managePortalBodyTeacherSubjectsItemMax)).max(managePortalBodyTeacherSubjectsMax).optional(),
-  "showInDirectory": zod.boolean().optional()
+  "showInDirectory": zod.boolean().optional(),
+  "photoFileId": zod.string().nullish().describe('Set through the staff photo upload')
 }).optional(),
   "exam": zod.object({
   "id": zod.number().optional(),
@@ -1349,9 +1353,239 @@ export const GetStaffDirectoryResponseItem = zod.object({
   "name": zod.string(),
   "title": zod.string(),
   "subjects": zod.array(zod.string()),
-  "classNames": zod.array(zod.string())
+  "classNames": zod.array(zod.string()),
+  "photoId": zod.string().nullish()
 })
 export const GetStaffDirectoryResponse = zod.array(GetStaffDirectoryResponseItem)
+
+
+export const listPortalAlbumsResponseOneTitleMax = 150;
+
+export const listPortalAlbumsResponseOneDescriptionMax = 2000;
+
+
+
+export const ListPortalAlbumsResponseItem = zod.object({
+  "title": zod.string().min(1).max(listPortalAlbumsResponseOneTitleMax),
+  "description": zod.string().max(listPortalAlbumsResponseOneDescriptionMax),
+  "classId": zod.number().nullable().describe('Empty for the whole school'),
+  "published": zod.boolean()
+}).and(zod.object({
+  "id": zod.number(),
+  "className": zod.string().nullable(),
+  "createdAt": zod.string(),
+  "photos": zod.array(zod.object({
+  "id": zod.number(),
+  "imageId": zod.string(),
+  "caption": zod.string()
+}))
+}))
+export const ListPortalAlbumsResponse = zod.array(ListPortalAlbumsResponseItem)
+
+
+export const createPortalAlbumBodyTitleMax = 150;
+
+export const createPortalAlbumBodyDescriptionMax = 2000;
+
+
+
+export const CreatePortalAlbumBody = zod.object({
+  "title": zod.string().min(1).max(createPortalAlbumBodyTitleMax),
+  "description": zod.string().max(createPortalAlbumBodyDescriptionMax).optional(),
+  "classId": zod.number().nullish().describe('Empty for the whole school'),
+  "published": zod.boolean()
+})
+
+export const createPortalAlbumResponseOneTitleMax = 150;
+
+export const createPortalAlbumResponseOneDescriptionMax = 2000;
+
+
+
+export const CreatePortalAlbumResponse = zod.object({
+  "title": zod.string().min(1).max(createPortalAlbumResponseOneTitleMax),
+  "description": zod.string().max(createPortalAlbumResponseOneDescriptionMax),
+  "classId": zod.number().nullable().describe('Empty for the whole school'),
+  "published": zod.boolean()
+}).and(zod.object({
+  "id": zod.number(),
+  "className": zod.string().nullable(),
+  "createdAt": zod.string(),
+  "photos": zod.array(zod.object({
+  "id": zod.number(),
+  "imageId": zod.string(),
+  "caption": zod.string()
+}))
+}))
+
+
+export const UpdatePortalAlbumParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const updatePortalAlbumBodyTitleMax = 150;
+
+export const updatePortalAlbumBodyDescriptionMax = 2000;
+
+
+
+export const UpdatePortalAlbumBody = zod.object({
+  "title": zod.string().min(1).max(updatePortalAlbumBodyTitleMax),
+  "description": zod.string().max(updatePortalAlbumBodyDescriptionMax).optional(),
+  "classId": zod.number().nullish().describe('Empty for the whole school'),
+  "published": zod.boolean()
+})
+
+export const updatePortalAlbumResponseOneTitleMax = 150;
+
+export const updatePortalAlbumResponseOneDescriptionMax = 2000;
+
+
+
+export const UpdatePortalAlbumResponse = zod.object({
+  "title": zod.string().min(1).max(updatePortalAlbumResponseOneTitleMax),
+  "description": zod.string().max(updatePortalAlbumResponseOneDescriptionMax),
+  "classId": zod.number().nullable().describe('Empty for the whole school'),
+  "published": zod.boolean()
+}).and(zod.object({
+  "id": zod.number(),
+  "className": zod.string().nullable(),
+  "createdAt": zod.string(),
+  "photos": zod.array(zod.object({
+  "id": zod.number(),
+  "imageId": zod.string(),
+  "caption": zod.string()
+}))
+}))
+
+
+export const DeletePortalAlbumParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const DeletePortalAlbumResponse = zod.object({
+  "message": zod.string()
+})
+
+
+export const AddPortalAlbumPhotoParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const AddPortalAlbumPhotoResponse = zod.object({
+  "id": zod.number(),
+  "imageId": zod.string(),
+  "caption": zod.string()
+})
+
+
+export const UpdatePortalAlbumPhotoParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const updatePortalAlbumPhotoBodyCaptionMax = 200;
+
+
+
+export const UpdatePortalAlbumPhotoBody = zod.object({
+  "caption": zod.string().max(updatePortalAlbumPhotoBodyCaptionMax)
+})
+
+export const UpdatePortalAlbumPhotoResponse = zod.object({
+  "id": zod.number(),
+  "imageId": zod.string(),
+  "caption": zod.string()
+})
+
+
+export const DeletePortalAlbumPhotoParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const DeletePortalAlbumPhotoResponse = zod.object({
+  "message": zod.string()
+})
+
+
+export const GetPortalImageParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const GetPortalImageResponse = zod.unknown()
+
+
+export const GetMyPhotoResponse = zod.object({
+  "photoId": zod.string().nullable(),
+  "pendingPhotoId": zod.string().nullable(),
+  "uploadsEnabled": zod.boolean()
+})
+
+
+export const UploadMyPhotoResponse = zod.object({
+  "photoId": zod.string().nullable(),
+  "pendingPhotoId": zod.string().nullable(),
+  "uploadsEnabled": zod.boolean()
+})
+
+
+export const ListPhotoReviewsResponseItem = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "studentId": zod.string(),
+  "className": zod.string(),
+  "photoId": zod.string().nullable(),
+  "pendingPhotoId": zod.string()
+})
+export const ListPhotoReviewsResponse = zod.array(ListPhotoReviewsResponseItem)
+
+
+export const DecidePhotoReviewParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const DecidePhotoReviewBody = zod.object({
+  "approve": zod.boolean()
+})
+
+export const DecidePhotoReviewResponse = zod.object({
+  "message": zod.string()
+})
+
+
+export const SetStudentPhotoParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const SetStudentPhotoResponse = zod.object({
+  "message": zod.string()
+})
+
+
+export const RemoveStudentPhotoParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const RemoveStudentPhotoResponse = zod.object({
+  "message": zod.string()
+})
+
+
+export const SetTeacherPhotoParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const SetTeacherPhotoResponse = zod.object({
+  "message": zod.string()
+})
+
+
+export const RemoveTeacherPhotoParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const RemoveTeacherPhotoResponse = zod.object({
+  "message": zod.string()
+})
 
 
 /**

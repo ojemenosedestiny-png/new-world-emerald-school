@@ -16,6 +16,9 @@ export const portalStudents = pgTable("portal_students", {
   // "pending" until the account is activated through its link; existing accounts are "active".
   accountStatus: text("account_status").notNull().default("active"),
   activatedAt: timestamp("activated_at", { withTimezone: true }),
+  // Profile photo: the approved one students and staff see, and one awaiting staff approval.
+  photoImageId: text("photo_image_id"),
+  pendingPhotoImageId: text("pending_photo_image_id"),
 });
 export const insertPortalStudentSchema = createInsertSchema(portalStudents).omit({ id: true });
 export type PortalStudentRecord = typeof portalStudents.$inferSelect;

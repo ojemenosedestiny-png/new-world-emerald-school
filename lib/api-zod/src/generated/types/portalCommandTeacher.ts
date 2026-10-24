@@ -31,4 +31,9 @@ export type PortalCommandTeacher = {
      */
   subjects?: string[];
   showInDirectory?: boolean;
+  /**
+     * Set through the staff photo upload
+     * @nullable
+     */
+  readonly photoFileId?: string | null;
 };

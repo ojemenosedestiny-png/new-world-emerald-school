@@ -65,6 +65,26 @@ paths:
     $ref: "./community.yaml#/paths/event"
   /portal/staff-directory:
     $ref: "./community.yaml#/paths/staffDirectory"
+  /portal/albums:
+    $ref: "./media.yaml#/paths/albums"
+  /portal/albums/{id}:
+    $ref: "./media.yaml#/paths/album"
+  /portal/albums/{id}/photos:
+    $ref: "./media.yaml#/paths/albumPhotos"
+  /portal/album-photos/{id}:
+    $ref: "./media.yaml#/paths/albumPhoto"
+  /portal/images/{id}:
+    $ref: "./media.yaml#/paths/image"
+  /portal/me/photo:
+    $ref: "./media.yaml#/paths/myPhoto"
+  /portal/photo-reviews:
+    $ref: "./media.yaml#/paths/photoReviews"
+  /portal/photo-reviews/{id}:
+    $ref: "./media.yaml#/paths/photoReview"
+  /portal/students/{id}/photo:
+    $ref: "./media.yaml#/paths/studentPhoto"
+  /portal/teachers/{id}/photo:
+    $ref: "./media.yaml#/paths/teacherPhoto"
   /website-admin/access:
     get:
       operationId: getWebsiteAdminAccess
@@ -837,6 +857,20 @@ paths:
           description: Authentication required.
 components:
   schemas:
+    PortalAlbumInput:
+      $ref: "./media.yaml#/schemas/PortalAlbumInput"
+    PortalAlbumPhoto:
+      $ref: "./media.yaml#/schemas/PortalAlbumPhoto"
+    PortalAlbum:
+      $ref: "./media.yaml#/schemas/PortalAlbum"
+    MyPhoto:
+      $ref: "./media.yaml#/schemas/MyPhoto"
+    PhotoReview:
+      $ref: "./media.yaml#/schemas/PhotoReview"
+    PhotoDecision:
+      $ref: "./media.yaml#/schemas/PhotoDecision"
+    PhotoCaption:
+      $ref: "./media.yaml#/schemas/PhotoCaption"
     PortalEventInput:
       $ref: "./community.yaml#/schemas/PortalEventInput"
     PortalEvent:

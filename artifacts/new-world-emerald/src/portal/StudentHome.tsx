@@ -1,25 +1,23 @@
 import { useMemo, useState, type CSSProperties } from "react";
-import { useGetStudentReports, getGetStudentReportsQueryKey, useListPortalEvents, getListPortalEventsQueryKey, type PortalDashboard } from "@workspace/api-client-react";
-import { Award, Bell, BookOpen, CalendarDays, ChevronRight, ClipboardList, FileBarChart, MapPin, Megaphone, Menu, Search, Timer, UserRound, Users, type LucideIcon } from "lucide-react";
+import { useGetStudentReports, getGetStudentReportsQueryKey, useListPortalEvents, getListPortalEventsQueryKey, useGetMyPhoto, getGetMyPhotoQueryKey, type PortalDashboard } from "@workspace/api-client-react";
+import { Award, Bell, BookOpen, CalendarDays, ChevronRight, ClipboardList, FileBarChart, Images, MapPin, Megaphone, Menu, Search, Timer, UserRound, Users, type LucideIcon } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useOpenShellMenu } from "./shell/AppShell";
 import { examWindow } from "./lib";
 import { markSeen, readSeen, searchPortal, studentNotifications } from "./notifications";
 import { calendarItems, upcomingItems, whenText } from "./events";
+import { Avatar } from "./photos";
 
-export type StudentSection = "home" | "exams" | "results" | "reports" | "revision" | "notices" | "profile" | "events" | "staff";
+export type StudentSection = "home" | "exams" | "results" | "reports" | "revision" | "notices" | "profile" | "events" | "staff" | "gallery";
 
 type Feature = { section: StudentSection; label: string; detail: string; icon: LucideIcon; tile: string; badge?: number };
-
-function initials(name: string) {
-  return name.split(/\s+/).filter(Boolean).slice(0, 2).map((p) => p[0]!.toUpperCase()).join("") || "?";
-}
 
 /** Phone-first home: greeting, bell, search, feature tiles and what is coming up. */
 export function StudentHome({ data, name, studentId, onGo }: { data: PortalDashboard; name: string; studentId: string; onGo: (s: StudentSection) => void }) {
   const openMenu = useOpenShellMenu();
   const reports = useGetStudentReports({ query: { queryKey: getGetStudentReportsQueryKey() } });
   const events = useListPortalEvents({ query: { queryKey: getListPortalEventsQueryKey() } });
+  const photo = useGetMyPhoto({ query: { queryKey: getGetMyPhotoQueryKey() } });
   const [query, setQuery] = useState("");
   const [seenVersion, setSeenVersion] = useState(0);
   const now = Date.now();
@@ -38,6 +36,7 @@ export function StudentHome({ data, name, studentId, onGo }: { data: PortalDashb
     { section: "reports", label: "Report cards", detail: "Term results and PDF", icon: FileBarChart, tile: "212 75% 52%" },
     { section: "events", label: "Events", detail: "School calendar", icon: CalendarDays, tile: "18 80% 50%" },
     { section: "staff", label: "Staffs", detail: "Meet your teachers", icon: Users, tile: "95 45% 38%" },
+    { section: "gallery", label: "Gallery", detail: "School photos", icon: Images, tile: "280 50% 50%" },
     { section: "notices", label: "Notices", detail: "Latest updates", icon: Megaphone, tile: "330 65% 55%", badge: newNotices },
     { section: "revision", label: "Library", detail: "Notes and resources", icon: BookOpen, tile: "183 60% 36%" },
   ];
@@ -78,7 +77,7 @@ export function StudentHome({ data, name, studentId, onGo }: { data: PortalDashb
               )}
             </PopoverContent>
           </Popover>
-          <button type="button" onClick={() => onGo("profile")} className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-[hsl(41_72%_52%)] font-bold text-[hsl(205_40%_10%)] ring-2 ring-white/40" aria-label="Your profile" data-testid="button-avatar">{initials(name)}</button>
+          <button type="button" onClick={() => onGo("profile")} className="shrink-0 rounded-full" aria-label="Your profile" data-testid="button-avatar"><Avatar name={name} photoId={photo.data?.photoId} size={48} className="bg-[hsl(41_72%_52%)] text-[hsl(205_40%_10%)] ring-2 ring-white/40" /></button>
         </div>
       </section>
 

@@ -28,12 +28,12 @@ export function eventVisible(event: Pick<PortalEventRecord, "published" | "class
   return event.published && (event.classId === null || classIds.includes(event.classId));
 }
 
-/** Public directory rows: never email or photo file ids. Sorted by name. */
+/** Public directory rows: never email or other contact details. Sorted by name. */
 export function directoryEntries(teachers: PortalTeacherRecord[], classNames: Map<number, string>) {
   return teachers
     .filter((t) => t.active && t.showInDirectory)
     .map((t) => ({
-      id: t.id, name: t.name, title: t.title, subjects: t.subjects,
+      id: t.id, name: t.name, title: t.title, subjects: t.subjects, photoId: t.photoFileId,
       classNames: t.classIds.map((id) => classNames.get(id)).filter((n): n is string => !!n),
     }))
     .sort((a, b) => a.name.localeCompare(b.name));

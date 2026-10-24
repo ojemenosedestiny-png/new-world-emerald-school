@@ -189,6 +189,7 @@ schemas:
       password: { type: string, minLength: 10, maxLength: 128 }
       guardianEmail: { type: [string, "null"], maxLength: 200 }
       accountStatus: { type: string, enum: [pending, active] }
+      photoImageId: { type: [string, "null"], readOnly: true }
   PortalTeacher:
     type: object
     required: [email, name, classIds, active]
@@ -201,6 +202,7 @@ schemas:
       title: { type: string, maxLength: 80, description: Role shown in the staff directory }
       subjects: { type: array, maxItems: 12, items: { type: string, maxLength: 60 } }
       showInDirectory: { type: boolean }
+      photoFileId: { type: [string, "null"], readOnly: true, description: Set through the staff photo upload }
   PortalQuestion:
     type: object
     required: [id, type, text, options, marks]

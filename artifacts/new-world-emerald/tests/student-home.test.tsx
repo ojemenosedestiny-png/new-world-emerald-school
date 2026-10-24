@@ -11,6 +11,7 @@ import { AppShell } from "../src/portal/shell/AppShell";
 vi.mock("@workspace/api-client-react", async (original) => ({
   ...await original<typeof import("@workspace/api-client-react")>(),
   useGetStudentReports: () => ({ data: { studentName: "Ada", studentId: "S1", className: "JSS 1", reports: [{ term: { id: 4, session: "2026/2027", term: "First Term", caMax: 40, examMax: 60, nextTermBegins: null } }] } }),
+  useGetMyPhoto: () => ({ data: { photoId: null, pendingPhotoId: null, uploadsEnabled: true } }),
   useListPortalEvents: () => ({ data: [{ id: 11, title: "Inter-house sports", details: "Bring water", venue: "Sports field", category: "sports", startsAt: new Date(Date.now() + 2 * 86_400_000).toISOString(), endsAt: null, allDay: false, classId: null, className: null, published: true }] }),
 }));
 const wrap = (c: ReactNode) => <QueryClientProvider client={new QueryClient()}>{c}</QueryClientProvider>;

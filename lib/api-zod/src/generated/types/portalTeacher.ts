@@ -31,4 +31,9 @@ export interface PortalTeacher {
      */
   subjects?: string[];
   showInDirectory?: boolean;
+  /**
+     * Set through the staff photo upload
+     * @nullable
+     */
+  readonly photoFileId?: string | null;
 }
