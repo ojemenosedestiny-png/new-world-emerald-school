@@ -46,6 +46,7 @@ import { SchoolCommerceManager } from "@/components/SchoolCommerceManager";
 import { SiteContentManager } from "@/components/SiteContentManager";
 import { AcademicCalendar } from "@/components/AcademicCalendar";
 import { MediaStorageCard } from "@/components/MediaStorageCard";
+import { EmailCard } from "@/components/EmailCard";
 import { AppShell, type NavGroup } from "@/portal/shell/AppShell";
 import { usePortalTheme } from "@/portal/shell/theme";
 import { trackEvent } from "@/lib/analytics";
@@ -371,6 +372,7 @@ export default function Admin() {
               <button type="button" onClick={() => setSection("calendar")} data-testid="button-office-calendar-manager" className="portal-btn mt-4 w-full justify-center"><CalendarDays size={16} /> Open calendar uploader</button>
             </section>
             <MediaStorageCard />
+            <EmailCard />
             </div>
           </div>
         </>}

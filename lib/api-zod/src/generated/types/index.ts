@@ -31,6 +31,7 @@ export * from './directUploadGrant';
 export * from './directUploadRequest';
 export * from './directUploadSignature';
 export * from './directUploadToken';
+export * from './emailTestResult';
 export * from './enrolStudentInput';
 export * from './feePaymentReport';
 export * from './feePaymentReportFeeType';

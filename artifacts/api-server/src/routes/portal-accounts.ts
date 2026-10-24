@@ -7,7 +7,7 @@ import { check, hashPassword, hashToken, portalActor, setPortalCookie } from "..
 import {
   ACTIVATION_HOURS, RESET_HOURS, accountLink, formatStudentId, hashAccountToken, newAccountToken, passwordProblem, siteBaseUrl, validEmail, validTokenShape,
 } from "../lib/accounts";
-import { activationEmail, emailConfigured, resetEmail, sendEmail } from "../lib/email";
+import { accountReadyEmail, activationEmail, emailConfigured, passwordChangedEmail, resetEmail, sendEmail } from "../lib/email";
 import { clientIp, recordAudit } from "../lib/audit";
 
 export const portalAccountsRouter = Router();
@@ -126,6 +126,22 @@ async function liveToken(token: unknown) {
   return row;
 }
 
+/** Confirms a finished activation or reset by email. Never blocks the student: failures are only logged. */
+async function confirmByEmail(req: Request, student: PortalStudentRecord, purpose: string) {
+  const base = siteBaseUrl();
+  if (!student.guardianEmail || !emailConfigured() || !base) return;
+  const signInUrl = `${base}/portal`;
+  const mail = purpose === "activate"
+    ? accountReadyEmail({ studentName: student.name, studentId: student.studentId, className: await className(student.classId), signInUrl })
+    : passwordChangedEmail({ studentName: student.name, studentId: student.studentId, signInUrl });
+  try {
+    const result = await sendEmail({ to: student.guardianEmail, ...mail });
+    if (!result.sent) req.log.warn({ reason: result.reason, detail: result.detail }, "Account confirmation email not sent");
+  } catch (error) {
+    req.log.warn({ err: error }, "Account confirmation email not sent");
+  }
+}
+
 portalAccountsRouter.post("/accounts/token/check", async (req, res) => {
   const { token } = CheckAccountTokenBody.parse(req.body);
   const { t, s } = await liveToken(token);
@@ -155,6 +171,7 @@ portalAccountsRouter.post("/accounts/token/complete", async (req, res) => {
   });
   setPortalCookie(req, res, session);
   await recordAudit({ actorKind: "student", actorId: String(student.id), actorLabel: student.studentId, action: t.purpose === "activate" ? "student.account_activated" : "student.password_reset", ip: clientIp(req), userAgent: req.headers["user-agent"] ?? null });
+  await confirmByEmail(req, student, t.purpose);
   res.json({ role: "student", name: student.name, studentId: student.studentId, classId: student.classId, classIds: [student.classId], mustChangePassword: false });
 });
 

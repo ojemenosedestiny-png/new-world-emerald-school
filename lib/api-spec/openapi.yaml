@@ -167,6 +167,18 @@ paths:
                     type: boolean
         "401":
           description: Authentication required
+  /email/test:
+    post:
+      tags: [Website]
+      operationId: sendTestEmail
+      summary: Send a test email to the signed-in administrator and report Resend's answer
+      responses:
+        "200":
+          description: Test result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EmailTestResult"
   /storage/status:
     get:
       tags: [Website]
@@ -934,6 +946,14 @@ paths:
           description: Authentication required.
 components:
   schemas:
+    EmailTestResult:
+      type: object
+      required: [ok, detail, from, to]
+      properties:
+        ok: { type: boolean }
+        detail: { type: string }
+        from: { type: [string, "null"] }
+        to: { type: [string, "null"] }
     DirectUploadRequest:
       type: object
       required: [name, size, contentType]

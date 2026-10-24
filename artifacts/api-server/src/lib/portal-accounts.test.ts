@@ -68,6 +68,25 @@ test("student accounts: automatic IDs, activation links, resets and forgot passw
     const adaId = first.data.student.studentId;
     assert.equal((await call("/session", "POST", { studentId: adaId, password: "Anything-123" })).status, 401);
 
+    // Emails go to a stand-in for Resend; nothing real is sent.
+    const mails: { to: string[]; subject: string; text: string; html: string }[] = [];
+    const realFetch = globalThis.fetch;
+    const savedFrom = process.env.EMAIL_FROM;
+    const emailOn = () => {
+      process.env.RESEND_API_KEY = "re_test_fake";
+      process.env.EMAIL_FROM = "New World Emerald <noreply@school.example>";
+      globalThis.fetch = (async (input: string | URL | Request, init?: RequestInit) => {
+        if (!String(input).startsWith("https://api.resend.com/")) return realFetch(input, init);
+        mails.push(JSON.parse(String(init?.body)));
+        return new Response(JSON.stringify({ id: "email_1" }), { status: 200 });
+      }) as typeof fetch;
+    };
+    const emailOff = () => {
+      delete process.env.RESEND_API_KEY;
+      if (savedFrom === undefined) delete process.env.EMAIL_FROM; else process.env.EMAIL_FROM = savedFrom;
+      globalThis.fetch = realFetch;
+    };
+
     // Activation: details check, password rules, sign-in, single use.
     const t1 = tokenOf(first.data.url);
     assert.equal((await call("/accounts/token/check", "POST", { token: "x".repeat(64) })).status, 410);
@@ -75,8 +94,17 @@ test("student accounts: automatic IDs, activation links, resets and forgot passw
     assert.deepEqual([info.data.purpose, info.data.studentName, info.data.studentId, info.data.className], ["activate", "Ada Obi", adaId, marker]);
     assert.equal((await call("/accounts/token/complete", "POST", { token: t1, password: "short1" })).status, 400);
     assert.equal((await call("/accounts/token/complete", "POST", { token: t1, password: "onlyletterslong" })).status, 400);
+    emailOn();
     const done = await call("/accounts/token/complete", "POST", { token: t1, password: "Ada-Chosen-2026" });
+    emailOff();
     assert.equal(done.status, 200);
+    // The family is told the account is ready, with the sign-in details but never the password.
+    assert.equal(mails.length, 1);
+    assert.deepEqual(mails[0].to, ["parent@example.test"]);
+    assert.match(mails[0].subject, /account is ready/);
+    assert.ok(mails[0].text.includes(adaId) && mails[0].html.includes(adaId), "Student ID included");
+    assert.ok(mails[0].text.includes("https://school.example/portal"), "sign-in link included");
+    assert.ok(!mails[0].text.includes("Ada-Chosen-2026") && !mails[0].html.includes("Ada-Chosen-2026"), "the password is never emailed");
     assert.equal(done.data.role, "student");
     assert.equal((await call("/session", "GET", undefined, { cookie: done.cookie })).data.studentId, adaId, "activation signs the student in");
     assert.equal((await call("/accounts/token/complete", "POST", { token: t1, password: "Ada-Again-2026" })).status, 410, "links work once");
@@ -98,7 +126,10 @@ test("student accounts: automatic IDs, activation links, resets and forgot passw
     const reset = await call(`/accounts/${ada.id}/link`, "POST", { purpose: "reset" }, { admin: true });
     assert.equal(reset.status, 200);
     assert.equal((await call("/accounts/token/check", "POST", { token: tokenOf(reset.data.url) })).data.purpose, "reset");
+    emailOn();
     assert.equal((await call("/accounts/token/complete", "POST", { token: tokenOf(reset.data.url), password: "Ada-Reset-2027" })).status, 200);
+    emailOff();
+    assert.match(mails.at(-1)!.subject, /password was changed/, "a reset sends a security notice");
     assert.equal((await call("/session", "GET", undefined, { cookie: done.cookie })).data.role, "guest", "other devices signed out");
     assert.equal((await call("/session", "POST", { studentId: adaId, password: "Ada-Chosen-2026" })).status, 401);
 

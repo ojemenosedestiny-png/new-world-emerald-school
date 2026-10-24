@@ -5,6 +5,15 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+export interface EmailTestResult {
+  ok: boolean;
+  detail: string;
+  /** @nullable */
+  from: string | null;
+  /** @nullable */
+  to: string | null;
+}
+
 export interface DirectUploadRequest {
   /**
      * @minLength 1

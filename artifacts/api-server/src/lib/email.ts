@@ -84,3 +84,42 @@ export function resetEmail(p: { studentName: string; studentId: string; url: str
   const text = `A password reset was requested for ${p.studentName} (Student ID ${p.studentId}).\n\nChoose a new password:\n${p.url}\n\nThis link works once and expires in ${p.hours} hours. If you did not ask for this, ignore this email.`;
   return { subject, html, text };
 }
+
+/** Sent once the student has chosen a password: their sign-in details (never the password). */
+export function accountReadyEmail(p: { studentName: string; studentId: string; className: string; signInUrl: string }) {
+  const subject = `${p.studentName}'s student portal account is ready`;
+  const html = layout("The student portal account is ready", `
+    <p style="margin:0 0 10px;line-height:1.6">${esc(p.studentName)} (${esc(p.className)}) has created a password and can now use the New World Emerald student portal.</p>
+    <table role="presentation" cellpadding="0" cellspacing="0" style="margin:6px 0 12px;background:#f4f1ea;border-radius:10px"><tr><td style="padding:12px 16px;line-height:1.7">
+      <span style="color:#5c6b70;font-size:12px">Sign-in details</span><br>
+      Student ID: <b style="font-family:Consolas,monospace">${esc(p.studentId)}</b><br>
+      Password: the one ${esc(p.studentName)} just chose
+    </td></tr></table>
+    <p style="margin:0;line-height:1.6">Keep the password private. If it is forgotten, use "Forgot password" on the sign-in page and a reset link will come to this email address.</p>`,
+    { label: "Sign in to the portal", url: p.signInUrl },
+    "If you did not create this account, contact the school office.");
+  const text = `${p.studentName} (${p.className}) can now use the New World Emerald student portal.
+
+Sign in: ${p.signInUrl}
+Student ID: ${p.studentId}
+Password: the one ${p.studentName} just chose
+
+If the password is forgotten, use "Forgot password" on the sign-in page.`;
+  return { subject, html, text };
+}
+
+/** Security notice after a password reset, so the family notices a change they did not make. */
+export function passwordChangedEmail(p: { studentName: string; studentId: string; signInUrl: string }) {
+  const subject = `${p.studentName}'s portal password was changed`;
+  const html = layout("The portal password was changed", `
+    <p style="margin:0 0 10px;line-height:1.6">The password for ${esc(p.studentName)} (Student ID <b style="font-family:Consolas,monospace">${esc(p.studentId)}</b>) was just changed, and other devices were signed out.</p>
+    <p style="margin:0;line-height:1.6">If this was you, nothing else is needed.</p>`,
+    { label: "Sign in to the portal", url: p.signInUrl },
+    "If you did not change the password, contact the school office straight away.");
+  const text = `The password for ${p.studentName} (Student ID ${p.studentId}) was just changed and other devices were signed out.
+Sign in: ${p.signInUrl}
+
+If you did not change it, contact the school office straight away.`;
+  return { subject, html, text };
+}
+

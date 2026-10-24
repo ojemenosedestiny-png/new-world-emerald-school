@@ -1656,6 +1656,17 @@ export const GetLocalAccountResponse = zod.object({
 
 
 /**
+ * @summary Send a test email to the signed-in administrator and report Resend's answer
+ */
+export const SendTestEmailResponse = zod.object({
+  "ok": zod.boolean(),
+  "detail": zod.string(),
+  "from": zod.string().nullable(),
+  "to": zod.string().nullable()
+})
+
+
+/**
  * @summary Which media storage is configured (website administrators)
  */
 export const GetMediaStorageStatusResponse = zod.object({

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { accountLink, formatStudentId, hashAccountToken, newAccountToken, passwordProblem, siteBaseUrl, validEmail, validTokenShape } from "./accounts";
-import { activationEmail, emailConfigured, emailSender, resetEmail, sendEmail } from "./email";
+import { accountReadyEmail, activationEmail, emailConfigured, emailSender, passwordChangedEmail, resetEmail, sendEmail } from "./email";
 
 test("automatic Student IDs use NWE/year/five digits", () => {
   assert.equal(formatStudentId(2026, 1), "NWE/2026/00001");
@@ -85,3 +85,13 @@ test("the email sender forgives common paste mistakes and explains real ones", a
   await sendEmail({ to: "p@x.y", subject: "s", html: "h", text: "t" }, { RESEND_API_KEY: "re_x", EMAIL_FROM: "'New World Emerald <noreply@school.ng>'" }, capture);
   assert.equal(JSON.parse(body).from, "New World Emerald <noreply@school.ng>");
 });
+
+test("confirmation emails carry sign-in details safely", () => {
+  const ready = accountReadyEmail({ studentName: "Ada <Obi>", studentId: "NWE/2026/00001", className: "JSS 1", signInUrl: "https://school.example/portal" });
+  assert.match(ready.subject, /account is ready/);
+  assert.ok(ready.html.includes("NWE/2026/00001") && ready.text.includes("https://school.example/portal"));
+  assert.ok(ready.html.includes("Ada &lt;Obi&gt;") && !ready.html.includes("<Obi>"), "names are escaped");
+  const changed = passwordChangedEmail({ studentName: "Ada", studentId: "NWE/2026/00001", signInUrl: "https://school.example/portal" });
+  assert.match(changed.text, /contact the school office/);
+});
+

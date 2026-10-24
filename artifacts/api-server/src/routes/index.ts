@@ -11,6 +11,7 @@ import schoolCommerceFeesRouter from "./school-commerce-fees";
 import siteContentRouter from "./site-content";
 import { protectWebsiteManagement } from "../lib/website-admin";
 import portalRouter from "./portal";
+import emailTestRouter from "./email-test";
 
 const router: IRouter = Router();
 
@@ -26,5 +27,6 @@ router.use(schoolCommerceCatalogRouter);
 router.use(schoolCommerceOrdersRouter);
 router.use(schoolCommerceFeesRouter);
 router.use(siteContentRouter);
+router.use(emailTestRouter);
 
 export default router;

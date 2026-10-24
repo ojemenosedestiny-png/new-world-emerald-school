@@ -88,7 +88,7 @@ export function BulkEnrol({ data, onClose }: { data: PortalManagement; onClose: 
                 <Upload size={13} /> Upload CSV
                 <input type="file" accept=".csv,text/csv,text/plain" className="sr-only" disabled={running} onChange={(e) => { readFile(e.target.files?.[0]); e.target.value = ""; }} data-testid="input-bulk-file" />
               </label>
-              <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={send} disabled={running} onChange={(e) => setSend(e.target.checked)} data-testid="checkbox-bulk-send" /> Email activation links to parents</label>
+              <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={send} disabled={running} onChange={(e) => setSend(e.target.checked)} data-testid="checkbox-bulk-send" /> Email the Student ID and password link to each address</label>
             </div>
             {rows.length > 0 && (
               <div className="rounded-2xl border border-[hsl(var(--p-line))] bg-[hsl(var(--p-surface)/0.8)]">
