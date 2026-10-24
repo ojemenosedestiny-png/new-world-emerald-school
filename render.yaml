@@ -4,6 +4,9 @@ services:
   - type: web
     name: new-world-emerald
     runtime: node
+    # Deploys the main branch; every push to main goes live after CI-style checks in the build.
+    branch: main
+    autoDeploy: true
     buildCommand: bash scripts/render-build.sh
     startCommand: node --enable-source-maps artifacts/api-server/dist/index.mjs
     healthCheckPath: /api/healthz

@@ -16,7 +16,7 @@ The school's public website, school office admin, Learning portal (staff) and st
 | `lib/api-spec` | The API contract (OpenAPI YAML). Change it first, then run codegen. |
 | `lib/api-zod`, `lib/api-client-react` | Generated from the contract: request validators for the server, React Query hooks for the screens. Do not edit by hand. |
 | `scripts/render-build.sh` | Render's build: checks key formats, installs, updates the database schema, builds. |
-| `.github/workflows/ci.yml` | Automatic checks on every push to `main`, `portal-upgrade` and the deploy branch. |
+| `.github/workflows/ci.yml` | Automatic checks on every push to `main` and `portal-upgrade`, and on pull requests. |
 
 ## Daily commands
 
@@ -39,7 +39,7 @@ Database tests (need a throwaway Postgres in `DATABASE_URL`, never the live data
 ## How changes reach the live site
 
 1. Work on a branch, run the checks above, commit.
-2. Push. Render deploys the branch it is set to (currently `chore/hardening-and-tooling`) automatically.
+2. Push to `main`. Render deploys `main` automatically.
 3. Render's build runs `scripts/render-build.sh`, which also applies database table changes. Table changes must only add things (new tables, new columns with defaults), never drop or rename, because they run against live data.
 
 ## Rules that keep it safe
