@@ -1,5 +1,7 @@
 # New World Emerald Private School
 
+> Historical notes from when the site was built on Replit. The current guide is [README.md](README.md); hosting is Render (see [docs/DEPLOY-RENDER.md](docs/DEPLOY-RENDER.md)).
+
 School website with an approved-administrator panel for admissions, content and school commerce.
 
 ## Run & Operate

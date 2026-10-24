@@ -15,6 +15,8 @@ import { siteRedirects } from "./lib/site-redirects";
 import { clerkEmailWebhook } from "./routes/clerk-email-webhook";
 
 const app: Express = express();
+// Do not advertise the framework in every response.
+app.disable("x-powered-by");
 
 app.use(
   pinoHttp({

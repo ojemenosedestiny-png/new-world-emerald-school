@@ -2,7 +2,8 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    # main, the working branch, and the branch Render deploys.
+    branches: [main, portal-upgrade, chore/hardening-and-tooling]
   pull_request:
 
 concurrency:
