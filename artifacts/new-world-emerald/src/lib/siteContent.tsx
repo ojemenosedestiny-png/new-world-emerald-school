@@ -1,7 +1,18 @@
 import React, { useEffect, useSyncExternalStore } from "react";
 import { getGetSiteContentQueryKey, useGetSiteContent } from "@workspace/api-client-react";
 
-let values: Record<string, string> = {};
+/** Content the server put into the page, so the first paint already shows the school's own photos and words. */
+export function readEmbeddedSiteContent(doc: Document | undefined = typeof document === "undefined" ? undefined : document): Record<string, string> {
+  try {
+    const text = doc?.getElementById("nwe-site-content")?.textContent;
+    const parsed = text ? (JSON.parse(text) as { values?: unknown }).values : undefined;
+    return parsed && typeof parsed === "object" ? (parsed as Record<string, string>) : {};
+  } catch {
+    return {};
+  }
+}
+
+let values: Record<string, string> = readEmbeddedSiteContent();
 let revision = 0;
 const listeners = new Set<() => void>();
 const subscribe = (listener: () => void) => {

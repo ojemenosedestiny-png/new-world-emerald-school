@@ -9,6 +9,7 @@ import { CLERK_PROXY_PATH, clerkProxyMiddleware, getClerkProxyHost } from "./mid
 import { localUserBridge } from "./middlewares/localUserBridge";
 import { startApprovedIdentityRefresh } from "./lib/approved-identities";
 import { serveFrontend } from "./lib/frontend";
+import { loadSiteContentSnapshot } from "./routes/site-content";
 import { mountCspReports, securityHeaders } from "./lib/security-headers";
 import { auditStaffChanges } from "./lib/audit";
 import { siteRedirects } from "./lib/site-redirects";
@@ -43,7 +44,7 @@ mountCspReports(app);
 // Old WordPress addresses and the Render address forward to the right place first.
 app.use(siteRedirects());
 // Website files need no auth, so they are served before the Clerk middleware.
-serveFrontend(app);
+serveFrontend(app, undefined, loadSiteContentSnapshot);
 app.use(cors({ credentials: true, origin: true }));
 // Clerk's signed email webhook needs the raw body, so it is mounted before the JSON parser.
 app.post("/api/webhooks/clerk-email", express.raw({ type: "application/json", limit: "1mb" }), clerkEmailWebhook);

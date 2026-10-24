@@ -6,7 +6,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import type { AddressInfo } from "node:net";
 import express from "express";
-import { serveFrontend } from "./frontend";
+import { serveFrontend, withSiteContent } from "./frontend";
 
 const { privateKey } = generateKeyPairSync("rsa", { modulusLength: 2048 });
 const serviceAccount = {
@@ -79,4 +79,46 @@ test("the API process can serve the built website without hiding API routes", as
     await rm(dir, { recursive: true, force: true });
   }
   await assert.rejects(async () => serveFrontend(express(), path.join(dir, "missing")), /no index.html/);
+});
+
+test("the page arrives with the school's current content, and never waits on a slow database", async () => {
+  const shell = "<!doctype html><html><head><title>School</title></head><body></body></html>";
+  const html = withSiteContent(shell, { revision: 3, values: { "hero.title": "Welcome</script><script>alert(1)</script>" } });
+  const block = /<script type="application\/json" id="nwe-site-content">(.*?)<\/script><\/head>/.exec(html);
+  assert.ok(block, "data block sits at the end of <head>");
+  assert.doesNotMatch(block[1], /</, "content cannot break out of the block");
+  assert.equal(JSON.parse(block[1]).values["hero.title"], "Welcome</script><script>alert(1)</script>");
+  assert.equal(withSiteContent(shell, null), shell);
+
+  const dir = await mkdtemp(path.join(tmpdir(), "school-frontend-"));
+  await mkdir(path.join(dir, "assets"));
+  await writeFile(path.join(dir, "index.html"), shell);
+  let loads = 0;
+  let slow = false;
+  const app = express();
+  serveFrontend(app, dir, async () => {
+    loads++;
+    if (slow) await new Promise((r) => setTimeout(r, 2000));
+    return { revision: loads, values: { "hero.image": "/objects/uploads/new" } };
+  });
+  const server = app.listen(0, "127.0.0.1");
+  await new Promise<void>((resolve) => server.once("listening", resolve));
+  const root = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
+  try {
+    const first = await (await fetch(root + "/")).text();
+    assert.match(first, /"hero.image":"\/objects\/uploads\/new"/);
+    await fetch(root + "/admin");
+    assert.equal(loads, 1, "a burst of visits shares one database read");
+    // A stuck database: the page still comes back quickly, with the defaults.
+    await new Promise((r) => setTimeout(r, 3_100));
+    slow = true;
+    const started = Date.now();
+    const page = await fetch(root + "/");
+    assert.equal(page.status, 200);
+    assert.ok(Date.now() - started < 1500, "did not wait for the database");
+    assert.doesNotMatch(await page.text(), /nwe-site-content/);
+  } finally {
+    await new Promise<void>((resolve) => server.close(() => resolve()));
+    await rm(dir, { recursive: true, force: true });
+  }
 });

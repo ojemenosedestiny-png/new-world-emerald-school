@@ -15,6 +15,12 @@ router.get("/website-admin/access", (req: Request, res: Response) => {
   res.json({ isAdmin: isWebsiteAdmin(req), isSuperAdmin: isSuperAdmin(req), mfaRequired });
 });
 
+/** The current site content, for the page the server sends (see serveFrontend). */
+export async function loadSiteContentSnapshot() {
+  const [document] = await db.select().from(siteContentTable).where(eq(siteContentTable.id, documentId));
+  return { revision: document?.revision ?? 0, values: document?.values ?? {} };
+}
+
 router.get("/site-content", async (_req: Request, res: Response) => {
   const [document] = await db.select().from(siteContentTable).where(eq(siteContentTable.id, documentId));
   res.setHeader("Cache-Control", "no-store");
