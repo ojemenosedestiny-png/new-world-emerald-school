@@ -5,8 +5,11 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { BankAccount } from './bankAccount';
 
 export interface SchoolCommerceSettings {
   paymentInstructions: string;
   updatedAt: Date;
+  /** @maxItems 3 */
+  bankAccounts: BankAccount[];
 }

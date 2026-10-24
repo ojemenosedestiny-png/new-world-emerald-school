@@ -25,4 +25,9 @@ export interface StoreOrderInput {
   items: StoreOrderLineInput[];
   orderNotes?: string;
   transferReference?: string;
+  /**
+     * Payment screenshot id from /school-commerce/payment-proofs
+     * @maxLength 40
+     */
+  proofId?: string;
 }

@@ -16,6 +16,7 @@ import { and, desc, eq, or } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
 import { Router, type IRouter, type Request, type Response } from "express";
 import { requireAuthentication } from "../lib/requireAuthentication";
+import { usablePaymentProof } from "./school-commerce-proofs";
 
 const router: IRouter = Router();
 
@@ -125,6 +126,11 @@ router.post(
     }
 
     const transferReference = cleanTransferReference(parsed.data.transferReference);
+    const proof = await usablePaymentProof(parsed.data.proofId);
+    if ("error" in proof) {
+      res.status(400).json({ error: proof.error });
+      return;
+    }
     const [created] = await db
       .insert(feePaymentReportsTable)
       .values({
@@ -143,7 +149,8 @@ router.post(
         guardianEmail: parsed.data.guardianEmail.trim(),
         guardianPhone: parsed.data.guardianPhone.trim(),
         transferReference,
-        status: transferReference ? "reported" : "payment_requested",
+        proofImageId: proof.id,
+        status: transferReference || proof.id ? "reported" : "payment_requested",
       })
       .returning();
 

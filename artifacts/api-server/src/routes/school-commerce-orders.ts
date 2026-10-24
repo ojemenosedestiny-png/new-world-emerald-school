@@ -11,6 +11,7 @@ import { desc, eq, inArray } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
 import { Router, type IRouter, type Request, type Response } from "express";
 import { requireAuthentication } from "../lib/requireAuthentication";
+import { usablePaymentProof } from "./school-commerce-proofs";
 
 const router: IRouter = Router();
 
@@ -76,6 +77,11 @@ router.post(
       return;
     }
     const transferReference = isNonEmpty(parsed.data.transferReference);
+    const proof = await usablePaymentProof(parsed.data.proofId);
+    if ("error" in proof) {
+      res.status(400).json({ error: proof.error });
+      return;
+    }
     const [created] = await db
       .insert(storeOrdersTable)
       .values({
@@ -89,7 +95,8 @@ router.post(
         totalKobo,
         orderNotes: parsed.data.orderNotes?.trim() ?? "",
         transferReference,
-        paymentStatus: transferReference ? "reported" : "awaiting_payment",
+        proofImageId: proof.id,
+        paymentStatus: transferReference || proof.id ? "reported" : "awaiting_payment",
       })
       .returning();
 

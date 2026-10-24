@@ -407,7 +407,7 @@ router.get("/school-commerce/settings", async (_req: Request, res: Response): Pr
     .where(eq(schoolCommerceSettingsTable.id, "school"));
   res.json(
     GetSchoolCommerceSettingsResponse.parse(
-      settings ?? { paymentInstructions: "", updatedAt: new Date() },
+      settings ?? { paymentInstructions: "", bankAccounts: [], updatedAt: new Date() },
     ),
   );
 });
@@ -418,16 +418,22 @@ router.put(
     if (!requireAuthentication(req, res)) return;
     const parsed = UpdateSchoolCommerceSettingsBody.safeParse(req.body);
     if (!parsed.success) {
-      res.status(400).json({ error: "Enter valid payment instructions." });
+      res.status(400).json({ error: "Enter valid payment instructions and bank accounts (account numbers are 6 to 20 digits)." });
       return;
     }
+    // Bank accounts are optional in the update, so older screens that only send
+    // instructions keep the saved accounts.
+    const bankAccounts = parsed.data.bankAccounts?.map((account) => ({
+      label: account.label.trim(),
+      bankName: account.bankName.trim(),
+      accountName: account.accountName.trim(),
+      accountNumber: account.accountNumber.replace(/\s+/g, ""),
+    }));
+    const values = { paymentInstructions: parsed.data.paymentInstructions.trim(), ...(bankAccounts ? { bankAccounts } : {}) };
     const [settings] = await db
       .insert(schoolCommerceSettingsTable)
-      .values({ id: "school", paymentInstructions: parsed.data.paymentInstructions.trim() })
-      .onConflictDoUpdate({
-        target: schoolCommerceSettingsTable.id,
-        set: { paymentInstructions: parsed.data.paymentInstructions.trim() },
-      })
+      .values({ id: "school", ...values })
+      .onConflictDoUpdate({ target: schoolCommerceSettingsTable.id, set: values })
       .returning();
     res.json(UpdateSchoolCommerceSettingsResponse.parse(settings));
   },

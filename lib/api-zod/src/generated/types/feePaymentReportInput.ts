@@ -27,4 +27,9 @@ export interface FeePaymentReportInput {
   /** @minLength 7 */
   guardianPhone: string;
   transferReference?: string;
+  /**
+     * Payment screenshot id from /school-commerce/payment-proofs
+     * @maxLength 40
+     */
+  proofId?: string;
 }

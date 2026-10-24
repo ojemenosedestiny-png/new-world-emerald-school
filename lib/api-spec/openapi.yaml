@@ -913,6 +913,43 @@ paths:
           description: Authentication required.
         "404":
           description: Payment report not found.
+  /school-commerce/payment-proofs:
+    post:
+      tags: [School Commerce]
+      operationId: uploadPaymentProof
+      summary: Upload a payment screenshot (public; JPEG, PNG or WebP up to 5 MB)
+      requestBody:
+        required: true
+        content:
+          image/jpeg:
+            schema:
+              type: string
+              format: binary
+      responses:
+        "200":
+          description: Stored privately; send proofId with the order or payment report
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaymentProof"
+  /school-commerce/payment-proofs/attach:
+    post:
+      tags: [School Commerce]
+      operationId: attachPaymentProof
+      summary: Add a payment screenshot to an existing order or payment report (reference and email must match)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PaymentProofAttach"
+      responses:
+        "200":
+          description: Screenshot added
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaymentProofAttached"
   /school-commerce/settings:
     get:
       tags: [School Commerce]
@@ -946,6 +983,31 @@ paths:
           description: Authentication required.
 components:
   schemas:
+    BankAccount:
+      type: object
+      required: [label, bankName, accountName, accountNumber]
+      properties:
+        label: { type: string, maxLength: 60 }
+        bankName: { type: string, minLength: 1, maxLength: 80 }
+        accountName: { type: string, minLength: 1, maxLength: 120 }
+        accountNumber: { type: string, pattern: "^[0-9]{6,20}$" }
+    PaymentProof:
+      type: object
+      required: [proofId]
+      properties:
+        proofId: { type: string }
+    PaymentProofAttach:
+      type: object
+      required: [reference, email, proofId]
+      properties:
+        reference: { type: string, minLength: 3, maxLength: 60 }
+        email: { type: string, minLength: 3, maxLength: 200 }
+        proofId: { type: string, minLength: 1, maxLength: 40 }
+    PaymentProofAttached:
+      type: object
+      required: [message]
+      properties:
+        message: { type: string }
     EmailTestResult:
       type: object
       required: [ok, detail, from, to]
@@ -1495,6 +1557,9 @@ components:
         updatedAt:
           type: string
           format: date-time
+        proofImageId:
+          type: [string, "null"]
+          description: Payment screenshot uploaded by the payer (website administrators can view it)
     StoreOrderLine:
       type: object
       required: [productId, title, variant, quantity, unitPriceKobo, lineTotalKobo]
@@ -1551,6 +1616,10 @@ components:
           type: string
         transferReference:
           type: string
+        proofId:
+          type: string
+          maxLength: 40
+          description: Payment screenshot id from /school-commerce/payment-proofs
     StoreOrderReceipt:
       type: object
       required: [reference, totalKobo, orderStatus, paymentStatus]
@@ -1792,6 +1861,9 @@ components:
         updatedAt:
           type: string
           format: date-time
+        proofImageId:
+          type: [string, "null"]
+          description: Payment screenshot uploaded by the payer (website administrators can view it)
     FeePaymentReportInput:
       type: object
       required: [feeType, studentName, studentIdentifier, guardianName, guardianEmail, guardianPhone]
@@ -1828,6 +1900,10 @@ components:
           minLength: 7
         transferReference:
           type: string
+        proofId:
+          type: string
+          maxLength: 40
+          description: Payment screenshot id from /school-commerce/payment-proofs
     FeePaymentReportReceipt:
       type: object
       required: [reference, amountKobo, status]
@@ -1850,17 +1926,26 @@ components:
           type: [string, "null"]
     SchoolCommerceSettings:
       type: object
-      required: [paymentInstructions, updatedAt]
+      required: [paymentInstructions, bankAccounts, updatedAt]
       properties:
         paymentInstructions:
           type: string
         updatedAt:
           type: string
           format: date-time
+        bankAccounts:
+          type: array
+          maxItems: 3
+          items:
+            $ref: "#/components/schemas/BankAccount"
     SchoolCommerceSettingsUpdate:
       type: object
       required: [paymentInstructions]
       properties:
         paymentInstructions:
           type: string
-
+        bankAccounts:
+          type: array
+          maxItems: 3
+          items:
+            $ref: "#/components/schemas/BankAccount"

@@ -2381,6 +2381,8 @@ export const createStoreOrderBodyItemsItemQuantityMax = 20;
 
 export const createStoreOrderBodyItemsMax = 30;
 
+export const createStoreOrderBodyProofIdMax = 40;
+
 
 
 export const CreateStoreOrderBody = zod.object({
@@ -2394,7 +2396,8 @@ export const CreateStoreOrderBody = zod.object({
   "quantity": zod.number().min(1).max(createStoreOrderBodyItemsItemQuantityMax)
 })).min(1).max(createStoreOrderBodyItemsMax),
   "orderNotes": zod.string().optional(),
-  "transferReference": zod.string().optional()
+  "transferReference": zod.string().optional(),
+  "proofId": zod.string().max(createStoreOrderBodyProofIdMax).optional().describe('Payment screenshot id from \/school-commerce\/payment-proofs')
 })
 
 export const CreateStoreOrderResponse = zod.object({
@@ -2431,7 +2434,8 @@ export const ListStoreOrdersResponseItem = zod.object({
   "orderStatus": zod.enum(['new', 'contacted', 'preparing', 'ready', 'completed', 'cancelled']),
   "paymentStatus": zod.enum(['awaiting_payment', 'reported', 'confirmed', 'rejected']),
   "createdAt": zod.coerce.date(),
-  "updatedAt": zod.coerce.date()
+  "updatedAt": zod.coerce.date(),
+  "proofImageId": zod.string().nullish().describe('Payment screenshot uploaded by the payer (website administrators can view it)')
 })
 export const ListStoreOrdersResponse = zod.array(ListStoreOrdersResponseItem)
 
@@ -2473,7 +2477,8 @@ export const UpdateStoreOrderResponse = zod.object({
   "orderStatus": zod.enum(['new', 'contacted', 'preparing', 'ready', 'completed', 'cancelled']),
   "paymentStatus": zod.enum(['awaiting_payment', 'reported', 'confirmed', 'rejected']),
   "createdAt": zod.coerce.date(),
-  "updatedAt": zod.coerce.date()
+  "updatedAt": zod.coerce.date(),
+  "proofImageId": zod.string().nullish().describe('Payment screenshot uploaded by the payer (website administrators can view it)')
 })
 
 
@@ -2489,6 +2494,8 @@ export const submitFeePaymentReportBodyGuardianEmailMin = 3;
 
 export const submitFeePaymentReportBodyGuardianPhoneMin = 7;
 
+export const submitFeePaymentReportBodyProofIdMax = 40;
+
 
 
 export const SubmitFeePaymentReportBody = zod.object({
@@ -2503,7 +2510,8 @@ export const SubmitFeePaymentReportBody = zod.object({
   "guardianName": zod.string().min(1),
   "guardianEmail": zod.string().min(submitFeePaymentReportBodyGuardianEmailMin),
   "guardianPhone": zod.string().min(submitFeePaymentReportBodyGuardianPhoneMin),
-  "transferReference": zod.string().optional()
+  "transferReference": zod.string().optional(),
+  "proofId": zod.string().max(submitFeePaymentReportBodyProofIdMax).optional().describe('Payment screenshot id from \/school-commerce\/payment-proofs')
 })
 
 export const SubmitFeePaymentReportResponse = zod.object({
@@ -2536,7 +2544,8 @@ export const ListFeePaymentReportsResponseItem = zod.object({
   "status": zod.enum(['payment_requested', 'reported', 'confirmed', 'rejected']),
   "officeNote": zod.string().nullable(),
   "createdAt": zod.coerce.date(),
-  "updatedAt": zod.coerce.date()
+  "updatedAt": zod.coerce.date(),
+  "proofImageId": zod.string().nullish().describe('Payment screenshot uploaded by the payer (website administrators can view it)')
 })
 export const ListFeePaymentReportsResponse = zod.array(ListFeePaymentReportsResponseItem)
 
@@ -2573,29 +2582,113 @@ export const UpdateFeePaymentReportResponse = zod.object({
   "status": zod.enum(['payment_requested', 'reported', 'confirmed', 'rejected']),
   "officeNote": zod.string().nullable(),
   "createdAt": zod.coerce.date(),
-  "updatedAt": zod.coerce.date()
+  "updatedAt": zod.coerce.date(),
+  "proofImageId": zod.string().nullish().describe('Payment screenshot uploaded by the payer (website administrators can view it)')
+})
+
+
+/**
+ * @summary Upload a payment screenshot (public; JPEG, PNG or WebP up to 5 MB)
+ */
+export const UploadPaymentProofResponse = zod.object({
+  "proofId": zod.string()
+})
+
+
+/**
+ * @summary Add a payment screenshot to an existing order or payment report (reference and email must match)
+ */
+export const attachPaymentProofBodyReferenceMin = 3;
+export const attachPaymentProofBodyReferenceMax = 60;
+
+export const attachPaymentProofBodyEmailMin = 3;
+export const attachPaymentProofBodyEmailMax = 200;
+
+export const attachPaymentProofBodyProofIdMax = 40;
+
+
+
+export const AttachPaymentProofBody = zod.object({
+  "reference": zod.string().min(attachPaymentProofBodyReferenceMin).max(attachPaymentProofBodyReferenceMax),
+  "email": zod.string().min(attachPaymentProofBodyEmailMin).max(attachPaymentProofBodyEmailMax),
+  "proofId": zod.string().min(1).max(attachPaymentProofBodyProofIdMax)
+})
+
+export const AttachPaymentProofResponse = zod.object({
+  "message": zod.string()
 })
 
 
 /**
  * @summary Get public offline payment instructions
  */
+export const getSchoolCommerceSettingsResponseBankAccountsItemLabelMax = 60;
+
+export const getSchoolCommerceSettingsResponseBankAccountsItemBankNameMax = 80;
+
+export const getSchoolCommerceSettingsResponseBankAccountsItemAccountNameMax = 120;
+
+export const getSchoolCommerceSettingsResponseBankAccountsItemAccountNumberRegExp = new RegExp('^[0-9]{6,20}$');
+export const getSchoolCommerceSettingsResponseBankAccountsMax = 3;
+
+
+
 export const GetSchoolCommerceSettingsResponse = zod.object({
   "paymentInstructions": zod.string(),
-  "updatedAt": zod.coerce.date()
+  "updatedAt": zod.coerce.date(),
+  "bankAccounts": zod.array(zod.object({
+  "label": zod.string().max(getSchoolCommerceSettingsResponseBankAccountsItemLabelMax),
+  "bankName": zod.string().min(1).max(getSchoolCommerceSettingsResponseBankAccountsItemBankNameMax),
+  "accountName": zod.string().min(1).max(getSchoolCommerceSettingsResponseBankAccountsItemAccountNameMax),
+  "accountNumber": zod.string().regex(getSchoolCommerceSettingsResponseBankAccountsItemAccountNumberRegExp)
+})).max(getSchoolCommerceSettingsResponseBankAccountsMax)
 })
 
 
 /**
  * @summary Update public offline payment instructions
  */
+export const updateSchoolCommerceSettingsBodyBankAccountsItemLabelMax = 60;
+
+export const updateSchoolCommerceSettingsBodyBankAccountsItemBankNameMax = 80;
+
+export const updateSchoolCommerceSettingsBodyBankAccountsItemAccountNameMax = 120;
+
+export const updateSchoolCommerceSettingsBodyBankAccountsItemAccountNumberRegExp = new RegExp('^[0-9]{6,20}$');
+export const updateSchoolCommerceSettingsBodyBankAccountsMax = 3;
+
+
+
 export const UpdateSchoolCommerceSettingsBody = zod.object({
-  "paymentInstructions": zod.string()
+  "paymentInstructions": zod.string(),
+  "bankAccounts": zod.array(zod.object({
+  "label": zod.string().max(updateSchoolCommerceSettingsBodyBankAccountsItemLabelMax),
+  "bankName": zod.string().min(1).max(updateSchoolCommerceSettingsBodyBankAccountsItemBankNameMax),
+  "accountName": zod.string().min(1).max(updateSchoolCommerceSettingsBodyBankAccountsItemAccountNameMax),
+  "accountNumber": zod.string().regex(updateSchoolCommerceSettingsBodyBankAccountsItemAccountNumberRegExp)
+})).max(updateSchoolCommerceSettingsBodyBankAccountsMax).optional()
 })
+
+export const updateSchoolCommerceSettingsResponseBankAccountsItemLabelMax = 60;
+
+export const updateSchoolCommerceSettingsResponseBankAccountsItemBankNameMax = 80;
+
+export const updateSchoolCommerceSettingsResponseBankAccountsItemAccountNameMax = 120;
+
+export const updateSchoolCommerceSettingsResponseBankAccountsItemAccountNumberRegExp = new RegExp('^[0-9]{6,20}$');
+export const updateSchoolCommerceSettingsResponseBankAccountsMax = 3;
+
+
 
 export const UpdateSchoolCommerceSettingsResponse = zod.object({
   "paymentInstructions": zod.string(),
-  "updatedAt": zod.coerce.date()
+  "updatedAt": zod.coerce.date(),
+  "bankAccounts": zod.array(zod.object({
+  "label": zod.string().max(updateSchoolCommerceSettingsResponseBankAccountsItemLabelMax),
+  "bankName": zod.string().min(1).max(updateSchoolCommerceSettingsResponseBankAccountsItemBankNameMax),
+  "accountName": zod.string().min(1).max(updateSchoolCommerceSettingsResponseBankAccountsItemAccountNameMax),
+  "accountNumber": zod.string().regex(updateSchoolCommerceSettingsResponseBankAccountsItemAccountNumberRegExp)
+})).max(updateSchoolCommerceSettingsResponseBankAccountsMax)
 })
 
 

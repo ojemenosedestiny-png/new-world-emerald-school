@@ -5,6 +5,49 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+export interface BankAccount {
+  /** @maxLength 60 */
+  label: string;
+  /**
+     * @minLength 1
+     * @maxLength 80
+     */
+  bankName: string;
+  /**
+     * @minLength 1
+     * @maxLength 120
+     */
+  accountName: string;
+  /** @pattern ^[0-9]{6,20}$ */
+  accountNumber: string;
+}
+
+export interface PaymentProof {
+  proofId: string;
+}
+
+export interface PaymentProofAttach {
+  /**
+     * @minLength 3
+     * @maxLength 60
+     */
+  reference: string;
+  /**
+     * @minLength 3
+     * @maxLength 200
+     */
+  email: string;
+  /**
+     * @minLength 1
+     * @maxLength 40
+     */
+  proofId: string;
+}
+
+export interface PaymentProofAttached {
+  message: string;
+}
+
 export interface EmailTestResult {
   ok: boolean;
   detail: string;
@@ -2452,6 +2495,11 @@ export interface StoreOrder {
   paymentStatus: StoreOrderPaymentStatus;
   createdAt: string;
   updatedAt: string;
+  /**
+     * Payment screenshot uploaded by the payer (website administrators can view it)
+     * @nullable
+     */
+  proofImageId?: string | null;
 }
 
 export interface StoreOrderLineInput {
@@ -2482,6 +2530,11 @@ export interface StoreOrderInput {
   items: StoreOrderLineInput[];
   orderNotes?: string;
   transferReference?: string;
+  /**
+     * Payment screenshot id from /school-commerce/payment-proofs
+     * @maxLength 40
+     */
+  proofId?: string;
 }
 
 export interface StoreOrderReceipt {
@@ -2690,6 +2743,11 @@ export interface FeePaymentReport {
   officeNote: string | null;
   createdAt: string;
   updatedAt: string;
+  /**
+     * Payment screenshot uploaded by the payer (website administrators can view it)
+     * @nullable
+     */
+  proofImageId?: string | null;
 }
 
 export type FeePaymentReportInputFeeType = typeof FeePaymentReportInputFeeType[keyof typeof FeePaymentReportInputFeeType];
@@ -2720,6 +2778,11 @@ export interface FeePaymentReportInput {
   /** @minLength 7 */
   guardianPhone: string;
   transferReference?: string;
+  /**
+     * Payment screenshot id from /school-commerce/payment-proofs
+     * @maxLength 40
+     */
+  proofId?: string;
 }
 
 export type FeePaymentReportReceiptStatus = typeof FeePaymentReportReceiptStatus[keyof typeof FeePaymentReportReceiptStatus];
@@ -2755,10 +2818,14 @@ export interface FeePaymentReportUpdate {
 export interface SchoolCommerceSettings {
   paymentInstructions: string;
   updatedAt: string;
+  /** @maxItems 3 */
+  bankAccounts: BankAccount[];
 }
 
 export interface SchoolCommerceSettingsUpdate {
   paymentInstructions: string;
+  /** @maxItems 3 */
+  bankAccounts?: BankAccount[];
 }
 
 export type ImportPortalPdfParams = {

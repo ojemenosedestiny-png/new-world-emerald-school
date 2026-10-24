@@ -33,4 +33,9 @@ export interface FeePaymentReport {
   officeNote: string | null;
   createdAt: Date;
   updatedAt: Date;
+  /**
+     * Payment screenshot uploaded by the payer (website administrators can view it)
+     * @nullable
+     */
+  proofImageId?: string | null;
 }

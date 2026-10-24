@@ -11,6 +11,8 @@ import {
 } from "drizzle-orm/pg-core";
 import { z } from "zod/v4";
 
+export type BankAccount = { label: string; bankName: string; accountName: string; accountNumber: string };
+
 export const storeProductsTable = pgTable("store_products", {
   id: serial("id").primaryKey(),
   title: text("title").notNull(),
@@ -52,6 +54,8 @@ export const storeOrdersTable = pgTable(
     orderNotes: text("order_notes").notNull().default(""),
     officeNote: text("office_note"),
     transferReference: text("transfer_reference"),
+    // Payment screenshot uploaded by the payer (portal_images id, private).
+    proofImageId: text("proof_image_id"),
     orderStatus: text("order_status").notNull().default("new"),
     paymentStatus: text("payment_status").notNull().default("awaiting_payment"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
@@ -129,6 +133,8 @@ export const feePaymentReportsTable = pgTable(
     guardianEmail: text("guardian_email").notNull(),
     guardianPhone: text("guardian_phone").notNull(),
     transferReference: text("transfer_reference"),
+    // Payment screenshot uploaded by the payer (portal_images id, private).
+    proofImageId: text("proof_image_id"),
     status: text("status").notNull().default("payment_requested"),
     officeNote: text("office_note"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
@@ -143,6 +149,8 @@ export const feePaymentReportsTable = pgTable(
 export const schoolCommerceSettingsTable = pgTable("school_commerce_settings", {
   id: text("id").primaryKey().default("school"),
   paymentInstructions: text("payment_instructions").notNull().default(""),
+  // Up to three labelled accounts shown to payers, e.g. "School fees" and "Uniforms & books".
+  bankAccounts: jsonb("bank_accounts").$type<BankAccount[]>().notNull().default([]),
   updatedAt: timestamp("updated_at", { withTimezone: true })
     .notNull()
     .defaultNow()

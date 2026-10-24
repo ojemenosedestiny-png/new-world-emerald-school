@@ -28,4 +28,9 @@ export interface StoreOrder {
   paymentStatus: StoreOrderPaymentStatus;
   createdAt: Date;
   updatedAt: Date;
+  /**
+     * Payment screenshot uploaded by the payer (website administrators can view it)
+     * @nullable
+     */
+  proofImageId?: string | null;
 }

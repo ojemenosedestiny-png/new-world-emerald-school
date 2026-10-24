@@ -61,6 +61,9 @@ import type {
   MediaStorageStatus,
   MediaStorageTest,
   MyPhoto,
+  PaymentProof,
+  PaymentProofAttach,
+  PaymentProofAttached,
   PhotoCaption,
   PhotoDecision,
   PhotoReview,
@@ -6430,6 +6433,148 @@ export const useUpdateFeePaymentReport = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getUpdateFeePaymentReportMutationOptions(options));
+    }
+
+export const getUploadPaymentProofUrl = () => {
+
+
+
+
+  return `/api/school-commerce/payment-proofs`
+}
+
+/**
+ * @summary Upload a payment screenshot (public; JPEG, PNG or WebP up to 5 MB)
+ */
+export const uploadPaymentProof = async (uploadPaymentProofBody: Blob, options?: RequestInit): Promise<PaymentProof> => {
+
+  return customFetch<PaymentProof>(getUploadPaymentProofUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'image/jpeg', ...options?.headers },
+    body: uploadPaymentProofBody
+  }
+);}
+
+
+
+
+
+export const getUploadPaymentProofMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof uploadPaymentProof>>, TError,{data: BodyType<Blob>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof uploadPaymentProof>>, TError,{data: BodyType<Blob>}, TContext> => {
+
+const mutationKey = ['uploadPaymentProof'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof uploadPaymentProof>>, {data: BodyType<Blob>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  uploadPaymentProof(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UploadPaymentProofMutationResult = NonNullable<Awaited<ReturnType<typeof uploadPaymentProof>>>
+    export type UploadPaymentProofMutationBody = BodyType<Blob>
+    export type UploadPaymentProofMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Upload a payment screenshot (public; JPEG, PNG or WebP up to 5 MB)
+ */
+export const useUploadPaymentProof = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof uploadPaymentProof>>, TError,{data: BodyType<Blob>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof uploadPaymentProof>>,
+        TError,
+        {data: BodyType<Blob>},
+        TContext
+      > => {
+      return useMutation(getUploadPaymentProofMutationOptions(options));
+    }
+
+export const getAttachPaymentProofUrl = () => {
+
+
+
+
+  return `/api/school-commerce/payment-proofs/attach`
+}
+
+/**
+ * @summary Add a payment screenshot to an existing order or payment report (reference and email must match)
+ */
+export const attachPaymentProof = async (paymentProofAttach: PaymentProofAttach, options?: RequestInit): Promise<PaymentProofAttached> => {
+
+  return customFetch<PaymentProofAttached>(getAttachPaymentProofUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(paymentProofAttach)
+  }
+);}
+
+
+
+
+
+export const getAttachPaymentProofMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof attachPaymentProof>>, TError,{data: BodyType<PaymentProofAttach>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof attachPaymentProof>>, TError,{data: BodyType<PaymentProofAttach>}, TContext> => {
+
+const mutationKey = ['attachPaymentProof'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof attachPaymentProof>>, {data: BodyType<PaymentProofAttach>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  attachPaymentProof(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AttachPaymentProofMutationResult = NonNullable<Awaited<ReturnType<typeof attachPaymentProof>>>
+    export type AttachPaymentProofMutationBody = BodyType<PaymentProofAttach>
+    export type AttachPaymentProofMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Add a payment screenshot to an existing order or payment report (reference and email must match)
+ */
+export const useAttachPaymentProof = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof attachPaymentProof>>, TError,{data: BodyType<PaymentProofAttach>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof attachPaymentProof>>,
+        TError,
+        {data: BodyType<PaymentProofAttach>},
+        TContext
+      > => {
+      return useMutation(getAttachPaymentProofMutationOptions(options));
     }
 
 export const getGetSchoolCommerceSettingsUrl = () => {

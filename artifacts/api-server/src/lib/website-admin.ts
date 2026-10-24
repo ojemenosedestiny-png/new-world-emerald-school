@@ -56,7 +56,11 @@ const publicReadPatterns = [
   /^\/storage\/objects\/.+$/,
 ];
 // Admission submissions and parent order/payment reports.
-const publicSubmissions = ["/admission-applications", "/school-commerce/orders", "/school-commerce/fee-reports"];
+const publicSubmissions = [
+  "/admission-applications", "/school-commerce/orders", "/school-commerce/fee-reports",
+  // Parents' payment screenshots: images only, size-capped and rate-limited in the route.
+  "/school-commerce/payment-proofs", "/school-commerce/payment-proofs/attach",
+];
 
 export function isPublicWebsiteRequest(method: string, rawPath: string): boolean {
   // Express routes are case-insensitive unless explicitly configured otherwise.
