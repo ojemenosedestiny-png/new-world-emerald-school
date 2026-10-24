@@ -154,3 +154,28 @@ html[data-portal-theme="dark"] .portal .portal-btn:hover:not(:disabled) { backgr
 .portal-topbar { position: sticky; top: 0; z-index: 20; background: hsl(var(--p-paper) / 0.85); backdrop-filter: blur(10px); border-bottom: 1px solid hsl(var(--p-line)); }
 .portal-stat-value { font-family: var(--app-font-sans); font-weight: 650; font-variant-numeric: proportional-nums; letter-spacing: -0.01em; }
 @media (prefers-reduced-motion: reduce) { .portal-rise, .portal-skeleton { animation: none; } }
+
+/* Phone bottom bar */
+.portal-bottom-nav {
+  position: fixed; inset: auto 0 0 0; z-index: 30; display: grid; grid-auto-flow: column; grid-auto-columns: 1fr;
+  padding: 0.35rem 0.5rem calc(0.35rem + env(safe-area-inset-bottom)); background: hsl(var(--p-surface) / 0.96);
+  border-top: 1px solid hsl(var(--p-line)); backdrop-filter: blur(12px); box-shadow: 0 -8px 24px -18px hsl(var(--p-ink) / 0.4);
+}
+@media (min-width: 1024px) { .portal-bottom-nav { display: none; } }
+.portal-bottom-item { display: flex; flex-direction: column; align-items: center; gap: 0.15rem; padding: 0.35rem 0; border-radius: 12px; font-size: 11px; font-weight: 600; color: hsl(var(--p-ink) / 0.55); }
+.portal-bottom-item[aria-current="page"] { color: hsl(var(--p-emerald)); }
+.portal-bottom-item:focus-visible { outline: 2px solid hsl(var(--p-emerald)); outline-offset: 1px; }
+.portal-bottom-dot { position: absolute; top: -6px; right: -10px; min-width: 16px; height: 16px; padding: 0 3px; border-radius: 999px; background: hsl(var(--p-red)); color: #fff; font-size: 9.5px; font-weight: 800; display: grid; place-items: center; }
+
+/* Phone-style home */
+.portal-hero {
+  position: relative; overflow: hidden; color: #fff;
+  background: radial-gradient(120% 140% at 100% 0%, hsl(41 72% 50% / 0.35), transparent 55%), linear-gradient(135deg, hsl(156 62% 22%), hsl(165 55% 16%) 60%, hsl(200 45% 12%));
+}
+.portal-tile {
+  position: relative; display: flex; flex-direction: column; gap: 0.6rem; min-height: 132px; padding: 1rem; border-radius: 20px; text-align: left;
+  border: 1px solid hsl(var(--p-line)); background: hsl(var(--tile) / 0.10); transition: transform 0.15s, box-shadow 0.15s;
+}
+.portal-tile:hover { transform: translateY(-2px); box-shadow: 0 14px 28px -20px hsl(var(--tile) / 0.8); }
+.portal-tile:focus-visible { outline: 3px solid hsl(var(--tile) / 0.5); outline-offset: 2px; }
+.portal-tile-icon { width: 44px; height: 44px; border-radius: 999px; display: grid; place-items: center; color: #fff; background: hsl(var(--tile)); box-shadow: 0 8px 18px -10px hsl(var(--tile)); }

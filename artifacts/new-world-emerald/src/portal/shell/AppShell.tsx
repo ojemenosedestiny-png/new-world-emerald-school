@@ -1,9 +1,13 @@
-import { useState, type ReactNode } from "react";
+import { createContext, useContext, useState, type ReactNode } from "react";
 import { Link } from "wouter";
 import { LogOut, Menu, type LucideIcon } from "lucide-react";
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
 import { asset } from "@/lib/asset";
 import { ThemeToggle, type PortalTheme } from "./theme";
+
+/** Lets a screen inside the shell open the navigation menu (e.g. the phone home header). */
+const ShellMenuContext = createContext<() => void>(() => {});
+export const useOpenShellMenu = () => useContext(ShellMenuContext);
 
 export type NavItem<K extends string> = { key: K; label: string; icon: LucideIcon; badge?: number; testId?: string };
 export type NavGroup<K extends string> = { label?: string; items: NavItem<K>[] };
@@ -68,6 +72,10 @@ export function AppShell<K extends string>(props: {
   title: string; eyebrow?: string; actions?: ReactNode; children: ReactNode;
   user: { name: string; detail: string }; theme: PortalTheme; onTheme: (t: PortalTheme) => void;
   onSignOut: () => void; signingOut?: boolean; sidebarFooter?: ReactNode;
+  /** Phone-only bottom bar; the item whose key matches `active` is highlighted. */
+  bottomNav?: NavItem<K>[];
+  /** Hide the top bar below desktop width when the screen draws its own header. */
+  hideTopbarOnMobile?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const navigate = (key: K) => { props.onNavigate(key); setOpen(false); window.scrollTo({ top: 0 }); };
@@ -83,8 +91,8 @@ export function AppShell<K extends string>(props: {
           {body}
         </SheetContent>
       </Sheet>
-      <div className="min-w-0">
-        <header className="portal-topbar">
+      <div className={"min-w-0 " + (props.bottomNav ? "pb-20 lg:pb-0" : "")}>
+        <header className={"portal-topbar " + (props.hideTopbarOnMobile ? "hidden lg:block" : "")}>
           <div className="mx-auto flex max-w-6xl items-center gap-3 px-4 py-3 md:px-8">
             {/* Wrapper carries the breakpoint: .portal-btn-ghost sets display and would override lg:hidden. */}
             <div className="lg:hidden"><button type="button" className="portal-btn-ghost !px-2.5" onClick={() => setOpen(true)} aria-label="Open menu" data-testid="button-open-menu"><Menu size={18} /></button></div>
@@ -95,8 +103,20 @@ export function AppShell<K extends string>(props: {
             {props.actions && <div className="flex shrink-0 items-center gap-2">{props.actions}</div>}
           </div>
         </header>
-        <main className="mx-auto max-w-6xl px-4 py-6 md:px-8 md:py-8">{props.children}</main>
+        <ShellMenuContext.Provider value={() => setOpen(true)}>
+          <main className={"mx-auto max-w-6xl md:px-8 md:py-8 " + (props.hideTopbarOnMobile ? "px-0 pb-6 pt-0 lg:px-8" : "px-4 py-6")}>{props.children}</main>
+        </ShellMenuContext.Provider>
       </div>
+      {props.bottomNav && (
+        <nav aria-label="Quick navigation" className="portal-bottom-nav lg:hidden" data-testid="bottom-nav">
+          {props.bottomNav.map((item) => (
+            <button key={item.key} type="button" onClick={() => item.key === ("__menu" as K) ? setOpen(true) : navigate(item.key)} aria-current={props.active === item.key ? "page" : undefined} className="portal-bottom-item" data-testid={"bottom-" + item.key}>
+              <span className="relative"><item.icon size={21} aria-hidden="true" />{!!item.badge && <span className="portal-bottom-dot" aria-label={item.badge + " new"}>{item.badge > 9 ? "9+" : item.badge}</span>}</span>
+              <span>{item.label}</span>
+            </button>
+          ))}
+        </nav>
+      )}
     </div>
   );
 }

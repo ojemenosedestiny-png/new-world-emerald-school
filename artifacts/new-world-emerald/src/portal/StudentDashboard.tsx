@@ -6,7 +6,7 @@ import {
   getGetPortalSessionQueryKey,
   type PortalSession, type PortalDashboardExamsItem, type PortalDashboardAttemptsItem,
 } from "@workspace/api-client-react";
-import { Award, BookOpen, CalendarClock, ClipboardList, FileBarChart, FileText, Home, KeyRound, Megaphone, PlayCircle, Timer } from "lucide-react";
+import { Award, BookOpen, CalendarClock, ClipboardList, FileBarChart, FileText, Home, KeyRound, LayoutGrid, Megaphone, PlayCircle, Timer, UserRound } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { EmptyState, ErrorPanel, Skeleton, StatusPill } from "./ui";
@@ -15,6 +15,7 @@ import { clearDrafts, clearStudentQueries, errorMessage, examWindow, fileUrl, fo
 import { studentAverage } from "./manage/results";
 import { StudentReports } from "./reports/StudentReports";
 import { StudentHome, type StudentSection } from "./StudentHome";
+import { StudentProfile } from "./StudentProfile";
 import { AppShell, type NavGroup } from "./shell/AppShell";
 import { IdleSignOut } from "@/components/IdleSignOut";
 import type { usePortalTheme } from "./shell/theme";
@@ -92,27 +93,33 @@ export function StudentDashboard({ session, theme }: { session: PortalSession; t
   const examIds = useMemo(() => new Set((data?.exams ?? []).map((e) => e.id)), [data]);
   const orphanAttempts = (data?.attempts ?? []).filter((a) => !examIds.has(a.examId));
   const exams = useMemo(() => sortStudentExams(data?.exams ?? [], data?.attempts ?? []), [data]);
-  const firstName = session.name.split(" ")[0];
   const average = studentAverage(data?.attempts ?? []);
 
-  const nextExam = exams.find((e) => attemptByExam.get(e.id)?.status === "in_progress" || examWindow(e.startsAt, e.endsAt) !== "closed");
-  const titles: Record<StudentSection, string> = { home: "Home", exams: "Exams", results: "Results", reports: "Report cards", revision: "Revision notes", notices: "Notices" };
+  const titles: Record<StudentSection, string> = { home: "Home", exams: "Exams", results: "GradeSheet", reports: "Report cards", revision: "Library", notices: "Notices", profile: "Profile" };
   const openCount = (data?.exams ?? []).filter((e) => examWindow(e.startsAt, e.endsAt) === "open" && attemptByExam.get(e.id)?.status !== "submitted" && attemptByExam.get(e.id)?.status !== "marked").length;
   const groups: NavGroup<StudentSection>[] = [
-    { items: [{ key: "home", label: "Home", icon: Home, testId: "tab-home" }] },
+    { items: [{ key: "home", label: "Home", icon: Home, testId: "tab-home" }, { key: "profile", label: "Profile", icon: UserRound, testId: "tab-profile" }] },
     { label: "Learning", items: [
       { key: "exams", label: "Exams", icon: ClipboardList, badge: openCount, testId: "tab-exams" },
-      { key: "results", label: "Results", icon: Award, testId: "tab-results" },
+      { key: "results", label: "GradeSheet", icon: Award, testId: "tab-results" },
       { key: "reports", label: "Report cards", icon: FileBarChart, testId: "tab-reports" },
-      { key: "revision", label: "Revision notes", icon: BookOpen, testId: "tab-revision" },
+      { key: "revision", label: "Library", icon: BookOpen, testId: "tab-revision" },
       { key: "notices", label: "Notices", icon: Megaphone, testId: "tab-notices" },
     ] },
+  ];
+  // Phone bottom bar; "More" opens the full menu.
+  const bottomNav = [
+    { key: "home" as const, label: "Home", icon: Home },
+    { key: "exams" as const, label: "Exams", icon: ClipboardList, badge: openCount },
+    { key: "results" as const, label: "Results", icon: Award },
+    { key: "__menu" as StudentSection, label: "More", icon: LayoutGrid },
   ];
 
   return (
     <AppShell<StudentSection>
       subtitle="Student Portal" groups={groups} active={section} onNavigate={setSection}
       title={titles[section]} eyebrow={data?.className || "Student portal"}
+      bottomNav={bottomNav} hideTopbarOnMobile={section === "home"}
       user={{ name: session.name, detail: session.studentId ?? "" }}
       theme={theme.theme} onTheme={theme.setTheme}
       onSignOut={logout.run} signingOut={logout.pending}
@@ -121,13 +128,13 @@ export function StudentDashboard({ session, theme }: { session: PortalSession; t
     >
         <IdleSignOut enabled onSignOut={logout.run} />
         {dash.isLoading ? (
-          <div className="space-y-4"><Skeleton className="h-11 w-80" /><Skeleton className="h-28" /><Skeleton className="h-28" /></div>
+          <div className="space-y-4 px-4 pt-4 lg:px-0 lg:pt-0"><Skeleton className="h-40" /><Skeleton className="h-28" /><Skeleton className="h-28" /></div>
         ) : dash.isError || !data ? (
-          <ErrorPanel title="Your portal could not load" message={errorMessage(dash.error)} onRetry={() => dash.refetch()} />
+          <div className="px-4 pt-4 lg:px-0 lg:pt-0"><ErrorPanel title="Your portal could not load" message={errorMessage(dash.error)} onRetry={() => dash.refetch()} /></div>
         ) : (
           <div className="portal-rise" key={section}>
-            {section === "home" && <StudentHome data={data} firstName={firstName} studentId={session.studentId ?? ""} average={average} onGo={setSection}
-              nextExam={nextExam ? <ExamRow exam={nextExam} attempt={attemptByExam.get(nextExam.id)} /> : null} />}
+            {section === "home" && <StudentHome data={data} name={session.name} studentId={session.studentId ?? ""} onGo={setSection} />}
+            {section === "profile" && <StudentProfile session={session} className={data.className} />}
 
             {section === "exams" && <div className="space-y-3">
               {data.exams.length === 0 && orphanAttempts.length === 0 ? (
