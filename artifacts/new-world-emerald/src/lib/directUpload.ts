@@ -24,12 +24,30 @@ async function retrying<T>(step: () => Promise<T>, retryOn: number[] = [], tries
   }
 }
 
+type Sent = { ok: boolean; status: number; json: () => Promise<unknown> };
+type Sender = (url: string, form: FormData, headers: Record<string, string>, onBytes: (fraction: number) => void) => Promise<Sent>;
+
+/** Sends one piece with XMLHttpRequest, which (unlike fetch) reports upload progress as the bytes go. */
+const xhrSend: Sender = (url, form, headers, onBytes) => new Promise((resolve, reject) => {
+  const xhr = new XMLHttpRequest();
+  xhr.open("POST", url);
+  for (const [name, value] of Object.entries(headers)) xhr.setRequestHeader(name, value);
+  xhr.upload.onprogress = (e) => { if (e.lengthComputable && e.total) onBytes(e.loaded / e.total); };
+  xhr.onload = () => resolve({ ok: xhr.status >= 200 && xhr.status < 300, status: xhr.status, json: async () => JSON.parse(xhr.responseText) as unknown });
+  xhr.onerror = xhr.ontimeout = xhr.onabort = () => reject(new TypeError("Failed to fetch"));
+  xhr.send(form);
+});
+
+const fetchSender = (fetchImpl: typeof fetch): Sender => (url, form, headers) =>
+  fetchImpl(url, { method: "POST", body: form, credentials: "omit", headers });
+
 /**
  * Sends a big video from the browser to Cloudinary in pieces (Cloudinary's chunked
  * upload), then has the server record it. The server never handles the file itself.
  * Each piece is signed just before it is sent, so slow uploads do not expire.
  */
-export async function uploadVideoDirect(file: File, onProgress: (fraction: number) => void, fetchImpl: typeof fetch = fetch): Promise<string> {
+export async function uploadVideoDirect(file: File, onProgress: (fraction: number) => void, fetchImpl?: typeof fetch): Promise<string> {
+  const send = fetchImpl ? fetchSender(fetchImpl) : xhrSend;
   const grant = await retrying(() => startDirectUpload({ name: file.name, size: file.size, contentType: file.type }));
   const uploadId = `nwe-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
   for (let start = 0; start < file.size; start += grant.chunkSize) {
@@ -41,13 +59,11 @@ export async function uploadVideoDirect(file: File, onProgress: (fraction: numbe
     form.append("timestamp", String(signed.timestamp));
     form.append("signature", signed.signature);
     form.append("public_id", signed.publicId);
-    let response: Response | null = null;
+    let response: Sent | null = null;
     for (let attempt = 0; attempt < 3; attempt++) {
       try {
-        response = await fetchImpl(grant.uploadUrl, {
-          method: "POST", body: form, credentials: "omit",
-          headers: { "X-Unique-Upload-Id": uploadId, "Content-Range": `bytes ${start}-${end - 1}/${file.size}` },
-        });
+        response = await send(grant.uploadUrl, form, { "X-Unique-Upload-Id": uploadId, "Content-Range": `bytes ${start}-${end - 1}/${file.size}` },
+          (part) => onProgress((start + part * (end - start)) / file.size));
         if (response.ok || response.status < 500) break;
       } catch { response = null; }
       await new Promise((r) => setTimeout(r, 1500 * (attempt + 1)));

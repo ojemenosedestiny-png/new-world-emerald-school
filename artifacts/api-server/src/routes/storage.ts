@@ -92,7 +92,8 @@ function adminOnly(req: Request, res: Response) {
 
 // ---- Big videos (up to 500 MB) go from the browser straight to Cloudinary in pieces.
 export const MAX_DIRECT_UPLOAD_BYTES = 500 * 1024 * 1024;
-const DIRECT_CHUNK_BYTES = 20 * 1024 * 1024;
+// Cloudinary needs pieces of at least 5 MB (except the last); small pieces keep progress moving and retries cheap.
+const DIRECT_CHUNK_BYTES = 6 * 1024 * 1024;
 const DIRECT_GRANT_HOURS = 6;
 const directPublicId = (id: string) => `nwe/site/${id}`;
 

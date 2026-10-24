@@ -80,7 +80,7 @@ test("website uploads with Cloudinary: signed links, checks, CDN delivery and ad
     assert.equal((await start({ name: "huge.mp4", size: 501 * 1024 * 1024, contentType: "video/mp4" }, "admin")).status, 413);
     const big = await json(await start({ name: "sports.mp4", size: 431 * 1024 * 1024, contentType: "video/mp4" }, "admin"));
     assert.equal(big.uploadUrl, "https://api.cloudinary.com/v1_1/demo-school/video/upload");
-    assert.equal(big.chunkSize, 20 * 1024 * 1024);
+    assert.equal(big.chunkSize, 6 * 1024 * 1024);
     assert.match(String(big.objectPath), /^\/objects\/uploads\/[0-9a-f-]{36}$/);
     const sign = (token: unknown) => call("/api/storage/direct-uploads/sign", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ token }), user: "admin" });
     assert.equal((await sign("forged.token")).status, 403);

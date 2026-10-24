@@ -98,6 +98,27 @@ describe("big video uploads straight to Cloudinary", () => {
     expect(api.complete).toHaveBeenCalledTimes(2);
   });
 
+  it("moves the progress bar while each piece is still uploading", async () => {
+    setup();
+    const sent: { headers: Record<string, string> }[] = [];
+    class FakeXhr {
+      status = 200; responseText = "{}"; headers: Record<string, string> = {};
+      upload: { onprogress: ((e: { lengthComputable: boolean; loaded: number; total: number }) => void) | null } = { onprogress: null };
+      onload: (() => void) | null = null; onerror: (() => void) | null = null; ontimeout: (() => void) | null = null; onabort: (() => void) | null = null;
+      open() {}
+      setRequestHeader(name: string, value: string) { this.headers[name] = value; }
+      send() { sent.push(this); this.upload.onprogress?.({ lengthComputable: true, loaded: 5, total: 10 }); queueMicrotask(() => this.onload?.()); }
+    }
+    vi.stubGlobal("XMLHttpRequest", FakeXhr);
+    const progress: number[] = [];
+    await expect(uploadVideoDirect(file, (f) => progress.push(f))).resolves.toBe("/objects/uploads/xyz");
+    vi.unstubAllGlobals();
+    expect(sent.map((x) => x.headers["Content-Range"])).toEqual(["bytes 0-9/25", "bytes 10-19/25", "bytes 20-24/25"]);
+    // Halfway through the first piece is 5 of 25 bytes.
+    expect(progress[0]).toBe(0.2);
+    expect(progress.at(-1)).toBe(1);
+  });
+
   it("gives up quickly when Cloudinary is not set up, and explains a lost connection", async () => {
     setup();
     api.start.mockReset();
