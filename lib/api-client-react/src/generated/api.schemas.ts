@@ -5,6 +5,48 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+export interface DirectUploadRequest {
+  /**
+     * @minLength 1
+     * @maxLength 300
+     */
+  name: string;
+  /** @minimum 1 */
+  size: number;
+  /**
+     * @minLength 1
+     * @maxLength 100
+     */
+  contentType: string;
+}
+
+export interface DirectUploadGrant {
+  token: string;
+  objectPath: string;
+  uploadUrl: string;
+  chunkSize: number;
+}
+
+export interface DirectUploadToken {
+  /**
+     * @minLength 1
+     * @maxLength 2000
+     */
+  token: string;
+}
+
+export interface DirectUploadSignature {
+  apiKey: string;
+  timestamp: number;
+  signature: string;
+  publicId: string;
+}
+
+export interface DirectUploadComplete {
+  objectPath: string;
+  bytes: number;
+}
+
 export type MediaStorageStatusProvider = typeof MediaStorageStatusProvider[keyof typeof MediaStorageStatusProvider];
 
 

@@ -1,5 +1,8 @@
 import {
+  CompleteDirectUploadBody,
   GetMediaStorageStatusResponse,
+  SignDirectUploadChunkBody,
+  StartDirectUploadBody,
   RequestUploadUrlBody,
   RequestUploadUrlResponse,
 } from '@workspace/api-zod';
@@ -14,7 +17,7 @@ import { serveObject } from '../lib/serve-object';
 import { requireAuthentication } from '../lib/requireAuthentication';
 import { isWebsiteAdmin } from '../lib/website-admin';
 import {
-  cloudinaryCredentials, cloudinaryUrlProblem, deleteFromCloudinary,
+  cloudinaryCredentials, cloudinaryResourceBytes, cloudinaryUrlProblem, deleteFromCloudinary, signDirectUpload,
   cloudinaryReady, downloadUrl, pipeFromCloudinary, publicIdFor, publicUrl, resourceTypeFor,
   signUploadGrant, uploadToCloudinary, verifyUploadGrant, type ResourceType,
 } from '../lib/cloudinary';
@@ -86,6 +89,67 @@ function adminOnly(req: Request, res: Response) {
   if (!isWebsiteAdmin(req)) { res.status(403).json({ error: 'Website administrators only.' }); return false; }
   return true;
 }
+
+// ---- Big videos (up to 500 MB) go from the browser straight to Cloudinary in pieces.
+export const MAX_DIRECT_UPLOAD_BYTES = 500 * 1024 * 1024;
+const DIRECT_CHUNK_BYTES = 20 * 1024 * 1024;
+const DIRECT_GRANT_HOURS = 6;
+const directPublicId = (id: string) => `nwe/site/${id}`;
+
+router.post('/storage/direct-uploads', (req: Request, res: Response) => {
+  if (!adminOnly(req, res)) return;
+  const parsed = StartDirectUploadBody.safeParse(req.body);
+  if (!parsed.success || !parsed.data.contentType.toLowerCase().startsWith('video/')) {
+    res.status(400).json({ error: 'Choose a video file.' });
+    return;
+  }
+  if (!cloudinaryReady()) {
+    res.status(503).json({ error: cloudinaryUrlProblem() ?? 'Big video uploads need Cloudinary. Add CLOUDINARY_URL in Render, or paste a YouTube link instead.' });
+    return;
+  }
+  if (parsed.data.size > MAX_DIRECT_UPLOAD_BYTES) {
+    res.status(413).json({ error: 'Videos can be up to 500 MB. For longer videos, paste a YouTube link instead.' });
+    return;
+  }
+  const id = randomUUID();
+  const token = signUploadGrant({ id, contentType: parsed.data.contentType.toLowerCase(), size: parsed.data.size, expires: Date.now() + DIRECT_GRANT_HOURS * 3_600_000 });
+  res.json({
+    token,
+    objectPath: `/objects/uploads/${id}`,
+    uploadUrl: `https://api.cloudinary.com/v1_1/${cloudinaryCredentials()!.cloudName}/video/upload`,
+    chunkSize: DIRECT_CHUNK_BYTES,
+  });
+});
+
+router.post('/storage/direct-uploads/sign', (req: Request, res: Response) => {
+  if (!adminOnly(req, res)) return;
+  const parsed = SignDirectUploadChunkBody.safeParse(req.body);
+  const grant = parsed.success && cloudinaryReady() ? verifyUploadGrant(parsed.data.token) : null;
+  if (!grant) { res.status(403).json({ error: 'This upload has expired. Please start again.' }); return; }
+  const signed = signDirectUpload(directPublicId(grant.id));
+  res.json({ apiKey: signed.apiKey, timestamp: signed.timestamp, signature: signed.signature, publicId: directPublicId(grant.id) });
+});
+
+router.post('/storage/direct-uploads/complete', async (req: Request, res: Response) => {
+  if (!adminOnly(req, res)) return;
+  const parsed = CompleteDirectUploadBody.safeParse(req.body);
+  const grant = parsed.success && cloudinaryReady() ? verifyUploadGrant(parsed.data.token) : null;
+  if (!grant) { res.status(403).json({ error: 'This upload has expired. Please start again.' }); return; }
+  const objectPath = `/objects/uploads/${grant.id}`;
+  const records = await import('../lib/media-objects');
+  const existing = await records.findMediaObject(grant.id);
+  if (existing) { res.json({ objectPath, bytes: existing.size }); return; }
+  const publicId = directPublicId(grant.id);
+  try {
+    const bytes = await cloudinaryResourceBytes(publicId, 'video');
+    if (bytes === null) { res.status(409).json({ error: 'The video has not finished uploading to Cloudinary yet. Please try again.' }); return; }
+    await records.recordMediaObject({ id: grant.id, publicId, resourceType: 'video', contentType: grant.contentType, size: bytes || grant.size });
+    res.json({ objectPath, bytes: bytes || grant.size });
+  } catch (error) {
+    req.log.error({ err: error }, 'Could not confirm direct upload');
+    res.status(502).json({ error: 'Cloudinary could not confirm the video. Please try again.' });
+  }
+});
 
 /** Which media storage is in use, for the admin dashboard. */
 router.get('/storage/status', (req: Request, res: Response) => {

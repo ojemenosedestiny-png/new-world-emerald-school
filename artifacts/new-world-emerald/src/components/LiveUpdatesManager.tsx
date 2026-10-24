@@ -6,6 +6,7 @@ import {
   CheckCircle2,
   Clapperboard,
   FileVideo,
+  Link2,
   Loader2,
   Pencil,
   Plus,
@@ -23,8 +24,11 @@ import {
   useRequestUploadUrl,
   useUpdateLiveUpdate,
 } from "@workspace/api-client-react";
+import { YOUTUBE_CONTENT_TYPE, parseYouTubeId } from "@/lib/videoSources";
+import { DIRECT_UPLOAD_FROM_BYTES, MAX_VIDEO_BYTES, uploadVideoDirect } from "@/lib/directUpload";
 
-const MAX_VIDEO_SIZE = 100 * 1024 * 1024;
+const MAX_VIDEO_SIZE = MAX_VIDEO_BYTES;
+const TOO_BIG = "Choose a video under 500 MB, or paste a YouTube link for longer videos.";
 
 function formatPublishedDate(value: string) {
   const date = new Date(value);
@@ -57,6 +61,10 @@ export function LiveUpdatesManager() {
   const [formError, setFormError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const [uploadStage, setUploadStage] = useState<"idle" | "preparing" | "uploading" | "publishing">("idle");
+  // Upload a file, or paste a YouTube link for videos that are too long to upload.
+  const [source, setSource] = useState<"file" | "youtube">("file");
+  const [youtubeLink, setYoutubeLink] = useState("");
+  const [progress, setProgress] = useState<number | null>(null);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editTitle, setEditTitle] = useState("");
   const [editDescription, setEditDescription] = useState("");
@@ -81,6 +89,8 @@ export function LiveUpdatesManager() {
 
   const resetComposer = () => {
     setSelectedFile(null);
+    setYoutubeLink("");
+    setProgress(null);
     setTitle("");
     setDescription("");
     setFormError("");
@@ -96,7 +106,7 @@ export function LiveUpdatesManager() {
       setTitle(file.name.replace(/\.[^/.]+$/, "").replace(/[_-]+/g, " "));
     }
     if (file && file.size > MAX_VIDEO_SIZE) {
-      setFormError("Choose a video under 100 MB.");
+      setFormError(TOO_BIG);
     } else if (file && !file.type.startsWith("video/")) {
       setFormError("Please choose a video file. The school office accepts video files only.");
     }
@@ -107,6 +117,28 @@ export function LiveUpdatesManager() {
     setSuccessMessage("");
     const trimmedTitle = title.trim();
     const trimmedDescription = description.trim();
+    if (source === "youtube") {
+      const id = parseYouTubeId(youtubeLink);
+      if (!id || !trimmedTitle || !trimmedDescription) {
+        setFormError(id ? "Add a title and short description before publishing." : "Paste a YouTube video link, for example https://youtu.be/abc123XYZ_0");
+        return;
+      }
+      setFormError("");
+      setUploadStage("publishing");
+      try {
+        await createLiveUpdate.mutateAsync({
+          data: { title: trimmedTitle, description: trimmedDescription, fileName: youtubeLink.trim(), objectPath: `youtube:${id}`, contentType: YOUTUBE_CONTENT_TYPE, fileSize: 1 },
+        });
+        await invalidateUpdates();
+        resetComposer();
+        setIsComposerOpen(false);
+        setSuccessMessage("Your YouTube video is now live on the website.");
+      } catch (error) {
+        setFormError(error instanceof Error ? error.message : "Publishing failed. Please try again.");
+        setUploadStage("idle");
+      }
+      return;
+    }
     if (!selectedFile || !trimmedTitle || !trimmedDescription) {
       setFormError("Add a video, title, and short description before publishing.");
       return;
@@ -116,28 +148,37 @@ export function LiveUpdatesManager() {
       return;
     }
     if (selectedFile.size > MAX_VIDEO_SIZE) {
-      setFormError("Choose a video under 100 MB.");
+      setFormError(TOO_BIG);
       return;
     }
 
     setFormError("");
     setUploadStage("preparing");
     try {
-      const upload = await requestUploadUrl.mutateAsync({
-        data: {
-          name: selectedFile.name,
-          size: selectedFile.size,
-          contentType: selectedFile.type,
-        },
-      });
-      setUploadStage("uploading");
-      await customFetch(upload.uploadURL, {
-        method: "PUT",
-        credentials: "omit",
-        headers: { "Content-Type": selectedFile.type },
-        body: selectedFile,
-        responseType: "text",
-      });
+      let objectPath: string;
+      if (selectedFile.size > DIRECT_UPLOAD_FROM_BYTES) {
+        // Big videos go from this browser straight to Cloudinary in pieces.
+        setUploadStage("uploading");
+        setProgress(0);
+        objectPath = await uploadVideoDirect(selectedFile, setProgress);
+      } else {
+        const upload = await requestUploadUrl.mutateAsync({
+          data: {
+            name: selectedFile.name,
+            size: selectedFile.size,
+            contentType: selectedFile.type,
+          },
+        });
+        setUploadStage("uploading");
+        await customFetch(upload.uploadURL, {
+          method: "PUT",
+          credentials: "omit",
+          headers: { "Content-Type": selectedFile.type },
+          body: selectedFile,
+          responseType: "text",
+        });
+        objectPath = upload.objectPath;
+      }
 
       setUploadStage("publishing");
       await createLiveUpdate.mutateAsync({
@@ -145,7 +186,7 @@ export function LiveUpdatesManager() {
           title: trimmedTitle,
           description: trimmedDescription,
           fileName: selectedFile.name,
-          objectPath: upload.objectPath,
+          objectPath,
           contentType: selectedFile.type,
           fileSize: selectedFile.size,
         },
@@ -275,14 +316,43 @@ export function LiveUpdatesManager() {
               <X size={18} />
             </button>
           </div>
+          <div className="mb-4 inline-flex rounded-xl border border-border bg-background p-1 text-sm" role="group" aria-label="Video source">
+            <button type="button" aria-pressed={source === "file"} disabled={isPublishing} onClick={() => { setSource("file"); setFormError(""); }} data-testid="button-source-file"
+              className={`inline-flex items-center gap-2 rounded-lg px-3 py-1.5 font-semibold ${source === "file" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}>
+              <FileVideo size={15} /> Upload a video
+            </button>
+            <button type="button" aria-pressed={source === "youtube"} disabled={isPublishing} onClick={() => { setSource("youtube"); setFormError(""); }} data-testid="button-source-youtube"
+              className={`inline-flex items-center gap-2 rounded-lg px-3 py-1.5 font-semibold ${source === "youtube" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}>
+              <Link2 size={15} /> YouTube link
+            </button>
+          </div>
           <div className="grid gap-4 lg:grid-cols-[0.8fr_1.2fr]">
+            {source === "youtube" ? (
+              <div className="flex min-h-44 flex-col justify-center rounded-2xl border border-dashed border-primary/30 bg-background p-5">
+                <label className="block text-sm font-semibold text-foreground">
+                  YouTube video link
+                  <input
+                    value={youtubeLink}
+                    onChange={(event) => { setYoutubeLink(event.target.value); setFormError(""); }}
+                    placeholder="https://youtu.be/…"
+                    inputMode="url"
+                    disabled={isPublishing}
+                    data-testid="input-live-update-youtube"
+                    className="mt-2 w-full rounded-xl border border-border bg-background px-4 py-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/15"
+                  />
+                </label>
+                <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+                  {youtubeLink.trim() && !parseYouTubeId(youtubeLink) ? "That does not look like a YouTube video link yet." : "Best for long videos: upload to the school's YouTube channel (public or unlisted), then paste the link. It plays inside the website."}
+                </p>
+              </div>
+            ) : (
             <label data-testid="label-live-update-video" className="flex min-h-44 cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed border-primary/30 bg-background p-5 text-center transition-colors hover:border-primary hover:bg-primary/[0.03]">
               <FileVideo className="mb-3 text-primary" size={30} />
               <span className="text-sm font-bold text-foreground">
                 {selectedFile ? selectedFile.name : "Choose a video file"}
               </span>
               <span className="mt-2 text-xs text-muted-foreground">
-                {selectedFile ? formatFileSize(selectedFile.size) : "MP4, MOV, or another video up to 100 MB"}
+                {selectedFile ? formatFileSize(selectedFile.size) : "MP4, MOV, or another video up to 500 MB"}
               </span>
               <input
                 ref={fileInputRef}
@@ -294,6 +364,7 @@ export function LiveUpdatesManager() {
                 className="sr-only"
               />
             </label>
+            )}
             <div className="space-y-4">
               <label className="block text-sm font-semibold text-foreground">
                 Title
@@ -329,11 +400,11 @@ export function LiveUpdatesManager() {
           {isPublishing && (
             <div className="mt-4 rounded-xl bg-muted/70 p-3" data-testid="progress-live-update">
               <div className="mb-2 flex items-center justify-between text-xs font-semibold text-muted-foreground">
-                <span>{uploadStage === "preparing" ? "Preparing secure upload…" : uploadStage === "uploading" ? "Uploading video…" : "Publishing to the website…"}</span>
+                <span>{uploadStage === "preparing" ? "Preparing secure upload…" : uploadStage === "uploading" ? (progress !== null ? `Uploading video… ${Math.round(progress * 100)}%` : "Uploading video…") : "Publishing to the website…"}</span>
                 <Loader2 size={15} className="animate-spin text-primary" />
               </div>
               <div className="h-1.5 overflow-hidden rounded-full bg-border">
-                <div className={`h-full rounded-full bg-primary transition-all duration-500 ${uploadStage === "preparing" ? "w-1/4" : uploadStage === "uploading" ? "w-2/3" : "w-full"}`} />
+                <div className={`h-full rounded-full bg-primary transition-all duration-500 ${uploadStage === "preparing" ? "w-1/4" : uploadStage === "uploading" ? (progress !== null ? "" : "w-2/3") : "w-full"}`} style={uploadStage === "uploading" && progress !== null ? { width: `${Math.max(3, progress * 100)}%` } : undefined} />
               </div>
             </div>
           )}
@@ -343,7 +414,7 @@ export function LiveUpdatesManager() {
             data-testid="button-publish-live-update"
             className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-accent px-5 py-3.5 text-sm font-bold text-secondary transition-colors hover:bg-accent/90 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {isPublishing ? <><Loader2 size={17} className="animate-spin" /> Publishing…</> : <><UploadCloud size={17} /> Publish video</>}
+            {isPublishing ? <><Loader2 size={17} className="animate-spin" /> Publishing…</> : source === "youtube" ? <><Link2 size={17} /> Publish YouTube video</> : <><UploadCloud size={17} /> Publish video</>}
           </button>
         </form>
       )}

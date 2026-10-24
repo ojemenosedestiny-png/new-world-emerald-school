@@ -71,6 +71,35 @@ test("website uploads with Cloudinary: signed links, checks, CDN delivery and ad
     const reused = signUploadGrant({ id: photo, contentType: "image/jpeg", size: 16, expires: Date.now() + 60_000 });
     assert.equal((await put(`/api/storage/uploads/${reused}`, "image/jpeg")).status, 409);
 
+    // Big videos: the browser uploads straight to Cloudinary with per-piece signatures.
+    const json = (r: Response) => r.json() as Promise<Record<string, unknown>>;
+    const start = (payload: unknown, user?: string) => call("/api/storage/direct-uploads", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload), user });
+    assert.equal((await start({ name: "a.mp4", size: 10, contentType: "video/mp4" })).status, 401);
+    assert.equal((await start({ name: "a.mp4", size: 10, contentType: "video/mp4" }, "teacher")).status, 403);
+    assert.equal((await start({ name: "a.pdf", size: 10, contentType: "application/pdf" }, "admin")).status, 400, "videos only");
+    assert.equal((await start({ name: "huge.mp4", size: 501 * 1024 * 1024, contentType: "video/mp4" }, "admin")).status, 413);
+    const big = await json(await start({ name: "sports.mp4", size: 431 * 1024 * 1024, contentType: "video/mp4" }, "admin"));
+    assert.equal(big.uploadUrl, "https://api.cloudinary.com/v1_1/demo-school/video/upload");
+    assert.equal(big.chunkSize, 20 * 1024 * 1024);
+    assert.match(String(big.objectPath), /^\/objects\/uploads\/[0-9a-f-]{36}$/);
+    const sign = (token: unknown) => call("/api/storage/direct-uploads/sign", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ token }), user: "admin" });
+    assert.equal((await sign("forged.token")).status, 403);
+    const signed = await json(await sign(big.token));
+    assert.equal(signed.apiKey, "123456789012345");
+    assert.equal(signed.publicId, `nwe/site/${String(big.objectPath).split("/").pop()}`);
+    assert.match(String(signed.signature), /^[0-9a-f]{40}$/);
+    assert.ok(!JSON.stringify(signed).includes("fake-secret"), "the secret never reaches the browser");
+    // Finishing asks Cloudinary whether the video arrived; with fake keys it cannot confirm and nothing is recorded.
+    const complete = (token: unknown) => call("/api/storage/direct-uploads/complete", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ token }), user: "admin" });
+    const unconfirmed = await complete(big.token);
+    assert.ok([409, 502].includes(unconfirmed.status), `got ${unconfirmed.status}`);
+    const bigId = String(big.objectPath).split("/").pop()!;
+    assert.equal((await db.select().from(mediaObjects).where(eq(mediaObjects.id, bigId))).length, 0);
+    // Once recorded, finishing again just returns the same video (safe to retry).
+    ids.push(bigId);
+    await db.insert(mediaObjects).values({ id: bigId, publicId: `nwe/site/${bigId}`, resourceType: "video", contentType: "video/mp4", size: 1234 });
+    assert.deepEqual(await json(await complete(big.token)), { objectPath: big.objectPath, bytes: 1234 });
+
     // Status is for website administrators only.
     assert.equal((await call("/api/storage/status")).status, 401);
     assert.equal((await call("/api/storage/status", { user: "teacher" })).status, 403);

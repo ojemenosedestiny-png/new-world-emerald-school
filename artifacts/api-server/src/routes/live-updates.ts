@@ -11,21 +11,9 @@ import { db, liveUpdatesTable } from "@workspace/db";
 import { desc, eq } from "drizzle-orm";
 import { Router, type IRouter, type Request, type Response } from "express";
 import { requireAuthentication } from "../lib/requireAuthentication";
+import { isVideoPayload } from "../lib/live-update-rules";
 
 const router: IRouter = Router();
-const maxVideoSize = 100 * 1024 * 1024;
-
-function isVideoPayload(payload: {
-  contentType?: string;
-  fileSize?: number;
-}) {
-  return Boolean(
-    payload.contentType?.startsWith("video/") &&
-      payload.fileSize &&
-      payload.fileSize <= maxVideoSize,
-  );
-}
-
 router.get(
   "/live-updates",
   async (_req: Request, res: Response): Promise<void> => {
@@ -46,7 +34,7 @@ router.post(
     const parsed = CreateLiveUpdateBody.safeParse(req.body);
     if (!parsed.success || !isVideoPayload(parsed.data)) {
       res.status(400).json({
-        error: "Add a video file up to 100 MB with a title before publishing.",
+        error: "Add a video file up to 500 MB, or a YouTube link, with a title before publishing.",
       });
       return;
     }

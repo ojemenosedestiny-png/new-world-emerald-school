@@ -19,7 +19,7 @@ How files are kept:
 - **Portal files** (exam PDFs, student and staff photos) are stored as Cloudinary *authenticated* (private) files and only reach people through the portal's permission checks.
 - Everything lives under the `nwe/` folder in your Media Library. Do not rename or delete those files there, or the site will lose them.
 
-Limits on the free plan: images and PDFs up to 10 MB, videos up to 100 MB. If uploads stop working, the Test connection button shows Cloudinary's own error message. Never paste the API secret anywhere except Render.
+Limits on the free plan: images and PDFs up to 10 MB, videos up to 100 MB. The site accepts videos up to 500 MB (big ones upload from the browser straight to Cloudinary in pieces), but Cloudinary only takes files above 100 MB on a paid plan. For long videos the free option is **Live updates → YouTube link**: upload to the school's YouTube channel (public or unlisted) and paste the link; it plays inside the website. If uploads stop working, the Test connection button shows Cloudinary's own error message. Never paste the API secret anywhere except Render.
 
 If `CLOUDINARY_URL` is not set, the site uses the Google Cloud bucket below instead.
 

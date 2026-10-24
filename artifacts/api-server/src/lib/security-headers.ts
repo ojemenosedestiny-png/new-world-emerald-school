@@ -16,8 +16,10 @@ export function contentSecurityPolicy(host: string | undefined) {
     "font-src": ["'self'", "data:", "https://fonts.gstatic.com"],
     "img-src": ["'self'", "data:", "blob:", "https://img.clerk.com", "https://storage.googleapis.com", "https://res.cloudinary.com"],
     "media-src": ["'self'", "blob:", "https://storage.googleapis.com", "https://res.cloudinary.com"],
-    "connect-src": ["'self'", ...clerk, "https://clerk-telemetry.com", "https://storage.googleapis.com"],
-    "frame-src": ["'self'", "https://challenges.cloudflare.com", ...clerk],
+    // Big videos upload from the browser straight to Cloudinary.
+    "connect-src": ["'self'", ...clerk, "https://clerk-telemetry.com", "https://storage.googleapis.com", "https://api.cloudinary.com"],
+    // Live updates can embed YouTube's privacy-enhanced player.
+    "frame-src": ["'self'", "https://challenges.cloudflare.com", ...clerk, "https://www.youtube-nocookie.com"],
     "worker-src": ["'self'", "blob:"],
     "object-src": ["'none'"],
     "base-uri": ["'self'"],

@@ -35,6 +35,11 @@ import type {
   ClassFeeSchedule,
   ClassFeeScheduleInput,
   ClassFeeScheduleUpdate,
+  DirectUploadComplete,
+  DirectUploadGrant,
+  DirectUploadRequest,
+  DirectUploadSignature,
+  DirectUploadToken,
   EnrolStudentInput,
   FeePaymentReport,
   FeePaymentReportInput,
@@ -3795,6 +3800,219 @@ export const useTestMediaStorage = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getTestMediaStorageMutationOptions(options));
+    }
+
+export const getStartDirectUploadUrl = () => {
+
+
+
+
+  return `/api/storage/direct-uploads`
+}
+
+/**
+ * @summary Start a big video upload that goes from the browser straight to Cloudinary (website administrators)
+ */
+export const startDirectUpload = async (directUploadRequest: DirectUploadRequest, options?: RequestInit): Promise<DirectUploadGrant> => {
+
+  return customFetch<DirectUploadGrant>(getStartDirectUploadUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(directUploadRequest)
+  }
+);}
+
+
+
+
+
+export const getStartDirectUploadMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof startDirectUpload>>, TError,{data: BodyType<DirectUploadRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof startDirectUpload>>, TError,{data: BodyType<DirectUploadRequest>}, TContext> => {
+
+const mutationKey = ['startDirectUpload'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof startDirectUpload>>, {data: BodyType<DirectUploadRequest>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  startDirectUpload(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type StartDirectUploadMutationResult = NonNullable<Awaited<ReturnType<typeof startDirectUpload>>>
+    export type StartDirectUploadMutationBody = BodyType<DirectUploadRequest>
+    export type StartDirectUploadMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Start a big video upload that goes from the browser straight to Cloudinary (website administrators)
+ */
+export const useStartDirectUpload = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof startDirectUpload>>, TError,{data: BodyType<DirectUploadRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof startDirectUpload>>,
+        TError,
+        {data: BodyType<DirectUploadRequest>},
+        TContext
+      > => {
+      return useMutation(getStartDirectUploadMutationOptions(options));
+    }
+
+export const getSignDirectUploadChunkUrl = () => {
+
+
+
+
+  return `/api/storage/direct-uploads/sign`
+}
+
+/**
+ * @summary A fresh Cloudinary signature for the next piece of a direct upload
+ */
+export const signDirectUploadChunk = async (directUploadToken: DirectUploadToken, options?: RequestInit): Promise<DirectUploadSignature> => {
+
+  return customFetch<DirectUploadSignature>(getSignDirectUploadChunkUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(directUploadToken)
+  }
+);}
+
+
+
+
+
+export const getSignDirectUploadChunkMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof signDirectUploadChunk>>, TError,{data: BodyType<DirectUploadToken>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof signDirectUploadChunk>>, TError,{data: BodyType<DirectUploadToken>}, TContext> => {
+
+const mutationKey = ['signDirectUploadChunk'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof signDirectUploadChunk>>, {data: BodyType<DirectUploadToken>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  signDirectUploadChunk(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SignDirectUploadChunkMutationResult = NonNullable<Awaited<ReturnType<typeof signDirectUploadChunk>>>
+    export type SignDirectUploadChunkMutationBody = BodyType<DirectUploadToken>
+    export type SignDirectUploadChunkMutationError = ErrorType<unknown>
+
+    /**
+ * @summary A fresh Cloudinary signature for the next piece of a direct upload
+ */
+export const useSignDirectUploadChunk = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof signDirectUploadChunk>>, TError,{data: BodyType<DirectUploadToken>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof signDirectUploadChunk>>,
+        TError,
+        {data: BodyType<DirectUploadToken>},
+        TContext
+      > => {
+      return useMutation(getSignDirectUploadChunkMutationOptions(options));
+    }
+
+export const getCompleteDirectUploadUrl = () => {
+
+
+
+
+  return `/api/storage/direct-uploads/complete`
+}
+
+/**
+ * @summary Confirm a direct upload reached Cloudinary and get its path
+ */
+export const completeDirectUpload = async (directUploadToken: DirectUploadToken, options?: RequestInit): Promise<DirectUploadComplete> => {
+
+  return customFetch<DirectUploadComplete>(getCompleteDirectUploadUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(directUploadToken)
+  }
+);}
+
+
+
+
+
+export const getCompleteDirectUploadMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof completeDirectUpload>>, TError,{data: BodyType<DirectUploadToken>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof completeDirectUpload>>, TError,{data: BodyType<DirectUploadToken>}, TContext> => {
+
+const mutationKey = ['completeDirectUpload'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof completeDirectUpload>>, {data: BodyType<DirectUploadToken>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  completeDirectUpload(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CompleteDirectUploadMutationResult = NonNullable<Awaited<ReturnType<typeof completeDirectUpload>>>
+    export type CompleteDirectUploadMutationBody = BodyType<DirectUploadToken>
+    export type CompleteDirectUploadMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Confirm a direct upload reached Cloudinary and get its path
+ */
+export const useCompleteDirectUpload = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof completeDirectUpload>>, TError,{data: BodyType<DirectUploadToken>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof completeDirectUpload>>,
+        TError,
+        {data: BodyType<DirectUploadToken>},
+        TContext
+      > => {
+      return useMutation(getCompleteDirectUploadMutationOptions(options));
     }
 
 export const getRequestUploadUrlUrl = () => {

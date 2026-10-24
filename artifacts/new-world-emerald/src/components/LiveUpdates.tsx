@@ -14,6 +14,8 @@ function formatPublishedDate(value: string) {
   }).format(date);
 }
 
+import { youTubeEmbedUrl, youTubeIdFromPath } from "@/lib/videoSources";
+
 function videoUrl(objectPath: string) {
   return `/api/storage${objectPath}`;
 }
@@ -129,23 +131,37 @@ export function LiveUpdates() {
                 data-testid={`card-live-update-${update.id}`}
               >
                 <div className={`relative bg-secondary ${index === 0 ? "aspect-[16/8]" : "aspect-video"}`}>
-                  <video
-                    className="h-full w-full object-cover"
-                    controls
-                    preload="metadata"
-                    playsInline
-                    src={videoUrl(update.objectPath)}
-                    data-testid={`video-live-update-${update.id}`}
-                  >
-                    Your browser does not support embedded video playback.
-                  </video>
+                  {youTubeIdFromPath(update.objectPath) ? (
+                    // YouTube's privacy-enhanced player: no tracking cookies until a visitor presses play.
+                    <iframe
+                      className="h-full w-full"
+                      src={youTubeEmbedUrl(youTubeIdFromPath(update.objectPath)!)}
+                      title={update.title}
+                      loading="lazy"
+                      allow="accelerometer; encrypted-media; gyroscope; picture-in-picture; fullscreen"
+                      allowFullScreen
+                      referrerPolicy="strict-origin-when-cross-origin"
+                      data-testid={`youtube-live-update-${update.id}`}
+                    />
+                  ) : (
+                    <video
+                      className="h-full w-full object-cover"
+                      controls
+                      preload="metadata"
+                      playsInline
+                      src={videoUrl(update.objectPath)}
+                      data-testid={`video-live-update-${update.id}`}
+                    >
+                      Your browser does not support embedded video playback.
+                    </video>
+                  )}
                   <div className="pointer-events-none absolute left-4 top-4 flex items-center gap-2 rounded-full bg-secondary/85 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.16em] text-white backdrop-blur-sm">
                     <span className="h-1.5 w-1.5 rounded-full bg-accent" />
                     {index === 0 ? "Latest story" : "School life"}
                   </div>
-                  <div className="pointer-events-none absolute bottom-4 left-4 flex h-10 w-10 items-center justify-center rounded-full border border-white/20 bg-secondary/75 text-white opacity-0 backdrop-blur-sm transition-opacity duration-300 group-hover:opacity-100">
+                  {!youTubeIdFromPath(update.objectPath) && <div className="pointer-events-none absolute bottom-4 left-4 flex h-10 w-10 items-center justify-center rounded-full border border-white/20 bg-secondary/75 text-white opacity-0 backdrop-blur-sm transition-opacity duration-300 group-hover:opacity-100">
                     <Play size={16} fill="currentColor" />
-                  </div>
+                  </div>}
                 </div>
                 <div className="p-6">
                   <div className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">

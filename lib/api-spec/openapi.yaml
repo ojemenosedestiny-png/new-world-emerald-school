@@ -190,6 +190,60 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/MediaStorageTest"
+  /storage/direct-uploads:
+    post:
+      tags: [Website]
+      operationId: startDirectUpload
+      summary: Start a big video upload that goes from the browser straight to Cloudinary (website administrators)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DirectUploadRequest"
+      responses:
+        "200":
+          description: Where and how to send the pieces
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DirectUploadGrant"
+  /storage/direct-uploads/sign:
+    post:
+      tags: [Website]
+      operationId: signDirectUploadChunk
+      summary: A fresh Cloudinary signature for the next piece of a direct upload
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DirectUploadToken"
+      responses:
+        "200":
+          description: Signed fields for the next piece
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DirectUploadSignature"
+  /storage/direct-uploads/complete:
+    post:
+      tags: [Website]
+      operationId: completeDirectUpload
+      summary: Confirm a direct upload reached Cloudinary and get its path
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DirectUploadToken"
+      responses:
+        "200":
+          description: The stored video
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DirectUploadComplete"
   /storage/uploads/request-url:
     post:
       tags: [Academic Calendar]
@@ -880,6 +934,40 @@ paths:
           description: Authentication required.
 components:
   schemas:
+    DirectUploadRequest:
+      type: object
+      required: [name, size, contentType]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 300 }
+        size: { type: integer, minimum: 1 }
+        contentType: { type: string, minLength: 1, maxLength: 100 }
+    DirectUploadGrant:
+      type: object
+      required: [token, objectPath, uploadUrl, chunkSize]
+      properties:
+        token: { type: string }
+        objectPath: { type: string }
+        uploadUrl: { type: string }
+        chunkSize: { type: integer }
+    DirectUploadToken:
+      type: object
+      required: [token]
+      properties:
+        token: { type: string, minLength: 1, maxLength: 2000 }
+    DirectUploadSignature:
+      type: object
+      required: [apiKey, timestamp, signature, publicId]
+      properties:
+        apiKey: { type: string }
+        timestamp: { type: integer }
+        signature: { type: string }
+        publicId: { type: string }
+    DirectUploadComplete:
+      type: object
+      required: [objectPath, bytes]
+      properties:
+        objectPath: { type: string }
+        bytes: { type: integer }
     MediaStorageStatus:
       type: object
       required: [provider, ready, cloudName]

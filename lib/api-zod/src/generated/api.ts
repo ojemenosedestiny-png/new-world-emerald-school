@@ -1675,6 +1675,66 @@ export const TestMediaStorageResponse = zod.object({
 
 
 /**
+ * @summary Start a big video upload that goes from the browser straight to Cloudinary (website administrators)
+ */
+export const startDirectUploadBodyNameMax = 300;
+
+
+export const startDirectUploadBodyContentTypeMax = 100;
+
+
+
+export const StartDirectUploadBody = zod.object({
+  "name": zod.string().min(1).max(startDirectUploadBodyNameMax),
+  "size": zod.number().min(1),
+  "contentType": zod.string().min(1).max(startDirectUploadBodyContentTypeMax)
+})
+
+export const StartDirectUploadResponse = zod.object({
+  "token": zod.string(),
+  "objectPath": zod.string(),
+  "uploadUrl": zod.string(),
+  "chunkSize": zod.number()
+})
+
+
+/**
+ * @summary A fresh Cloudinary signature for the next piece of a direct upload
+ */
+export const signDirectUploadChunkBodyTokenMax = 2000;
+
+
+
+export const SignDirectUploadChunkBody = zod.object({
+  "token": zod.string().min(1).max(signDirectUploadChunkBodyTokenMax)
+})
+
+export const SignDirectUploadChunkResponse = zod.object({
+  "apiKey": zod.string(),
+  "timestamp": zod.number(),
+  "signature": zod.string(),
+  "publicId": zod.string()
+})
+
+
+/**
+ * @summary Confirm a direct upload reached Cloudinary and get its path
+ */
+export const completeDirectUploadBodyTokenMax = 2000;
+
+
+
+export const CompleteDirectUploadBody = zod.object({
+  "token": zod.string().min(1).max(completeDirectUploadBodyTokenMax)
+})
+
+export const CompleteDirectUploadResponse = zod.object({
+  "objectPath": zod.string(),
+  "bytes": zod.number()
+})
+
+
+/**
  * @summary Request a protected upload URL
  */
 

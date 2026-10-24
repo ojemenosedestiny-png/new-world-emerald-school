@@ -151,3 +151,26 @@ export function verifyUploadGrant(token: string, now = Date.now()): UploadGrant 
     return typeof grant.id === "string" && grant.expires > now ? grant : null;
   } catch { return null; }
 }
+
+// ---- Direct browser uploads for big videos: the file goes from the browser to Cloudinary
+// in pieces, never through this server. Each piece gets a fresh signature, so slow
+// connections that take longer than Cloudinary's one-hour signature window still finish.
+export function signDirectUpload(publicId: string, now = Date.now()) {
+  const creds = cloudinaryCredentials();
+  if (!creds) throw new Error("CLOUDINARY_URL is not set");
+  const timestamp = Math.floor(now / 1000);
+  const signature = client().utils.api_sign_request({ public_id: publicId, timestamp }, creds.apiSecret);
+  return { apiKey: creds.apiKey, cloudName: creds.cloudName, timestamp, signature };
+}
+
+/** The stored size of a finished upload, or null if Cloudinary does not have it. */
+export async function cloudinaryResourceBytes(publicId: string, resourceType: ResourceType): Promise<number | null> {
+  try {
+    const found = await client().api.resource(publicId, { resource_type: resourceType, type: "upload" }) as { bytes?: number };
+    return typeof found.bytes === "number" ? found.bytes : 0;
+  } catch (error) {
+    if ((error as { error?: { http_code?: number } }).error?.http_code === 404) return null;
+    throw error;
+  }
+}
+
