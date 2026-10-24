@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { accountLink, formatStudentId, hashAccountToken, newAccountToken, passwordProblem, siteBaseUrl, validEmail, validTokenShape } from "./accounts";
-import { activationEmail, emailConfigured, resetEmail, sendEmail } from "./email";
+import { activationEmail, emailConfigured, emailSender, resetEmail, sendEmail } from "./email";
 
 test("automatic Student IDs use NWE/year/five digits", () => {
   assert.equal(formatStudentId(2026, 1), "NWE/2026/00001");
@@ -63,4 +63,25 @@ test("account emails are escaped and carry the link and expiry", () => {
   const r = resetEmail({ studentName: "Ada", studentId: "NWE/2026/00001", url: "https://school.example/portal/activate?t=abc", hours: 24 });
   assert.match(r.html, /24 hours/);
   assert.match(r.text, /https:\/\/school\.example\/portal\/activate\?t=abc/);
+});
+
+test("the email sender forgives common paste mistakes and explains real ones", async () => {
+  assert.equal(emailSender("noreply@school.ng"), "noreply@school.ng");
+  assert.equal(emailSender("New World Emerald <noreply@school.ng>"), "New World Emerald <noreply@school.ng>");
+  assert.equal(emailSender('"New World Emerald <noreply@school.ng>"'), "New World Emerald <noreply@school.ng>", "surrounding quotes");
+  assert.equal(emailSender("EMAIL_FROM=New World Emerald <noreply@school.ng>"), "New World Emerald <noreply@school.ng>", "pasted name prefix");
+  assert.equal(emailSender("New World Emerald noreply@school.ng"), "New World Emerald <noreply@school.ng>", "missing angle brackets");
+  assert.equal(emailSender('"New World Emerald" <noreply@school.ng>'), "New World Emerald <noreply@school.ng>", "quoted name");
+  assert.equal(emailSender("  <noreply@school.ng>  "), "noreply@school.ng");
+  for (const bad of ["New World Emerald", "noreply@", "school.ng", "", "two@at@signs.ng"]) assert.equal(emailSender(bad), null, bad);
+  let calls = 0;
+  const counting = (async () => { calls++; return new Response("{}"); }) as unknown as typeof fetch;
+  const result = await sendEmail({ to: "p@x.y", subject: "s", html: "h", text: "t" }, { RESEND_API_KEY: "re_x", EMAIL_FROM: "New World Emerald" }, counting);
+  assert.equal(result.sent, false);
+  assert.match(result.detail ?? "", /EMAIL_FROM has the wrong format/);
+  assert.equal(calls, 0, "nothing is sent to Resend with a broken sender");
+  let body = "";
+  const capture = (async (_u: unknown, init?: RequestInit) => { body = String(init?.body); return new Response("{}"); }) as unknown as typeof fetch;
+  await sendEmail({ to: "p@x.y", subject: "s", html: "h", text: "t" }, { RESEND_API_KEY: "re_x", EMAIL_FROM: "'New World Emerald <noreply@school.ng>'" }, capture);
+  assert.equal(JSON.parse(body).from, "New World Emerald <noreply@school.ng>");
 });

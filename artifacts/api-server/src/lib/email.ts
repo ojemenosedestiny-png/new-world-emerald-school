@@ -4,13 +4,36 @@ export type EmailResult = { sent: boolean; reason?: "not_configured" | "rejected
 
 export const emailConfigured = (env: NodeJS.ProcessEnv = process.env) => Boolean(env.RESEND_API_KEY?.trim() && env.EMAIL_FROM?.trim());
 
+const ADDRESS = /^[^\s@<>"']+@[^\s@<>"']+\.[^\s@<>"']+$/;
+export const EMAIL_FROM_HELP = "EMAIL_FROM has the wrong format. In Render use noreply@yourdomain.com or New World Emerald <noreply@yourdomain.com>";
+
+/**
+ * The sender Resend expects ("a@b.com" or "Name <a@b.com>"), forgiving the usual
+ * paste mistakes: a copied "EMAIL_FROM=" prefix, surrounding quotes, or a name with
+ * no angle brackets. Null when it still is not an address.
+ */
+export function emailSender(raw: string | undefined): string | null {
+  let value = (raw ?? "").trim().replace(/^EMAIL_FROM\s*=\s*/i, "").trim();
+  const quoted = /^(["'])(.*)\1$/s.exec(value);
+  if (quoted) value = quoted[2].trim();
+  value = value.replace(/\s+/g, " ");
+  if (ADDRESS.test(value)) return value;
+  const named = /^(.*?)\s*<\s*([^<>\s]+)\s*>$/.exec(value);
+  if (named && ADDRESS.test(named[2])) return named[1].replace(/["']/g, "").trim() ? `${named[1].replace(/["']/g, "").trim()} <${named[2]}>` : named[2];
+  const trailing = /^(.+?)\s+([^\s<>]+)$/.exec(value);
+  if (trailing && ADDRESS.test(trailing[2]) && !trailing[1].includes("@")) return `${trailing[1].replace(/["']/g, "").trim()} <${trailing[2]}>`;
+  return null;
+}
+
 export async function sendEmail(message: { to: string; subject: string; html: string; text: string }, env: NodeJS.ProcessEnv = process.env, fetchImpl: typeof fetch = fetch): Promise<EmailResult> {
   if (!emailConfigured(env)) return { sent: false, reason: "not_configured" };
+  const from = emailSender(env.EMAIL_FROM);
+  if (!from) return { sent: false, reason: "not_configured", detail: EMAIL_FROM_HELP };
   try {
     const response = await fetchImpl("https://api.resend.com/emails", {
       method: "POST",
       headers: { Authorization: `Bearer ${env.RESEND_API_KEY!.trim()}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ from: env.EMAIL_FROM!.trim(), to: [message.to], subject: message.subject, html: message.html, text: message.text }),
+      body: JSON.stringify({ from, to: [message.to], subject: message.subject, html: message.html, text: message.text }),
       signal: AbortSignal.timeout(15_000),
     });
     if (response.ok) return { sent: true };
