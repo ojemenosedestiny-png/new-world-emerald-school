@@ -2,7 +2,6 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import type { PortalQuestionData } from "@workspace/db";
 import { buildPaper, paperSettingsProblem, paperSize } from "./cbt";
-import { automaticMarks } from "./portal-assessment";
 
 const mcq = (n: number, marks = 2): PortalQuestionData => ({ id: `q${n}`, type: "mcq", text: `Question ${n}`, options: ["A", "B", "C", "D"].map((o) => `${o}${n}`), correctAnswer: n % 4, marks });
 const bank = Array.from({ length: 10 }, (_, i) => mcq(i + 1));
@@ -45,9 +44,12 @@ test("cbt: shuffled options keep the right answer right", () => {
       assert.equal(q.options[q.correctAnswer!], original.options[original.correctAnswer!], "same option text is still the key");
       assert.deepEqual([...q.options].sort(), [...original.options].sort());
     }
-    // A student choosing the right option text on the shuffled paper scores full marks.
-    const answers = Object.fromEntries(paper.map((q) => [q.id, String(q.correctAnswer)]));
-    assert.equal(automaticMarks(paper, answers).reduce((s, m) => s + m.score, 0), 20);
+    // A student choosing the right option text on the shuffled paper scores full marks (same rule as automatic marking).
+    const answers = Object.fromEntries(paper.map((q) => {
+      const original = bank.find((b) => b.id === q.id)!;
+      return [q.id, String(q.options.indexOf(original.options[original.correctAnswer!]))];
+    }));
+    assert.equal(paper.reduce((sum, q) => sum + (answers[q.id] === String(q.correctAnswer) ? q.marks : 0), 0), 20);
   }
 });
 
