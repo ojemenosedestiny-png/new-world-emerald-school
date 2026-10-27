@@ -121,8 +121,9 @@ test("student enrolment, exams, grading, isolation and revocation work end-to-en
     const [student] = await db.select().from(portalStudents).where(eq(portalStudents.studentId, marker));
     assert.notEqual(student.passwordHash, temporary);
     let login = await call("/session", "POST", { studentId: marker.toLowerCase(), password: temporary });
-    assert.equal(login.status, 200); assert.equal(login.data.mustChangePassword, true);
-    assert.equal((await call("/student", "GET", undefined, login.cookie)).status, 403);
+    // Staff-issued passwords work straight away; changing it is the student's choice.
+    assert.equal(login.status, 200); assert.equal(login.data.mustChangePassword, false);
+    assert.equal((await call("/student", "GET", undefined, login.cookie)).status, 200);
     assert.equal((await call("/password", "PUT", { currentPassword: "Wrong", newPassword }, login.cookie)).status, 400);
     const changed = await call("/password", "PUT", { currentPassword: temporary, newPassword }, login.cookie);
     assert.equal(changed.status, 204);
@@ -185,12 +186,12 @@ test("student enrolment, exams, grading, isolation and revocation work end-to-en
     const late = await call(`/attempts/${timed.data.id}`, "PUT", { answers: { "mcq-1": "1" } }, cookie);
     assert.equal(late.data.status, "marked");
     assert.equal(late.data.answers["mcq-1"], "0");
-    // Resetting credentials revokes all sessions and requires a new password.
+    // Resetting credentials revokes all sessions; the new password works straight away.
     assert.equal((await command({ action: "saveStudent", student: { id: student.id, studentId: marker, name: student.name, classId: c.id, active: true, password: "Reset-Individual-9821!" } })).status, 200);
     assert.equal((await call("/session", "GET", undefined, cookie)).data.role, "guest");
     assert.equal((await call("/session", "POST", { studentId: marker, password: newPassword })).status, 401);
     login = await call("/session", "POST", { studentId: marker, password: "Reset-Individual-9821!" });
-    assert.equal(login.data.mustChangePassword, true);
+    assert.equal(login.data.mustChangePassword, false);
     assert.equal((await command({ action: "saveStudent", student: { id: student.id, studentId: marker, name: student.name, classId: c.id, active: false } })).status, 200);
     assert.equal((await call("/session", "GET", undefined, login.cookie)).data.role, "guest");
   } finally {

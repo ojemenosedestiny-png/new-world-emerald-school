@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { accountLink, formatStudentId, hashAccountToken, newAccountToken, passwordProblem, siteBaseUrl, validEmail, validTokenShape } from "./accounts";
+import { accountLink, formatStudentId, hashAccountToken, newAccountToken, passwordProblem, siteBaseUrl, teacherStudentEditProblem, validEmail, validTokenShape } from "./accounts";
 import { accountReadyEmail, activationEmail, emailConfigured, emailSender, passwordChangedEmail, resetEmail, sendEmail, teacherInviteEmail } from "./email";
 
 test("automatic Student IDs use NWE/year/five digits", () => {
@@ -108,4 +108,13 @@ test("teacher invitations carry the sign-in link, the email to use and the class
   assert.match(mail.text, /https:\/\/school\.example\/teacher/);
   assert.doesNotMatch(mail.text, /password:/i, "staff have no password to send");
   assert.match(teacherInviteEmail({ teacherName: "A", email: "a@example.test", classNames: [], signInUrl: "https://x.example/teacher" }).text, /none yet/);
+});
+
+test("teachers may only give their students a new password", () => {
+  const old = { name: "Ada Obi", active: true };
+  assert.equal(teacherStudentEditProblem(old, { name: "Ada Obi", active: true, newPassword: true, guardianEmailChanged: false }), null);
+  assert.match(teacherStudentEditProblem(old, { name: "Ada Obi", active: true, newPassword: false, guardianEmailChanged: false })!, /new password/);
+  assert.ok(teacherStudentEditProblem(old, { name: "Ada O.", active: true, newPassword: true, guardianEmailChanged: false }), "no renaming");
+  assert.ok(teacherStudentEditProblem(old, { name: "Ada Obi", active: false, newPassword: true, guardianEmailChanged: false }), "no deactivating");
+  assert.ok(teacherStudentEditProblem(old, { name: "Ada Obi", active: true, newPassword: true, guardianEmailChanged: true }), "no parent email changes");
 });

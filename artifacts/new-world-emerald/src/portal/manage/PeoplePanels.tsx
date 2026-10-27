@@ -6,7 +6,7 @@ import type { AccountLinkResult } from "@workspace/api-client-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { EmptyState, Field, StatusPill } from "../ui";
-import { errorMessage, generateTempPassword } from "../lib";
+import { errorMessage, friendlyPassword } from "../lib";
 import { Avatar, preparePhoto } from "../photos";
 import { ClassSelect } from "./ClassSelect";
 import { className, useCommand } from "./useCommand";
@@ -54,8 +54,9 @@ function TempPasswordNotice({ login, onClose }: { login: IssuedLogin; onClose: (
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="portal !min-h-0 max-w-md rounded-2xl">
-        <DialogHeader><DialogTitle className="font-serif text-2xl">Temporary password</DialogTitle>
-          <DialogDescription>Give this to {studentId} privately. It is shown only once and the student must change it on first sign-in.</DialogDescription></DialogHeader>
+        <DialogHeader><DialogTitle className="font-serif text-2xl">Login details</DialogTitle>
+          <DialogDescription>Give these to {login.name} privately; the password is shown only once. They can sign in straight away at the Student Portal and change the password there whenever they like.</DialogDescription></DialogHeader>
+        <p className="rounded-xl bg-[hsl(var(--p-paper-2))] px-4 py-3 text-sm">Student ID: <b className="font-mono" data-testid="text-issued-student-id">{studentId}</b></p>
         <div className="flex items-center gap-2 rounded-xl bg-[hsl(var(--p-ink))] p-4 font-mono text-lg tracking-wider text-[hsl(var(--p-gold))]" data-testid="text-temp-password">
           <span className="flex-1 break-all">{password}</span>
           <button className="portal-btn-dark" onClick={() => navigator.clipboard.writeText(password).then(() => toast({ title: "Copied" }), () => toast({ variant: "destructive", title: "Copy failed", description: "Select and copy the password manually." }))} aria-label="Copy password" data-testid="button-copy-password"><Copy size={14} /></button>
@@ -69,7 +70,7 @@ function TempPasswordNotice({ login, onClose }: { login: IssuedLogin; onClose: (
   );
 }
 
-export function StudentsPanel({ data }: { data: PortalManagement }) {
+export function StudentsPanel({ data, isAdmin = true }: { data: PortalManagement; isAdmin?: boolean }) {
   const cmd = useCommand();
   const [form, setForm] = useState<PortalManagementStudentsItem | null>(null);
   const [filter, setFilter] = useState(0);
@@ -87,16 +88,17 @@ export function StudentsPanel({ data }: { data: PortalManagement }) {
   const save = async () => {
     if (!form) return;
     const isNew = !form.id;
-    const password = isNew ? generateTempPassword() : undefined;
+    const password = isNew ? friendlyPassword() : undefined;
     const student = { id: form.id, studentId: form.studentId.trim(), name: form.name.trim(), classId: form.classId, active: form.active, guardianEmail: form.guardianEmail?.trim() || null, ...(password ? { password } : {}) };
-    if (await cmd.run({ action: "saveStudent", student }, isNew ? "Student enrolled" : "Student updated")) {
+    const res = await cmd.runForResult({ action: "saveStudent", student }, isNew ? "Student enrolled" : "Student updated");
+    if (res) {
       setForm(null);
-      if (password) setIssued({ studentId: student.studentId.toUpperCase(), name: student.name, className: className(data.classes, student.classId), password });
+      if (password) setIssued({ studentId: res.studentId ?? student.studentId.toUpperCase(), name: student.name, className: className(data.classes, student.classId), password });
     }
   };
   const resetPassword = async (s: PortalManagementStudentsItem) => {
-    const password = generateTempPassword();
-    if (await cmd.run({ action: "saveStudent", student: { id: s.id, studentId: s.studentId, name: s.name, classId: s.classId, active: s.active, password } }, "Temporary password issued")) setIssued({ studentId: s.studentId, name: s.name, className: className(data.classes, s.classId), password });
+    const password = friendlyPassword();
+    if (await cmd.run({ action: "saveStudent", student: { id: s.id, studentId: s.studentId, name: s.name, classId: s.classId, active: s.active, password } }, "New password issued")) setIssued({ studentId: s.studentId, name: s.name, className: className(data.classes, s.classId), password });
   };
   const toggle = (s: PortalManagementStudentsItem) => cmd.run({ action: "saveStudent", student: { id: s.id, studentId: s.studentId, name: s.name, classId: s.classId, active: !s.active } }, s.active ? "Student deactivated" : "Student reactivated");
 
@@ -105,11 +107,14 @@ export function StudentsPanel({ data }: { data: PortalManagement }) {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
         <input className="portal-input sm:max-w-xs" placeholder="Search name or ID" aria-label="Search students" value={search} onChange={(e) => setSearch(e.target.value)} data-testid="input-search-students" />
         <select className="portal-input sm:max-w-[200px]" aria-label="Filter by class" value={filter} onChange={(e) => setFilter(Number(e.target.value))} data-testid="select-filter-class"><option value={0}>All classes</option>{data.classes.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</select>
-        <button className="portal-btn-ghost sm:ml-auto" disabled={data.classes.length === 0} onClick={() => setBulk(true)} data-testid="button-bulk-enrol"><ListPlus size={15} /> Enrol class list</button>
-        <button className="portal-btn" disabled={data.classes.length === 0} onClick={() => setEnrolling(true)} data-testid="button-add-student"><Plus size={15} /> Enrol student</button>
+        <div className="flex flex-wrap gap-2 sm:ml-auto">
+          {isAdmin && <button className="portal-btn-ghost" disabled={data.classes.length === 0} onClick={() => setBulk(true)} data-testid="button-bulk-enrol"><ListPlus size={15} /> Enrol class list</button>}
+          {isAdmin && <button className="portal-btn-ghost" disabled={data.classes.length === 0} onClick={() => setEnrolling(true)} data-testid="button-add-student"><Mail size={15} /> Enrol with parent email</button>}
+          <button className="portal-btn" disabled={data.classes.length === 0} onClick={() => setForm({ studentId: "", name: "", classId: filter || data.classes[0]?.id || 0, active: true, guardianEmail: "" })} data-testid="button-enrol-password"><KeyRound size={15} /> Enrol with password</button>
+        </div>
       </div>
       {data.classes.length === 0 && <p className="text-sm text-[hsl(var(--p-ink)/0.6)]">Create a class before enrolling students.</p>}
-      {list.length === 0 ? <EmptyState icon={<GraduationCap size={22} />} title={data.students.length ? "No students match" : "No students enrolled"} body={data.students.length ? "Try another search or class filter." : "Enrol each student; a Student ID is created automatically and the family activates the account with a one-time link."} /> : (
+      {list.length === 0 ? <EmptyState icon={<GraduationCap size={22} />} title={data.students.length ? "No students match" : "No students enrolled"} body={data.students.length ? "Try another search or class filter." : "Tap Enrol with password: a Student ID and an easy password are created for the student to sign in with straight away. No email is needed."} /> : (
         <div className="portal-card divide-y divide-[hsl(var(--p-line))] overflow-hidden">
           {list.map((s) => (
             <div key={s.id} className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center" data-testid={"row-student-" + s.id}>
@@ -118,14 +123,14 @@ export function StudentsPanel({ data }: { data: PortalManagement }) {
                 <p className="text-xs text-[hsl(var(--p-ink)/0.55)]"><span className="font-mono">{s.studentId}</span> / {className(data.classes, s.classId)}{s.guardianEmail ? <> / <Mail size={11} className="inline" /> {s.guardianEmail}</> : ""}</p>
               </div>
               <div className="flex flex-wrap gap-2">
-                <button className="portal-btn-ghost" onClick={() => setForm({ ...s })} data-testid={"button-edit-student-" + s.id}><Pencil size={13} /> Edit</button>
-                <button className="portal-btn-ghost" onClick={() => setActivity({ id: s.id as number, name: s.name })} data-testid={"button-activity-student-" + s.id}><Activity size={13} /> Activity</button>
-                <button className="portal-btn-ghost" onClick={() => setFees({ id: s.id as number, name: s.name })} data-testid={"button-fees-student-" + s.id}><Wallet size={13} /> Fees</button>
-                {s.active && (s.accountStatus === "pending"
+                {isAdmin && <button className="portal-btn-ghost" onClick={() => setForm({ ...s })} data-testid={"button-edit-student-" + s.id}><Pencil size={13} /> Edit</button>}
+                {isAdmin && <button className="portal-btn-ghost" onClick={() => setActivity({ id: s.id as number, name: s.name })} data-testid={"button-activity-student-" + s.id}><Activity size={13} /> Activity</button>}
+                {isAdmin && <button className="portal-btn-ghost" onClick={() => setFees({ id: s.id as number, name: s.name })} data-testid={"button-fees-student-" + s.id}><Wallet size={13} /> Fees</button>}
+                {isAdmin && s.active && (s.accountStatus === "pending"
                   ? <button className="portal-btn-ghost" disabled={accountLink.pending} onClick={() => void sendLink(s, "activate")} data-testid={"button-activation-link-" + s.id}><Link2 size={13} /> Activation link</button>
                   : <button className="portal-btn-ghost" disabled={accountLink.pending} onClick={() => void sendLink(s, "reset")} data-testid={"button-reset-link-" + s.id}><Mail size={13} /> Reset link</button>)}
-                {s.accountStatus !== "pending" && <button className="portal-btn-ghost" disabled={cmd.pending} onClick={() => resetPassword(s)} data-testid={"button-reset-student-" + s.id}><KeyRound size={13} /> Temporary password</button>}
-                <button className="portal-btn-ghost" disabled={cmd.pending} onClick={() => toggle(s)} data-testid={"button-toggle-student-" + s.id}>{s.active ? "Deactivate" : "Reactivate"}</button>
+                {s.active && <button className="portal-btn-ghost" disabled={cmd.pending} onClick={() => resetPassword(s)} data-testid={"button-reset-student-" + s.id}><KeyRound size={13} /> New password</button>}
+                {isAdmin && <button className="portal-btn-ghost" disabled={cmd.pending} onClick={() => toggle(s)} data-testid={"button-toggle-student-" + s.id}>{s.active ? "Deactivate" : "Reactivate"}</button>}
               </div>
             </div>
           ))}
@@ -136,13 +141,13 @@ export function StudentsPanel({ data }: { data: PortalManagement }) {
           <DialogHeader><DialogTitle className="font-serif text-2xl">{form?.id ? "Edit student" : "Enrol student"}</DialogTitle>
             {form?.id && <DialogDescription>Student ID and class are fixed for an enrolment. For a class transfer, create a new enrolment and deactivate this one.</DialogDescription>}</DialogHeader>
           {form && <div className="space-y-4">
-            <Field label="Student ID" htmlFor="st-id" hint={form.id ? undefined : "Used to sign in. Cannot be changed later."}><input id="st-id" className="portal-input font-mono" maxLength={50} disabled={!!form.id} value={form.studentId} onChange={(e) => setForm({ ...form, studentId: e.target.value })} data-testid="input-student-studentid" /></Field>
+            <Field label="Student ID" htmlFor="st-id" hint={form.id ? undefined : "Leave empty to create one automatically (like NWE/2026/00012). Used to sign in; cannot be changed later."}><input id="st-id" className="portal-input font-mono" maxLength={50} disabled={!!form.id} value={form.studentId} onChange={(e) => setForm({ ...form, studentId: e.target.value })} data-testid="input-student-studentid" /></Field>
             <Field label="Full name" htmlFor="st-name"><input id="st-name" className="portal-input" maxLength={150} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} data-testid="input-student-name" /></Field>
             <Field label="Class" htmlFor="st-class"><ClassSelect id="st-class" classes={data.classes} value={form.classId} disabled={!!form.id} onChange={(v) => setForm({ ...form, classId: v })} /></Field>
-            <Field label="Student or parent email" htmlFor="st-email" hint="Activation and password-reset links are sent here."><input id="st-email" type="email" className="portal-input" maxLength={200} value={form.guardianEmail ?? ""} onChange={(e) => setForm({ ...form, guardianEmail: e.target.value })} data-testid="input-student-email" /></Field>
-            <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.active} onChange={(e) => setForm({ ...form, active: e.target.checked })} data-testid="checkbox-student-active" /> Active (can sign in)</label>
+            <Field label="Parent email (optional)" htmlFor="st-email" hint="Not needed. If given, the family can also reset a forgotten password by email."><input id="st-email" type="email" className="portal-input" maxLength={200} value={form.guardianEmail ?? ""} onChange={(e) => setForm({ ...form, guardianEmail: e.target.value })} data-testid="input-student-email" /></Field>
+            {isAdmin && <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.active} onChange={(e) => setForm({ ...form, active: e.target.checked })} data-testid="checkbox-student-active" /> Active (can sign in)</label>}
           </div>}
-          <DialogFooter><button className="portal-btn" onClick={save} disabled={cmd.pending || !form?.studentId.trim() || !form?.name.trim() || !form?.classId} data-testid="button-save-student">{cmd.pending ? "Saving..." : form?.id ? "Save changes" : "Enrol and generate password"}</button></DialogFooter>
+          <DialogFooter><button className="portal-btn" onClick={save} disabled={cmd.pending || (!!form?.id && !form?.studentId.trim()) || !form?.name.trim() || !form?.classId} data-testid="button-save-student">{cmd.pending ? "Saving..." : form?.id ? "Save changes" : "Enrol and generate password"}</button></DialogFooter>
         </DialogContent>
       </Dialog>
       {issued && <TempPasswordNotice login={issued} onClose={() => setIssued(null)} />}

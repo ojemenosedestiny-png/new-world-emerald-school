@@ -494,7 +494,7 @@ export const GetPortalManagementResponse = zod.object({
 })),
   "students": zod.array(zod.object({
   "id": zod.number().optional(),
-  "studentId": zod.string().min(1).max(getPortalManagementResponseStudentsItemStudentIdMax),
+  "studentId": zod.string().max(getPortalManagementResponseStudentsItemStudentIdMax).describe('Leave empty on a new enrolment to create the next automatic Student ID'),
   "name": zod.string().min(1).max(getPortalManagementResponseStudentsItemNameMax),
   "classId": zod.number(),
   "active": zod.boolean(),
@@ -681,7 +681,7 @@ export const ManagePortalBody = zod.object({
 }).optional(),
   "student": zod.object({
   "id": zod.number().optional(),
-  "studentId": zod.string().min(1).max(managePortalBodyStudentStudentIdMax),
+  "studentId": zod.string().max(managePortalBodyStudentStudentIdMax).describe('Leave empty on a new enrolment to create the next automatic Student ID'),
   "name": zod.string().min(1).max(managePortalBodyStudentNameMax),
   "classId": zod.number(),
   "active": zod.boolean(),
@@ -768,7 +768,8 @@ export const ManagePortalBody = zod.object({
 })
 
 export const ManagePortalResponse = zod.object({
-  "message": zod.string()
+  "message": zod.string(),
+  "studentId": zod.string().optional().describe('The Student ID of a student just enrolled')
 })
 
 
@@ -981,7 +982,8 @@ export const ManageReportsBody = zod.object({
 })
 
 export const ManageReportsResponse = zod.object({
-  "message": zod.string()
+  "message": zod.string(),
+  "studentId": zod.string().optional().describe('The Student ID of a student just enrolled')
 })
 
 
@@ -1131,7 +1133,8 @@ export const RevokeSessionsBody = zod.object({
 })
 
 export const RevokeSessionsResponse = zod.object({
-  "message": zod.string()
+  "message": zod.string(),
+  "studentId": zod.string().optional().describe('The Student ID of a student just enrolled')
 })
 
 
@@ -1254,7 +1257,8 @@ export const RequestPasswordResetBody = zod.object({
 })
 
 export const RequestPasswordResetResponse = zod.object({
-  "message": zod.string()
+  "message": zod.string(),
+  "studentId": zod.string().optional().describe('The Student ID of a student just enrolled')
 })
 
 
@@ -1380,7 +1384,8 @@ export const DeletePortalEventParams = zod.object({
 })
 
 export const DeletePortalEventResponse = zod.object({
-  "message": zod.string()
+  "message": zod.string(),
+  "studentId": zod.string().optional().describe('The Student ID of a student just enrolled')
 })
 
 
@@ -1626,7 +1631,8 @@ export const DeleteAssignmentParams = zod.object({
 })
 
 export const DeleteAssignmentResponse = zod.object({
-  "message": zod.string()
+  "message": zod.string(),
+  "studentId": zod.string().optional().describe('The Student ID of a student just enrolled')
 })
 
 
@@ -1668,7 +1674,8 @@ export const MarkSubmissionBody = zod.object({
 })
 
 export const MarkSubmissionResponse = zod.object({
-  "message": zod.string()
+  "message": zod.string(),
+  "studentId": zod.string().optional().describe('The Student ID of a student just enrolled')
 })
 
 
@@ -2100,7 +2107,8 @@ export const DeletePortalAlbumParams = zod.object({
 })
 
 export const DeletePortalAlbumResponse = zod.object({
-  "message": zod.string()
+  "message": zod.string(),
+  "studentId": zod.string().optional().describe('The Student ID of a student just enrolled')
 })
 
 
@@ -2139,7 +2147,8 @@ export const DeletePortalAlbumPhotoParams = zod.object({
 })
 
 export const DeletePortalAlbumPhotoResponse = zod.object({
-  "message": zod.string()
+  "message": zod.string(),
+  "studentId": zod.string().optional().describe('The Student ID of a student just enrolled')
 })
 
 
@@ -2184,7 +2193,8 @@ export const DecidePhotoReviewBody = zod.object({
 })
 
 export const DecidePhotoReviewResponse = zod.object({
-  "message": zod.string()
+  "message": zod.string(),
+  "studentId": zod.string().optional().describe('The Student ID of a student just enrolled')
 })
 
 
@@ -2193,7 +2203,8 @@ export const SetStudentPhotoParams = zod.object({
 })
 
 export const SetStudentPhotoResponse = zod.object({
-  "message": zod.string()
+  "message": zod.string(),
+  "studentId": zod.string().optional().describe('The Student ID of a student just enrolled')
 })
 
 
@@ -2202,7 +2213,8 @@ export const RemoveStudentPhotoParams = zod.object({
 })
 
 export const RemoveStudentPhotoResponse = zod.object({
-  "message": zod.string()
+  "message": zod.string(),
+  "studentId": zod.string().optional().describe('The Student ID of a student just enrolled')
 })
 
 
@@ -2211,7 +2223,8 @@ export const SetTeacherPhotoParams = zod.object({
 })
 
 export const SetTeacherPhotoResponse = zod.object({
-  "message": zod.string()
+  "message": zod.string(),
+  "studentId": zod.string().optional().describe('The Student ID of a student just enrolled')
 })
 
 
@@ -2220,7 +2233,8 @@ export const RemoveTeacherPhotoParams = zod.object({
 })
 
 export const RemoveTeacherPhotoResponse = zod.object({
-  "message": zod.string()
+  "message": zod.string(),
+  "studentId": zod.string().optional().describe('The Student ID of a student just enrolled')
 })
 
 

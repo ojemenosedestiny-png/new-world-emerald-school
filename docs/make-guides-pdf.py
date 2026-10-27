@@ -209,6 +209,14 @@ def teaching_tasks(start):
                 "Check everything, then release. Students and parents can view and download the report as a PDF.",
             ])]
     n += 1
+    out += [*section(n, "Students", "Enrolling your students"),
+            *task("Enrol a student with a password", "No email is needed. Open <b>My students</b> (the office uses <b>Students</b>).", [
+                "Tap <b>Enrol with password</b>, type the student's name, choose the class, and leave Student ID empty.",
+                "Save. The Student ID and an easy password (such as Mango-4827) appear once: tap <b>Print slip</b> or write them down for the student.",
+                "The student signs in at the Student Portal with that ID and password straight away, and can change the password there whenever they like.",
+                "Forgotten password? Tap <b>New password</b> next to the student and give them the new one.",
+            ], "Give login details to the student privately. Teachers can only enrol into, and see, their own classes.")]
+    n += 1
     out += [*section(n, "Class content", "Notes, announcements and photos"),
             *bullets([
                 "<b>Revision notes</b>: share notes and PDFs with a class. Students see them in their Library, grouped by subject with search.",
@@ -247,12 +255,11 @@ admin += [*section(3, "People", "Students, teachers and classes"),
               "In the staff portal open <b>Classes</b> and add each class (for example JSS 1, Primary 4).",
               "Use the same class names when you set class fees in /admin, so fees match the right students.",
           ]),
-          *task("Enrol a student", None, [
-              "Open <b>Students</b> and tap <b>Enrol student</b>. Enter the name, class and the parent's email.",
-              "A student ID (for example NWE/2026/00001) is created and an email goes to the parent with the login details and a link to set a password.",
-              "For many students at once, use <b>Enrol class list</b>.",
-              "If a parent did not get the email, use <b>Activation link</b> (or <b>Reset link</b> for a forgotten password) on the student to send a new one.",
-          ], "Students sign in at the Student Portal with their student ID and password. Staff never need to know a student's password."),
+          *task("Enrol a student", "There are two ways. Teachers can use the first for their own classes.", [
+              "<b>Enrol with password</b> (no email needed): enter the name and class, leave Student ID empty, and save. You get a Student ID (for example NWE/2026/00012) and an easy password such as Mango-4827. Print the slip or copy it for the student, who can sign in straight away and change the password in the portal if they like.",
+              "<b>Enrol with parent email</b>: the parent is emailed a link to set the password themselves. For many students at once, use <b>Enrol class list</b>.",
+              "Forgotten password? Tap <b>New password</b> on the student (teachers can do this for their classes), or <b>Reset link</b> to email the parent.",
+          ], "Students sign in at the Student Portal with their Student ID and password."),
           *task("Add a teacher and assign classes", None, [
               "Open <b>Teachers</b>, tap <b>Approve teacher</b>, and enter the teacher's email, name and the classes they teach.",
               f"The teacher is emailed an invitation with their classes and the teacher link, <b>{SITE}/teacher</b>. Use <b>Send invite</b> to send it again, or <b>Copy</b> to share the link on WhatsApp.",

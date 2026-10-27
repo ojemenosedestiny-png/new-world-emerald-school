@@ -10,7 +10,7 @@ import type { PortalCommandStudentAccountStatus } from './portalCommandStudentAc
 export type PortalCommandStudent = {
   id?: number;
   /**
-     * @minLength 1
+     * Leave empty on a new enrolment to create the next automatic Student ID
      * @maxLength 50
      */
   studentId: string;

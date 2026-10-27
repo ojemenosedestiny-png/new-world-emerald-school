@@ -8,4 +8,6 @@
 
 export interface PortalMessage {
   message: string;
+  /** The Student ID of a student just enrolled */
+  studentId?: string;
 }

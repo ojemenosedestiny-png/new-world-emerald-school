@@ -197,7 +197,7 @@ schemas:
     required: [studentId, name, classId, active]
     properties:
       id: { type: integer }
-      studentId: { type: string, minLength: 1, maxLength: 50 }
+      studentId: { type: string, maxLength: 50, description: "Leave empty on a new enrolment to create the next automatic Student ID" }
       name: { type: string, minLength: 1, maxLength: 150 }
       classId: { type: integer }
       active: { type: boolean }
@@ -400,6 +400,7 @@ schemas:
     required: [message]
     properties:
       message: { type: string }
+      studentId: { type: string, description: The Student ID of a student just enrolled }
   PortalPdfImport:
     type: object
     required: [fileId, questions, warning, extractedText]

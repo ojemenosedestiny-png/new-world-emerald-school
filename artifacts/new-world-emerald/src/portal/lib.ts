@@ -100,21 +100,6 @@ export function fromLocalInput(value: string) {
   return Number.isNaN(d.getTime()) ? "" : d.toISOString();
 }
 
-export function generateTempPassword(length = 16) {
-  const sets = ["ABCDEFGHJKMNPQRSTUVWXYZ", "abcdefghjkmnpqrstuvwxyz", "23456789", "!@#%*?-+"];
-  const all = sets.join("");
-  // unbiased random index via rejection sampling
-  const rand = (n: number) => {
-    const limit = Math.floor(0x100000000 / n) * n;
-    const buf = new Uint32Array(1);
-    for (;;) { crypto.getRandomValues(buf); if (buf[0] < limit) return buf[0] % n; }
-  };
-  const chars = sets.map((set) => set[rand(set.length)]);
-  while (chars.length < length) chars.push(all[rand(all.length)]);
-  for (let i = chars.length - 1; i > 0; i--) { const j = rand(i + 1); [chars[i], chars[j]] = [chars[j], chars[i]]; }
-  return chars.join("");
-}
-
 export function newQuestionId() {
   return "q-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 8);
 }
@@ -150,4 +135,18 @@ export function scrollToQuestion(id: string) {
   el.scrollIntoView({ behavior: "smooth", block: "start" });
   // Move keyboard focus to the first answer control for screen-reader and keyboard users.
   window.setTimeout(() => el.querySelector<HTMLElement>("button:not(:disabled), textarea:not(:disabled)")?.focus({ preventScroll: true }), 350);
+}
+
+const PASSWORD_WORDS = ["Mango", "Lion", "River", "Eagle", "Tiger", "Sunny", "Cocoa", "Panda", "Zebra", "Orange", "Rocket", "Planet", "Pencil", "Garden", "Falcon", "Dolphin",
+  "Market", "Bridge", "Castle", "Forest", "Lemon", "Parrot", "Silver", "Thunder", "Violet", "Window", "Yellow", "Breeze", "Candle", "Desert", "Harbor", "Island"];
+
+/** An easy password to read out and type, such as "Mango-4827": a word, a dash and four digits (10+ characters). */
+export function friendlyPassword() {
+  const rand = (n: number) => {
+    const limit = Math.floor(0x100000000 / n) * n;
+    const buf = new Uint32Array(1);
+    for (;;) { crypto.getRandomValues(buf); if (buf[0] < limit) return buf[0] % n; }
+  };
+  const word = PASSWORD_WORDS[rand(PASSWORD_WORDS.length)];
+  return `${word}-${String(rand(9000) + 1000)}`.padEnd(10, "7");
 }

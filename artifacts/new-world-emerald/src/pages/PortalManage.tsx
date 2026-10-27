@@ -74,6 +74,7 @@ export default function PortalManage() {
     { items: [{ key: "overview", label: "Dashboard", icon: LayoutDashboard, testId: "tab-manage-overview" }] },
     { label: "Teaching", items: [
       { key: "messages", label: "Messages", icon: MessagesSquare, badge: (threads.data ?? []).reduce((n, t) => n + t.unread, 0), testId: "tab-manage-messages" },
+      ...(isAdmin ? [] : [{ key: "students" as const, label: "My students", icon: GraduationCap, testId: "tab-manage-my-students" }]),
       { key: "attendance", label: "Attendance", icon: CalendarCheck, testId: "tab-manage-attendance" },
       { key: "assignments", label: "Assignments", icon: NotebookPen, testId: "tab-manage-assignments" },
       { key: "exams", label: "Exams", icon: ClipboardList, badge: writing, testId: "tab-manage-exams" },
@@ -134,7 +135,7 @@ export default function PortalManage() {
             {isAdmin && section === "events" && <EventsPanel data={d} />}
             {isAdmin && section === "gallery" && <GalleryPanel data={d} />}
             {section === "photos" && <PhotoReviewsPanel />}
-            {isAdmin && section === "students" && <StudentsPanel data={d} />}
+            {section === "students" && <StudentsPanel data={d} isAdmin={isAdmin} />}
             {isAdmin && section === "teachers" && <TeachersPanel data={d} />}
             {isAdmin && section === "classes" && <ClassesPanel data={d} />}
             {isAdmin && section === "sessions" && <SessionsPanel />}

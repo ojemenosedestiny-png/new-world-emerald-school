@@ -20,7 +20,7 @@ async function adminOnly(req: Request) {
 }
 
 /** Next automatic Student ID for this year, skipping any number already used by hand. */
-async function nextStudentId(year: number) {
+export async function nextStudentId(year: number) {
   for (let attempt = 0; attempt < 50; attempt++) {
     const [row] = await db.insert(portalIdSequences).values({ year, last: 1 })
       .onConflictDoUpdate({ target: portalIdSequences.year, set: { last: sql`${portalIdSequences.last} + 1` } }).returning();

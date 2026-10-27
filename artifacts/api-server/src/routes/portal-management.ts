@@ -7,7 +7,8 @@ import {
 import { ManagePortalBody } from "@workspace/api-zod";
 import { check, portalActor, staffOnly, classAllowed, hashPassword, type PortalActor } from "../lib/portal-auth";
 import { automaticMarks, attemptView, finalizeExpired, validateQuestions } from "../lib/portal-assessment";
-import { siteBaseUrl, validEmail } from "../lib/accounts";
+import { siteBaseUrl, teacherStudentEditProblem, validEmail } from "../lib/accounts";
+import { nextStudentId } from "./portal-accounts";
 import { emailConfigured, sendEmail, teacherInviteEmail } from "../lib/email";
 import { cleanSubjects } from "../lib/community";
 import { paperSettingsProblem } from "../lib/cbt";
@@ -70,7 +71,7 @@ portalManagementRouter.post("/manage", async (req, res) => {
   const actor = await portalActor(req);
   staffOnly(actor);
   const body = ManagePortalBody.parse(req.body);
-  if (["saveClass", "saveStudent", "saveTeacher", "addPracticeExams", "inviteTeacher"].includes(body.action)) check(actor.role === "admin", "Only school administrators can manage enrolments and staff access.", 403);
+  if (["saveClass", "saveTeacher", "addPracticeExams", "inviteTeacher"].includes(body.action)) check(actor.role === "admin", "Only school administrators can manage enrolments and staff access.", 403);
   if (body.action === "resetAttempt") check(actor.role === "admin", "Only school administrators can reset a student's attempt.", 403);
   switch (body.action) {
     case "saveClass": {
@@ -85,8 +86,10 @@ portalManagementRouter.post("/manage", async (req, res) => {
     case "saveStudent": {
       const data = body.student;
       check(data, "Student details required.");
+      // Teachers may enrol into, and issue new passwords for, their own classes only; validClass enforces the class.
       await validClass(actor, data.classId);
-      const studentId = data.studentId.trim().toUpperCase();
+      let studentId = data.studentId.trim().toUpperCase();
+      if (!data.id && !studentId) studentId = await nextStudentId(new Date().getFullYear());
       check(/^[A-Z0-9][A-Z0-9/_-]{0,49}$/.test(studentId), "Use letters, numbers, hyphens, slashes or underscores for student IDs.");
       check(data.name.trim(), "Student name required.");
       const guardianEmail = data.guardianEmail === undefined ? undefined : data.guardianEmail?.trim().toLowerCase() || null;
@@ -98,13 +101,23 @@ portalManagementRouter.post("/manage", async (req, res) => {
           const [old] = await tx.select().from(portalStudents).where(eq(portalStudents.id, data.id)).for("update");
           check(old, "Student not found.", 404);
           check(old.studentId === studentId && old.classId === data.classId, "Student ID and class cannot be changed on an existing enrolment.");
+          if (actor.role === "teacher") {
+            const problem = teacherStudentEditProblem(old, { name: data.name.trim(), active: data.active, newPassword: !!passwordHash, guardianEmailChanged: guardianEmail !== undefined });
+            check(!problem, problem ?? "", 403);
+          }
           await tx.update(portalStudents).set({
             name: data.name.trim(), active: data.active, ...(guardianEmail !== undefined ? { guardianEmail } : {}),
-            ...(passwordHash ? { passwordHash, mustChangePassword: true, failedLogins: 0, lockedUntil: null } : {}),
+            // Staff-issued passwords work straight away; the student may change theirs in the portal whenever they like.
+            ...(passwordHash ? { passwordHash, mustChangePassword: false, accountStatus: "active", failedLogins: 0, lockedUntil: null } : {}),
           }).where(eq(portalStudents.id, data.id));
           if (!data.active || passwordHash) await tx.delete(portalSessions).where(eq(portalSessions.studentId, data.id));
-        } else await tx.insert(portalStudents).values({ studentId, name: data.name.trim(), classId: data.classId, active: data.active, passwordHash: passwordHash!, guardianEmail: guardianEmail ?? null });
+        } else {
+          const [taken] = await tx.select({ id: portalStudents.id }).from(portalStudents).where(eq(portalStudents.studentId, studentId));
+          check(!taken, "That Student ID is already in use.", 409);
+          await tx.insert(portalStudents).values({ studentId, name: data.name.trim(), classId: data.classId, active: data.active, passwordHash: passwordHash!, guardianEmail: guardianEmail ?? null, mustChangePassword: false, accountStatus: "active" });
+        }
       });
+      if (!data.id) { res.json({ message: "Student enrolled.", studentId }); return; }
       break;
     }
     case "saveTeacher": {

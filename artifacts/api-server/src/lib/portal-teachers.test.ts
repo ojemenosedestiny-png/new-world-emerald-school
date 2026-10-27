@@ -66,6 +66,25 @@ test("teachers: approval with classes, invitation, and office-only access", asyn
     assert.equal((await call({ action: "inviteTeacher", target: { id: row.id } }, admin)).status, 409);
     const [after] = await db.select().from(portalTeachers).where(inArray(portalTeachers.id, [row.id]));
     assert.deepEqual([after.active, after.classIds], [false, [a.id]], "editing changes the classes without sending another email");
+
+    // Enrolling with a password: no email, an automatic Student ID, and sign-in straight away with no forced change.
+    const enrolled = await call({ action: "saveStudent", student: { studentId: "", name: "Chi Eze", classId: b.id, active: true, password: "Mango-4827" } }, admin);
+    assert.equal(enrolled.status, 200, JSON.stringify(enrolled.data));
+    assert.match(enrolled.data.studentId, new RegExp(`^NWE/${new Date().getFullYear()}/[0-9]{5}$`));
+    const signIn = async (password: string) => fetch(root + "/session", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ studentId: enrolled.data.studentId, password }) });
+    const first = await signIn("Mango-4827");
+    assert.equal(first.status, 200);
+    assert.equal(((await first.json()) as { mustChangePassword: boolean }).mustChangePassword, false);
+    const chiCookie = first.headers.get("set-cookie")!.split(";")[0];
+    assert.equal((await fetch(root + "/student", { headers: { Cookie: chiCookie } })).status, 200, "the portal opens without a forced change");
+    // A new password from staff signs out old sessions and works straight away.
+    const [chi] = await db.select().from(portalStudents).where(inArray(portalStudents.studentId, [enrolled.data.studentId]));
+    assert.equal((await call({ action: "saveStudent", student: { id: chi.id, studentId: chi.studentId, name: chi.name, classId: b.id, active: true, password: "Lion-1234-x" } }, admin)).status, 200);
+    assert.equal((await fetch(root + "/student", { headers: { Cookie: chiCookie } })).status, 401);
+    assert.equal((await signIn("Mango-4827")).status, 401);
+    assert.equal((await signIn("Lion-1234-x")).status, 200);
+    // Hand-typed IDs must be unique.
+    assert.equal((await call({ action: "saveStudent", student: { studentId: chi.studentId, name: "Someone Else", classId: b.id, active: true, password: "River-5555" } }, admin)).status, 409);
   } finally {
     await new Promise<void>((resolve, reject) => server.close((e) => (e ? reject(e) : resolve())));
     await db.delete(portalTeachers).where(inArray(portalTeachers.email, [email]));

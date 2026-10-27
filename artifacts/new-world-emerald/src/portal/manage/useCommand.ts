@@ -7,18 +7,20 @@ export function useCommand() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const m = useManagePortal();
-  const run = async (command: PortalCommand, success: string) => {
+  /** Like run, but hands back the server's reply (for example a new Student ID), or null if it failed. */
+  const runForResult = async (command: PortalCommand, success: string) => {
     try {
       const res = await m.mutateAsync({ data: command });
       toast({ title: success, description: res.message && res.message !== success ? res.message : undefined });
       await queryClient.invalidateQueries({ queryKey: getGetPortalManagementQueryKey() });
-      return true;
+      return res;
     } catch (e) {
       toast({ variant: "destructive", title: "Not saved", description: errorMessage(e) });
-      return false;
+      return null;
     }
   };
-  return { run, pending: m.isPending };
+  const run = async (command: PortalCommand, success: string) => (await runForResult(command, success)) !== null;
+  return { run, runForResult, pending: m.isPending };
 }
 
 export type ClassItem = { id?: number; name: string };

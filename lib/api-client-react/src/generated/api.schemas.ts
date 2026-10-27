@@ -1456,7 +1456,7 @@ export const PortalStudentAccountStatus = {
 export interface PortalStudent {
   id?: number;
   /**
-     * @minLength 1
+     * Leave empty on a new enrolment to create the next automatic Student ID
      * @maxLength 50
      */
   studentId: string;
@@ -2031,7 +2031,7 @@ export const PortalManagementStudentsItemAccountStatus = {
 export type PortalManagementStudentsItem = {
   id?: number;
   /**
-     * @minLength 1
+     * Leave empty on a new enrolment to create the next automatic Student ID
      * @maxLength 50
      */
   studentId: string;
@@ -2359,7 +2359,7 @@ export const PortalCommandStudentAccountStatus = {
 export type PortalCommandStudent = {
   id?: number;
   /**
-     * @minLength 1
+     * Leave empty on a new enrolment to create the next automatic Student ID
      * @maxLength 50
      */
   studentId: string;
@@ -2594,6 +2594,8 @@ export interface PortalAttemptControl {
 
 export interface PortalMessage {
   message: string;
+  /** The Student ID of a student just enrolled */
+  studentId?: string;
 }
 
 export type PortalPdfImportQuestionsItem = ({

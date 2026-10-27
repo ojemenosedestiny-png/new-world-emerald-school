@@ -38,3 +38,14 @@ export function accountLink(base: string, token: string) {
   // The token travels in the query string, which request logs strip.
   return `${base}/portal/activate?t=${token}`;
 }
+
+/**
+ * What a teacher may change on an existing student in their class: only issue a new password. Name, status and
+ * parent email stay with the school office. Returns the reason it is refused, or null.
+ */
+export function teacherStudentEditProblem(old: { name: string; active: boolean }, next: { name: string; active: boolean; newPassword: boolean; guardianEmailChanged: boolean }) {
+  if (!next.newPassword || old.name !== next.name || old.active !== next.active || next.guardianEmailChanged) {
+    return "Teachers can give a student a new password. Ask the school office to change other details.";
+  }
+  return null;
+}
