@@ -9,6 +9,7 @@ import { DirectorWelcome } from '@/components/DirectorWelcome';
 import { ParentServices } from '@/components/ParentServices';
 import { FifthAnniversary } from '@/components/FifthAnniversary';
 import { Programs, Facilities } from '@/components/ProgramsFacilities';
+import { SpecialNeeds } from '@/components/SpecialNeeds';
 import { SchoolLife, Gallery, Testimonials } from '@/components/LifeGallery';
 import { NewsEvents, AdmissionsFAQ, FinalCTA } from '@/components/AdmissionsNews';
 import { AcademicCalendar } from '@/components/AcademicCalendar';
@@ -22,6 +23,7 @@ const schoolSections = [
   { name: "About", Component: About },
   { name: "WhyChooseUs", Component: WhyChooseUs },
   { name: "Programs", Component: Programs },
+  { name: "SpecialNeeds", Component: SpecialNeeds },
   { name: "Facilities", Component: Facilities },
   { name: "SchoolLife", Component: SchoolLife },
   { name: "Gallery", Component: Gallery },

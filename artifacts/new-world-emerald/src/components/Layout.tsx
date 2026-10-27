@@ -33,6 +33,7 @@ export function Navbar({ solid = false }: { solid?: boolean }) {
   const navLinks = [
     { name: 'About', href: '#about' },
     { name: 'Academics', href: '#academics' },
+    { name: 'SEN', href: '#special-needs' },
     { name: 'School Life', href: '#school-life' },
     { name: 'Calendar', href: '#calendar' },
     { name: 'Admissions', href: '#admissions' },
