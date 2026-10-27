@@ -16,6 +16,7 @@ import type { DirectorReportStudents } from './directorReportStudents';
 import type { DirectorReportWebsite } from './directorReportWebsite';
 
 export interface DirectorReport {
+  days: number;
   from: Date;
   to: Date;
   generatedAt: Date;

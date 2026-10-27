@@ -4,6 +4,7 @@ import { highlights, mondayOf, percent, reportWindow, weeklyReportDue, type Dire
 import { directorReportEmail } from "./email";
 
 const base: Omit<DirectorReport, "highlights"> = {
+  days: 7,
   from: "2026-10-19T06:00:00.000Z", to: "2026-10-26T06:00:00.000Z", generatedAt: "2026-10-26T06:00:00.000Z",
   admissions: { newThisWeek: 0, awaitingReview: 0, total: 0 },
   students: { active: 0, pendingActivation: 0, activatedThisWeek: 0, byClass: [] },
@@ -58,4 +59,10 @@ test("director: the email carries the highlights and figures, escaped, with the 
   assert.match(mail.html, /91% \(3 absent today\)/);
   assert.match(mail.html, /href="https:\/\/school\.example\/director"/);
   assert.match(mail.text, /Dashboard: https:\/\/school\.example\/director/);
+});
+
+test("director: a 30-day view says so in every highlight and covers 30 Lagos dates", () => {
+  assert.deepEqual(highlights({ ...base, days: 30 }), ["No attendance registers were taken in the last 30 days."]);
+  const w = reportWindow(new Date("2026-10-26T06:30:00Z"), 30);
+  assert.deepEqual([w.fromDate, w.toDate], ["2026-09-27", "2026-10-26"]);
 });

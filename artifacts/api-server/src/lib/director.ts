@@ -2,6 +2,7 @@ import { SCHOOL_TIME_ZONE, addDays, schoolDate } from "./learning";
 
 /** Weekly figures for the Director, as returned by /api/director/overview and sent in the Monday email. */
 export interface DirectorReport {
+  days: number;
   from: string;
   to: string;
   generatedAt: string;
@@ -27,27 +28,29 @@ const plural = (n: number, one: string, many = one + "s") => `${n} ${n === 1 ? o
 /** The plain-English points at the top of the dashboard and email: what needs the Director's attention first. */
 export function highlights(r: Omit<DirectorReport, "highlights">): string[] {
   const out: string[] = [];
-  if (r.admissions.awaitingReview) out.push(`${plural(r.admissions.awaitingReview, "admission application")} waiting for review (${r.admissions.newThisWeek} new this week).`);
+  const period = r.days === 7 ? "this week" : `in the last ${r.days} days`;
+  if (r.admissions.awaitingReview) out.push(`${plural(r.admissions.awaitingReview, "admission application")} waiting for review (${r.admissions.newThisWeek} new ${period}).`);
   if (r.money.awaitingCount) out.push(`${plural(r.money.awaitingCount, "fee payment")} (${naira(r.money.awaitingKobo)}) waiting for the office to confirm.`);
-  if (r.money.confirmedCount) out.push(`${naira(r.money.confirmedKobo)} in fees confirmed this week from ${plural(r.money.confirmedCount, "payment")}.`);
+  if (r.money.confirmedCount) out.push(`${naira(r.money.confirmedKobo)} in fees confirmed ${period} from ${plural(r.money.confirmedCount, "payment")}.`);
   if (r.attendance.rate !== null) {
     const low = r.attendance.byClass.filter((c) => c.rate !== null && c.rate < 85).map((c) => c.className);
-    out.push(`Attendance was ${r.attendance.rate}% this week${low.length ? `; below 85% in ${low.join(", ")}` : ""}.`);
-  } else out.push("No attendance registers were taken this week.");
+    out.push(`Attendance was ${r.attendance.rate}% ${period}${low.length ? `; below 85% in ${low.join(", ")}` : ""}.`);
+  } else out.push(`No attendance registers were taken ${period}.`);
   const noRegister = r.attendance.byClass.filter((c) => c.recorded === 0).map((c) => c.className);
-  if (r.attendance.rate !== null && noRegister.length) out.push(`No register taken this week for ${noRegister.join(", ")}.`);
+  if (r.attendance.rate !== null && noRegister.length) out.push(`No register taken ${period} for ${noRegister.join(", ")}.`);
   if (r.messages.unanswered) out.push(`${plural(r.messages.unanswered, "student conversation")} waiting for a reply from staff.`);
   if (r.students.pendingActivation) out.push(`${plural(r.students.pendingActivation, "student account")} not yet activated by parents.`);
-  if (r.security.failedSignIns >= 20) out.push(`${r.security.failedSignIns} failed student sign-ins this week. Worth a look in Sessions.`);
+  if (r.security.failedSignIns >= 20) out.push(`${r.security.failedSignIns} failed student sign-ins ${period}. Worth a look in Sessions.`);
   return out;
 }
 
-/** The week a Monday report covers: the seven school days before `now`, as Lagos dates and exact instants. */
-export function reportWindow(now = new Date()) {
+/** The period a report covers: the `days` days up to `now` (a week by default), as Lagos dates and exact instants. */
+export function reportWindow(now = new Date(), days = 7) {
   const toDate = schoolDate(now);
-  const fromDate = addDays(toDate, -6);
-  return { fromDate, toDate, from: new Date(now.getTime() - 7 * 86_400_000), to: now };
+  const fromDate = addDays(toDate, -(days - 1));
+  return { fromDate, toDate, from: new Date(now.getTime() - days * 86_400_000), to: now };
 }
+export const REPORT_PERIODS = [7, 30] as const;
 
 /** The Lagos date of this week's Monday, used to send the weekly report once. */
 export function mondayOf(now = new Date()) {

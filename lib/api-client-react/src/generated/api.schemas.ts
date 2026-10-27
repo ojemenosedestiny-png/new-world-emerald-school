@@ -75,6 +75,7 @@ export type DirectorReportSecurity = {
 };
 
 export interface DirectorReport {
+  days: number;
   from: string;
   to: string;
   generatedAt: string;
@@ -3320,6 +3321,18 @@ from: string;
  */
 to: string;
 };
+
+export type GetDirectorOverviewParams = {
+days?: GetDirectorOverviewDays;
+};
+
+export type GetDirectorOverviewDays = typeof GetDirectorOverviewDays[keyof typeof GetDirectorOverviewDays];
+
+
+export const GetDirectorOverviewDays = {
+  NUMBER_7: 7,
+  NUMBER_30: 30,
+} as const;
 
 export type SendDirectorReport200 = {
   message: string;

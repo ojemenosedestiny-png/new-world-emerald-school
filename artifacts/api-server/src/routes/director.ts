@@ -9,7 +9,7 @@ import { directorEmails } from "../lib/approved-identities";
 import { isDirector } from "../lib/website-admin";
 import { siteBaseUrl } from "../lib/accounts";
 import { directorReportEmail, emailConfigured, sendEmail } from "../lib/email";
-import { highlights, mondayOf, percent, reportWindow, weeklyReportDue, type DirectorReport } from "../lib/director";
+import { REPORT_PERIODS, highlights, mondayOf, percent, reportWindow, weeklyReportDue, type DirectorReport } from "../lib/director";
 import { schoolDate } from "../lib/learning";
 import { logger } from "../lib/logger";
 
@@ -18,8 +18,8 @@ const AWAITING_PAYMENT = ["payment_requested", "reported"];
 const n = (v: unknown) => Number(v ?? 0);
 
 /** Everything the Director sees, for the seven days up to `now`. Read-only. */
-export async function buildDirectorReport(now = new Date()): Promise<DirectorReport> {
-  const { from, to, fromDate, toDate } = reportWindow(now);
+export async function buildDirectorReport(now = new Date(), days = 7): Promise<DirectorReport> {
+  const { from, to, fromDate, toDate } = reportWindow(now, days);
   const classes = await db.select().from(portalClasses).orderBy(asc(portalClasses.name));
   const className = new Map(classes.map((c) => [c.id, c.name]));
 
@@ -74,7 +74,7 @@ export async function buildDirectorReport(now = new Date()): Promise<DirectorRep
   const unanswered = n((unansweredRows as unknown as { rows: { c: number }[] }).rows?.[0]?.c);
 
   const report: Omit<DirectorReport, "highlights"> = {
-    from: from.toISOString(), to: to.toISOString(), generatedAt: new Date().toISOString(),
+    days, from: from.toISOString(), to: to.toISOString(), generatedAt: new Date().toISOString(),
     admissions: { newThisWeek: n(appsNew.c), awaitingReview: n(appsWaiting.c), total: n(appsTotal.c) },
     students: {
       active: activeByClass.reduce((s, r) => s + n(r.c), 0), pendingActivation: n(pending.c), activatedThisWeek: n(activated.c),
@@ -109,7 +109,8 @@ function directorOnly(req: Request, res: Response) {
 router.get("/director/overview", async (req, res) => {
   if (!directorOnly(req, res)) return;
   res.setHeader("Cache-Control", "no-store");
-  res.json(await buildDirectorReport());
+  const days = Number(req.query.days ?? 7);
+  res.json(await buildDirectorReport(new Date(), (REPORT_PERIODS as readonly number[]).includes(days) ? days : 7));
 });
 
 router.post("/director/report/send", async (req, res) => {

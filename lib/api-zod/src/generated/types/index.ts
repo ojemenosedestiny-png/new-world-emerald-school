@@ -77,6 +77,8 @@ export * from './getAttendanceSummaryParams';
 export * from './getAuditLogActorKind';
 export * from './getAuditLogOutcome';
 export * from './getAuditLogParams';
+export * from './getDirectorOverviewDays';
+export * from './getDirectorOverviewParams';
 export * from './getLocalAccount200';
 export * from './getReportWorkspaceParams';
 export * from './healthStatus';

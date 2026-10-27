@@ -8,6 +8,8 @@ export type ExamAverage = { id: number; title: string; className: string; averag
 export type DayCount = { label: string; date: string; count: number };
 export type ClassCount = { name: string; students: number };
 export type Attention = { kind: "mark" | "release" | "live"; examId: number; title: string; count: number };
+/** An exam open right now, as a teacher watching the room sees it. The four counts add up to the class size. */
+export type LiveExam = { id: number; title: string; subject: string; className: string; endsAt: string; classSize: number; notStarted: number; writing: number; submitted: number; timedOut: number };
 
 export function dashboardData(data: PortalManagement, now = Date.now()) {
   const className = (id: number) => data.classes.find((c) => c.id === id)?.name ?? "Class";
@@ -60,5 +62,18 @@ export function dashboardData(data: PortalManagement, now = Date.now()) {
     .slice(0, 5)
     .map((e) => ({ id: e.id as number, title: e.title, subject: e.subject, className: className(e.classId), startsAt: e.startsAt, open: examWindow(e.startsAt, e.endsAt, now) === "open" }));
 
-  return { examAverages, days, studentsByClass, attention, upcoming };
+  // Open exams: everyone in the class is not started, writing, submitted, or out of time without submitting.
+  const live: LiveExam[] = data.exams
+    .filter((e) => e.published && examWindow(e.startsAt, e.endsAt, now) === "open")
+    .map((e) => {
+      const attempts = data.attempts.filter((a) => a.examId === e.id);
+      const writing = attempts.filter((a) => a.status === "in_progress" && new Date(a.deadline).getTime() > now).length;
+      const timedOut = attempts.filter((a) => a.status === "in_progress" && new Date(a.deadline).getTime() <= now).length;
+      const submitted = attempts.filter((a) => a.status !== "in_progress").length;
+      const classSize = Math.max(data.students.filter((s) => s.classId === e.classId && s.active).length, attempts.length);
+      return { id: e.id as number, title: e.title, subject: e.subject, className: className(e.classId), endsAt: e.endsAt, classSize, writing, timedOut, submitted, notStarted: classSize - writing - timedOut - submitted };
+    })
+    .sort((a, b) => a.endsAt.localeCompare(b.endsAt));
+
+  return { examAverages, days, studentsByClass, attention, upcoming, live };
 }

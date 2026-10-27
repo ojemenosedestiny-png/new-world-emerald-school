@@ -2,6 +2,8 @@ paths:
   overview:
     get:
       operationId: getDirectorOverview
+      parameters:
+        - { name: days, in: query, required: false, schema: { type: integer, enum: [7, 30] } }
       responses:
         "200":
           description: The school's last seven days for the Director (Director only)
@@ -24,8 +26,9 @@ paths:
 schemas:
   DirectorReport:
     type: object
-    required: [from, to, generatedAt, admissions, students, staff, attendance, learning, money, messages, website, security, highlights]
+    required: [days, from, to, generatedAt, admissions, students, staff, attendance, learning, money, messages, website, security, highlights]
     properties:
+      days: { type: integer }
       from: { type: string, format: date-time }
       to: { type: string, format: date-time }
       generatedAt: { type: string, format: date-time }

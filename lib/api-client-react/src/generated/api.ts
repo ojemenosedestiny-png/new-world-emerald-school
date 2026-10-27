@@ -57,6 +57,7 @@ import type {
   GetAttendanceSheetParams,
   GetAttendanceSummaryParams,
   GetAuditLogParams,
+  GetDirectorOverviewParams,
   GetLocalAccount200,
   GetReportWorkspaceParams,
   HealthStatus,
@@ -3195,17 +3196,24 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       return useMutation(getUploadAssignmentImageMutationOptions(options));
     }
 
-export const getGetDirectorOverviewUrl = () => {
+export const getGetDirectorOverviewUrl = (params?: GetDirectorOverviewParams,) => {
+  const normalizedParams = new URLSearchParams();
 
+  Object.entries(params || {}).forEach(([key, value]) => {
 
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
 
+  const stringifiedParams = normalizedParams.toString();
 
-  return `/api/director/overview`
+  return stringifiedParams.length > 0 ? `/api/director/overview?${stringifiedParams}` : `/api/director/overview`
 }
 
-export const getDirectorOverview = async ( options?: RequestInit): Promise<DirectorReport> => {
+export const getDirectorOverview = async (params?: GetDirectorOverviewParams, options?: RequestInit): Promise<DirectorReport> => {
 
-  return customFetch<DirectorReport>(getGetDirectorOverviewUrl(),
+  return customFetch<DirectorReport>(getGetDirectorOverviewUrl(params),
   {
     ...options,
     method: 'GET'
@@ -3218,23 +3226,23 @@ export const getDirectorOverview = async ( options?: RequestInit): Promise<Direc
 
 
 
-export const getGetDirectorOverviewQueryKey = () => {
+export const getGetDirectorOverviewQueryKey = (params?: GetDirectorOverviewParams,) => {
     return [
-    `/api/director/overview`
+    `/api/director/overview`, ...(params ? [params] : [])
     ] as const;
     }
 
 
-export const getGetDirectorOverviewQueryOptions = <TData = Awaited<ReturnType<typeof getDirectorOverview>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDirectorOverview>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+export const getGetDirectorOverviewQueryOptions = <TData = Awaited<ReturnType<typeof getDirectorOverview>>, TError = ErrorType<unknown>>(params?: GetDirectorOverviewParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDirectorOverview>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetDirectorOverviewQueryKey();
+  const queryKey =  queryOptions?.queryKey ?? getGetDirectorOverviewQueryKey(params);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getDirectorOverview>>> = ({ signal }) => getDirectorOverview({ signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getDirectorOverview>>> = ({ signal }) => getDirectorOverview(params, { signal, ...requestOptions });
 
 
 
@@ -3249,11 +3257,11 @@ export type GetDirectorOverviewQueryError = ErrorType<unknown>
 
 
 export function useGetDirectorOverview<TData = Awaited<ReturnType<typeof getDirectorOverview>>, TError = ErrorType<unknown>>(
-  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDirectorOverview>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+ params?: GetDirectorOverviewParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDirectorOverview>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
-  const queryOptions = getGetDirectorOverviewQueryOptions(options)
+  const queryOptions = getGetDirectorOverviewQueryOptions(params,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

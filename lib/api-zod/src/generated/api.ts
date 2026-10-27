@@ -1742,7 +1742,12 @@ export const UploadAssignmentImageResponse = zod.object({
 })
 
 
+export const GetDirectorOverviewQueryParams = zod.object({
+  "days": zod.union([zod.literal(7),zod.literal(30)]).optional()
+})
+
 export const GetDirectorOverviewResponse = zod.object({
+  "days": zod.number(),
   "from": zod.coerce.date(),
   "to": zod.coerce.date(),
   "generatedAt": zod.coerce.date(),
