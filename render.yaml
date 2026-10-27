@@ -25,6 +25,9 @@ services:
         sync: false
       - key: SCHOOL_SUPER_ADMIN_EMAILS
         sync: false
+      # The Director's email: sole access to /director and the Monday report. Must also be in SCHOOL_ADMIN_EMAILS.
+      - key: SCHOOL_DIRECTOR_EMAILS
+        sync: false
       - key: REQUIRE_ADMIN_MFA
         value: "false"
       - key: CSP_ENFORCE

@@ -8,6 +8,7 @@ import { logger } from "./lib/logger";
 import { CLERK_PROXY_PATH, clerkProxyMiddleware, getClerkProxyHost } from "./middlewares/clerkProxyMiddleware";
 import { localUserBridge } from "./middlewares/localUserBridge";
 import { startApprovedIdentityRefresh } from "./lib/approved-identities";
+import { startDirectorWeeklyReport } from "./routes/director";
 import { serveFrontend } from "./lib/frontend";
 import { loadSiteContentSnapshot } from "./routes/site-content";
 import { mountCspReports, securityHeaders } from "./lib/security-headers";
@@ -59,6 +60,7 @@ app.use(
   })),
 );
 startApprovedIdentityRefresh();
+startDirectorWeeklyReport();
 app.use(localUserBridge);
 app.use("/api", auditStaffChanges());
 

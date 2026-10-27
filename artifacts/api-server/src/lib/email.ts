@@ -161,3 +161,33 @@ How to sign in:
 Never share your sign-in code.`;
   return { subject, html, text };
 }
+
+/** The Director's weekly report: the highlights first, then the figures, with a link to the full dashboard. */
+export function directorReportEmail(r: import("./director").DirectorReport, dashboardUrl: string) {
+  const ng = (kobo: number) => `NGN ${(kobo / 100).toLocaleString("en-NG", { maximumFractionDigits: 0 })}`;
+  const day = (iso: string) => new Intl.DateTimeFormat("en-GB", { timeZone: "Africa/Lagos", day: "numeric", month: "short", year: "numeric" }).format(new Date(iso));
+  const period = `${day(r.from)} to ${day(r.to)}`;
+  const rows: [string, string][] = [
+    ["Admissions", `${r.admissions.newThisWeek} new, ${r.admissions.awaitingReview} waiting for review`],
+    ["Students", `${r.students.active} active, ${r.students.pendingActivation} accounts not yet activated`],
+    ["Attendance", r.attendance.rate === null ? "No registers taken" : `${r.attendance.rate}% (${r.attendance.absentToday} absent today)`],
+    ["Exams and homework", `${r.learning.attemptsSubmitted} exam papers submitted${r.learning.averageScore === null ? "" : `, average ${r.learning.averageScore}%`}; ${r.learning.assignmentsSet} assignments set, ${r.learning.submissions} handed in`],
+    ["Fees", `${ng(r.money.confirmedKobo)} confirmed; ${r.money.awaitingCount} payments (${ng(r.money.awaitingKobo)}) awaiting confirmation`],
+    ["Store", `${r.money.storeOrders} orders (${ng(r.money.storeOrdersKobo)})`],
+    ["Messages", `${r.messages.thisWeek} this week, ${r.messages.unanswered} waiting for a staff reply`],
+    ["Teachers", `${r.staff.activeTeachers} active`],
+    ["Website", `${r.website.liveUpdates} live updates posted`],
+  ];
+  const subject = `Weekly school report: ${period}`;
+  const html = layout("Your weekly school report", `
+    <p style="margin:0 0 10px;line-height:1.6;color:#5c6b70">${esc(period)}</p>
+    ${r.highlights.length ? `<p style="margin:0 0 6px;font-weight:700">Needs your attention</p><ul style="margin:0 0 14px;padding-left:20px;line-height:1.7">${r.highlights.map((h) => `<li>${esc(h)}</li>`).join("")}</ul>` : ""}
+    <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border-collapse:collapse;font-size:14px">
+      ${rows.map(([k, v]) => `<tr><td style="padding:8px 10px;border-bottom:1px solid #e6e1d6;font-weight:700;white-space:nowrap;vertical-align:top">${esc(k)}</td><td style="padding:8px 10px;border-bottom:1px solid #e6e1d6">${esc(v)}</td></tr>`).join("")}
+    </table>`,
+    { label: "Open the Director dashboard", url: dashboardUrl },
+    "This report is sent only to the Director. To stop it, ask your developer to remove your email from SCHOOL_DIRECTOR_EMAILS.");
+  const text = [`Weekly school report: ${period}`, "", ...(r.highlights.length ? ["Needs your attention:", ...r.highlights.map((h) => `- ${h}`), ""] : []),
+    ...rows.map(([k, v]) => `${k}: ${v}`), "", `Dashboard: ${dashboardUrl}`].join("\n");
+  return { subject, html, text };
+}

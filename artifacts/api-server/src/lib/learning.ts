@@ -2,7 +2,7 @@
 
 export const ATTENDANCE_STATUSES = ["present", "late", "absent", "excused"] as const;
 export type AttendanceStatus = (typeof ATTENDANCE_STATUSES)[number];
-const SCHOOL_TIME_ZONE = "Africa/Lagos";
+export const SCHOOL_TIME_ZONE = "Africa/Lagos";
 
 /** The school's calendar date (YYYY-MM-DD) for a moment, in Lagos time. */
 export function schoolDate(at: Date = new Date()): string {

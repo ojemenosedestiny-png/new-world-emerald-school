@@ -14,6 +14,7 @@ const Admin = lazy(() => import("@/pages/Admin"));
 const Portal = lazy(() => import("@/pages/Portal"));
 const PortalExam = lazy(() => import("@/pages/PortalExam"));
 const PortalManage = lazy(() => import("@/pages/PortalManage"));
+const Director = lazy(() => import("@/pages/Director"));
 const ActivateAccount = lazy(() => import("@/pages/ActivateAccount"));
 const NotFound = lazy(() => import("@/pages/not-found"));
 
@@ -37,6 +38,7 @@ export function AppRoutes() {
         <Route path="/portal/exam/:id" component={PortalExam} />
         <Route path="/portal/manage" component={PortalManage} />
         {/* The short link teachers are given: staff sign-in, then their own classes. */}
+        <Route path="/director" component={Director} />
         <Route path="/teacher">{() => <Redirect to="/portal/manage" replace />}</Route>
         <Route path="/portal/activate" component={ActivateAccount} />
         <Route component={NotFound} />

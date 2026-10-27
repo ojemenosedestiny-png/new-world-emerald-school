@@ -21,6 +21,15 @@ export function superAdminEmails(): string[] {
   return first ? [first] : [];
 }
 
+/**
+ * The Director: the only account that can open the Director dashboard and receive the weekly report.
+ * Set in SCHOOL_DIRECTOR_EMAILS; must also be an approved administrator. No default: unset means nobody.
+ */
+export function directorEmails(): string[] {
+  const listed = (process.env.SCHOOL_DIRECTOR_EMAILS ?? "").split(/[,;\s]+/).map((v) => v.trim().toLowerCase()).filter(Boolean);
+  return listed.filter((e) => approvedEmails().includes(e));
+}
+
 /** When true, administrators must have Clerk two-factor authentication turned on. */
 export const adminMfaRequired = () => process.env.REQUIRE_ADMIN_MFA === "true";
 

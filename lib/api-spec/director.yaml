@@ -1,0 +1,114 @@
+paths:
+  overview:
+    get:
+      operationId: getDirectorOverview
+      responses:
+        "200":
+          description: The school's last seven days for the Director (Director only)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DirectorReport" }
+  sendReport:
+    post:
+      operationId: sendDirectorReport
+      responses:
+        "200":
+          description: The weekly report was emailed to the Director
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [message]
+                properties:
+                  message: { type: string }
+schemas:
+  DirectorReport:
+    type: object
+    required: [from, to, generatedAt, admissions, students, staff, attendance, learning, money, messages, website, security, highlights]
+    properties:
+      from: { type: string, format: date-time }
+      to: { type: string, format: date-time }
+      generatedAt: { type: string, format: date-time }
+      admissions:
+        type: object
+        required: [newThisWeek, awaitingReview, total]
+        properties:
+          newThisWeek: { type: integer }
+          awaitingReview: { type: integer }
+          total: { type: integer }
+      students:
+        type: object
+        required: [active, pendingActivation, activatedThisWeek, byClass]
+        properties:
+          active: { type: integer }
+          pendingActivation: { type: integer }
+          activatedThisWeek: { type: integer }
+          byClass:
+            type: array
+            items:
+              type: object
+              required: [className, students]
+              properties:
+                className: { type: string }
+                students: { type: integer }
+      staff:
+        type: object
+        required: [activeTeachers]
+        properties:
+          activeTeachers: { type: integer }
+      attendance:
+        type: object
+        required: [rate, recorded, absentToday, byClass]
+        properties:
+          rate: { type: [integer, "null"] }
+          recorded: { type: integer }
+          absentToday: { type: integer }
+          byClass:
+            type: array
+            items:
+              type: object
+              required: [className, rate, recorded]
+              properties:
+                className: { type: string }
+                rate: { type: [integer, "null"] }
+                recorded: { type: integer }
+      learning:
+        type: object
+        required: [examsHeld, attemptsSubmitted, averageScore, assignmentsSet, submissions]
+        properties:
+          examsHeld: { type: integer }
+          attemptsSubmitted: { type: integer }
+          averageScore: { type: [integer, "null"] }
+          assignmentsSet: { type: integer }
+          submissions: { type: integer }
+      money:
+        type: object
+        required: [confirmedKobo, confirmedCount, awaitingKobo, awaitingCount, storeOrders, storeOrdersKobo]
+        properties:
+          confirmedKobo: { type: integer }
+          confirmedCount: { type: integer }
+          awaitingKobo: { type: integer }
+          awaitingCount: { type: integer }
+          storeOrders: { type: integer }
+          storeOrdersKobo: { type: integer }
+      messages:
+        type: object
+        required: [thisWeek, unanswered]
+        properties:
+          thisWeek: { type: integer }
+          unanswered: { type: integer }
+      website:
+        type: object
+        required: [liveUpdates]
+        properties:
+          liveUpdates: { type: integer }
+      security:
+        type: object
+        required: [failedSignIns, deniedActions]
+        properties:
+          failedSignIns: { type: integer }
+          deniedActions: { type: integer }
+      highlights: { type: array, items: { type: string } }
+components:
+  schemas:
+    DirectorReport: { $ref: "#/schemas/DirectorReport" }

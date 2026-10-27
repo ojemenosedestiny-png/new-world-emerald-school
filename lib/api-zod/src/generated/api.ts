@@ -1735,6 +1735,72 @@ export const UploadAssignmentImageResponse = zod.object({
 })
 
 
+export const GetDirectorOverviewResponse = zod.object({
+  "from": zod.coerce.date(),
+  "to": zod.coerce.date(),
+  "generatedAt": zod.coerce.date(),
+  "admissions": zod.object({
+  "newThisWeek": zod.number(),
+  "awaitingReview": zod.number(),
+  "total": zod.number()
+}),
+  "students": zod.object({
+  "active": zod.number(),
+  "pendingActivation": zod.number(),
+  "activatedThisWeek": zod.number(),
+  "byClass": zod.array(zod.object({
+  "className": zod.string(),
+  "students": zod.number()
+}))
+}),
+  "staff": zod.object({
+  "activeTeachers": zod.number()
+}),
+  "attendance": zod.object({
+  "rate": zod.number().nullable(),
+  "recorded": zod.number(),
+  "absentToday": zod.number(),
+  "byClass": zod.array(zod.object({
+  "className": zod.string(),
+  "rate": zod.number().nullable(),
+  "recorded": zod.number()
+}))
+}),
+  "learning": zod.object({
+  "examsHeld": zod.number(),
+  "attemptsSubmitted": zod.number(),
+  "averageScore": zod.number().nullable(),
+  "assignmentsSet": zod.number(),
+  "submissions": zod.number()
+}),
+  "money": zod.object({
+  "confirmedKobo": zod.number(),
+  "confirmedCount": zod.number(),
+  "awaitingKobo": zod.number(),
+  "awaitingCount": zod.number(),
+  "storeOrders": zod.number(),
+  "storeOrdersKobo": zod.number()
+}),
+  "messages": zod.object({
+  "thisWeek": zod.number(),
+  "unanswered": zod.number()
+}),
+  "website": zod.object({
+  "liveUpdates": zod.number()
+}),
+  "security": zod.object({
+  "failedSignIns": zod.number(),
+  "deniedActions": zod.number()
+}),
+  "highlights": zod.array(zod.string())
+})
+
+
+export const SendDirectorReportResponse = zod.object({
+  "message": zod.string()
+})
+
+
 export const GetMyFeesResponse = zod.object({
   "studentName": zod.string(),
   "studentId": zod.string(),

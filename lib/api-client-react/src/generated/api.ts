@@ -45,6 +45,7 @@ import type {
   DirectUploadRequest,
   DirectUploadSignature,
   DirectUploadToken,
+  DirectorReport,
   EmailTestResult,
   EnrolStudentInput,
   FeePaymentReport,
@@ -104,6 +105,7 @@ import type {
   SchoolCommerceSettings,
   SchoolCommerceSettingsUpdate,
   SecuritySessions,
+  SendDirectorReport200,
   SiteContent,
   SiteContentInput,
   StaffAssignment,
@@ -3191,6 +3193,142 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
         TContext
       > => {
       return useMutation(getUploadAssignmentImageMutationOptions(options));
+    }
+
+export const getGetDirectorOverviewUrl = () => {
+
+
+
+
+  return `/api/director/overview`
+}
+
+export const getDirectorOverview = async ( options?: RequestInit): Promise<DirectorReport> => {
+
+  return customFetch<DirectorReport>(getGetDirectorOverviewUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetDirectorOverviewQueryKey = () => {
+    return [
+    `/api/director/overview`
+    ] as const;
+    }
+
+
+export const getGetDirectorOverviewQueryOptions = <TData = Awaited<ReturnType<typeof getDirectorOverview>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDirectorOverview>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetDirectorOverviewQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getDirectorOverview>>> = ({ signal }) => getDirectorOverview({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getDirectorOverview>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetDirectorOverviewQueryResult = NonNullable<Awaited<ReturnType<typeof getDirectorOverview>>>
+export type GetDirectorOverviewQueryError = ErrorType<unknown>
+
+
+
+export function useGetDirectorOverview<TData = Awaited<ReturnType<typeof getDirectorOverview>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDirectorOverview>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetDirectorOverviewQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getSendDirectorReportUrl = () => {
+
+
+
+
+  return `/api/director/report/send`
+}
+
+export const sendDirectorReport = async ( options?: RequestInit): Promise<SendDirectorReport200> => {
+
+  return customFetch<SendDirectorReport200>(getSendDirectorReportUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getSendDirectorReportMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof sendDirectorReport>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof sendDirectorReport>>, TError,void, TContext> => {
+
+const mutationKey = ['sendDirectorReport'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof sendDirectorReport>>, void> = () => {
+
+
+          return  sendDirectorReport(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SendDirectorReportMutationResult = NonNullable<Awaited<ReturnType<typeof sendDirectorReport>>>
+
+    export type SendDirectorReportMutationError = ErrorType<unknown>
+
+    export const useSendDirectorReport = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof sendDirectorReport>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof sendDirectorReport>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getSendDirectorReportMutationOptions(options));
     }
 
 export const getGetMyFeesUrl = () => {

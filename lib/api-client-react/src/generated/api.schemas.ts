@@ -5,6 +5,91 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+export type DirectorReportAdmissions = {
+  newThisWeek: number;
+  awaitingReview: number;
+  total: number;
+};
+
+export type DirectorReportStudentsByClassItem = {
+  className: string;
+  students: number;
+};
+
+export type DirectorReportStudents = {
+  active: number;
+  pendingActivation: number;
+  activatedThisWeek: number;
+  byClass: DirectorReportStudentsByClassItem[];
+};
+
+export type DirectorReportStaff = {
+  activeTeachers: number;
+};
+
+export type DirectorReportAttendanceByClassItem = {
+  className: string;
+  /** @nullable */
+  rate: number | null;
+  recorded: number;
+};
+
+export type DirectorReportAttendance = {
+  /** @nullable */
+  rate: number | null;
+  recorded: number;
+  absentToday: number;
+  byClass: DirectorReportAttendanceByClassItem[];
+};
+
+export type DirectorReportLearning = {
+  examsHeld: number;
+  attemptsSubmitted: number;
+  /** @nullable */
+  averageScore: number | null;
+  assignmentsSet: number;
+  submissions: number;
+};
+
+export type DirectorReportMoney = {
+  confirmedKobo: number;
+  confirmedCount: number;
+  awaitingKobo: number;
+  awaitingCount: number;
+  storeOrders: number;
+  storeOrdersKobo: number;
+};
+
+export type DirectorReportMessages = {
+  thisWeek: number;
+  unanswered: number;
+};
+
+export type DirectorReportWebsite = {
+  liveUpdates: number;
+};
+
+export type DirectorReportSecurity = {
+  failedSignIns: number;
+  deniedActions: number;
+};
+
+export interface DirectorReport {
+  from: string;
+  to: string;
+  generatedAt: string;
+  admissions: DirectorReportAdmissions;
+  students: DirectorReportStudents;
+  staff: DirectorReportStaff;
+  attendance: DirectorReportAttendance;
+  learning: DirectorReportLearning;
+  money: DirectorReportMoney;
+  messages: DirectorReportMessages;
+  website: DirectorReportWebsite;
+  security: DirectorReportSecurity;
+  highlights: string[];
+}
+
 export type FeeItemKind = typeof FeeItemKind[keyof typeof FeeItemKind];
 
 
@@ -3232,6 +3317,10 @@ from: string;
  * @pattern ^\d{4}-\d{2}-\d{2}$
  */
 to: string;
+};
+
+export type SendDirectorReport200 = {
+  message: string;
 };
 
 export type GetLocalAccount200 = {

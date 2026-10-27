@@ -274,6 +274,11 @@ admin += [*section(4, "Money", "Fees, payments and the store"),
               "In <b>Store and fees</b>, open the report, tap <b>View payment screenshot</b>, and check your bank statement.",
               "Set it to <b>Confirmed</b> when the money has arrived, or <b>Rejected</b> with a note if not. A confirmed payment marks the fee as paid on the student's statement.",
           ], "Only confirm a payment after you see it in the school's bank account. A screenshot alone is not proof.")]
+admin += [*task("For the Director: the weekly dashboard", f"The Director has a private dashboard at <b>{SITE}/director</b>. Only the Director's email can open it; other administrators are refused.", [
+              "Sign in with the Director's email and the six-digit code.",
+              "See the week at a glance: what needs attention, admissions, students, attendance by class, exams and homework, fees, messages and security.",
+              "Every Monday at 7 am the same report arrives by email. Use <b>Email me this report</b> or <b>Print</b> at any time.",
+          ], "The Director's email must be set by the developer in Render (SCHOOL_DIRECTOR_EMAILS) and also be an approved administrator.")]
 admin += [*section(5, "Website", "Keeping the website current"),
           *bullets([
               "<b>Admissions</b>: applications from the website arrive here. A red number shows new ones.",

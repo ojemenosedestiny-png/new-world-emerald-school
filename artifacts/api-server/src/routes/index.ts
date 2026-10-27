@@ -13,6 +13,7 @@ import { protectWebsiteManagement } from "../lib/website-admin";
 import portalRouter from "./portal";
 import emailTestRouter from "./email-test";
 import schoolCommerceProofsRouter from "./school-commerce-proofs";
+import directorRouter from "./director";
 
 const router: IRouter = Router();
 
@@ -30,5 +31,6 @@ router.use(schoolCommerceFeesRouter);
 router.use(schoolCommerceProofsRouter);
 router.use(siteContentRouter);
 router.use(emailTestRouter);
+router.use(directorRouter);
 
 export default router;

@@ -1,5 +1,5 @@
 import type { NextFunction, Request, Response } from "express";
-import { adminMfaRequired, approvedEmails, superAdminEmails } from "./approved-identities";
+import { adminMfaRequired, approvedEmails, directorEmails, superAdminEmails } from "./approved-identities";
 
 /** Approved, verified administrator email, before any two-factor requirement. */
 function isApprovedAdmin(req: Request): boolean {
@@ -18,6 +18,11 @@ export function adminNeedsMfa(req: Request): boolean {
 
 export function isSuperAdmin(req: Request): boolean {
   return isWebsiteAdmin(req) && superAdminEmails().includes(req.identity!.email!.trim().toLowerCase());
+}
+
+/** The school Director (SCHOOL_DIRECTOR_EMAILS): sole access to the Director dashboard and weekly report. */
+export function isDirector(req: Request): boolean {
+  return isWebsiteAdmin(req) && directorEmails().includes(req.identity!.email!.trim().toLowerCase());
 }
 
 export function requireWebsiteAdmin(req: Request, res: Response): boolean {
