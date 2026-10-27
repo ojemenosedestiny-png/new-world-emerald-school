@@ -24,4 +24,5 @@ export const PortalCommandAction = {
   extendAttempt: 'extendAttempt',
   resetAttempt: 'resetAttempt',
   addPracticeExams: 'addPracticeExams',
+  inviteTeacher: 'inviteTeacher',
 } as const;

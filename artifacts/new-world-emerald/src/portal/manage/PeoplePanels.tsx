@@ -195,6 +195,22 @@ function TeacherPhoto({ teacher }: { teacher: PortalManagementTeachersItem }) {
   );
 }
 
+/** The address teachers use to sign in, with a copy button for sharing on WhatsApp or email. */
+export function TeacherLink() {
+  const url = `${window.location.origin}${import.meta.env.BASE_URL.replace(/\/$/, "")}/teacher`;
+  const [copied, setCopied] = useState(false);
+  const copy = async () => {
+    try { await navigator.clipboard.writeText(url); setCopied(true); window.setTimeout(() => setCopied(false), 2000); } catch { /* clipboard blocked: the link is shown to copy by hand */ }
+  };
+  return (
+    <div className="flex flex-wrap items-center gap-2 rounded-xl bg-[hsl(var(--p-emerald-soft))] px-3 py-2 text-sm" data-testid="panel-teacher-link">
+      <span className="font-semibold text-[hsl(var(--p-emerald))]">Teacher sign-in link</span>
+      <code className="min-w-0 break-all font-mono text-xs" data-testid="text-teacher-link">{url}</code>
+      <button type="button" className="portal-btn-ghost !px-2.5 !py-1 text-xs" onClick={() => void copy()} data-testid="button-copy-teacher-link"><Copy size={12} /> {copied ? "Copied" : "Copy"}</button>
+    </div>
+  );
+}
+
 export function TeachersPanel({ data }: { data: PortalManagement }) {
   const cmd = useCommand();
   const [form, setFormState] = useState<PortalManagementTeachersItem | null>(null);
@@ -213,7 +229,10 @@ export function TeachersPanel({ data }: { data: PortalManagement }) {
   return (
     <div className="space-y-4">
       <div className="flex items-start justify-between gap-4">
-        <p className="max-w-xl text-sm text-[hsl(var(--p-ink)/0.65)]">Teachers sign in with their school email and only see their assigned classes. Approval here never grants website administrator access.</p>
+        <div className="max-w-xl space-y-2">
+          <p className="text-sm text-[hsl(var(--p-ink)/0.65)]">Teachers sign in with their school email and only see their assigned classes. Approving a teacher emails them this link and their classes. Approval here never grants website administrator access.</p>
+          <TeacherLink />
+        </div>
         <button className="portal-btn shrink-0" onClick={() => setForm({ email: "", name: "", classIds: [], active: true, title: "", subjects: [], showInDirectory: true })} data-testid="button-add-teacher"><Plus size={15} /> Approve teacher</button>
       </div>
       {data.teachers.length === 0 ? <EmptyState icon={<Users size={22} />} title="No teachers approved" body="Add a teacher's email and choose the classes they teach. They can then sign in through staff sign-in." /> : (
@@ -228,6 +247,7 @@ export function TeachersPanel({ data }: { data: PortalManagement }) {
               <div className="mt-3"><TeacherPhoto teacher={t} /></div>
               <div className="mt-4 flex gap-2">
                 <button className="portal-btn-ghost" onClick={() => setForm({ ...t })} data-testid={"button-edit-teacher-" + t.id}><Pencil size={13} /> Edit</button>
+                {t.active && <button className="portal-btn-ghost" disabled={cmd.pending} onClick={() => void cmd.run({ action: "inviteTeacher", target: { id: t.id as number } }, "Invitation")} data-testid={"button-invite-teacher-" + t.id}><Mail size={13} /> Send invite</button>}
                 <button className="portal-btn-ghost" disabled={cmd.pending} onClick={() => cmd.run({ action: "saveTeacher", teacher: { ...t, active: !t.active } }, t.active ? "Teacher deactivated" : "Teacher reactivated")} data-testid={"button-toggle-teacher-" + t.id}>{t.active ? "Deactivate" : "Reactivate"}</button>
               </div>
             </div>

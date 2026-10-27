@@ -373,7 +373,7 @@ schemas:
     type: object
     required: [action]
     properties:
-      action: { type: string, enum: [saveClass, saveStudent, saveTeacher, saveExam, saveMaterial, saveNotice, grade, examStatus, deleteExam, deleteMaterial, deleteNotice, extendAttempt, resetAttempt, addPracticeExams] }
+      action: { type: string, enum: [saveClass, saveStudent, saveTeacher, saveExam, saveMaterial, saveNotice, grade, examStatus, deleteExam, deleteMaterial, deleteNotice, extendAttempt, resetAttempt, addPracticeExams, inviteTeacher] }
       schoolClass: { $ref: "#/schemas/PortalClass" }
       student: { $ref: "#/schemas/PortalStudent" }
       teacher: { $ref: "#/schemas/PortalTeacher" }

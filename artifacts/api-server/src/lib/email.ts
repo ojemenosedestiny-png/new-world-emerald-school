@@ -125,3 +125,39 @@ If you did not change it, contact the school office straight away.`;
   return { subject, html, text };
 }
 
+
+/** Tells a newly approved teacher how to sign in; staff sign in with a one-time email code, so there is no password. */
+export function teacherInviteEmail(p: { teacherName: string; email: string; classNames: string[]; signInUrl: string }) {
+  const classes = p.classNames.length ? p.classNames.join(", ") : "none yet (the school office will assign them)";
+  const subject = "You have been added as a teacher at New World Emerald";
+  const html = layout("Welcome to the teacher portal", `
+    <p style="margin:0 0 10px;line-height:1.6">Dear ${esc(p.teacherName)},</p>
+    <p style="margin:0 0 10px;line-height:1.6">The school office has given you access to the New World Emerald teacher portal, where you take the register, set assignments and CBT exams, mark work, prepare report cards and answer messages from your students.</p>
+    <table role="presentation" cellpadding="0" cellspacing="0" style="margin:6px 0 12px;background:#f4f1ea;border-radius:10px"><tr><td style="padding:12px 16px;line-height:1.7">
+      <span style="color:#5c6b70;font-size:12px">Your access</span><br>
+      Sign in with: <b>${esc(p.email)}</b><br>
+      Your classes: <b>${esc(classes)}</b>
+    </td></tr></table>
+    <p style="margin:0 0 6px;line-height:1.6"><b>How to sign in</b></p>
+    <ol style="margin:0 0 4px;padding-left:20px;line-height:1.7">
+      <li>Open the link below (bookmark it for next time).</li>
+      <li>Enter this email address.</li>
+      <li>Type the six-digit code we email you. There is no password to remember.</li>
+    </ol>`,
+    { label: "Open the teacher portal", url: p.signInUrl },
+    "Never share your sign-in code. If you were not expecting this email, contact the school office.");
+  const text = `Dear ${p.teacherName},
+
+The school office has given you access to the New World Emerald teacher portal.
+
+Sign in with: ${p.email}
+Your classes: ${classes}
+
+How to sign in:
+1. Open ${p.signInUrl} (bookmark it for next time).
+2. Enter this email address.
+3. Type the six-digit code we email you. There is no password.
+
+Never share your sign-in code.`;
+  return { subject, html, text };
+}

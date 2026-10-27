@@ -1,5 +1,5 @@
 import { lazy, useEffect } from "react";
-import { Route, Switch, useLocation } from "wouter";
+import { Redirect, Route, Switch, useLocation } from "wouter";
 import Home from "@/pages/Home";
 import { RouteBoundary } from "@/components/RouteBoundary";
 
@@ -36,6 +36,8 @@ export function AppRoutes() {
         <Route path="/portal" component={Portal} />
         <Route path="/portal/exam/:id" component={PortalExam} />
         <Route path="/portal/manage" component={PortalManage} />
+        {/* The short link teachers are given: staff sign-in, then their own classes. */}
+        <Route path="/teacher">{() => <Redirect to="/portal/manage" replace />}</Route>
         <Route path="/portal/activate" component={ActivateAccount} />
         <Route component={NotFound} />
       </Switch>

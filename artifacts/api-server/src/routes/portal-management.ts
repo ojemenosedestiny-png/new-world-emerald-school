@@ -7,10 +7,32 @@ import {
 import { ManagePortalBody } from "@workspace/api-zod";
 import { check, portalActor, staffOnly, classAllowed, hashPassword, type PortalActor } from "../lib/portal-auth";
 import { automaticMarks, attemptView, finalizeExpired, validateQuestions } from "../lib/portal-assessment";
-import { validEmail } from "../lib/accounts";
+import { siteBaseUrl, validEmail } from "../lib/accounts";
+import { emailConfigured, sendEmail, teacherInviteEmail } from "../lib/email";
 import { cleanSubjects } from "../lib/community";
 import { paperSettingsProblem } from "../lib/cbt";
 import { PRACTICE_TITLE, practiceExam } from "../lib/practice-exam";
+
+/** The short address teachers use: it opens staff sign-in and returns to the teacher workspace. */
+export const TEACHER_PATH = "/teacher";
+
+/** Emails a teacher their sign-in link and classes. Returns a sentence for the office; never throws. */
+async function inviteTeacher(teacher: { name: string; email: string; classIds: number[] }, log: { warn: (o: object, m: string) => void }) {
+  const base = siteBaseUrl();
+  if (!emailConfigured()) return "Not emailed: email is not set up yet (RESEND_API_KEY and EMAIL_FROM). Share the teacher link instead.";
+  if (!base) return "Not emailed: the site address is not configured (PUBLIC_SITE_URL). Share the teacher link instead.";
+  const classes = teacher.classIds.length ? await db.select({ id: portalClasses.id, name: portalClasses.name }).from(portalClasses).where(inArray(portalClasses.id, teacher.classIds)) : [];
+  const mail = teacherInviteEmail({ teacherName: teacher.name, email: teacher.email, classNames: classes.map((c) => c.name).sort(), signInUrl: base + TEACHER_PATH });
+  try {
+    const result = await sendEmail({ to: teacher.email, ...mail });
+    if (result.sent) return `Invitation emailed to ${teacher.email}.`;
+    log.warn({ reason: result.reason }, "Teacher invitation not sent");
+    return "The invitation email could not be sent. Share the teacher link instead.";
+  } catch (error) {
+    log.warn({ err: error }, "Teacher invitation not sent");
+    return "The invitation email could not be sent. Share the teacher link instead.";
+  }
+}
 
 export const portalManagementRouter = Router();
 function scoped(actor: PortalActor, column: typeof portalExams.classId | typeof portalClasses.id | typeof portalStudents.classId | typeof portalAttempts.examId | typeof portalMaterials.classId | typeof portalNotices.classId) {
@@ -48,7 +70,7 @@ portalManagementRouter.post("/manage", async (req, res) => {
   const actor = await portalActor(req);
   staffOnly(actor);
   const body = ManagePortalBody.parse(req.body);
-  if (["saveClass", "saveStudent", "saveTeacher", "addPracticeExams"].includes(body.action)) check(actor.role === "admin", "Only school administrators can manage enrolments and staff access.", 403);
+  if (["saveClass", "saveStudent", "saveTeacher", "addPracticeExams", "inviteTeacher"].includes(body.action)) check(actor.role === "admin", "Only school administrators can manage enrolments and staff access.", 403);
   if (body.action === "resetAttempt") check(actor.role === "admin", "Only school administrators can reset a student's attempt.", 403);
   switch (body.action) {
     case "saveClass": {
@@ -99,8 +121,20 @@ portalManagementRouter.post("/manage", async (req, res) => {
       if (data.id) {
         const rows = await db.update(portalTeachers).set(values).where(eq(portalTeachers.id, data.id)).returning();
         check(rows.length, "Teacher not found.", 404);
-      } else await db.insert(portalTeachers).values(values);
-      break;
+        break;
+      }
+      const [created] = await db.insert(portalTeachers).values(values).returning();
+      // A new teacher gets their sign-in link and classes by email straight away.
+      res.json({ message: `Teacher approved. ${await inviteTeacher(created, req.log)}` });
+      return;
+    }
+    case "inviteTeacher": {
+      check(body.target, "Teacher required.");
+      const [teacher] = await db.select().from(portalTeachers).where(eq(portalTeachers.id, body.target.id));
+      check(teacher, "Teacher not found.", 404);
+      check(teacher.active, "Reactivate this teacher before sending an invitation.", 409);
+      res.json({ message: await inviteTeacher(teacher, req.log) });
+      return;
     }
     case "saveExam": {
       const data = body.exam;

@@ -170,6 +170,7 @@ export default function Admin() {
           <button onClick={login} className="mt-8 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-accent px-5 py-3.5 font-bold text-secondary transition-colors hover:bg-accent/90">
             <ShieldCheck size={18} /> Sign in with email
           </button>
+          <Link href="/teacher" className="mt-4 block text-sm font-semibold text-accent underline" data-testid="link-teacher-signin">Teacher? Sign in to the teacher portal</Link>
           <Link href="/" className="mt-5 inline-flex items-center gap-2 text-sm text-white/60 hover:text-white">
             <ArrowLeft size={15} /> Return to website
           </Link>
@@ -207,6 +208,7 @@ export default function Admin() {
           <h1 data-testid="admin-access-status" className="font-serif text-3xl font-bold">{accessUnavailable ? "Access check unavailable" : "Administrator access required"}</h1>
           <p className="mt-4 text-sm leading-relaxed text-white/70">{accessUnavailable ? "We could not confirm your access. Please retry." : "Only accounts approved by the school can manage this website. Sign in with an approved administrator account."}</p>
           {accessUnavailable && <button onClick={() => accessQuery.refetch()} className="mt-6 rounded-xl bg-accent px-5 py-3 font-bold text-secondary">Retry access check</button>}
+          {!accessUnavailable && <Link href="/portal/manage" className="mt-6 block rounded-xl bg-accent px-5 py-3 font-bold text-secondary" data-testid="link-teacher-workspace">I'm a teacher: open my classes</Link>}
           <Link href="/account" className="mt-6 block text-sm text-accent underline">View school account</Link>
           <button onClick={logout} className="mt-6 block w-full rounded-xl border border-white/20 px-5 py-3 text-sm font-semibold">Sign out / use another account</button>
           <Link href="/" className="mt-5 inline-block text-sm text-white/70">Back to the school website</Link>

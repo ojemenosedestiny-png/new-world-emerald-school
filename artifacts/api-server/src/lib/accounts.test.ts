@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { accountLink, formatStudentId, hashAccountToken, newAccountToken, passwordProblem, siteBaseUrl, validEmail, validTokenShape } from "./accounts";
-import { accountReadyEmail, activationEmail, emailConfigured, emailSender, passwordChangedEmail, resetEmail, sendEmail } from "./email";
+import { accountReadyEmail, activationEmail, emailConfigured, emailSender, passwordChangedEmail, resetEmail, sendEmail, teacherInviteEmail } from "./email";
 
 test("automatic Student IDs use NWE/year/five digits", () => {
   assert.equal(formatStudentId(2026, 1), "NWE/2026/00001");
@@ -96,3 +96,16 @@ test("confirmation emails carry sign-in details safely", () => {
   assert.match(changed.text, /contact the school office/);
 });
 
+
+test("teacher invitations carry the sign-in link, the email to use and the classes, escaped", () => {
+  const mail = teacherInviteEmail({ teacherName: "Mr <Bayo>", email: "bayo@example.test", classNames: ["JSS 1", "JSS 2"], signInUrl: "https://school.example/teacher" });
+  assert.match(mail.subject, /added as a teacher/);
+  assert.match(mail.html, /Mr &lt;Bayo&gt;/);
+  assert.doesNotMatch(mail.html, /<Bayo>/);
+  assert.match(mail.html, /JSS 1, JSS 2/);
+  assert.match(mail.html, /bayo@example\.test/);
+  assert.match(mail.html, /href="https:\/\/school\.example\/teacher"/);
+  assert.match(mail.text, /https:\/\/school\.example\/teacher/);
+  assert.doesNotMatch(mail.text, /password:/i, "staff have no password to send");
+  assert.match(teacherInviteEmail({ teacherName: "A", email: "a@example.test", classNames: [], signInUrl: "https://x.example/teacher" }).text, /none yet/);
+});

@@ -674,7 +674,7 @@ export const managePortalBodyAttemptControlMinutesMax = 240;
 
 
 export const ManagePortalBody = zod.object({
-  "action": zod.enum(['saveClass', 'saveStudent', 'saveTeacher', 'saveExam', 'saveMaterial', 'saveNotice', 'grade', 'examStatus', 'deleteExam', 'deleteMaterial', 'deleteNotice', 'extendAttempt', 'resetAttempt', 'addPracticeExams']),
+  "action": zod.enum(['saveClass', 'saveStudent', 'saveTeacher', 'saveExam', 'saveMaterial', 'saveNotice', 'grade', 'examStatus', 'deleteExam', 'deleteMaterial', 'deleteNotice', 'extendAttempt', 'resetAttempt', 'addPracticeExams', 'inviteTeacher']),
   "schoolClass": zod.object({
   "id": zod.number().optional(),
   "name": zod.string().min(1).max(managePortalBodySchoolClassNameMax)

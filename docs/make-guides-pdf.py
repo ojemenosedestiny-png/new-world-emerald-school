@@ -133,7 +133,7 @@ def staff_sign_in(number, office=False):
         P("Staff do not have a password for the website. You sign in with a code sent to your school email address."),
         *task("Sign in", None, [
             (f"Go to <b>{SITE}</b> and tap <b>Admin Portal</b> at the top of the page. This opens the website admin; the staff portal is at <b>{SITE}/portal/manage</b>."
-             if office else f"Open <b>{SITE}/portal/manage</b> and bookmark it. (The Admin Portal button on the website is for the school office only.)"),
+             if office else f"Open <b>{SITE}/teacher</b> (the link in your invitation email) and bookmark it."),
             "Enter your approved email address and tap <b>Continue</b>.",
             "Open your email, copy the six-digit code, and type it in. The code works once and expires after a few minutes.",
             "You arrive at your dashboard. The menu on the left (or behind the menu button on a phone) lists everything you can do.",
@@ -253,10 +253,11 @@ admin += [*section(3, "People", "Students, teachers and classes"),
               "For many students at once, use <b>Enrol class list</b>.",
               "If a parent did not get the email, use <b>Activation link</b> (or <b>Reset link</b> for a forgotten password) on the student to send a new one.",
           ], "Students sign in at the Student Portal with their student ID and password. Staff never need to know a student's password."),
-          *task("Add a teacher", None, [
+          *task("Add a teacher and assign classes", None, [
               "Open <b>Teachers</b>, tap <b>Approve teacher</b>, and enter the teacher's email, name and the classes they teach.",
-              "They can then sign in with their email code and will only see their own classes.",
-              "Turn off <b>Active</b> when someone leaves; they lose access immediately.",
+              f"The teacher is emailed an invitation with their classes and the teacher link, <b>{SITE}/teacher</b>. Use <b>Send invite</b> to send it again, or <b>Copy</b> to share the link on WhatsApp.",
+              "They sign in with a code sent to that email and see only their own classes. Use <b>Edit</b> to change their classes at any time.",
+              "Use <b>Deactivate</b> when someone leaves; they lose access immediately.",
           ]),
           *task("Student fee statement", None, [
               "In <b>Students</b>, tap <b>Fees</b> on a student to see their fee statement: class fees, individual charges, payments, and the balance.",
