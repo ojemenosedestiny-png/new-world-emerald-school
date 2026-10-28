@@ -10,6 +10,7 @@ import { ParentServices } from '@/components/ParentServices';
 import { FifthAnniversary } from '@/components/FifthAnniversary';
 import { Programs, Facilities } from '@/components/ProgramsFacilities';
 import { SpecialNeeds } from '@/components/SpecialNeeds';
+import { AdmissionRequirements } from '@/components/AdmissionRequirements';
 import { SchoolLife, Gallery, Testimonials } from '@/components/LifeGallery';
 import { NewsEvents, AdmissionsFAQ, FinalCTA } from '@/components/AdmissionsNews';
 import { AcademicCalendar } from '@/components/AcademicCalendar';
@@ -32,6 +33,7 @@ const schoolSections = [
   { name: "LiveUpdates", Component: LiveUpdates },
   { name: "AcademicCalendar", Component: AcademicCalendar },
   { name: "AdmissionsFAQ", Component: AdmissionsFAQ },
+  { name: "AdmissionRequirements", Component: AdmissionRequirements },
   { name: "ParentServices", Component: ParentServices },
   { name: "FifthAnniversary", Component: FifthAnniversary },
   { name: "FinalCTA", Component: FinalCTA },

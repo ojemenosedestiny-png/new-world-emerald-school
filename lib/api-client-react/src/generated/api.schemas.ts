@@ -144,6 +144,121 @@ export interface FeeStatement {
   payments: FeePayment[];
 }
 
+export type InventoryCondition = typeof InventoryCondition[keyof typeof InventoryCondition];
+
+
+export const InventoryCondition = {
+  good: 'good',
+  fair: 'fair',
+  needs_repair: 'needs_repair',
+  damaged: 'damaged',
+} as const;
+
+export type InventoryItemStatus = typeof InventoryItemStatus[keyof typeof InventoryItemStatus];
+
+
+export const InventoryItemStatus = {
+  ok: 'ok',
+  low: 'low',
+  out: 'out',
+} as const;
+
+export interface InventoryItem {
+  id: number;
+  name: string;
+  category: string;
+  location: string;
+  unit: string;
+  quantity: number;
+  reorderLevel: number;
+  condition: InventoryCondition;
+  /** @nullable */
+  classId: number | null;
+  /** Empty for school-wide stock */
+  className: string;
+  notes: string;
+  status: InventoryItemStatus;
+  /** Whether the signed-in staff member may edit or remove this item's details */
+  canEdit: boolean;
+  updatedAt: string;
+}
+
+export interface InventoryList {
+  items: InventoryItem[];
+  /** Categories in use plus the suggested ones */
+  categories: string[];
+  canDelete: boolean;
+}
+
+export interface InventoryItemInput {
+  id?: number;
+  /**
+     * @minLength 1
+     * @maxLength 120
+     */
+  name: string;
+  /**
+     * @minLength 1
+     * @maxLength 60
+     */
+  category: string;
+  /** @maxLength 120 */
+  location: string;
+  /** @maxLength 30 */
+  unit: string;
+  /**
+     * @minimum 0
+     * @maximum 1000000
+     */
+  quantity: number;
+  /**
+     * @minimum 0
+     * @maximum 1000000
+     */
+  reorderLevel: number;
+  condition: InventoryCondition;
+  /** @nullable */
+  classId: number | null;
+  /** @maxLength 1000 */
+  notes: string;
+}
+
+export type InventoryMoveInputKind = typeof InventoryMoveInputKind[keyof typeof InventoryMoveInputKind];
+
+
+export const InventoryMoveInputKind = {
+  received: 'received',
+  issued: 'issued',
+  returned: 'returned',
+  damaged: 'damaged',
+  lost: 'lost',
+  count: 'count',
+  condition: 'condition',
+} as const;
+
+export interface InventoryMoveInput {
+  kind: InventoryMoveInputKind;
+  /**
+     * Items moved
+     * @minimum 0
+     * @maximum 1000000
+     */
+  quantity: number;
+  /** @maxLength 300 */
+  note: string;
+  condition?: InventoryCondition;
+}
+
+export interface InventoryMove {
+  id: number;
+  kind: string;
+  change: number;
+  quantityAfter: number;
+  note: string;
+  actor: string;
+  createdAt: string;
+}
+
 export type MessageChannel = typeof MessageChannel[keyof typeof MessageChannel];
 
 

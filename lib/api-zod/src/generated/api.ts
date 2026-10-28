@@ -1966,6 +1966,148 @@ export const GetStudentFeesResponse = zod.object({
 })
 
 
+/**
+ * Stock the signed-in staff member can see (teachers see their classes' items and school-wide items)
+ */
+export const ListInventoryResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "category": zod.string(),
+  "location": zod.string(),
+  "unit": zod.string(),
+  "quantity": zod.number(),
+  "reorderLevel": zod.number(),
+  "condition": zod.enum(['good', 'fair', 'needs_repair', 'damaged']),
+  "classId": zod.number().nullable(),
+  "className": zod.string().describe('Empty for school-wide stock'),
+  "notes": zod.string(),
+  "status": zod.enum(['ok', 'low', 'out']),
+  "canEdit": zod.boolean().describe('Whether the signed-in staff member may edit or remove this item\'s details'),
+  "updatedAt": zod.string()
+})),
+  "categories": zod.array(zod.string()).describe('Categories in use plus the suggested ones'),
+  "canDelete": zod.boolean()
+})
+
+
+/**
+ * Add an item, or edit one (the office edits any item; teachers edit their own classes' items). Quantity is only used when adding.
+ */
+export const saveInventoryItemBodyNameMax = 120;
+
+export const saveInventoryItemBodyCategoryMax = 60;
+
+export const saveInventoryItemBodyLocationMax = 120;
+
+export const saveInventoryItemBodyUnitMax = 30;
+
+export const saveInventoryItemBodyQuantityMin = 0;
+export const saveInventoryItemBodyQuantityMax = 1000000;
+
+export const saveInventoryItemBodyReorderLevelMin = 0;
+export const saveInventoryItemBodyReorderLevelMax = 1000000;
+
+export const saveInventoryItemBodyNotesMax = 1000;
+
+
+
+export const SaveInventoryItemBody = zod.object({
+  "id": zod.number().optional(),
+  "name": zod.string().min(1).max(saveInventoryItemBodyNameMax),
+  "category": zod.string().min(1).max(saveInventoryItemBodyCategoryMax),
+  "location": zod.string().max(saveInventoryItemBodyLocationMax),
+  "unit": zod.string().max(saveInventoryItemBodyUnitMax),
+  "quantity": zod.number().min(saveInventoryItemBodyQuantityMin).max(saveInventoryItemBodyQuantityMax),
+  "reorderLevel": zod.number().min(saveInventoryItemBodyReorderLevelMin).max(saveInventoryItemBodyReorderLevelMax),
+  "condition": zod.enum(['good', 'fair', 'needs_repair', 'damaged']),
+  "classId": zod.number().nullable(),
+  "notes": zod.string().max(saveInventoryItemBodyNotesMax)
+})
+
+export const SaveInventoryItemResponse = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "category": zod.string(),
+  "location": zod.string(),
+  "unit": zod.string(),
+  "quantity": zod.number(),
+  "reorderLevel": zod.number(),
+  "condition": zod.enum(['good', 'fair', 'needs_repair', 'damaged']),
+  "classId": zod.number().nullable(),
+  "className": zod.string().describe('Empty for school-wide stock'),
+  "notes": zod.string(),
+  "status": zod.enum(['ok', 'low', 'out']),
+  "canEdit": zod.boolean().describe('Whether the signed-in staff member may edit or remove this item\'s details'),
+  "updatedAt": zod.string()
+})
+
+
+/**
+ * Remove an item and its history (school office only)
+ */
+export const DeleteInventoryItemParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const DeleteInventoryItemResponse = zod.void()
+
+
+export const ListInventoryMovesParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const ListInventoryMovesResponseItem = zod.object({
+  "id": zod.number(),
+  "kind": zod.string(),
+  "change": zod.number(),
+  "quantityAfter": zod.number(),
+  "note": zod.string(),
+  "actor": zod.string(),
+  "createdAt": zod.string()
+})
+export const ListInventoryMovesResponse = zod.array(ListInventoryMovesResponseItem)
+
+
+/**
+ * Record stock received, issued, returned, damaged or lost, a stock count, or a condition report
+ */
+export const RecordInventoryMoveParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const recordInventoryMoveBodyQuantityMin = 0;
+export const recordInventoryMoveBodyQuantityMax = 1000000;
+
+export const recordInventoryMoveBodyNoteMax = 300;
+
+
+
+export const RecordInventoryMoveBody = zod.object({
+  "kind": zod.enum(['received', 'issued', 'returned', 'damaged', 'lost', 'count', 'condition']),
+  "quantity": zod.number().min(recordInventoryMoveBodyQuantityMin).max(recordInventoryMoveBodyQuantityMax).describe('Items moved'),
+  "note": zod.string().max(recordInventoryMoveBodyNoteMax),
+  "condition": zod.enum(['good', 'fair', 'needs_repair', 'damaged']).optional()
+})
+
+export const RecordInventoryMoveResponse = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "category": zod.string(),
+  "location": zod.string(),
+  "unit": zod.string(),
+  "quantity": zod.number(),
+  "reorderLevel": zod.number(),
+  "condition": zod.enum(['good', 'fair', 'needs_repair', 'damaged']),
+  "classId": zod.number().nullable(),
+  "className": zod.string().describe('Empty for school-wide stock'),
+  "notes": zod.string(),
+  "status": zod.enum(['ok', 'low', 'out']),
+  "canEdit": zod.boolean().describe('Whether the signed-in staff member may edit or remove this item\'s details'),
+  "updatedAt": zod.string()
+})
+
+
 export const GetMyMessagesResponse = zod.object({
   "threads": zod.array(zod.object({
   "channel": zod.enum(['class', 'office']),

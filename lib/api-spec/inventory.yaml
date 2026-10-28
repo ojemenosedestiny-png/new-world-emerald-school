@@ -1,0 +1,123 @@
+paths:
+  inventory:
+    get:
+      operationId: listInventory
+      description: Stock the signed-in staff member can see (teachers see their classes' items and school-wide items)
+      responses:
+        "200":
+          description: Inventory items with stock status
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/InventoryList" }
+    post:
+      operationId: saveInventoryItem
+      description: Add an item, or edit one (the office edits any item; teachers edit their own classes' items). Quantity is only used when adding.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/InventoryItemInput" }
+      responses:
+        "200":
+          description: The saved item
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/InventoryItem" }
+  inventoryItem:
+    delete:
+      operationId: deleteInventoryItem
+      description: Remove an item and its history (school office only)
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      responses:
+        "204":
+          description: Removed
+  inventoryMoves:
+    get:
+      operationId: listInventoryMoves
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      responses:
+        "200":
+          description: The item's latest stock movements, newest first
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: "#/components/schemas/InventoryMove" } }
+    post:
+      operationId: recordInventoryMove
+      description: Record stock received, issued, returned, damaged or lost, a stock count, or a condition report
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/InventoryMoveInput" }
+      responses:
+        "200":
+          description: The item after the movement
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/InventoryItem" }
+schemas:
+  InventoryCondition:
+    type: string
+    enum: [good, fair, needs_repair, damaged]
+  InventoryItem:
+    type: object
+    required: [id, name, category, location, unit, quantity, reorderLevel, condition, classId, className, notes, status, canEdit, updatedAt]
+    properties:
+      id: { type: integer }
+      name: { type: string }
+      category: { type: string }
+      location: { type: string }
+      unit: { type: string }
+      quantity: { type: integer }
+      reorderLevel: { type: integer }
+      condition: { $ref: "#/components/schemas/InventoryCondition" }
+      classId: { type: [integer, "null"] }
+      className: { type: string, description: Empty for school-wide stock }
+      notes: { type: string }
+      status: { type: string, enum: [ok, low, out] }
+      canEdit: { type: boolean, description: Whether the signed-in staff member may edit or remove this item's details }
+      updatedAt: { type: string }
+  InventoryList:
+    type: object
+    required: [items, categories, canDelete]
+    properties:
+      items: { type: array, items: { $ref: "#/components/schemas/InventoryItem" } }
+      categories: { type: array, items: { type: string }, description: Categories in use plus the suggested ones }
+      canDelete: { type: boolean }
+  InventoryItemInput:
+    type: object
+    required: [name, category, location, unit, quantity, reorderLevel, condition, classId, notes]
+    properties:
+      id: { type: integer }
+      name: { type: string, minLength: 1, maxLength: 120 }
+      category: { type: string, minLength: 1, maxLength: 60 }
+      location: { type: string, maxLength: 120 }
+      unit: { type: string, maxLength: 30 }
+      quantity: { type: integer, minimum: 0, maximum: 1000000 }
+      reorderLevel: { type: integer, minimum: 0, maximum: 1000000 }
+      condition: { $ref: "#/components/schemas/InventoryCondition" }
+      classId: { type: [integer, "null"] }
+      notes: { type: string, maxLength: 1000 }
+  InventoryMoveInput:
+    type: object
+    required: [kind, quantity, note]
+    properties:
+      kind: { type: string, enum: [received, issued, returned, damaged, lost, count, condition] }
+      quantity: { type: integer, minimum: 0, maximum: 1000000, description: Items moved, or the counted total for a stock count }
+      note: { type: string, maxLength: 300 }
+      condition: { $ref: "#/components/schemas/InventoryCondition" }
+  InventoryMove:
+    type: object
+    required: [id, kind, change, quantityAfter, note, actor, createdAt]
+    properties:
+      id: { type: integer }
+      kind: { type: string }
+      change: { type: integer }
+      quantityAfter: { type: integer }
+      note: { type: string }
+      actor: { type: string }
+      createdAt: { type: string }

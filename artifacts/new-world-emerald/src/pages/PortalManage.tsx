@@ -2,7 +2,7 @@ import { useState, type ReactNode } from "react";
 import { Link } from "wouter";
 import { useAuth, useClerk, useUser } from "@clerk/react";
 import { useGetPortalSession, getGetPortalSessionQueryKey, useGetPortalManagement, getGetPortalManagementQueryKey, useListPhotoReviews, getListPhotoReviewsQueryKey, useListMessageThreads, getListMessageThreadsQueryKey } from "@workspace/api-client-react";
-import { ArrowRight, BookOpen, CalendarCheck, CalendarDays, Camera, CheckSquare, Images, NotebookPen, ClipboardList, FileBarChart, Globe, GraduationCap, LayoutDashboard, Megaphone, MessagesSquare, MonitorSmartphone, School, ScrollText, ShieldAlert, Users } from "lucide-react";
+import { ArrowRight, BookOpen, Boxes, CalendarCheck, CalendarDays, Camera, CheckSquare, Images, NotebookPen, ClipboardList, FileBarChart, Globe, GraduationCap, LayoutDashboard, Megaphone, MessagesSquare, MonitorSmartphone, School, ScrollText, ShieldAlert, Users } from "lucide-react";
 import "@/portal/portal.css";
 import { BackToWebsite, ErrorPanel, Skeleton } from "@/portal/ui";
 import { errorMessage, usePortalMeta } from "@/portal/lib";
@@ -22,6 +22,7 @@ import { GalleryPanel, PhotoReviewsPanel } from "@/portal/manage/GalleryPanel";
 import { AttendancePanel } from "@/portal/manage/AttendancePanel";
 import { AssignmentsPanel } from "@/portal/manage/AssignmentsPanel";
 import { MessagesPanel } from "@/portal/manage/MessagesPanel";
+import { InventoryPanel } from "@/portal/manage/InventoryPanel";
 
 function Gate({ title, body, children }: { title: string; body: string; children?: ReactNode }) {
   return (
@@ -37,10 +38,10 @@ function Gate({ title, body, children }: { title: string; body: string; children
   );
 }
 
-type Section = "overview" | "messages" | "attendance" | "assignments" | "exams" | "marking" | "reports" | "revision" | "notices" | "events" | "gallery" | "photos" | "students" | "teachers" | "classes" | "sessions" | "audit";
+type Section = "overview" | "messages" | "attendance" | "assignments" | "exams" | "marking" | "reports" | "revision" | "notices" | "events" | "gallery" | "photos" | "inventory" | "students" | "teachers" | "classes" | "sessions" | "audit";
 const TITLES: Record<Section, string> = {
   overview: "Dashboard", messages: "Messages", attendance: "Attendance", assignments: "Assignments", exams: "Exams", marking: "Marking", reports: "Report cards", revision: "Revision notes",
-  notices: "Announcements", events: "Events calendar", gallery: "Gallery", photos: "Photo approvals", students: "Students", teachers: "Teachers", classes: "Classes", sessions: "Sessions", audit: "Audit log",
+  notices: "Announcements", events: "Events calendar", gallery: "Gallery", photos: "Photo approvals", inventory: "Inventory", students: "Students", teachers: "Teachers", classes: "Classes", sessions: "Sessions", audit: "Audit log",
 };
 
 export default function PortalManage() {
@@ -84,6 +85,7 @@ export default function PortalManage() {
       { key: "notices", label: "Announcements", icon: Megaphone, testId: "tab-manage-notices" },
       { key: "photos", label: "Photo approvals", icon: Camera, badge: reviews.data?.length ?? 0, testId: "tab-manage-photos" },
     ] },
+    { label: "Resources", items: [{ key: "inventory", label: "Inventory", icon: Boxes, testId: "tab-manage-inventory" }] },
     ...(isAdmin ? [{ label: "School", items: [
       { key: "events" as const, label: "Events calendar", icon: CalendarDays, testId: "tab-manage-events" },
       { key: "gallery" as const, label: "Gallery", icon: Images, testId: "tab-manage-gallery" },
@@ -125,6 +127,7 @@ export default function PortalManage() {
             )}
             {section === "overview" && <Dashboard data={d} dark={theme.resolved === "dark"} onGo={setSection} />}
             {section === "messages" && <MessagesPanel isAdmin={isAdmin} />}
+            {section === "inventory" && <InventoryPanel data={d} isAdmin={isAdmin} />}
             {section === "attendance" && <AttendancePanel data={d} />}
             {section === "assignments" && <AssignmentsPanel data={d} />}
             {section === "exams" && <ExamsPanel data={d} isAdmin={isAdmin} />}

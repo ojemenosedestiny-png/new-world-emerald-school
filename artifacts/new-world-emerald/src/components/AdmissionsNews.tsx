@@ -144,8 +144,12 @@ export function AdmissionsFAQ() {
               ))}
             </div>
 
+            <a href="#requirements" className="mb-6 inline-flex items-center gap-2 font-semibold text-primary underline-offset-4 hover:underline" data-testid="link-admissions-requirements">
+              <CheckCircle2 size={18} /> See the documents and medical report to bring
+            </a>
+
             <div className="flex flex-col sm:flex-row gap-4">
-              <button 
+              <button
                 onClick={() => {
                   trackEvent('admission_form_opened');
                   setIsApplyModalOpen(true);
@@ -235,6 +239,9 @@ export function AdmissionsFAQ() {
                     <p className="mx-auto mt-4 max-w-md leading-relaxed text-muted-foreground">
                       Thank you for applying to New World Emerald. Our admissions team will contact you shortly with the next steps.
                     </p>
+                    <p className="mx-auto mt-3 max-w-md text-sm leading-relaxed text-muted-foreground">
+                      Meanwhile, please prepare the <a href="#requirements" onClick={() => setIsApplyModalOpen(false)} className="font-semibold text-primary underline-offset-4 hover:underline" data-testid="link-success-requirements">documents and medical report</a> you will bring to the admissions office.
+                    </p>
                     <button
                       type="button"
                       onClick={() => {
@@ -300,7 +307,8 @@ export function AdmissionsFAQ() {
                   <div className="bg-muted p-4 rounded-xl flex items-start gap-3">
                     <CheckCircle2 className="text-primary shrink-0 mt-0.5" />
                     <p className="text-sm text-muted-foreground">
-                      This is a preliminary application. Upon submission, an admissions representative will contact you with details on the assessment fee and examination dates.
+                      This is a preliminary application. Upon submission, an admissions representative will contact you with details on the assessment fee and examination dates.{' '}
+                      <a href="#requirements" onClick={() => setIsApplyModalOpen(false)} className="font-semibold text-primary underline-offset-4 hover:underline" data-testid="link-form-requirements">See the documents to bring</a>.
                     </p>
                   </div>
 

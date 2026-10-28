@@ -99,6 +99,12 @@ paths:
     $ref: "./fees.yaml#/paths/myFees"
   /portal/students/{id}/fees:
     $ref: "./fees.yaml#/paths/studentFees"
+  /portal/inventory:
+    $ref: "./inventory.yaml#/paths/inventory"
+  /portal/inventory/{id}:
+    $ref: "./inventory.yaml#/paths/inventoryItem"
+  /portal/inventory/{id}/moves:
+    $ref: "./inventory.yaml#/paths/inventoryMoves"
   /portal/my-messages:
     $ref: "./messages.yaml#/paths/myMessages"
   /portal/my-messages/read:
@@ -1035,6 +1041,18 @@ components:
       $ref: "./fees.yaml#/schemas/FeePayment"
     FeeStatement:
       $ref: "./fees.yaml#/schemas/FeeStatement"
+    InventoryCondition:
+      $ref: "./inventory.yaml#/schemas/InventoryCondition"
+    InventoryItem:
+      $ref: "./inventory.yaml#/schemas/InventoryItem"
+    InventoryList:
+      $ref: "./inventory.yaml#/schemas/InventoryList"
+    InventoryItemInput:
+      $ref: "./inventory.yaml#/schemas/InventoryItemInput"
+    InventoryMoveInput:
+      $ref: "./inventory.yaml#/schemas/InventoryMoveInput"
+    InventoryMove:
+      $ref: "./inventory.yaml#/schemas/InventoryMove"
     MessageChannel:
       $ref: "./messages.yaml#/schemas/MessageChannel"
     PortalChatMessage:

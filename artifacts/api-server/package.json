@@ -24,7 +24,8 @@
     "test:portal-fees": "node ./test-portal.mjs portal-fees",
     "test:portal-cbt": "node ./test-portal.mjs portal-cbt",
     "test:portal-teachers": "node ./test-portal.mjs portal-teachers",
-    "test:portal-director": "node ./test-portal.mjs portal-director"
+    "test:portal-director": "node ./test-portal.mjs portal-director",
+    "test:portal-inventory": "node ./test-portal.mjs portal-inventory"
   },
   "dependencies": {
     "@clerk/express": "^2.1.75",
