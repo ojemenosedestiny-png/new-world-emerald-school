@@ -25,7 +25,8 @@
     "test:portal-cbt": "node ./test-portal.mjs portal-cbt",
     "test:portal-teachers": "node ./test-portal.mjs portal-teachers",
     "test:portal-director": "node ./test-portal.mjs portal-director",
-    "test:portal-inventory": "node ./test-portal.mjs portal-inventory"
+    "test:portal-inventory": "node ./test-portal.mjs portal-inventory",
+    "test:portal-result-import": "node ./test-portal.mjs portal-result-import"
   },
   "dependencies": {
     "@clerk/express": "^2.1.75",

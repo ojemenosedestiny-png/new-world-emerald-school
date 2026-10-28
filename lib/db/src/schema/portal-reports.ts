@@ -91,3 +91,19 @@ export const portalReportWorkflow = pgTable("portal_report_workflow", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 }, (t) => [primaryKey({ columns: [t.termId, t.classId] })]);
 export type PortalReportWorkflowRecord = typeof portalReportWorkflow.$inferSelect;
+
+/** Audit log of every import of old results: who, when, which file and what happened. */
+export const portalResultImports = pgTable("portal_result_imports", {
+  id: serial("id").primaryKey(),
+  fileName: text("file_name").notNull().default(""),
+  importedBy: text("imported_by").notNull().default(""),
+  rows: integer("rows").notNull(),
+  imported: integer("imported").notNull(),
+  skipped: integer("skipped").notNull(),
+  warnings: integer("warnings").notNull().default(0),
+  published: integer("published").notNull().default(0),
+  // Terms, classes and new subjects touched, for the history list.
+  summary: jsonb("summary").$type<{ terms: string[]; classes: string[]; newSubjects: string[]; newTerms: string[] }>().notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+export type PortalResultImportRecord = typeof portalResultImports.$inferSelect;

@@ -40,6 +40,7 @@ import type {
   ClassFeeSchedule,
   ClassFeeScheduleInput,
   ClassFeeScheduleUpdate,
+  CommitResultImportParams,
   DirectUploadComplete,
   DirectUploadGrant,
   DirectUploadRequest,
@@ -104,10 +105,13 @@ import type {
   PortalPassword,
   PortalPdfImport,
   PortalSession,
+  PreviewResultImportParams,
   PublicIndividualFeeCharge,
   ReportCommand,
   ReportPortalFocusLoss200,
   ReportWorkspace,
+  ResultImportPreview,
+  ResultImportRecord,
   RevokeRequest,
   SchoolCommerceSettings,
   SchoolCommerceSettingsUpdate,
@@ -1491,6 +1495,229 @@ export function useGetStudentReports<TData = Awaited<ReturnType<typeof getStuden
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetStudentReportsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getPreviewResultImportUrl = (params?: PreviewResultImportParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/portal/results-import/preview?${stringifiedParams}` : `/api/portal/results-import/preview`
+}
+
+/**
+ * Check an old-results CSV without saving anything (school office only)
+ */
+export const previewResultImport = async (previewResultImportBody: string,
+    params?: PreviewResultImportParams, options?: RequestInit): Promise<ResultImportPreview> => {
+
+  return customFetch<ResultImportPreview>(getPreviewResultImportUrl(params),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'text/csv', ...options?.headers },
+    body: JSON.stringify(previewResultImportBody)
+  }
+);}
+
+
+
+
+
+export const getPreviewResultImportMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof previewResultImport>>, TError,{data: BodyType<string>;params?: PreviewResultImportParams}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof previewResultImport>>, TError,{data: BodyType<string>;params?: PreviewResultImportParams}, TContext> => {
+
+const mutationKey = ['previewResultImport'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof previewResultImport>>, {data: BodyType<string>;params?: PreviewResultImportParams}> = (props) => {
+          const {data,params} = props ?? {};
+
+          return  previewResultImport(data,params,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PreviewResultImportMutationResult = NonNullable<Awaited<ReturnType<typeof previewResultImport>>>
+    export type PreviewResultImportMutationBody = BodyType<string>
+    export type PreviewResultImportMutationError = ErrorType<unknown>
+
+    export const usePreviewResultImport = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof previewResultImport>>, TError,{data: BodyType<string>;params?: PreviewResultImportParams}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof previewResultImport>>,
+        TError,
+        {data: BodyType<string>;params?: PreviewResultImportParams},
+        TContext
+      > => {
+      return useMutation(getPreviewResultImportMutationOptions(options));
+    }
+
+export const getCommitResultImportUrl = (params?: CommitResultImportParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/portal/results-import/commit?${stringifiedParams}` : `/api/portal/results-import/commit`
+}
+
+/**
+ * Save the rows without errors (school office only); every import is recorded
+ */
+export const commitResultImport = async (commitResultImportBody: string,
+    params?: CommitResultImportParams, options?: RequestInit): Promise<ResultImportRecord> => {
+
+  return customFetch<ResultImportRecord>(getCommitResultImportUrl(params),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'text/csv', ...options?.headers },
+    body: JSON.stringify(commitResultImportBody)
+  }
+);}
+
+
+
+
+
+export const getCommitResultImportMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof commitResultImport>>, TError,{data: BodyType<string>;params?: CommitResultImportParams}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof commitResultImport>>, TError,{data: BodyType<string>;params?: CommitResultImportParams}, TContext> => {
+
+const mutationKey = ['commitResultImport'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof commitResultImport>>, {data: BodyType<string>;params?: CommitResultImportParams}> = (props) => {
+          const {data,params} = props ?? {};
+
+          return  commitResultImport(data,params,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CommitResultImportMutationResult = NonNullable<Awaited<ReturnType<typeof commitResultImport>>>
+    export type CommitResultImportMutationBody = BodyType<string>
+    export type CommitResultImportMutationError = ErrorType<unknown>
+
+    export const useCommitResultImport = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof commitResultImport>>, TError,{data: BodyType<string>;params?: CommitResultImportParams}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof commitResultImport>>,
+        TError,
+        {data: BodyType<string>;params?: CommitResultImportParams},
+        TContext
+      > => {
+      return useMutation(getCommitResultImportMutationOptions(options));
+    }
+
+export const getListResultImportsUrl = () => {
+
+
+
+
+  return `/api/portal/results-import/history`
+}
+
+export const listResultImports = async ( options?: RequestInit): Promise<ResultImportRecord[]> => {
+
+  return customFetch<ResultImportRecord[]>(getListResultImportsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListResultImportsQueryKey = () => {
+    return [
+    `/api/portal/results-import/history`
+    ] as const;
+    }
+
+
+export const getListResultImportsQueryOptions = <TData = Awaited<ReturnType<typeof listResultImports>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listResultImports>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListResultImportsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listResultImports>>> = ({ signal }) => listResultImports({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listResultImports>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListResultImportsQueryResult = NonNullable<Awaited<ReturnType<typeof listResultImports>>>
+export type ListResultImportsQueryError = ErrorType<unknown>
+
+
+
+export function useListResultImports<TData = Awaited<ReturnType<typeof listResultImports>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listResultImports>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListResultImportsQueryOptions(options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

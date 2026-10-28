@@ -47,6 +47,12 @@ paths:
     $ref: "./reports.yaml#/paths/manage"
   /portal/reports:
     $ref: "./reports.yaml#/paths/student"
+  /portal/results-import/preview:
+    $ref: "./results-import.yaml#/paths/preview"
+  /portal/results-import/commit:
+    $ref: "./results-import.yaml#/paths/commit"
+  /portal/results-import/history:
+    $ref: "./results-import.yaml#/paths/history"
   /portal/security/audit:
     $ref: "./security.yaml#/paths/audit"
   /portal/security/sessions:
@@ -1265,6 +1271,12 @@ components:
       $ref: "./reports.yaml#/schemas/StudentTermReport"
     StudentReports:
       $ref: "./reports.yaml#/schemas/StudentReports"
+    ResultImportRow:
+      $ref: "./results-import.yaml#/schemas/ResultImportRow"
+    ResultImportPreview:
+      $ref: "./results-import.yaml#/schemas/ResultImportPreview"
+    ResultImportRecord:
+      $ref: "./results-import.yaml#/schemas/ResultImportRecord"
     PortalLogin:
       $ref: "./portal.yaml#/schemas/PortalLogin"
     PortalPassword:

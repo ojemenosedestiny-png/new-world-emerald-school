@@ -1,0 +1,99 @@
+paths:
+  preview:
+    post:
+      operationId: previewResultImport
+      description: Check an old-results CSV without saving anything (school office only)
+      parameters:
+        - { name: caMax, in: query, required: false, schema: { type: integer, minimum: 0, maximum: 100 } }
+        - { name: examMax, in: query, required: false, schema: { type: integer, minimum: 0, maximum: 100 } }
+      requestBody:
+        required: true
+        content:
+          text/csv:
+            schema: { type: string }
+      responses:
+        "200":
+          description: Every problem found, a sample of good rows, and what saving would do
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ResultImportPreview" }
+  commit:
+    post:
+      operationId: commitResultImport
+      description: Save the rows without errors (school office only); every import is recorded
+      parameters:
+        - { name: caMax, in: query, required: false, schema: { type: integer, minimum: 0, maximum: 100 } }
+        - { name: examMax, in: query, required: false, schema: { type: integer, minimum: 0, maximum: 100 } }
+        - { name: publish, in: query, required: false, schema: { type: boolean } }
+        - { name: fileName, in: query, required: false, schema: { type: string, maxLength: 200 } }
+      requestBody:
+        required: true
+        content:
+          text/csv:
+            schema: { type: string }
+      responses:
+        "200":
+          description: What was saved
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ResultImportRecord" }
+  history:
+    get:
+      operationId: listResultImports
+      responses:
+        "200":
+          description: Past imports, newest first
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: "#/components/schemas/ResultImportRecord" } }
+schemas:
+  ResultImportRow:
+    type: object
+    required: [line, status, messages, studentId, studentName, className, session, term, subject, ca, exam, total, grade]
+    properties:
+      line: { type: integer }
+      status: { type: string, enum: [ok, warning, error] }
+      messages: { type: array, items: { type: string } }
+      studentId: { type: string }
+      studentName: { type: string }
+      className: { type: string }
+      session: { type: string }
+      term: { type: string }
+      subject: { type: string }
+      ca: { type: [number, "null"] }
+      exam: { type: [number, "null"] }
+      total: { type: [number, "null"] }
+      grade: { type: [string, "null"] }
+  ResultImportPreview:
+    type: object
+    required: [missingColumns, total, ok, warnings, errors, students, terms, classes, newTerms, newSubjects, problems, sample]
+    properties:
+      missingColumns: { type: array, items: { type: string } }
+      total: { type: integer }
+      ok: { type: integer }
+      warnings: { type: integer }
+      errors: { type: integer }
+      students: { type: integer }
+      terms: { type: array, items: { type: string } }
+      classes: { type: array, items: { type: string } }
+      newTerms: { type: array, items: { type: string } }
+      newSubjects: { type: array, items: { type: string } }
+      problems: { type: array, items: { $ref: "#/components/schemas/ResultImportRow" }, description: Rows with errors or warnings (at most 500) }
+      sample: { type: array, items: { $ref: "#/components/schemas/ResultImportRow" }, description: The first good rows }
+  ResultImportRecord:
+    type: object
+    required: [id, fileName, importedBy, rows, imported, skipped, warnings, published, terms, classes, newTerms, newSubjects, createdAt]
+    properties:
+      id: { type: integer }
+      fileName: { type: string }
+      importedBy: { type: string }
+      rows: { type: integer }
+      imported: { type: integer }
+      skipped: { type: integer }
+      warnings: { type: integer }
+      published: { type: integer, description: Class results published by this import }
+      terms: { type: array, items: { type: string } }
+      classes: { type: array, items: { type: string } }
+      newTerms: { type: array, items: { type: string } }
+      newSubjects: { type: array, items: { type: string } }
+      createdAt: { type: string }

@@ -1242,6 +1242,121 @@ export const GetStudentReportsResponse = zod.object({
 })
 
 
+/**
+ * Check an old-results CSV without saving anything (school office only)
+ */
+export const previewResultImportQueryCaMaxMin = 0;
+export const previewResultImportQueryCaMaxMax = 100;
+
+export const previewResultImportQueryExamMaxMin = 0;
+export const previewResultImportQueryExamMaxMax = 100;
+
+
+
+export const PreviewResultImportQueryParams = zod.object({
+  "caMax": zod.coerce.number().min(previewResultImportQueryCaMaxMin).max(previewResultImportQueryCaMaxMax).optional(),
+  "examMax": zod.coerce.number().min(previewResultImportQueryExamMaxMin).max(previewResultImportQueryExamMaxMax).optional()
+})
+
+export const PreviewResultImportResponse = zod.object({
+  "missingColumns": zod.array(zod.string()),
+  "total": zod.number(),
+  "ok": zod.number(),
+  "warnings": zod.number(),
+  "errors": zod.number(),
+  "students": zod.number(),
+  "terms": zod.array(zod.string()),
+  "classes": zod.array(zod.string()),
+  "newTerms": zod.array(zod.string()),
+  "newSubjects": zod.array(zod.string()),
+  "problems": zod.array(zod.object({
+  "line": zod.number(),
+  "status": zod.enum(['ok', 'warning', 'error']),
+  "messages": zod.array(zod.string()),
+  "studentId": zod.string(),
+  "studentName": zod.string(),
+  "className": zod.string(),
+  "session": zod.string(),
+  "term": zod.string(),
+  "subject": zod.string(),
+  "ca": zod.number().nullable(),
+  "exam": zod.number().nullable(),
+  "total": zod.number().nullable(),
+  "grade": zod.string().nullable()
+})).describe('Rows with errors or warnings (at most 500)'),
+  "sample": zod.array(zod.object({
+  "line": zod.number(),
+  "status": zod.enum(['ok', 'warning', 'error']),
+  "messages": zod.array(zod.string()),
+  "studentId": zod.string(),
+  "studentName": zod.string(),
+  "className": zod.string(),
+  "session": zod.string(),
+  "term": zod.string(),
+  "subject": zod.string(),
+  "ca": zod.number().nullable(),
+  "exam": zod.number().nullable(),
+  "total": zod.number().nullable(),
+  "grade": zod.string().nullable()
+})).describe('The first good rows')
+})
+
+
+/**
+ * Save the rows without errors (school office only); every import is recorded
+ */
+export const commitResultImportQueryCaMaxMin = 0;
+export const commitResultImportQueryCaMaxMax = 100;
+
+export const commitResultImportQueryExamMaxMin = 0;
+export const commitResultImportQueryExamMaxMax = 100;
+
+export const commitResultImportQueryFileNameMax = 200;
+
+
+
+export const CommitResultImportQueryParams = zod.object({
+  "caMax": zod.coerce.number().min(commitResultImportQueryCaMaxMin).max(commitResultImportQueryCaMaxMax).optional(),
+  "examMax": zod.coerce.number().min(commitResultImportQueryExamMaxMin).max(commitResultImportQueryExamMaxMax).optional(),
+  "publish": zod.coerce.boolean().optional(),
+  "fileName": zod.coerce.string().max(commitResultImportQueryFileNameMax).optional()
+})
+
+export const CommitResultImportResponse = zod.object({
+  "id": zod.number(),
+  "fileName": zod.string(),
+  "importedBy": zod.string(),
+  "rows": zod.number(),
+  "imported": zod.number(),
+  "skipped": zod.number(),
+  "warnings": zod.number(),
+  "published": zod.number().describe('Class results published by this import'),
+  "terms": zod.array(zod.string()),
+  "classes": zod.array(zod.string()),
+  "newTerms": zod.array(zod.string()),
+  "newSubjects": zod.array(zod.string()),
+  "createdAt": zod.string()
+})
+
+
+export const ListResultImportsResponseItem = zod.object({
+  "id": zod.number(),
+  "fileName": zod.string(),
+  "importedBy": zod.string(),
+  "rows": zod.number(),
+  "imported": zod.number(),
+  "skipped": zod.number(),
+  "warnings": zod.number(),
+  "published": zod.number().describe('Class results published by this import'),
+  "terms": zod.array(zod.string()),
+  "classes": zod.array(zod.string()),
+  "newTerms": zod.array(zod.string()),
+  "newSubjects": zod.array(zod.string()),
+  "createdAt": zod.string()
+})
+export const ListResultImportsResponse = zod.array(ListResultImportsResponseItem)
+
+
 export const getAuditLogQueryQMax = 100;
 
 

@@ -1776,6 +1776,69 @@ export interface StudentReports {
   reports: StudentReportsReportsItem[];
 }
 
+export type ResultImportRowStatus = typeof ResultImportRowStatus[keyof typeof ResultImportRowStatus];
+
+
+export const ResultImportRowStatus = {
+  ok: 'ok',
+  warning: 'warning',
+  error: 'error',
+} as const;
+
+export interface ResultImportRow {
+  line: number;
+  status: ResultImportRowStatus;
+  messages: string[];
+  studentId: string;
+  studentName: string;
+  className: string;
+  session: string;
+  term: string;
+  subject: string;
+  /** @nullable */
+  ca: number | null;
+  /** @nullable */
+  exam: number | null;
+  /** @nullable */
+  total: number | null;
+  /** @nullable */
+  grade: string | null;
+}
+
+export interface ResultImportPreview {
+  missingColumns: string[];
+  total: number;
+  ok: number;
+  warnings: number;
+  errors: number;
+  students: number;
+  terms: string[];
+  classes: string[];
+  newTerms: string[];
+  newSubjects: string[];
+  /** Rows with errors or warnings (at most 500) */
+  problems: ResultImportRow[];
+  /** The first good rows */
+  sample: ResultImportRow[];
+}
+
+export interface ResultImportRecord {
+  id: number;
+  fileName: string;
+  importedBy: string;
+  rows: number;
+  imported: number;
+  skipped: number;
+  warnings: number;
+  /** Class results published by this import */
+  published: number;
+  terms: string[];
+  classes: string[];
+  newTerms: string[];
+  newSubjects: string[];
+  createdAt: string;
+}
+
 export interface PortalLogin {
   /**
      * @minLength 1
@@ -3837,6 +3900,37 @@ classId: number;
 export type GetReportWorkspaceParams = {
 termId?: number;
 classId?: number;
+};
+
+export type PreviewResultImportParams = {
+/**
+ * @minimum 0
+ * @maximum 100
+ */
+caMax?: number;
+/**
+ * @minimum 0
+ * @maximum 100
+ */
+examMax?: number;
+};
+
+export type CommitResultImportParams = {
+/**
+ * @minimum 0
+ * @maximum 100
+ */
+caMax?: number;
+/**
+ * @minimum 0
+ * @maximum 100
+ */
+examMax?: number;
+publish?: boolean;
+/**
+ * @maxLength 200
+ */
+fileName?: string;
 };
 
 export type GetAuditLogParams = {

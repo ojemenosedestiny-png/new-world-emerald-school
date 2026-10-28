@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { and, asc, desc, eq, inArray } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, or } from "drizzle-orm";
 import {
   db, portalClasses, portalStudents, portalTerms, portalSubjects, portalScores, portalReportCards, portalReportReleases,
   portalReportSettings, portalReportWorkflow, portalTeachers, type PortalTermRecord, type PortalReportWorkflowRecord,
@@ -38,10 +38,14 @@ async function classData(termId: number, classId: number) {
   const [term] = await db.select().from(portalTerms).where(eq(portalTerms.id, termId));
   check(term, "Term not found.", 404);
   const subjects = await db.select().from(portalSubjects).where(eq(portalSubjects.classId, classId)).orderBy(asc(portalSubjects.sortOrder), asc(portalSubjects.name));
+  // The class for a term is its current pupils plus anyone with scores in its subjects that term,
+  // so past (or imported) results keep the pupils who have since moved to another class.
+  const subjectIds = subjects.map((s) => s.id);
+  const scored = subjectIds.length ? (await db.selectDistinct({ id: portalScores.studentId }).from(portalScores).where(and(eq(portalScores.termId, termId), inArray(portalScores.subjectId, subjectIds)))).map((r) => r.id) : [];
   const students = await db.select({ id: portalStudents.id, studentId: portalStudents.studentId, name: portalStudents.name })
-    .from(portalStudents).where(and(eq(portalStudents.classId, classId), eq(portalStudents.active, true))).orderBy(asc(portalStudents.name));
+    .from(portalStudents).where(or(and(eq(portalStudents.classId, classId), eq(portalStudents.active, true)), scored.length ? inArray(portalStudents.id, scored) : undefined)).orderBy(asc(portalStudents.name));
   const ids = students.map((s) => s.id);
-  const scores = ids.length ? await db.select().from(portalScores).where(and(eq(portalScores.termId, termId), inArray(portalScores.studentId, ids))) : [];
+  const scores = ids.length && subjectIds.length ? await db.select().from(portalScores).where(and(eq(portalScores.termId, termId), inArray(portalScores.studentId, ids), inArray(portalScores.subjectId, subjectIds))) : [];
   const cards = ids.length ? await db.select().from(portalReportCards).where(and(eq(portalReportCards.termId, termId), inArray(portalReportCards.studentId, ids))) : [];
   const [release] = await db.select().from(portalReportReleases).where(and(eq(portalReportReleases.termId, termId), eq(portalReportReleases.classId, classId)));
   const [workflow, settings] = await Promise.all([workflowRow(termId, classId), reportSettings()]);
@@ -301,17 +305,22 @@ portalReportsRouter.post("/reports/manage", async (req, res) => {
 portalReportsRouter.get("/reports", async (req, res) => {
   const student = studentOnly(await portalActor(req));
   const [cls] = await db.select().from(portalClasses).where(eq(portalClasses.id, student.classId));
-  const releases = await db.select().from(portalReportReleases).where(eq(portalReportReleases.classId, student.classId));
+  // Published results for the student's current class, and for any class they had scores in (past years, imported results).
+  const scoredIn = await db.selectDistinct({ termId: portalScores.termId, classId: portalSubjects.classId }).from(portalScores)
+    .innerJoin(portalSubjects, eq(portalSubjects.id, portalScores.subjectId)).where(eq(portalScores.studentId, student.id));
+  const releases = (await db.select().from(portalReportReleases).where(inArray(portalReportReleases.classId, [...new Set([student.classId, ...scoredIn.map((p) => p.classId)])])))
+    .filter((r) => r.classId === student.classId || scoredIn.some((p) => p.termId === r.termId && p.classId === r.classId));
+  const classNames = new Map((await db.select({ id: portalClasses.id, name: portalClasses.name }).from(portalClasses)).map((c) => [c.id, c.name]));
   const reports = [];
   for (const release of releases) {
-    const d = await classData(release.termId, student.classId);
+    const d = await classData(release.termId, release.classId);
     const result = d.report.students.find((s) => s.studentId === student.id);
     if (!result) continue;
     const card = d.cards.find((c) => c.studentId === student.id);
     reports.push({
       term: termView(d.term), subjects: d.subjects, result, subjectStats: d.report.subjectStats,
       classSize: d.report.ranked, card: card ? cardView(card) : null, releasedAt: release.releasedAt.toISOString(),
-      className: cls?.name ?? "", gradingScale: d.settings.gradingScale,
+      className: classNames.get(release.classId) ?? "", gradingScale: d.settings.gradingScale,
       teacherName: d.workflow?.teacherName ?? "", teacherSignature: d.workflow?.teacherSignature ?? null,
       principalName: d.settings.principalName, principalSignature: d.settings.principalSignature,
       sortKey: d.term.createdAt.getTime(),
