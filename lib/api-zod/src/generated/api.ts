@@ -72,6 +72,10 @@ export const getPortalDashboardResponseAttemptsItemQuestionsItemOptionsMax = 8;
 export const getPortalDashboardResponseAttemptsItemQuestionsItemMarksMin = 0.5;
 export const getPortalDashboardResponseAttemptsItemQuestionsItemMarksMax = 100;
 
+export const getPortalDashboardResponseAttemptsItemQuestionsItemPassageMax = 20000;
+
+export const getPortalDashboardResponseAttemptsItemQuestionsItemDiagramFileIdMax = 80;
+
 export const getPortalDashboardResponseAttemptsItemMarksItemScoreMin = 0;
 
 export const getPortalDashboardResponseAttemptsItemMarksItemFeedbackMax = 3000;
@@ -116,7 +120,9 @@ export const GetPortalDashboardResponse = zod.object({
   "type": zod.enum(['mcq', 'written']),
   "text": zod.string().min(1).max(getPortalDashboardResponseAttemptsItemQuestionsItemTextMax),
   "options": zod.array(zod.string().max(getPortalDashboardResponseAttemptsItemQuestionsItemOptionsItemMax)).max(getPortalDashboardResponseAttemptsItemQuestionsItemOptionsMax),
-  "marks": zod.number().min(getPortalDashboardResponseAttemptsItemQuestionsItemMarksMin).max(getPortalDashboardResponseAttemptsItemQuestionsItemMarksMax)
+  "marks": zod.number().min(getPortalDashboardResponseAttemptsItemQuestionsItemMarksMin).max(getPortalDashboardResponseAttemptsItemQuestionsItemMarksMax),
+  "passage": zod.string().max(getPortalDashboardResponseAttemptsItemQuestionsItemPassageMax).optional().describe('Shared passage or instructions shown above the question'),
+  "diagramFileId": zod.string().max(getPortalDashboardResponseAttemptsItemQuestionsItemDiagramFileIdMax).nullish().describe('Diagram picture uploaded for the question')
 })),
   "answers": zod.record(zod.string(), zod.string()),
   "startedAt": zod.string(),
@@ -169,6 +175,10 @@ export const startPortalExamResponseQuestionsItemOptionsMax = 8;
 export const startPortalExamResponseQuestionsItemMarksMin = 0.5;
 export const startPortalExamResponseQuestionsItemMarksMax = 100;
 
+export const startPortalExamResponseQuestionsItemPassageMax = 20000;
+
+export const startPortalExamResponseQuestionsItemDiagramFileIdMax = 80;
+
 export const startPortalExamResponseMarksItemScoreMin = 0;
 
 export const startPortalExamResponseMarksItemFeedbackMax = 3000;
@@ -188,7 +198,9 @@ export const StartPortalExamResponse = zod.object({
   "type": zod.enum(['mcq', 'written']),
   "text": zod.string().min(1).max(startPortalExamResponseQuestionsItemTextMax),
   "options": zod.array(zod.string().max(startPortalExamResponseQuestionsItemOptionsItemMax)).max(startPortalExamResponseQuestionsItemOptionsMax),
-  "marks": zod.number().min(startPortalExamResponseQuestionsItemMarksMin).max(startPortalExamResponseQuestionsItemMarksMax)
+  "marks": zod.number().min(startPortalExamResponseQuestionsItemMarksMin).max(startPortalExamResponseQuestionsItemMarksMax),
+  "passage": zod.string().max(startPortalExamResponseQuestionsItemPassageMax).optional().describe('Shared passage or instructions shown above the question'),
+  "diagramFileId": zod.string().max(startPortalExamResponseQuestionsItemDiagramFileIdMax).nullish().describe('Diagram picture uploaded for the question')
 })),
   "answers": zod.record(zod.string(), zod.string()),
   "startedAt": zod.string(),
@@ -224,6 +236,10 @@ export const getPortalAttemptResponseQuestionsItemOptionsMax = 8;
 export const getPortalAttemptResponseQuestionsItemMarksMin = 0.5;
 export const getPortalAttemptResponseQuestionsItemMarksMax = 100;
 
+export const getPortalAttemptResponseQuestionsItemPassageMax = 20000;
+
+export const getPortalAttemptResponseQuestionsItemDiagramFileIdMax = 80;
+
 export const getPortalAttemptResponseMarksItemScoreMin = 0;
 
 export const getPortalAttemptResponseMarksItemFeedbackMax = 3000;
@@ -243,7 +259,9 @@ export const GetPortalAttemptResponse = zod.object({
   "type": zod.enum(['mcq', 'written']),
   "text": zod.string().min(1).max(getPortalAttemptResponseQuestionsItemTextMax),
   "options": zod.array(zod.string().max(getPortalAttemptResponseQuestionsItemOptionsItemMax)).max(getPortalAttemptResponseQuestionsItemOptionsMax),
-  "marks": zod.number().min(getPortalAttemptResponseQuestionsItemMarksMin).max(getPortalAttemptResponseQuestionsItemMarksMax)
+  "marks": zod.number().min(getPortalAttemptResponseQuestionsItemMarksMin).max(getPortalAttemptResponseQuestionsItemMarksMax),
+  "passage": zod.string().max(getPortalAttemptResponseQuestionsItemPassageMax).optional().describe('Shared passage or instructions shown above the question'),
+  "diagramFileId": zod.string().max(getPortalAttemptResponseQuestionsItemDiagramFileIdMax).nullish().describe('Diagram picture uploaded for the question')
 })),
   "answers": zod.record(zod.string(), zod.string()),
   "startedAt": zod.string(),
@@ -287,6 +305,10 @@ export const savePortalAnswersResponseQuestionsItemOptionsMax = 8;
 export const savePortalAnswersResponseQuestionsItemMarksMin = 0.5;
 export const savePortalAnswersResponseQuestionsItemMarksMax = 100;
 
+export const savePortalAnswersResponseQuestionsItemPassageMax = 20000;
+
+export const savePortalAnswersResponseQuestionsItemDiagramFileIdMax = 80;
+
 export const savePortalAnswersResponseMarksItemScoreMin = 0;
 
 export const savePortalAnswersResponseMarksItemFeedbackMax = 3000;
@@ -306,7 +328,9 @@ export const SavePortalAnswersResponse = zod.object({
   "type": zod.enum(['mcq', 'written']),
   "text": zod.string().min(1).max(savePortalAnswersResponseQuestionsItemTextMax),
   "options": zod.array(zod.string().max(savePortalAnswersResponseQuestionsItemOptionsItemMax)).max(savePortalAnswersResponseQuestionsItemOptionsMax),
-  "marks": zod.number().min(savePortalAnswersResponseQuestionsItemMarksMin).max(savePortalAnswersResponseQuestionsItemMarksMax)
+  "marks": zod.number().min(savePortalAnswersResponseQuestionsItemMarksMin).max(savePortalAnswersResponseQuestionsItemMarksMax),
+  "passage": zod.string().max(savePortalAnswersResponseQuestionsItemPassageMax).optional().describe('Shared passage or instructions shown above the question'),
+  "diagramFileId": zod.string().max(savePortalAnswersResponseQuestionsItemDiagramFileIdMax).nullish().describe('Diagram picture uploaded for the question')
 })),
   "answers": zod.record(zod.string(), zod.string()),
   "startedAt": zod.string(),
@@ -350,6 +374,10 @@ export const submitPortalAttemptResponseQuestionsItemOptionsMax = 8;
 export const submitPortalAttemptResponseQuestionsItemMarksMin = 0.5;
 export const submitPortalAttemptResponseQuestionsItemMarksMax = 100;
 
+export const submitPortalAttemptResponseQuestionsItemPassageMax = 20000;
+
+export const submitPortalAttemptResponseQuestionsItemDiagramFileIdMax = 80;
+
 export const submitPortalAttemptResponseMarksItemScoreMin = 0;
 
 export const submitPortalAttemptResponseMarksItemFeedbackMax = 3000;
@@ -369,7 +397,9 @@ export const SubmitPortalAttemptResponse = zod.object({
   "type": zod.enum(['mcq', 'written']),
   "text": zod.string().min(1).max(submitPortalAttemptResponseQuestionsItemTextMax),
   "options": zod.array(zod.string().max(submitPortalAttemptResponseQuestionsItemOptionsItemMax)).max(submitPortalAttemptResponseQuestionsItemOptionsMax),
-  "marks": zod.number().min(submitPortalAttemptResponseQuestionsItemMarksMin).max(submitPortalAttemptResponseQuestionsItemMarksMax)
+  "marks": zod.number().min(submitPortalAttemptResponseQuestionsItemMarksMin).max(submitPortalAttemptResponseQuestionsItemMarksMax),
+  "passage": zod.string().max(submitPortalAttemptResponseQuestionsItemPassageMax).optional().describe('Shared passage or instructions shown above the question'),
+  "diagramFileId": zod.string().max(submitPortalAttemptResponseQuestionsItemDiagramFileIdMax).nullish().describe('Diagram picture uploaded for the question')
 })),
   "answers": zod.record(zod.string(), zod.string()),
   "startedAt": zod.string(),
@@ -440,6 +470,10 @@ export const getPortalManagementResponseExamsItemQuestionsItemOneOptionsMax = 8;
 export const getPortalManagementResponseExamsItemQuestionsItemOneMarksMin = 0.5;
 export const getPortalManagementResponseExamsItemQuestionsItemOneMarksMax = 100;
 
+export const getPortalManagementResponseExamsItemQuestionsItemOnePassageMax = 20000;
+
+export const getPortalManagementResponseExamsItemQuestionsItemOneDiagramFileIdMax = 80;
+
 export const getPortalManagementResponseExamsItemQuestionsItemTwoRubricMax = 5000;
 
 export const getPortalManagementResponseExamsItemQuestionsMax = 200;
@@ -458,6 +492,10 @@ export const getPortalManagementResponseAttemptsItemOneQuestionsItemOptionsMax =
 export const getPortalManagementResponseAttemptsItemOneQuestionsItemMarksMin = 0.5;
 export const getPortalManagementResponseAttemptsItemOneQuestionsItemMarksMax = 100;
 
+export const getPortalManagementResponseAttemptsItemOneQuestionsItemPassageMax = 20000;
+
+export const getPortalManagementResponseAttemptsItemOneQuestionsItemDiagramFileIdMax = 80;
+
 export const getPortalManagementResponseAttemptsItemOneMarksItemScoreMin = 0;
 
 export const getPortalManagementResponseAttemptsItemOneMarksItemFeedbackMax = 3000;
@@ -472,6 +510,10 @@ export const getPortalManagementResponseAttemptsItemTwoQuestionKeysItemOneOption
 
 export const getPortalManagementResponseAttemptsItemTwoQuestionKeysItemOneMarksMin = 0.5;
 export const getPortalManagementResponseAttemptsItemTwoQuestionKeysItemOneMarksMax = 100;
+
+export const getPortalManagementResponseAttemptsItemTwoQuestionKeysItemOnePassageMax = 20000;
+
+export const getPortalManagementResponseAttemptsItemTwoQuestionKeysItemOneDiagramFileIdMax = 80;
 
 export const getPortalManagementResponseAttemptsItemTwoQuestionKeysItemTwoRubricMax = 5000;
 
@@ -530,7 +572,9 @@ export const GetPortalManagementResponse = zod.object({
   "type": zod.enum(['mcq', 'written']),
   "text": zod.string().min(1).max(getPortalManagementResponseExamsItemQuestionsItemOneTextMax),
   "options": zod.array(zod.string().max(getPortalManagementResponseExamsItemQuestionsItemOneOptionsItemMax)).max(getPortalManagementResponseExamsItemQuestionsItemOneOptionsMax),
-  "marks": zod.number().min(getPortalManagementResponseExamsItemQuestionsItemOneMarksMin).max(getPortalManagementResponseExamsItemQuestionsItemOneMarksMax)
+  "marks": zod.number().min(getPortalManagementResponseExamsItemQuestionsItemOneMarksMin).max(getPortalManagementResponseExamsItemQuestionsItemOneMarksMax),
+  "passage": zod.string().max(getPortalManagementResponseExamsItemQuestionsItemOnePassageMax).optional().describe('Shared passage or instructions shown above the question'),
+  "diagramFileId": zod.string().max(getPortalManagementResponseExamsItemQuestionsItemOneDiagramFileIdMax).nullish().describe('Diagram picture uploaded for the question')
 }).and(zod.object({
   "correctAnswer": zod.number().nullish(),
   "rubric": zod.string().max(getPortalManagementResponseExamsItemQuestionsItemTwoRubricMax).optional()
@@ -555,7 +599,9 @@ export const GetPortalManagementResponse = zod.object({
   "type": zod.enum(['mcq', 'written']),
   "text": zod.string().min(1).max(getPortalManagementResponseAttemptsItemOneQuestionsItemTextMax),
   "options": zod.array(zod.string().max(getPortalManagementResponseAttemptsItemOneQuestionsItemOptionsItemMax)).max(getPortalManagementResponseAttemptsItemOneQuestionsItemOptionsMax),
-  "marks": zod.number().min(getPortalManagementResponseAttemptsItemOneQuestionsItemMarksMin).max(getPortalManagementResponseAttemptsItemOneQuestionsItemMarksMax)
+  "marks": zod.number().min(getPortalManagementResponseAttemptsItemOneQuestionsItemMarksMin).max(getPortalManagementResponseAttemptsItemOneQuestionsItemMarksMax),
+  "passage": zod.string().max(getPortalManagementResponseAttemptsItemOneQuestionsItemPassageMax).optional().describe('Shared passage or instructions shown above the question'),
+  "diagramFileId": zod.string().max(getPortalManagementResponseAttemptsItemOneQuestionsItemDiagramFileIdMax).nullish().describe('Diagram picture uploaded for the question')
 })),
   "answers": zod.record(zod.string(), zod.string()),
   "startedAt": zod.string(),
@@ -582,7 +628,9 @@ export const GetPortalManagementResponse = zod.object({
   "type": zod.enum(['mcq', 'written']),
   "text": zod.string().min(1).max(getPortalManagementResponseAttemptsItemTwoQuestionKeysItemOneTextMax),
   "options": zod.array(zod.string().max(getPortalManagementResponseAttemptsItemTwoQuestionKeysItemOneOptionsItemMax)).max(getPortalManagementResponseAttemptsItemTwoQuestionKeysItemOneOptionsMax),
-  "marks": zod.number().min(getPortalManagementResponseAttemptsItemTwoQuestionKeysItemOneMarksMin).max(getPortalManagementResponseAttemptsItemTwoQuestionKeysItemOneMarksMax)
+  "marks": zod.number().min(getPortalManagementResponseAttemptsItemTwoQuestionKeysItemOneMarksMin).max(getPortalManagementResponseAttemptsItemTwoQuestionKeysItemOneMarksMax),
+  "passage": zod.string().max(getPortalManagementResponseAttemptsItemTwoQuestionKeysItemOnePassageMax).optional().describe('Shared passage or instructions shown above the question'),
+  "diagramFileId": zod.string().max(getPortalManagementResponseAttemptsItemTwoQuestionKeysItemOneDiagramFileIdMax).nullish().describe('Diagram picture uploaded for the question')
 }).and(zod.object({
   "correctAnswer": zod.number().nullish(),
   "rubric": zod.string().max(getPortalManagementResponseAttemptsItemTwoQuestionKeysItemTwoRubricMax).optional()
@@ -647,6 +695,10 @@ export const managePortalBodyExamQuestionsItemOneOptionsMax = 8;
 
 export const managePortalBodyExamQuestionsItemOneMarksMin = 0.5;
 export const managePortalBodyExamQuestionsItemOneMarksMax = 100;
+
+export const managePortalBodyExamQuestionsItemOnePassageMax = 20000;
+
+export const managePortalBodyExamQuestionsItemOneDiagramFileIdMax = 80;
 
 export const managePortalBodyExamQuestionsItemTwoRubricMax = 5000;
 
@@ -717,7 +769,9 @@ export const ManagePortalBody = zod.object({
   "type": zod.enum(['mcq', 'written']),
   "text": zod.string().min(1).max(managePortalBodyExamQuestionsItemOneTextMax),
   "options": zod.array(zod.string().max(managePortalBodyExamQuestionsItemOneOptionsItemMax)).max(managePortalBodyExamQuestionsItemOneOptionsMax),
-  "marks": zod.number().min(managePortalBodyExamQuestionsItemOneMarksMin).max(managePortalBodyExamQuestionsItemOneMarksMax)
+  "marks": zod.number().min(managePortalBodyExamQuestionsItemOneMarksMin).max(managePortalBodyExamQuestionsItemOneMarksMax),
+  "passage": zod.string().max(managePortalBodyExamQuestionsItemOnePassageMax).optional().describe('Shared passage or instructions shown above the question'),
+  "diagramFileId": zod.string().max(managePortalBodyExamQuestionsItemOneDiagramFileIdMax).nullish().describe('Diagram picture uploaded for the question')
 }).and(zod.object({
   "correctAnswer": zod.number().nullish(),
   "rubric": zod.string().max(managePortalBodyExamQuestionsItemTwoRubricMax).optional()
@@ -788,6 +842,10 @@ export const importPortalPdfResponseQuestionsItemOneOptionsMax = 8;
 export const importPortalPdfResponseQuestionsItemOneMarksMin = 0.5;
 export const importPortalPdfResponseQuestionsItemOneMarksMax = 100;
 
+export const importPortalPdfResponseQuestionsItemOnePassageMax = 20000;
+
+export const importPortalPdfResponseQuestionsItemOneDiagramFileIdMax = 80;
+
 export const importPortalPdfResponseQuestionsItemTwoRubricMax = 5000;
 
 
@@ -799,13 +857,25 @@ export const ImportPortalPdfResponse = zod.object({
   "type": zod.enum(['mcq', 'written']),
   "text": zod.string().min(1).max(importPortalPdfResponseQuestionsItemOneTextMax),
   "options": zod.array(zod.string().max(importPortalPdfResponseQuestionsItemOneOptionsItemMax)).max(importPortalPdfResponseQuestionsItemOneOptionsMax),
-  "marks": zod.number().min(importPortalPdfResponseQuestionsItemOneMarksMin).max(importPortalPdfResponseQuestionsItemOneMarksMax)
+  "marks": zod.number().min(importPortalPdfResponseQuestionsItemOneMarksMin).max(importPortalPdfResponseQuestionsItemOneMarksMax),
+  "passage": zod.string().max(importPortalPdfResponseQuestionsItemOnePassageMax).optional().describe('Shared passage or instructions shown above the question'),
+  "diagramFileId": zod.string().max(importPortalPdfResponseQuestionsItemOneDiagramFileIdMax).nullish().describe('Diagram picture uploaded for the question')
 }).and(zod.object({
   "correctAnswer": zod.number().nullish(),
   "rubric": zod.string().max(importPortalPdfResponseQuestionsItemTwoRubricMax).optional()
 }))),
   "warning": zod.string(),
-  "extractedText": zod.string()
+  "extractedText": zod.string(),
+  "passages": zod.array(zod.object({
+  "text": zod.string(),
+  "from": zod.number().nullable(),
+  "to": zod.number().nullable(),
+  "before": zod.number().nullable().describe('The printed number of the question that follows')
+})).describe('Passages, instructions and headings found outside questions, with the question numbers they name'),
+  "notes": zod.array(zod.object({
+  "question": zod.number().nullable().describe('Position of the question in the list (0-based)'),
+  "message": zod.string()
+})).describe('Review notes, such as diagrams that were attached or could not be imported')
 })
 
 
@@ -814,6 +884,25 @@ export const GetPortalFileParams = zod.object({
 })
 
 export const GetPortalFileResponse = zod.unknown()
+
+
+/**
+ * Staff attach a diagram picture (PNG, JPEG or WebP, up to 3 MB) to a question.
+ */
+export const UploadPortalDiagramQueryParams = zod.object({
+  "classId": zod.coerce.number()
+})
+
+export const UploadPortalDiagramResponse = zod.object({
+  "fileId": zod.string()
+})
+
+
+export const GetPortalDiagramParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const GetPortalDiagramResponse = zod.unknown()
 
 
 export const GetReportWorkspaceQueryParams = zod.object({

@@ -9,6 +9,10 @@ export interface PortalQuestionData {
   correctAnswer?: number | null;
   marks: number;
   rubric?: string;
+  /** Shared passage or instructions shown above the question (copied onto each question it applies to). */
+  passage?: string;
+  /** A diagram picture for the question, stored as a portal file. */
+  diagramFileId?: string | null;
 }
 export const portalExams = pgTable("portal_exams", {
   id: serial("id").primaryKey(),

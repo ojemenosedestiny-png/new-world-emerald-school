@@ -37,6 +37,17 @@ export type PortalManagementAttemptsItem = ({
      * @maximum 100
      */
   marks: number;
+  /**
+     * Shared passage or instructions shown above the question
+     * @maxLength 20000
+     */
+  passage?: string;
+  /**
+     * Diagram picture uploaded for the question
+     * @maxLength 80
+     * @nullable
+     */
+  diagramFileId?: string | null;
 })[];
   answers: {[key: string]: string};
   startedAt: string;
@@ -82,6 +93,17 @@ export type PortalManagementAttemptsItem = ({
      * @maximum 100
      */
   marks: number;
+  /**
+     * Shared passage or instructions shown above the question
+     * @maxLength 20000
+     */
+  passage?: string;
+  /**
+     * Diagram picture uploaded for the question
+     * @maxLength 80
+     * @nullable
+     */
+  diagramFileId?: string | null;
 }) & ({
   /** @nullable */
   correctAnswer?: number | null;

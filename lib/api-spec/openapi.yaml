@@ -39,6 +39,10 @@ paths:
     $ref: "./portal.yaml#/paths/import"
   /portal/files/{id}:
     $ref: "./portal.yaml#/paths/file"
+  /portal/diagrams:
+    $ref: "./portal.yaml#/paths/diagrams"
+  /portal/diagrams/{id}:
+    $ref: "./portal.yaml#/paths/diagram"
   /portal/reports/manage:
     $ref: "./reports.yaml#/paths/manage"
   /portal/reports:
@@ -1289,6 +1293,8 @@ components:
       $ref: "./portal.yaml#/schemas/PortalMessage"
     PortalPdfImport:
       $ref: "./portal.yaml#/schemas/PortalPdfImport"
+    PortalDiagram:
+      $ref: "./portal.yaml#/schemas/PortalDiagram"
     WebsiteAdminAccess:
       type: object
       required: [isAdmin]

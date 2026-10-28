@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { Fragment, useRef, useState } from "react";
 import { useImportPortalPdf, type PortalManagement, type PortalExam, type PortalExamQuestionsItem } from "@workspace/api-client-react";
 import { AlertTriangle, ArrowDown, ArrowUp, FileText, Plus, Trash2, Upload } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -7,6 +7,7 @@ import { Field } from "../ui";
 import { OPTION_LETTERS, errorMessage, fileUrl, fromLocalInput, newQuestionId, toLocalInput } from "../lib";
 import { ClassSelect } from "./ClassSelect";
 import { useCommand } from "./useCommand";
+import { DiagramField, PassageEditor } from "./QuestionExtras";
 
 type Q = PortalExamQuestionsItem;
 const MAX_PDF = 15 * 1024 * 1024;
@@ -43,7 +44,7 @@ export function validateExam(e: PortalExam, publishing: boolean): string[] {
   return errs;
 }
 
-function QuestionEditor({ q, i, count, onChange, onMove, onRemove }: { q: Q; i: number; count: number; onChange: (q: Q) => void; onMove: (d: -1 | 1) => void; onRemove: () => void }) {
+function QuestionEditor({ q, i, count, classId, notes, onChange, onMove, onRemove }: { q: Q; i: number; count: number; classId: number; notes?: string[]; onChange: (q: Q) => void; onMove: (d: -1 | 1) => void; onRemove: () => void }) {
   const p = "q" + i;
   return (
     <div className="rounded-2xl border border-[hsl(var(--p-line))] bg-[hsl(var(--p-surface)/0.8)] p-4" data-testid={"editor-question-" + i}>
@@ -61,6 +62,11 @@ function QuestionEditor({ q, i, count, onChange, onMove, onRemove }: { q: Q; i: 
       </div>
       <label htmlFor={p + "-text"} className="sr-only">Question text</label>
       <textarea id={p + "-text"} className="portal-input min-h-[70px] text-sm" maxLength={12000} placeholder="Question text, or a slot label such as Question 3" value={q.text} onChange={(e) => onChange({ ...q, text: e.target.value })} data-testid={"input-qtext-" + i} />
+      {notes?.map((n) => (
+        <p key={n} className={"mt-2 rounded-lg px-3 py-2 text-xs " + (/not imported/.test(n) ? "bg-[hsl(var(--p-gold-soft)/0.7)] font-semibold" : "bg-[hsl(var(--p-paper-2)/0.8)]")} data-testid={"note-q-" + i}>{n}</p>
+      ))}
+      <DiagramField fileId={q.diagramFileId} classId={classId} index={i} onChange={(diagramFileId) => onChange({ ...q, diagramFileId })} />
+      {typeof q.passage !== "string" && <button type="button" className="portal-btn-ghost mt-2" onClick={() => onChange({ ...q, passage: "" })} data-testid={"button-add-passage-" + i}><Plus size={12} /> Shared passage</button>}
       {q.type === "mcq" ? (
         <div className="mt-3 space-y-2">
           <p className="portal-label">Options. Select the correct answer.</p>
@@ -92,11 +98,24 @@ export function ExamEditor({ data, initial, onClose }: { data: PortalManagement;
   const fileRef = useRef<HTMLInputElement>(null);
   const [exam, setExam] = useState<PortalExam>(initial);
   const [noKeyConfirmed, setNoKeyConfirmed] = useState(false);
-  const [importNote, setImportNote] = useState<{ warning: string; extractedText: string; found: number } | null>(null);
+  const [importNote, setImportNote] = useState<{ warning: string; extractedText: string; found: number; applied: boolean; attached: string[]; general: string[] } | null>(null);
+  // Review notes from the PDF import, keyed by question id (diagrams attached or not imported).
+  const [notes, setNotes] = useState<Record<string, string[]>>({});
+  // Text the importer found outside any question range, kept for staff to place or dismiss.
+  const [loose, setLoose] = useState<{ text: string; before: number | null }[]>([]);
   const [bulk, setBulk] = useState({ count: 10, marks: 1, type: "written" as Q["type"], options: 4 });
   const [showErrors, setShowErrors] = useState(false);
   const set = (patch: Partial<PortalExam>) => setExam((e) => ({ ...e, ...patch }));
   const setQ = (i: number, q: Q) => setExam((e) => ({ ...e, questions: e.questions.map((x, xi) => (xi === i ? q : x)) }));
+  // Sets one passage on questions from..to (1-based), after clearing the run it covered before.
+  const placePassage = (clear: [number, number] | null, from: number, to: number, text: string | undefined) => setExam((e) => ({
+    ...e,
+    questions: e.questions.map((q, i) => {
+      const n = i + 1;
+      if (n >= from && n <= to) return { ...q, passage: text };
+      return clear && n >= clear[0] && n <= clear[1] ? { ...q, passage: undefined } : q;
+    }),
+  }));
   const errors = validateExam(exam, exam.published);
   const needsKeyConfirm = exam.published && !!exam.fileId && !noKeyConfirmed;
   const totalMarks = exam.questions.reduce((s, q) => s + (Number(q.marks) || 0), 0);
@@ -120,8 +139,22 @@ export function ExamEditor({ data, initial, onClose }: { data: PortalManagement;
     upload.mutate({ data: f, params: { classId: exam.classId } }, {
       onSuccess: (r) => {
         setNoKeyConfirmed(false);
-        setImportNote({ warning: r.warning, extractedText: r.extractedText, found: r.questions.length });
-        setExam((e) => ({ ...e, fileId: r.fileId, questions: e.questions.length === 0 && r.questions.length ? r.questions.map((q) => ({ ...q, correctAnswer: null })) : e.questions }));
+        const applied = exam.questions.length === 0 && r.questions.length > 0;
+        const byQuestion: Record<string, string[]> = {};
+        const general: string[] = [];
+        for (const n of r.notes ?? []) {
+          const q = n.question == null ? undefined : r.questions[n.question];
+          if (applied && q) (byQuestion[q.id] ??= []).push(n.message); else general.push(n.message);
+        }
+        const passages = r.passages ?? [];
+        setNotes(applied ? byQuestion : {});
+        setLoose(passages.filter((x) => x.from == null).map((x) => ({ text: x.text, before: x.before })));
+        setImportNote({
+          warning: r.warning, extractedText: r.extractedText, found: r.questions.length, applied, general,
+          attached: applied ? passages.filter((x) => x.from != null).map((x) => `Passage shown with questions ${x.from}${x.to !== x.from ? "–" + x.to : ""}`) : [],
+        });
+        // Correct answers always start empty: staff choose every one.
+        setExam((e) => ({ ...e, fileId: r.fileId, questions: applied ? r.questions.map((q) => ({ ...q, correctAnswer: null })) : e.questions }));
         toast({ title: "PDF uploaded", description: r.questions.length ? r.questions.length + " questions detected. Review every one." : "No questions detected. Add answer slots manually." });
       },
       onError: (e) => toast({ variant: "destructive", title: "Upload failed", description: errorMessage(e) }),
@@ -131,7 +164,8 @@ export function ExamEditor({ data, initial, onClose }: { data: PortalManagement;
   const save = async () => {
     setShowErrors(true);
     if (errors.length || needsKeyConfirm) return;
-    const payload = { ...exam, title: exam.title.trim(), subject: exam.subject.trim(), durationMinutes: Number(exam.durationMinutes) };
+    const questions = exam.questions.map(({ passage, ...q }) => (passage?.trim() ? { ...q, passage } : q));
+    const payload = { ...exam, questions, title: exam.title.trim(), subject: exam.subject.trim(), durationMinutes: Number(exam.durationMinutes) };
     if (await cmd.run({ action: "saveExam", exam: payload }, exam.id ? "Exam updated" : "Exam saved")) onClose();
   };
 
@@ -163,11 +197,29 @@ export function ExamEditor({ data, initial, onClose }: { data: PortalManagement;
               {exam.fileId && <a className="portal-btn-ghost" href={fileUrl(exam.fileId)} target="_blank" rel="noreferrer"><FileText size={13} /> View uploaded paper</a>}
               {exam.fileId && exam.mode === "interactive" && <button type="button" className="portal-btn-ghost" onClick={() => set({ fileId: null })}>Detach PDF</button>}
             </div>
-            <p className="mt-2 text-xs leading-relaxed text-[hsl(var(--p-ink)/0.6)]">Text is read from numbered, typed PDFs with A to D choices. Scanned papers and complex layouts are not read automatically (there is no OCR): use PDF mode and create answer slots below. Correct answers are never guessed.</p>
+            <p className="mt-2 text-xs leading-relaxed text-[hsl(var(--p-ink)/0.6)]">Text is read from numbered, typed PDFs with A to D choices. Passages stay with the questions they name, page headers, footers and page numbers are left out, and drawn diagrams are cropped as pictures for you to check. Scanned papers are not read automatically (there is no OCR): use PDF mode and create answer slots below. Correct answers are never taken from the PDF.</p>
             {importNote && (
               <div className="mt-3 rounded-xl border border-[hsl(var(--p-gold)/0.5)] bg-[hsl(var(--p-gold-soft)/0.6)] p-3 text-sm">
                 <p className="font-semibold">{importNote.found} questions detected{importNote.found && exam.questions.length && importNote.found !== exam.questions.length ? " (existing questions kept)" : ""}</p>
                 {importNote.warning && <p className="mt-1">{importNote.warning}</p>}
+                {importNote.found > 0 && <p className="mt-1 font-semibold" data-testid="text-import-keys">Select the correct answer for every question yourself before publishing.</p>}
+                {importNote.attached.map((a) => <p key={a} className="mt-1">{a}.</p>)}
+                {importNote.general.map((g) => <p key={g} className="mt-1 font-semibold" data-testid="text-import-general-note">{g}</p>)}
+                {loose.length > 0 && (
+                  <div className="mt-3" data-testid="list-loose-text">
+                    <p className="text-xs font-semibold">Other text found outside the questions. Place it or dismiss it:</p>
+                    <ul className="mt-1 space-y-2">{loose.map((x, k) => (
+                      <li key={k} className="rounded-lg bg-[hsl(var(--p-surface)/0.8)] p-2 text-xs" data-testid={"loose-" + k}>
+                        <p className="line-clamp-3 whitespace-pre-wrap">{x.text}</p>
+                        <div className="mt-1 flex flex-wrap gap-1">
+                          <button type="button" className="portal-btn-ghost !py-1 text-xs" onClick={() => { set({ instructions: [exam.instructions.trim(), x.text].filter(Boolean).join("\n\n").slice(0, 5000) }); setLoose((l) => l.filter((_, j) => j !== k)); }} data-testid={"button-loose-instructions-" + k}>Add to instructions</button>
+                          {importNote.applied && x.before != null && x.before <= exam.questions.length && <button type="button" className="portal-btn-ghost !py-1 text-xs" onClick={() => { placePassage(null, x.before!, x.before!, x.text); setLoose((l) => l.filter((_, j) => j !== k)); }} data-testid={"button-loose-passage-" + k}>Show with question {x.before}</button>}
+                          <button type="button" className="portal-btn-ghost !py-1 text-xs" onClick={() => setLoose((l) => l.filter((_, j) => j !== k))}>Dismiss</button>
+                        </div>
+                      </li>
+                    ))}</ul>
+                  </div>
+                )}
                 {importNote.extractedText && <details className="mt-2"><summary className="cursor-pointer text-xs font-semibold">Show extracted text</summary><pre className="mt-2 max-h-48 overflow-auto whitespace-pre-wrap rounded-lg bg-[hsl(var(--p-surface)/0.8)] p-2 text-xs">{importNote.extractedText}</pre></details>}
               </div>
             )}
@@ -198,7 +250,20 @@ export function ExamEditor({ data, initial, onClose }: { data: PortalManagement;
               {bulk.type === "mcq" && <label className="flex items-center gap-1">Options <input type="number" min={2} max={8} className="portal-input !w-16 !py-1.5" value={bulk.options} onChange={(e) => setBulk({ ...bulk, options: Math.min(8, Math.max(2, Number(e.target.value))) })} /></label>}
               <button type="button" className="portal-btn-ghost" onClick={generate} disabled={exam.questions.length >= 200} data-testid="button-bulk-generate">Generate</button>
             </div>
-            <div className="space-y-3">{exam.questions.map((q, i) => <QuestionEditor key={q.id} q={q} i={i} count={exam.questions.length} onChange={(nq) => setQ(i, nq)} onMove={(d) => move(i, d)} onRemove={() => set({ questions: exam.questions.filter((_, x) => x !== i) })} />)}</div>
+            <div className="space-y-3">{exam.questions.map((q, i) => {
+              // A shared passage is edited once, above the run of questions that share it.
+              const qs = exam.questions;
+              const starts = typeof q.passage === "string" && (i === 0 || qs[i - 1].passage !== q.passage);
+              let end = i;
+              while (starts && end + 1 < qs.length && qs[end + 1].passage === q.passage) end++;
+              const run: [number, number] = [i + 1, end + 1];
+              return (
+                <Fragment key={q.id}>
+                  {starts && <PassageEditor text={q.passage ?? ""} from={i + 1} to={end + 1} count={qs.length} onText={(t) => placePassage(null, run[0], run[1], t)} onRange={(f, t) => placePassage(run, f, t, q.passage ?? "")} onRemove={() => placePassage(null, run[0], run[1], undefined)} />}
+                  <QuestionEditor q={q} i={i} count={qs.length} classId={exam.classId} notes={notes[q.id]} onChange={(nq) => setQ(i, nq)} onMove={(d) => move(i, d)} onRemove={() => set({ questions: qs.filter((_, x) => x !== i) })} />
+                </Fragment>
+              );
+            })}</div>
           </div>
 
           <div className="space-y-2 rounded-2xl bg-[hsl(var(--p-emerald-soft)/0.5)] p-4 text-sm">

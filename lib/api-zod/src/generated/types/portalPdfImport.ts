@@ -5,6 +5,8 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { PortalPdfImportNotesItem } from './portalPdfImportNotesItem';
+import type { PortalPdfImportPassagesItem } from './portalPdfImportPassagesItem';
 import type { PortalPdfImportQuestionsItem } from './portalPdfImportQuestionsItem';
 
 export interface PortalPdfImport {
@@ -12,4 +14,8 @@ export interface PortalPdfImport {
   questions: PortalPdfImportQuestionsItem[];
   warning: string;
   extractedText: string;
+  /** Passages, instructions and headings found outside questions, with the question numbers they name */
+  passages: PortalPdfImportPassagesItem[];
+  /** Review notes, such as diagrams that were attached or could not be imported */
+  notes: PortalPdfImportNotesItem[];
 }

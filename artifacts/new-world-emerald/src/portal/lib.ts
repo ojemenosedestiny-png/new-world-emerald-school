@@ -28,6 +28,11 @@ export function fileUrl(fileId: string) {
   return base + "/api/portal/files/" + encodeURIComponent(fileId);
 }
 
+export function diagramUrl(fileId: string) {
+  const base = import.meta.env.BASE_URL.replace(/\/$/, "");
+  return base + "/api/portal/diagrams/" + encodeURIComponent(fileId);
+}
+
 /** Remove every cached query that belongs to a student identity. */
 export async function clearStudentQueries(queryClient: QueryClient) {
   // Preserve the active session observer. Removing it and recreating its cache

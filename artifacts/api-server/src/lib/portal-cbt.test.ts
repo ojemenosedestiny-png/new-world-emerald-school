@@ -4,7 +4,7 @@ import { randomUUID } from "node:crypto";
 import express from "express";
 import type { AddressInfo } from "node:net";
 import { and, eq, inArray } from "drizzle-orm";
-import { db, pool, portalAttempts, portalClasses, portalExams, portalSessions, portalStudents, type PortalQuestionData } from "@workspace/db";
+import { db, pool, portalAttempts, portalClasses, portalExams, portalFiles, portalSessions, portalStudents, type PortalQuestionData } from "@workspace/db";
 import portalRouter from "../routes/portal";
 import { hashPassword } from "./portal-auth";
 import { PRACTICE_TITLE } from "./practice-exam";
@@ -114,6 +114,33 @@ test("cbt: each student gets their own drawn, shuffled paper that marks correctl
 
     // Shuffling is refused for a PDF paper.
     assert.equal((await command({ action: "saveExam", exam: { ...exam, title: marker + "-PDF", mode: "pdf", drawCount: 0 } })).status, 400);
+
+    // Imported passages and diagrams travel with each question; a diagram must be a picture of this class.
+    const [other] = await db.insert(portalClasses).values({ name: marker + "-OTHER" }).returning();
+    classIds.push(other.id);
+    const paperId = randomUUID(), diagramId = randomUUID(), foreignId = randomUUID();
+    await db.insert(portalFiles).values([
+      { id: paperId, classId: cls.id, objectName: paperId },
+      { id: diagramId, classId: cls.id, objectName: `diagram-${diagramId}.png` },
+      { id: foreignId, classId: other.id, objectName: `diagram-${foreignId}.png` },
+    ]);
+    const passage = "Read the passage and answer Questions 1 to 2.\n\nAda read every morning.";
+    const withExtras = (diagramFileId: string) => ({
+      ...exam, title: marker + "-READING", shuffleQuestions: false, shuffleOptions: false, drawCount: 0, lockdown: false,
+      questions: bank.slice(0, 2).map((q, i) => ({ ...q, passage, diagramFileId: i === 1 ? diagramFileId : null })),
+    });
+    assert.equal((await command({ action: "saveExam", exam: withExtras(foreignId) })).status, 400, "another class's picture");
+    assert.equal((await command({ action: "saveExam", exam: withExtras(paperId) })).status, 400, "a PDF is not a diagram");
+    assert.equal((await command({ action: "saveExam", exam: { ...withExtras(diagramId), fileId: diagramId } })).status, 400, "a diagram is not a paper");
+    assert.equal((await command({ action: "saveExam", exam: withExtras(diagramId) })).status, 200);
+    const [reading] = await db.select().from(portalExams).where(eq(portalExams.title, marker + "-READING"));
+    // Before Bayo starts the paper its diagram is hidden from him, and a diagram is never served as a paper.
+    assert.equal((await call(`/diagrams/${diagramId}`, "GET", undefined, bayoS)).status, 404);
+    assert.equal((await call(`/files/${diagramId}`, "GET", undefined, { admin: true })).status, 404);
+    const started = await call(`/exams/${reading.id}/start`, "POST", undefined, bayoS);
+    assert.equal(started.status, 200);
+    assert.deepEqual(started.data.questions.map((q: { passage?: string; diagramFileId?: string | null }) => [q.passage, q.diagramFileId]), [[passage, null], [passage, diagramId]]);
+    assert.equal((await call(`/diagrams/${foreignId}`, "GET", undefined, bayoS)).status, 404, "another class's diagram");
   } finally {
     await new Promise<void>((resolve, reject) => server.close((e) => (e ? reject(e) : resolve())));
     // Practice tests went to every class in this disposable database; remove the ones nobody sat.
@@ -127,6 +154,7 @@ test("cbt: each student gets their own drawn, shuffled paper that marks correctl
         await db.delete(portalAttempts).where(inArray(portalAttempts.studentId, ids));
       }
       await db.delete(portalExams).where(inArray(portalExams.classId, classIds));
+      await db.delete(portalFiles).where(inArray(portalFiles.classId, classIds));
       await db.delete(portalStudents).where(inArray(portalStudents.classId, classIds));
       await db.delete(portalClasses).where(inArray(portalClasses.id, classIds));
     }

@@ -90,6 +90,7 @@ import type {
   PortalAttempt,
   PortalCommand,
   PortalDashboard,
+  PortalDiagram,
   PortalEvent,
   PortalEventInput,
   PortalLogin,
@@ -127,6 +128,7 @@ import type {
   SubmissionMark,
   SubmissionRow,
   UploadMetadata,
+  UploadPortalDiagramParams,
   UploadUrlResponse,
   WebsiteAdminAccess
 } from './api.schemas';
@@ -1123,6 +1125,153 @@ export function useGetPortalFile<TData = Awaited<ReturnType<typeof getPortalFile
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetPortalFileQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getUploadPortalDiagramUrl = (params: UploadPortalDiagramParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/portal/diagrams?${stringifiedParams}` : `/api/portal/diagrams`
+}
+
+/**
+ * Staff attach a diagram picture (PNG, JPEG or WebP, up to 3 MB) to a question.
+ */
+export const uploadPortalDiagram = async (uploadPortalDiagramBody: Blob,
+    params: UploadPortalDiagramParams, options?: RequestInit): Promise<PortalDiagram> => {
+
+  return customFetch<PortalDiagram>(getUploadPortalDiagramUrl(params),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'image/png', ...options?.headers },
+    body: uploadPortalDiagramBody
+  }
+);}
+
+
+
+
+
+export const getUploadPortalDiagramMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof uploadPortalDiagram>>, TError,{data: BodyType<Blob>;params: UploadPortalDiagramParams}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof uploadPortalDiagram>>, TError,{data: BodyType<Blob>;params: UploadPortalDiagramParams}, TContext> => {
+
+const mutationKey = ['uploadPortalDiagram'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof uploadPortalDiagram>>, {data: BodyType<Blob>;params: UploadPortalDiagramParams}> = (props) => {
+          const {data,params} = props ?? {};
+
+          return  uploadPortalDiagram(data,params,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UploadPortalDiagramMutationResult = NonNullable<Awaited<ReturnType<typeof uploadPortalDiagram>>>
+    export type UploadPortalDiagramMutationBody = BodyType<Blob>
+    export type UploadPortalDiagramMutationError = ErrorType<unknown>
+
+    export const useUploadPortalDiagram = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof uploadPortalDiagram>>, TError,{data: BodyType<Blob>;params: UploadPortalDiagramParams}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof uploadPortalDiagram>>,
+        TError,
+        {data: BodyType<Blob>;params: UploadPortalDiagramParams},
+        TContext
+      > => {
+      return useMutation(getUploadPortalDiagramMutationOptions(options));
+    }
+
+export const getGetPortalDiagramUrl = (id: string,) => {
+
+
+
+
+  return `/api/portal/diagrams/${id}`
+}
+
+export const getPortalDiagram = async (id: string, options?: RequestInit): Promise<Blob> => {
+
+  return customFetch<Blob>(getGetPortalDiagramUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetPortalDiagramQueryKey = (id: string,) => {
+    return [
+    `/api/portal/diagrams/${id}`
+    ] as const;
+    }
+
+
+export const getGetPortalDiagramQueryOptions = <TData = Awaited<ReturnType<typeof getPortalDiagram>>, TError = ErrorType<unknown>>(id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPortalDiagram>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetPortalDiagramQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getPortalDiagram>>> = ({ signal }) => getPortalDiagram(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getPortalDiagram>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetPortalDiagramQueryResult = NonNullable<Awaited<ReturnType<typeof getPortalDiagram>>>
+export type GetPortalDiagramQueryError = ErrorType<unknown>
+
+
+
+export function useGetPortalDiagram<TData = Awaited<ReturnType<typeof getPortalDiagram>>, TError = ErrorType<unknown>>(
+ id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPortalDiagram>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetPortalDiagramQueryOptions(id,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

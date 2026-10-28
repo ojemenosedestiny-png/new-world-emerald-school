@@ -156,9 +156,10 @@ export default function PortalExam() {
           )}
           <div className="space-y-4">
             {pdf && <p className="text-sm text-[hsl(var(--p-ink)/0.65)]">Read the questions on the paper, then record your answers in the matching slots below.</p>}
-            {attempt.questions.map((question, i) => (
-              <QuestionCard key={question.id} q={question} index={i} value={sync.answers[question.id] ?? ""} onChange={(v) => sync.setAnswer(question.id, v)} disabled={locked || sync.submitting} mark={marks.get(question.id)} compact={!!pdf} />
-            ))}
+            {attempt.questions.map((question, i) => {
+              const first = question.passage ? attempt.questions.findIndex((q) => q.passage === question.passage) : i;
+              return <QuestionCard key={question.id} q={question} index={i} value={sync.answers[question.id] ?? ""} onChange={(v) => sync.setAnswer(question.id, v)} disabled={locked || sync.submitting} mark={marks.get(question.id)} compact={!!pdf} sharedWith={first < i ? first + 1 : undefined} />;
+            })}
           </div>
         </div>
       </main>

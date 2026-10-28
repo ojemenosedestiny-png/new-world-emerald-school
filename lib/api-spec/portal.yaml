@@ -161,6 +161,38 @@ paths:
           content:
             application/pdf:
               schema: { type: string, format: binary }
+  diagrams:
+    post:
+      operationId: uploadPortalDiagram
+      description: Staff attach a diagram picture (PNG, JPEG or WebP, up to 3 MB) to a question.
+      parameters:
+        - { name: classId, in: query, required: true, schema: { type: integer } }
+      requestBody:
+        required: true
+        content:
+          image/png:
+            schema: { type: string, format: binary }
+          image/jpeg:
+            schema: { type: string, format: binary }
+          image/webp:
+            schema: { type: string, format: binary }
+      responses:
+        "200":
+          description: Stored privately for this class
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PortalDiagram" }
+  diagram:
+    get:
+      operationId: getPortalDiagram
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: Diagram picture, for staff of the class or a student who has the question in an attempt
+          content:
+            image/png:
+              schema: { type: string, format: binary }
 schemas:
   PortalLogin:
     type: object
@@ -227,6 +259,8 @@ schemas:
       text: { type: string, minLength: 1, maxLength: 12000 }
       options: { type: array, items: { type: string, maxLength: 3000 }, maxItems: 8 }
       marks: { type: number, minimum: 0.5, maximum: 100 }
+      passage: { type: string, maxLength: 20000, description: Shared passage or instructions shown above the question }
+      diagramFileId: { type: [string, "null"], maxLength: 80, description: Diagram picture uploaded for the question }
   PortalQuestionKey:
     allOf:
       - { $ref: "#/schemas/PortalQuestion" }
@@ -403,12 +437,37 @@ schemas:
       studentId: { type: string, description: The Student ID of a student just enrolled }
   PortalPdfImport:
     type: object
-    required: [fileId, questions, warning, extractedText]
+    required: [fileId, questions, warning, extractedText, passages, notes]
     properties:
       fileId: { type: string }
       questions: { type: array, items: { $ref: "#/schemas/PortalQuestionKey" } }
       warning: { type: string }
       extractedText: { type: string }
+      passages:
+        type: array
+        description: Passages, instructions and headings found outside questions, with the question numbers they name
+        items:
+          type: object
+          required: [text, from, to, before]
+          properties:
+            text: { type: string }
+            from: { type: [integer, "null"] }
+            to: { type: [integer, "null"] }
+            before: { type: [integer, "null"], description: The printed number of the question that follows }
+      notes:
+        type: array
+        description: Review notes, such as diagrams that were attached or could not be imported
+        items:
+          type: object
+          required: [question, message]
+          properties:
+            question: { type: [integer, "null"], description: Position of the question in the list (0-based) }
+            message: { type: string }
+  PortalDiagram:
+    type: object
+    required: [fileId]
+    properties:
+      fileId: { type: string }
 components:
   schemas:
     PortalLogin: { $ref: "#/schemas/PortalLogin" }
@@ -436,3 +495,4 @@ components:
     PortalAttemptControl: { $ref: "#/schemas/PortalAttemptControl" }
     PortalMessage: { $ref: "#/schemas/PortalMessage" }
     PortalPdfImport: { $ref: "#/schemas/PortalPdfImport" }
+    PortalDiagram: { $ref: "#/schemas/PortalDiagram" }

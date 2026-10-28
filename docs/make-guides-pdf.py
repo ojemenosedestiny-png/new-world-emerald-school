@@ -185,7 +185,7 @@ def teaching_tasks(start):
     out += [*section(n, "Exams", "Computer-based tests (CBT)"),
             *task("Create an exam", None, [
                 "Open <b>Exams</b> and tap <b>New exam</b>. Fill in the title, subject, class, duration and the window when it opens and closes.",
-                "Add questions: multiple choice (tick the correct option) or written (add a marking guide if you like). You can also upload a typed PDF and the questions are read from it; always check them.",
+                "Add questions: multiple choice (tick the correct option) or written (add a marking guide if you like). You can also upload a typed PDF and the questions are read from it: a reading passage is shown with the questions it names (edit it in the green box), page headers and footers are left out, and drawn diagrams are attached as pictures. Check every question, passage and diagram; use <b>Attach diagram</b> where the editor says one was not imported. Correct answers are never taken from the PDF: tick each one yourself.",
                 "Leave it unpublished while you prepare. When ready, tick <b>Publish</b> and save.",
             ]),
             *task("Computer-based test options", "These are in the exam editor under <b>Computer-based test options</b> (on-screen exams only, not PDF papers).", [

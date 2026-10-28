@@ -1545,6 +1545,17 @@ export interface PortalQuestion {
      * @maximum 100
      */
   marks: number;
+  /**
+     * Shared passage or instructions shown above the question
+     * @maxLength 20000
+     */
+  passage?: string;
+  /**
+     * Diagram picture uploaded for the question
+     * @maxLength 80
+     * @nullable
+     */
+  diagramFileId?: string | null;
 }
 
 export type PortalQuestionKey = ({
@@ -1569,6 +1580,17 @@ export type PortalQuestionKey = ({
      * @maximum 100
      */
   marks: number;
+  /**
+     * Shared passage or instructions shown above the question
+     * @maxLength 20000
+     */
+  passage?: string;
+  /**
+     * Diagram picture uploaded for the question
+     * @maxLength 80
+     * @nullable
+     */
+  diagramFileId?: string | null;
 }) & ({
   /** @nullable */
   correctAnswer?: number | null;
@@ -1606,6 +1628,17 @@ export type PortalExamQuestionsItem = ({
      * @maximum 100
      */
   marks: number;
+  /**
+     * Shared passage or instructions shown above the question
+     * @maxLength 20000
+     */
+  passage?: string;
+  /**
+     * Diagram picture uploaded for the question
+     * @maxLength 80
+     * @nullable
+     */
+  diagramFileId?: string | null;
 }) & ({
   /** @nullable */
   correctAnswer?: number | null;
@@ -1708,6 +1741,17 @@ export type PortalAttemptQuestionsItem = {
      * @maximum 100
      */
   marks: number;
+  /**
+     * Shared passage or instructions shown above the question
+     * @maxLength 20000
+     */
+  passage?: string;
+  /**
+     * Diagram picture uploaded for the question
+     * @maxLength 80
+     * @nullable
+     */
+  diagramFileId?: string | null;
 };
 
 export type PortalAttemptAnswers = {[key: string]: string};
@@ -1839,6 +1883,17 @@ export type PortalDashboardAttemptsItemQuestionsItem = {
      * @maximum 100
      */
   marks: number;
+  /**
+     * Shared passage or instructions shown above the question
+     * @maxLength 20000
+     */
+  passage?: string;
+  /**
+     * Diagram picture uploaded for the question
+     * @maxLength 80
+     * @nullable
+     */
+  diagramFileId?: string | null;
 };
 
 export type PortalDashboardAttemptsItemAnswers = {[key: string]: string};
@@ -1959,6 +2014,17 @@ export type PortalStaffAttempt = ({
      * @maximum 100
      */
   marks: number;
+  /**
+     * Shared passage or instructions shown above the question
+     * @maxLength 20000
+     */
+  passage?: string;
+  /**
+     * Diagram picture uploaded for the question
+     * @maxLength 80
+     * @nullable
+     */
+  diagramFileId?: string | null;
 })[];
   answers: {[key: string]: string};
   startedAt: string;
@@ -2004,6 +2070,17 @@ export type PortalStaffAttempt = ({
      * @maximum 100
      */
   marks: number;
+  /**
+     * Shared passage or instructions shown above the question
+     * @maxLength 20000
+     */
+  passage?: string;
+  /**
+     * Diagram picture uploaded for the question
+     * @maxLength 80
+     * @nullable
+     */
+  diagramFileId?: string | null;
 }) & ({
   /** @nullable */
   correctAnswer?: number | null;
@@ -2120,6 +2197,17 @@ export type PortalManagementExamsItemQuestionsItem = ({
      * @maximum 100
      */
   marks: number;
+  /**
+     * Shared passage or instructions shown above the question
+     * @maxLength 20000
+     */
+  passage?: string;
+  /**
+     * Diagram picture uploaded for the question
+     * @maxLength 80
+     * @nullable
+     */
+  diagramFileId?: string | null;
 }) & ({
   /** @nullable */
   correctAnswer?: number | null;
@@ -2201,6 +2289,17 @@ export type PortalManagementAttemptsItem = ({
      * @maximum 100
      */
   marks: number;
+  /**
+     * Shared passage or instructions shown above the question
+     * @maxLength 20000
+     */
+  passage?: string;
+  /**
+     * Diagram picture uploaded for the question
+     * @maxLength 80
+     * @nullable
+     */
+  diagramFileId?: string | null;
 })[];
   answers: {[key: string]: string};
   startedAt: string;
@@ -2246,6 +2345,17 @@ export type PortalManagementAttemptsItem = ({
      * @maximum 100
      */
   marks: number;
+  /**
+     * Shared passage or instructions shown above the question
+     * @maxLength 20000
+     */
+  passage?: string;
+  /**
+     * Diagram picture uploaded for the question
+     * @maxLength 80
+     * @nullable
+     */
+  diagramFileId?: string | null;
 }) & ({
   /** @nullable */
   correctAnswer?: number | null;
@@ -2448,6 +2558,17 @@ export type PortalCommandExamQuestionsItem = ({
      * @maximum 100
      */
   marks: number;
+  /**
+     * Shared passage or instructions shown above the question
+     * @maxLength 20000
+     */
+  passage?: string;
+  /**
+     * Diagram picture uploaded for the question
+     * @maxLength 80
+     * @nullable
+     */
+  diagramFileId?: string | null;
 }) & ({
   /** @nullable */
   correctAnswer?: number | null;
@@ -2621,6 +2742,17 @@ export type PortalPdfImportQuestionsItem = ({
      * @maximum 100
      */
   marks: number;
+  /**
+     * Shared passage or instructions shown above the question
+     * @maxLength 20000
+     */
+  passage?: string;
+  /**
+     * Diagram picture uploaded for the question
+     * @maxLength 80
+     * @nullable
+     */
+  diagramFileId?: string | null;
 }) & ({
   /** @nullable */
   correctAnswer?: number | null;
@@ -2628,11 +2760,41 @@ export type PortalPdfImportQuestionsItem = ({
   rubric?: string;
 });
 
+export type PortalPdfImportPassagesItem = {
+  text: string;
+  /** @nullable */
+  from: number | null;
+  /** @nullable */
+  to: number | null;
+  /**
+     * The printed number of the question that follows
+     * @nullable
+     */
+  before: number | null;
+};
+
+export type PortalPdfImportNotesItem = {
+  /**
+     * Position of the question in the list (0-based)
+     * @nullable
+     */
+  question: number | null;
+  message: string;
+};
+
 export interface PortalPdfImport {
   fileId: string;
   questions: PortalPdfImportQuestionsItem[];
   warning: string;
   extractedText: string;
+  /** Passages, instructions and headings found outside questions, with the question numbers they name */
+  passages: PortalPdfImportPassagesItem[];
+  /** Review notes, such as diagrams that were attached or could not be imported */
+  notes: PortalPdfImportNotesItem[];
+}
+
+export interface PortalDiagram {
+  fileId: string;
 }
 
 export interface WebsiteAdminAccess {
@@ -3256,6 +3418,10 @@ export type ReportPortalFocusLoss200 = {
 };
 
 export type ImportPortalPdfParams = {
+classId: number;
+};
+
+export type UploadPortalDiagramParams = {
 classId: number;
 };
 

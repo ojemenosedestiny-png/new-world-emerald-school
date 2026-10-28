@@ -7,6 +7,7 @@ import {
 import { ManagePortalBody } from "@workspace/api-zod";
 import { check, portalActor, staffOnly, classAllowed, hashPassword, type PortalActor } from "../lib/portal-auth";
 import { automaticMarks, attemptView, finalizeExpired, validateQuestions } from "../lib/portal-assessment";
+import { diagramContentType } from "../lib/portal-pdf";
 import { siteBaseUrl, teacherStudentEditProblem, validEmail } from "../lib/accounts";
 import { nextStudentId } from "./portal-accounts";
 import { emailConfigured, sendEmail, teacherInviteEmail } from "../lib/email";
@@ -47,7 +48,13 @@ async function validClass(actor: PortalActor, id: number) {
 async function validFile(id: string | null | undefined, classId: number) {
   if (!id) return;
   const [file] = await db.select().from(portalFiles).where(and(eq(portalFiles.id, id), eq(portalFiles.classId, classId)));
-  check(file, "The uploaded PDF must belong to this class.");
+  check(file && !diagramContentType(file.objectName), "The uploaded PDF must belong to this class.");
+}
+async function validDiagrams(questions: { diagramFileId?: string | null }[], classId: number) {
+  const ids = [...new Set(questions.map((q) => q.diagramFileId).filter((id): id is string => !!id))];
+  if (!ids.length) return;
+  const files = await db.select().from(portalFiles).where(and(inArray(portalFiles.id, ids), eq(portalFiles.classId, classId)));
+  check(files.length === ids.length && files.every((f) => diagramContentType(f.objectName)), "Each diagram must be a picture uploaded for this class.");
 }
 portalManagementRouter.get("/manage", async (req, res) => {
   const actor = await portalActor(req);
@@ -158,6 +165,7 @@ portalManagementRouter.post("/manage", async (req, res) => {
       check(Number.isFinite(startsAt.getTime()) && Number.isFinite(endsAt.getTime()) && endsAt > startsAt, "Choose a valid exam opening and closing time.");
       validateQuestions(data.questions, data.published);
       await validFile(data.fileId, data.classId);
+      await validDiagrams(data.questions, data.classId);
       check(data.mode !== "pdf" || data.fileId, "Upload the original PDF for PDF mode.");
       check(!data.resultsReleased, "Save the exam first; release results after marking through the result controls.");
       const paper = { shuffleQuestions: data.shuffleQuestions ?? false, shuffleOptions: data.shuffleOptions ?? false, drawCount: data.drawCount ?? 0 };
