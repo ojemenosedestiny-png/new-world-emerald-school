@@ -3032,9 +3032,27 @@ export interface AdmissionApplication {
   entryYear: string;
   guardianEmail: string;
   guardianPhone: string;
+  /** Documents the family said were ready to bring (no files are uploaded) */
+  documentsReady: string[];
   status: string;
   submittedAt: string;
 }
+
+export type AdmissionApplicationInputDocumentsReadyItem = typeof AdmissionApplicationInputDocumentsReadyItem[keyof typeof AdmissionApplicationInputDocumentsReadyItem];
+
+
+export const AdmissionApplicationInputDocumentsReadyItem = {
+  birth: 'birth',
+  transfer: 'transfer',
+  results: 'results',
+  passport: 'passport',
+  medical: 'medical',
+  blood: 'blood',
+  genotype: 'genotype',
+  hepb: 'hepb',
+  hiv: 'hiv',
+  asthma: 'asthma',
+} as const;
 
 export interface AdmissionApplicationInput {
   /** @minLength 1 */
@@ -3049,6 +3067,11 @@ export interface AdmissionApplicationInput {
   guardianEmail: string;
   /** @minLength 7 */
   guardianPhone: string;
+  /**
+     * Documents the family says are ready to bring (no files are uploaded)
+     * @maxItems 10
+     */
+  documentsReady?: AdmissionApplicationInputDocumentsReadyItem[];
 }
 
 export interface AdmissionApplicationReceipt {

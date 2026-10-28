@@ -1,89 +1,64 @@
-import { useEffect, useState } from "react";
-import { AnimatedHeading } from "@/components/AnimatedHeading";
 import { Check, FileText, HeartPulse, Lock } from "lucide-react";
 
-const documents = [
-  { key: "birth", title: "Birth certificate", desc: "Or a sworn declaration of age." },
-  { key: "transfer", title: "Transfer document", desc: "From the child's previous school, if they are changing schools." },
-  { key: "results", title: "Statement of results", desc: "The latest report card or result sheet from the previous school." },
-  { key: "passport", title: "Two passport photographs", desc: "Recent colour photographs of the child." },
-];
-const medical = [
-  { key: "medical", title: "Medical report", desc: "From a recognised hospital or clinic, signed and stamped." },
-  { key: "blood", title: "Blood group", desc: "" },
-  { key: "genotype", title: "Genotype", desc: "" },
-  { key: "hepb", title: "Hepatitis B test", desc: "" },
-  { key: "hiv", title: "HIV test", desc: "" },
-  { key: "asthma", title: "Asthma status", desc: "Whether the child has asthma, and any inhaler or medicine they use." },
-];
-const ALL = [...documents, ...medical].map((d) => d.key);
-const STORE = "nwe-admission-checklist";
+// The documents families bring after applying. Keys are stored with the application; text is editable in Website content.
+export const ADMISSION_DOCUMENTS = [
+  { key: "birth", group: "documents", title: "Birth certificate", desc: "Or a sworn declaration of age." },
+  { key: "transfer", group: "documents", title: "Transfer document", desc: "From the child's previous school, if they are changing schools." },
+  { key: "results", group: "documents", title: "Statement of results", desc: "The latest report card or result sheet from the previous school." },
+  { key: "passport", group: "documents", title: "Two passport photographs", desc: "Recent colour photographs of the child." },
+  { key: "medical", group: "medical", title: "Medical report", desc: "From a recognised hospital or clinic, signed and stamped." },
+  { key: "blood", group: "medical", title: "Blood group", desc: "" },
+  { key: "genotype", group: "medical", title: "Genotype", desc: "" },
+  { key: "hepb", group: "medical", title: "Hepatitis B test", desc: "" },
+  { key: "hiv", group: "medical", title: "HIV test", desc: "" },
+  { key: "asthma", group: "medical", title: "Asthma status", desc: "Whether the child has asthma, and any inhaler or medicine they use." },
+] as const;
+export type AdmissionDocumentKey = (typeof ADMISSION_DOCUMENTS)[number]["key"];
 
-/** What parents bring with an application, as a checklist they can tick off. All text is editable in Website content. */
-export function AdmissionRequirements() {
-  const [ready, setReady] = useState<string[]>([]);
-  useEffect(() => {
-    try { const saved = JSON.parse(localStorage.getItem(STORE) ?? "[]"); if (Array.isArray(saved)) setReady(saved.filter((k) => ALL.includes(k))); } catch { /* the checklist still works without storage */ }
-  }, []);
-  const toggle = (key: string) => setReady((r) => {
-    const next = r.includes(key) ? r.filter((k) => k !== key) : [...r, key];
-    try { localStorage.setItem(STORE, JSON.stringify(next)); } catch { /* not remembered in private browsing */ }
-    return next;
-  });
-  const row = (item: { key: string; title: string; desc: string }, n: number) => {
-    const on = ready.includes(item.key);
-    return (
-      <li key={item.key}>
-        <button type="button" role="checkbox" aria-checked={on} onClick={() => toggle(item.key)}
-          className="flex w-full items-start gap-4 rounded-xl px-3 py-3 text-left transition-colors hover:bg-primary/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
-          data-testid={"requirement-" + item.key}>
-          <span className={"mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-full border text-xs font-bold transition-colors " + (on ? "border-primary bg-primary text-primary-foreground" : "border-primary/30 text-primary")}>
-            {on ? <Check size={15} aria-hidden="true" /> : n}
-          </span>
-          <span>
-            <span className={"block font-semibold text-secondary " + (on ? "line-through decoration-primary/40" : "")}>{item.title}</span>
-            {item.desc && <span className="mt-0.5 block text-sm leading-6 text-muted-foreground">{item.desc}</span>}
-          </span>
-        </button>
-      </li>
-    );
-  };
+/** The application form's document step: families tick what they already have. Nothing is uploaded. */
+export function DocumentChecklist({ value, onChange }: { value: AdmissionDocumentKey[]; onChange: (next: AdmissionDocumentKey[]) => void }) {
+  const toggle = (key: AdmissionDocumentKey) => onChange(value.includes(key) ? value.filter((k) => k !== key) : [...value, key]);
+  const group = (name: "documents" | "medical", title: string, Icon: typeof FileText) => (
+    <div>
+      <p className="mb-2 flex items-center gap-2 text-sm font-semibold text-secondary"><Icon aria-hidden="true" className="text-primary" size={17} /> {title}</p>
+      <ul className="space-y-1">
+        {ADMISSION_DOCUMENTS.filter((d) => d.group === name).map((d) => {
+          const on = value.includes(d.key);
+          return (
+            <li key={d.key}>
+              <label className="flex cursor-pointer items-start gap-3 rounded-xl px-2 py-2 transition-colors hover:bg-primary/5" data-testid={"document-" + d.key}>
+                <input type="checkbox" className="peer sr-only" checked={on} onChange={() => toggle(d.key)} />
+                <span className={"mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-md border transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-primary/50 " + (on ? "border-primary bg-primary text-primary-foreground" : "border-primary/35 bg-background")}>
+                  {on && <Check size={13} aria-hidden="true" />}
+                </span>
+                <span className="text-sm">
+                  <span className="font-medium text-foreground">{d.title}</span>
+                  {d.desc && <span className="block text-xs leading-5 text-muted-foreground">{d.desc}</span>}
+                </span>
+              </label>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
   return (
-    <section id="requirements" aria-labelledby="requirements-title" className="bg-[#f5f3e9] py-14 md:py-20" data-testid="section-admission-requirements">
-      <div className="container mx-auto px-4 md:px-8">
-        <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
-          <div className="max-w-2xl">
-            <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.2em] text-primary">Application requirements</p>
-            <AnimatedHeading as="h2" id="requirements-title" className="font-serif text-3xl font-bold leading-tight text-secondary md:text-[2.4rem]">
-              What to bring with <span className="text-primary">your application.</span>
-            </AnimatedHeading>
-            <p className="mt-4 text-base leading-7 text-muted-foreground">
-              After you apply online, bring copies of these documents to the admissions office, with the originals for checking, on or before the entrance assessment day.
-            </p>
-          </div>
-          <p className="shrink-0 self-start rounded-full md:self-auto bg-background px-4 py-2 text-sm font-semibold text-secondary shadow-sm" aria-live="polite" data-testid="text-requirements-progress">
-            {ready.length} of {ALL.length} ready
-          </p>
-        </div>
-
-        <div className="mt-10 grid gap-5 lg:grid-cols-2">
-          <div className="rounded-3xl border border-primary/10 bg-background p-5 md:p-7">
-            <h3 className="flex items-center gap-3 font-serif text-2xl font-semibold text-secondary"><FileText aria-hidden="true" className="text-primary" size={22} /> Documents</h3>
-            <ul className="mt-4 space-y-1">{documents.map((d, i) => row(d, i + 1))}</ul>
-          </div>
-          <div className="rounded-3xl border border-primary/10 bg-background p-5 md:p-7">
-            <h3 className="flex items-center gap-3 font-serif text-2xl font-semibold text-secondary"><HeartPulse aria-hidden="true" className="text-primary" size={22} /> Medical report and test results</h3>
-            <ul className="mt-4 space-y-1">{medical.map((d, i) => row(d, documents.length + i + 1))}</ul>
-            <p className="mt-5 flex gap-3 rounded-2xl bg-primary/5 p-4 text-sm leading-6 text-secondary" data-testid="text-medical-privacy">
-              <Lock aria-hidden="true" className="mt-0.5 shrink-0 text-primary" size={17} />
-              <span>Medical results are confidential. Please bring them in a sealed envelope to the admissions office, and do not send them by email or WhatsApp.</span>
-            </p>
-          </div>
-        </div>
-        <p className="mt-6 text-sm text-muted-foreground">
-          Missing something? Apply anyway and <a href="mailto:info@newworldemeraldprivateschool.com?subject=Admission%20documents" className="font-semibold text-primary underline-offset-4 hover:underline">tell the admissions office</a>; we will advise you.
+    <fieldset className="rounded-2xl border border-border p-5" data-testid="fieldset-documents">
+      <legend className="px-2 text-sm font-semibold">Documents to bring</legend>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <p className="max-w-md text-sm leading-6 text-muted-foreground">
+          Tick the documents you already have. You do not upload anything here: bring copies, with the originals for checking, to the admissions office on or before the entrance assessment day.
         </p>
+        <span className="shrink-0 rounded-full bg-primary/10 px-3 py-1 text-xs font-bold text-primary" aria-live="polite" data-testid="text-documents-ready">{value.length} of {ADMISSION_DOCUMENTS.length} ready</span>
       </div>
-    </section>
+      <div className="mt-4 grid gap-5 sm:grid-cols-2">
+        {group("documents", "Documents", FileText)}
+        {group("medical", "Medical report and test results", HeartPulse)}
+      </div>
+      <p className="mt-4 flex gap-2.5 rounded-xl bg-muted p-3 text-xs leading-5 text-muted-foreground" data-testid="text-medical-privacy">
+        <Lock aria-hidden="true" className="mt-0.5 shrink-0 text-primary" size={14} />
+        <span>Medical results are confidential. Bring them in a sealed envelope to the admissions office, and do not send them by email or WhatsApp.</span>
+      </p>
+    </fieldset>
   );
 }

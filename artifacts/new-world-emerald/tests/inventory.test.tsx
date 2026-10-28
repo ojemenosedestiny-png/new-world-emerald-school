@@ -4,7 +4,6 @@ import type { ReactNode } from "react";
 import { afterEach, expect, it, vi } from "vitest";
 import type { InventoryItem, PortalManagement } from "@workspace/api-client-react";
 import { InventoryPanel, quantityAfter } from "../src/portal/manage/InventoryPanel";
-import { AdmissionRequirements } from "../src/components/AdmissionRequirements";
 
 const api = vi.hoisted(() => ({ record: vi.fn(async () => ({})), list: null as unknown }));
 vi.mock("@workspace/api-client-react", async (original) => ({
@@ -73,18 +72,4 @@ it("opens an item's history from its row", () => {
   expect(screen.getByTestId("list-item-history").textContent).toContain("Opening stock");
   expect(screen.queryByTestId("button-details-edit")).toBeNull();
   expect(screen.queryByTestId("button-delete-item")).toBeNull();
-});
-
-it("lists every application document and medical result, as a checklist parents can tick", () => {
-  render(<AdmissionRequirements />);
-  const section = screen.getByTestId("section-admission-requirements");
-  for (const t of ["Medical report", "Birth certificate", "Transfer document", "Statement of results", "Two passport photographs", "Blood group", "Genotype", "Hepatitis B test", "HIV test", "Asthma status"]) {
-    expect(section.textContent).toContain(t);
-  }
-  expect(screen.getByTestId("text-requirements-progress").textContent).toBe("0 of 10 ready");
-  fireEvent.click(screen.getByTestId("requirement-birth"));
-  fireEvent.click(screen.getByTestId("requirement-hiv"));
-  expect(screen.getByTestId("text-requirements-progress").textContent).toBe("2 of 10 ready");
-  expect(screen.getByTestId("requirement-birth").getAttribute("aria-checked")).toBe("true");
-  expect(screen.getByTestId("text-medical-privacy").textContent).toContain("sealed envelope");
 });

@@ -2736,6 +2736,8 @@ export const createAdmissionApplicationBodyGuardianEmailMin = 3;
 
 export const createAdmissionApplicationBodyGuardianPhoneMin = 7;
 
+export const createAdmissionApplicationBodyDocumentsReadyMax = 10;
+
 
 
 export const CreateAdmissionApplicationBody = zod.object({
@@ -2744,7 +2746,8 @@ export const CreateAdmissionApplicationBody = zod.object({
   "grade": zod.string().min(1),
   "entryYear": zod.string().min(1),
   "guardianEmail": zod.string().min(createAdmissionApplicationBodyGuardianEmailMin),
-  "guardianPhone": zod.string().min(createAdmissionApplicationBodyGuardianPhoneMin)
+  "guardianPhone": zod.string().min(createAdmissionApplicationBodyGuardianPhoneMin),
+  "documentsReady": zod.array(zod.enum(['birth', 'transfer', 'results', 'passport', 'medical', 'blood', 'genotype', 'hepb', 'hiv', 'asthma'])).max(createAdmissionApplicationBodyDocumentsReadyMax).optional().describe('Documents the family says are ready to bring (no files are uploaded)')
 })
 
 export const CreateAdmissionApplicationResponse = zod.object({
@@ -2766,6 +2769,7 @@ export const ListAdmissionApplicationsResponseItem = zod.object({
   "entryYear": zod.string(),
   "guardianEmail": zod.string(),
   "guardianPhone": zod.string(),
+  "documentsReady": zod.array(zod.string()).describe('Documents the family said were ready to bring (no files are uploaded)'),
   "status": zod.string(),
   "submittedAt": zod.coerce.date()
 })
@@ -2794,6 +2798,7 @@ export const UpdateAdmissionApplicationResponse = zod.object({
   "entryYear": zod.string(),
   "guardianEmail": zod.string(),
   "guardianPhone": zod.string(),
+  "documentsReady": zod.array(zod.string()).describe('Documents the family said were ready to bring (no files are uploaded)'),
   "status": zod.string(),
   "submittedAt": zod.coerce.date()
 })

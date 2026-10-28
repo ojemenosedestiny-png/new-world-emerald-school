@@ -6,6 +6,7 @@ import { Calendar, ChevronRight, FileText, Download, CheckCircle2, ArrowRight, C
 import { cn } from '@/lib/utils';
 import { useCreateAdmissionApplication } from '@workspace/api-client-react';
 import { trackEvent } from '@/lib/analytics';
+import { ADMISSION_DOCUMENTS, DocumentChecklist, type AdmissionDocumentKey } from '@/components/AdmissionRequirements';
 
 export function NewsEvents() {
   const news = [
@@ -92,6 +93,9 @@ export function AdmissionsFAQ() {
     guardianPhone: '',
   });
 
+  const [documentsReady, setDocumentsReady] = useState<AdmissionDocumentKey[]>([]);
+  const missingDocuments = ADMISSION_DOCUMENTS.filter((d) => !documentsReady.includes(d.key));
+
   const updateApplication = (field: keyof typeof application, value: string) => {
     setApplication((current) => ({ ...current, [field]: value }));
   };
@@ -100,7 +104,7 @@ export function AdmissionsFAQ() {
     event.preventDefault();
     setApplicationError('');
     try {
-      await createApplication.mutateAsync({ data: application });
+      await createApplication.mutateAsync({ data: { ...application, documentsReady } });
       trackEvent('admission_application_submitted');
       setIsApplicationSubmitted(true);
     } catch {
@@ -143,10 +147,6 @@ export function AdmissionsFAQ() {
                 </div>
               ))}
             </div>
-
-            <a href="#requirements" className="mb-6 inline-flex items-center gap-2 font-semibold text-primary underline-offset-4 hover:underline" data-testid="link-admissions-requirements">
-              <CheckCircle2 size={18} /> See the documents and medical report to bring
-            </a>
 
             <div className="flex flex-col sm:flex-row gap-4">
               <button
@@ -239,9 +239,16 @@ export function AdmissionsFAQ() {
                     <p className="mx-auto mt-4 max-w-md leading-relaxed text-muted-foreground">
                       Thank you for applying to New World Emerald. Our admissions team will contact you shortly with the next steps.
                     </p>
-                    <p className="mx-auto mt-3 max-w-md text-sm leading-relaxed text-muted-foreground">
-                      Meanwhile, please prepare the <a href="#requirements" onClick={() => setIsApplyModalOpen(false)} className="font-semibold text-primary underline-offset-4 hover:underline" data-testid="link-success-requirements">documents and medical report</a> you will bring to the admissions office.
-                    </p>
+                    {missingDocuments.length > 0 ? (
+                      <div className="mx-auto mt-5 max-w-md rounded-2xl bg-muted p-4 text-left text-sm" data-testid="text-documents-missing">
+                        <p className="font-semibold text-foreground">Still to get before you visit the admissions office:</p>
+                        <ul className="mt-2 list-disc space-y-0.5 pl-5 text-muted-foreground">{missingDocuments.map((d) => <li key={d.key}>{d.title}</li>)}</ul>
+                      </div>
+                    ) : (
+                      <p className="mx-auto mt-3 max-w-md text-sm leading-relaxed text-muted-foreground" data-testid="text-documents-complete">
+                        You have every document ready. Bring them, with the originals, to the admissions office.
+                      </p>
+                    )}
                     <button
                       type="button"
                       onClick={() => {
@@ -254,6 +261,7 @@ export function AdmissionsFAQ() {
                           guardianEmail: '',
                           guardianPhone: '',
                         });
+                        setDocumentsReady([]);
                         setIsApplyModalOpen(false);
                       }}
                       className="mt-8 rounded-xl bg-primary px-6 py-3 font-bold text-primary-foreground"
@@ -304,11 +312,12 @@ export function AdmissionsFAQ() {
                     <input required type="tel" value={application.guardianPhone} onChange={(e) => updateApplication('guardianPhone', e.target.value)} placeholder="+234..." className="w-full p-3 bg-background border border-border rounded-xl outline-none focus:ring-2 focus:ring-primary/50" />
                   </div>
 
+                  <DocumentChecklist value={documentsReady} onChange={setDocumentsReady} />
+
                   <div className="bg-muted p-4 rounded-xl flex items-start gap-3">
                     <CheckCircle2 className="text-primary shrink-0 mt-0.5" />
                     <p className="text-sm text-muted-foreground">
-                      This is a preliminary application. Upon submission, an admissions representative will contact you with details on the assessment fee and examination dates.{' '}
-                      <a href="#requirements" onClick={() => setIsApplyModalOpen(false)} className="font-semibold text-primary underline-offset-4 hover:underline" data-testid="link-form-requirements">See the documents to bring</a>.
+                      This is a preliminary application. Upon submission, an admissions representative will contact you with details on the assessment fee and examination dates.
                     </p>
                   </div>
 

@@ -1497,7 +1497,7 @@ components:
           minimum: 1
     AdmissionApplication:
       type: object
-      required: [id, studentFirstName, studentLastName, grade, entryYear, guardianEmail, guardianPhone, status, submittedAt]
+      required: [id, studentFirstName, studentLastName, grade, entryYear, guardianEmail, guardianPhone, documentsReady, status, submittedAt]
       properties:
         id:
           type: integer
@@ -1513,6 +1513,11 @@ components:
           type: string
         guardianPhone:
           type: string
+        documentsReady:
+          type: array
+          description: Documents the family said were ready to bring (no files are uploaded)
+          items:
+            type: string
         status:
           type: string
         submittedAt:
@@ -1540,6 +1545,13 @@ components:
         guardianPhone:
           type: string
           minLength: 7
+        documentsReady:
+          type: array
+          maxItems: 10
+          description: Documents the family says are ready to bring (no files are uploaded)
+          items:
+            type: string
+            enum: [birth, transfer, results, passport, medical, blood, genotype, hepb, hiv, asthma]
     AdmissionApplicationReceipt:
       type: object
       required: [id, studentFirstName, status, submittedAt]

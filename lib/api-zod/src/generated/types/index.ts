@@ -18,6 +18,7 @@ export * from './accountTokenInfoPurpose';
 export * from './accountTokenInput';
 export * from './admissionApplication';
 export * from './admissionApplicationInput';
+export * from './admissionApplicationInputDocumentsReadyItem';
 export * from './admissionApplicationReceipt';
 export * from './admissionApplicationStatusUpdate';
 export * from './assignmentImage';

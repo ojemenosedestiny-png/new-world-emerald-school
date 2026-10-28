@@ -5,6 +5,7 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { AdmissionApplicationInputDocumentsReadyItem } from './admissionApplicationInputDocumentsReadyItem';
 
 export interface AdmissionApplicationInput {
   /** @minLength 1 */
@@ -19,4 +20,9 @@ export interface AdmissionApplicationInput {
   guardianEmail: string;
   /** @minLength 7 */
   guardianPhone: string;
+  /**
+     * Documents the family says are ready to bring (no files are uploaded)
+     * @maxItems 10
+     */
+  documentsReady?: AdmissionApplicationInputDocumentsReadyItem[];
 }

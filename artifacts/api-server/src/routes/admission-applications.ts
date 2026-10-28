@@ -33,6 +33,7 @@ router.post(
       .insert(admissionApplicationsTable)
       .values({
         ...parsed.data,
+        documentsReady: [...new Set(parsed.data.documentsReady ?? [])],
         status: "new",
       })
       .returning();

@@ -47,6 +47,7 @@ import { SiteContentManager } from "@/components/SiteContentManager";
 import { AcademicCalendar } from "@/components/AcademicCalendar";
 import { MediaStorageCard } from "@/components/MediaStorageCard";
 import { EmailCard } from "@/components/EmailCard";
+import { ADMISSION_DOCUMENTS } from "@/components/AdmissionRequirements";
 import { AppShell, type NavGroup } from "@/portal/shell/AppShell";
 import { usePortalTheme } from "@/portal/shell/theme";
 import { trackEvent } from "@/lib/analytics";
@@ -84,6 +85,29 @@ const TITLES: Record<Section, string> = {
   calendar: "Academic calendar", store: "School store and fees", graphics: "Graphics studio",
 };
 
+/** The documents the family ticked as ready on the application form, and what is still to come. */
+function ApplicationDocuments({ ready, id }: { ready: string[]; id: number }) {
+  const missing = ADMISSION_DOCUMENTS.filter((d) => !ready.includes(d.key));
+  return (
+    <details className="mt-3 text-sm" data-testid={`application-documents-${id}`}>
+      <summary className="cursor-pointer font-semibold text-[hsl(var(--p-ink)/0.75)]">
+        Documents: <span className={missing.length ? "text-[hsl(var(--p-gold-ink))]" : "text-[hsl(var(--p-emerald))]"}>{ready.length} of {ADMISSION_DOCUMENTS.length} ready</span>
+      </summary>
+      <ul className="mt-2 grid gap-x-6 gap-y-1 sm:grid-cols-2">
+        {ADMISSION_DOCUMENTS.map((d) => {
+          const has = ready.includes(d.key);
+          return (
+            <li key={d.key} className={"flex items-center gap-2 " + (has ? "" : "text-[hsl(var(--p-ink)/0.55)]")}>
+              <span aria-hidden="true" className={"grid h-4 w-4 place-items-center rounded-full text-[10px] font-bold " + (has ? "bg-[hsl(var(--p-emerald))] text-white" : "border border-[hsl(var(--p-line))]")}>{has ? "✓" : ""}</span>
+              {d.title}<span className="sr-only">{has ? " (ready)" : " (still to bring)"}</span>
+            </li>
+          );
+        })}
+      </ul>
+    </details>
+  );
+}
+
 function ApplicationList({ applications, onStatus, limit }: { applications: AdmissionApplication[]; onStatus: (id: number, status: string) => void; limit?: number }) {
   return (
     <div className="divide-y divide-[hsl(var(--p-line))]">
@@ -104,6 +128,7 @@ function ApplicationList({ applications, onStatus, limit }: { applications: Admi
                   <a href={`mailto:${application.guardianEmail}`} className="inline-flex min-w-0 items-center gap-2 hover:text-[hsl(var(--p-emerald))]"><Mail size={14} /> <span className="truncate">{application.guardianEmail}</span></a>
                   <a href={`tel:${application.guardianPhone}`} className="inline-flex items-center gap-2 hover:text-[hsl(var(--p-emerald))]"><Phone size={14} /> {application.guardianPhone}</a>
                 </div>
+                <ApplicationDocuments ready={application.documentsReady ?? []} id={application.id} />
               </div>
             </div>
             <label className="text-[11px] font-bold uppercase tracking-wider text-[hsl(var(--p-ink)/0.55)]">

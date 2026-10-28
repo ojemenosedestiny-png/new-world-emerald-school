@@ -1,5 +1,5 @@
 import { createInsertSchema } from "drizzle-zod";
-import { integer, pgTable, serial, text, timestamp } from "drizzle-orm/pg-core";
+import { integer, jsonb, pgTable, serial, text, timestamp } from "drizzle-orm/pg-core";
 import { z } from "zod/v4";
 
 export const admissionApplicationsTable = pgTable("admission_applications", {
@@ -10,6 +10,8 @@ export const admissionApplicationsTable = pgTable("admission_applications", {
   entryYear: text("entry_year").notNull(),
   guardianEmail: text("guardian_email").notNull(),
   guardianPhone: text("guardian_phone").notNull(),
+  // Keys of the documents the family ticked as ready (birth certificate, medical report...); never the documents themselves.
+  documentsReady: jsonb("documents_ready").$type<string[]>().notNull().default([]),
   status: text("status").notNull().default("new"),
   submittedAt: timestamp("submitted_at", { withTimezone: true })
     .notNull()

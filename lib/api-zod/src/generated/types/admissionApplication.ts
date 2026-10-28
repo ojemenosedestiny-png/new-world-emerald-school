@@ -14,6 +14,8 @@ export interface AdmissionApplication {
   entryYear: string;
   guardianEmail: string;
   guardianPhone: string;
+  /** Documents the family said were ready to bring (no files are uploaded) */
+  documentsReady: string[];
   status: string;
   submittedAt: Date;
 }
