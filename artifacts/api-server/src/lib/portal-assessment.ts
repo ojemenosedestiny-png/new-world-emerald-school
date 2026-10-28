@@ -44,7 +44,7 @@ export async function finalizeExpired(attempt: PortalAttemptRecord) {
   });
 }
 export function attemptView(attempt: PortalAttemptRecord, exam: PortalExamRecord, staff = false) {
-  const released = exam.resultsReleased && attempt.status === "marked";
+  const released = (exam.resultsReleased || exam.instantResults) && attempt.status === "marked";
   return {
     id: attempt.id, examId: exam.id, title: exam.title, subject: exam.subject, mode: exam.mode,
     instructions: exam.instructions, fileId: exam.mode === "pdf" ? exam.fileId : null,

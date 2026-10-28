@@ -35,6 +35,8 @@ export const portalExams = pgTable("portal_exams", {
   drawCount: integer("draw_count").notNull().default(0),
   // Full screen, no copy or paste, and every exit from the exam screen is recorded for the teacher.
   lockdown: boolean("lockdown").notNull().default(false),
+  // Each student sees their own result as soon as their attempt is marked (multiple choice: on submitting), with no release step.
+  instantResults: boolean("instant_results").notNull().default(true),
 });
 export const insertPortalExamSchema = createInsertSchema(portalExams).omit({ id: true });
 export type PortalExamRecord = typeof portalExams.$inferSelect;

@@ -289,6 +289,7 @@ schemas:
       shuffleOptions: { type: boolean, description: Each student gets multiple-choice options in a different order }
       drawCount: { type: integer, minimum: 0, maximum: 200, description: "Question bank: questions per student, drawn at random (0 = all)" }
       lockdown: { type: boolean, description: "Full screen, no copy or paste, and exits from the exam screen are recorded" }
+      instantResults: { type: boolean, description: "Each student sees their result as soon as it is marked, without a release step" }
   PortalExamSummary:
     type: object
     required: [id, title, subject, durationMinutes, startsAt, endsAt, mode, instructions, questionCount, totalMarks]

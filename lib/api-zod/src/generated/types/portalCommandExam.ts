@@ -49,4 +49,6 @@ export type PortalCommandExam = {
   drawCount?: number;
   /** Full screen, no copy or paste, and exits from the exam screen are recorded */
   lockdown?: boolean;
+  /** Each student sees their result as soon as it is marked, without a release step */
+  instantResults?: boolean;
 };

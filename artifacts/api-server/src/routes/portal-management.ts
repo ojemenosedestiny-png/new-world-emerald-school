@@ -173,7 +173,7 @@ portalManagementRouter.post("/manage", async (req, res) => {
       const paperProblem = paperSettingsProblem(data.mode, data.questions, paper);
       check(!paperProblem, paperProblem ?? "");
       const { id, ...rest } = data;
-      const values = { ...rest, ...paper, lockdown: data.lockdown ?? false, title: data.title.trim(), subject: data.subject.trim(), startsAt, endsAt, fileId: data.fileId || null };
+      const values = { ...rest, ...paper, lockdown: data.lockdown ?? false, instantResults: data.instantResults ?? true, title: data.title.trim(), subject: data.subject.trim(), startsAt, endsAt, fileId: data.fileId || null };
       await db.transaction(async (tx) => {
         if (id) {
           const [old] = await tx.select().from(portalExams).where(eq(portalExams.id, id)).for("update");

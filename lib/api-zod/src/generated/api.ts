@@ -584,7 +584,8 @@ export const GetPortalManagementResponse = zod.object({
   "shuffleQuestions": zod.boolean().optional().describe('Each student gets the questions in a different order'),
   "shuffleOptions": zod.boolean().optional().describe('Each student gets multiple-choice options in a different order'),
   "drawCount": zod.number().min(getPortalManagementResponseExamsItemDrawCountMin).max(getPortalManagementResponseExamsItemDrawCountMax).optional().describe('Question bank: questions per student, drawn at random (0 = all)'),
-  "lockdown": zod.boolean().optional().describe('Full screen, no copy or paste, and exits from the exam screen are recorded')
+  "lockdown": zod.boolean().optional().describe('Full screen, no copy or paste, and exits from the exam screen are recorded'),
+  "instantResults": zod.boolean().optional().describe('Each student sees their result as soon as it is marked, without a release step')
 })),
   "attempts": zod.array(zod.object({
   "id": zod.number(),
@@ -781,7 +782,8 @@ export const ManagePortalBody = zod.object({
   "shuffleQuestions": zod.boolean().optional().describe('Each student gets the questions in a different order'),
   "shuffleOptions": zod.boolean().optional().describe('Each student gets multiple-choice options in a different order'),
   "drawCount": zod.number().min(managePortalBodyExamDrawCountMin).max(managePortalBodyExamDrawCountMax).optional().describe('Question bank: questions per student, drawn at random (0 = all)'),
-  "lockdown": zod.boolean().optional().describe('Full screen, no copy or paste, and exits from the exam screen are recorded')
+  "lockdown": zod.boolean().optional().describe('Full screen, no copy or paste, and exits from the exam screen are recorded'),
+  "instantResults": zod.boolean().optional().describe('Each student sees their result as soon as it is marked, without a release step')
 }).optional(),
   "material": zod.object({
   "id": zod.number().optional(),

@@ -10,8 +10,9 @@ import { ScoresEditor } from "./ScoresEditor";
 import { Broadsheet, RemarksEditor } from "./RemarksBroadsheet";
 import { WorkflowBar, resultsLocked } from "./ResultWorkflow";
 import { ResultSettings } from "./ResultSettings";
+import { ResultsReviewBody } from "./ResultsReview";
 
-type Section = "scores" | "remarks" | "broadsheet" | "subjects" | "settings";
+type Section = "scores" | "remarks" | "review" | "broadsheet" | "subjects" | "settings";
 
 function TermDialog({ initial, onClose }: { initial: ReportTermInput; onClose: () => void }) {
   const cmd = useReportCommand();
@@ -90,7 +91,7 @@ export function ReportsPanel() {
   const ready = term && cls && ws.termId === term.id && ws.classId === cls.id;
   const blankTerm: ReportTermInput = { session: `${new Date().getFullYear()}/${new Date().getFullYear() + 1}`, term: "First Term", caMax: 40, examMax: 60, nextTermBegins: "" };
   const missing = ready ? ws.students.filter((s) => (ws.results.find((r) => r.studentId === s.id)?.subjectsTaken ?? 0) < ws.subjects.length).length : 0;
-  const sections: [Section, string][] = [["scores", "Scores"], ["remarks", "Remarks & attendance"], ["broadsheet", "Broadsheet & print"], ...(ws.canAdmin ? [["subjects", "Subjects"] as [Section, string]] : []), ["settings", ws.canAdmin ? "Settings" : "My signature"]];
+  const sections: [Section, string][] = [["scores", "Scores"], ["remarks", "Remarks & attendance"], ["review", "Review & preview"], ["broadsheet", "Broadsheet & print"], ...(ws.canAdmin ? [["subjects", "Subjects"] as [Section, string]] : []), ["settings", ws.canAdmin ? "Settings" : "My signature"]];
   const locked = resultsLocked(ws);
 
   if (!ws.terms.length) {
@@ -130,6 +131,7 @@ export function ReportsPanel() {
 
           {section === "scores" && <ScoresEditor ws={ws} term={term} locked={locked} />}
           {section === "remarks" && <RemarksEditor ws={ws} term={term} locked={locked} />}
+          {section === "review" && <ResultsReviewBody ws={ws} term={term} className={cls.name} />}
           {section === "broadsheet" && <Broadsheet ws={ws} term={term} className={cls.name} />}
           {section === "subjects" && ws.canAdmin && <SubjectsEditor ws={ws} classId={cls.id} />}
           {section === "settings" && <ResultSettings ws={ws} />}
