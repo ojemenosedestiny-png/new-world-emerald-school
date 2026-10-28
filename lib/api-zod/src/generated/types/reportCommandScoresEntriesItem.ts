@@ -13,4 +13,17 @@ export type ReportCommandScoresEntriesItem = {
   ca: number | null;
   /** @nullable */
   exam: number | null;
+  /**
+     * Manual results: a typed total used instead of CA + exam
+     * @minimum 0
+     * @maximum 200
+     * @nullable
+     */
+  total?: number | null;
+  /**
+     * Manual results: a typed grade used instead of the scale's
+     * @maxLength 4
+     * @nullable
+     */
+  grade?: string | null;
 };

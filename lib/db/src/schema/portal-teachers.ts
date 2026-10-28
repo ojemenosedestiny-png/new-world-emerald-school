@@ -11,6 +11,8 @@ export const portalTeachers = pgTable("portal_teachers", {
   subjects: text("subjects").array().notNull().default([]),
   showInDirectory: boolean("show_in_directory").notNull().default(true),
   photoFileId: text("photo_file_id"),
+  // The teacher's signature (small image data URL), added to report cards they sign.
+  signature: text("signature"),
 });
 export const insertPortalTeacherSchema = createInsertSchema(portalTeachers).omit({ id: true });
 export type PortalTeacherRecord = typeof portalTeachers.$inferSelect;

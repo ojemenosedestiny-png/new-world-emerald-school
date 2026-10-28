@@ -1,4 +1,4 @@
-import type { ReportCardInfo, ReportStudentResult, ReportSubject, ReportSubjectStats, ReportTerm } from "@workspace/api-client-react";
+import type { GradeBand, ReportCardInfo, ReportStudentResult, ReportSubject, ReportSubjectStats, ReportTerm } from "@workspace/api-client-react";
 
 // Display copy of the server's grade scale (lib/report-cards.ts); the server assigns the grades.
 export const GRADE_KEY = [
@@ -9,6 +9,11 @@ export const GRADE_KEY = [
   { range: "40 - 44", grade: "E", remark: "Pass" },
   { range: "0 - 39", grade: "F", remark: "Fail" },
 ];
+
+/** "70 - 100" style ranges for a scale listed from the highest band down. */
+export function scaleKey(scale: GradeBand[]) {
+  return scale.map((b, i) => ({ range: `${b.min} - ${i === 0 ? 100 : scale[i - 1].min - 1}`, grade: b.grade, remark: b.remark }));
+}
 
 export function ordinal(n: number) {
   const mod100 = n % 100;
@@ -21,7 +26,10 @@ export const termLabel = (t: Pick<ReportTerm, "session" | "term">) => `${t.term}
 export type PrintableReport = {
   studentName: string; studentId: string; className: string; term: ReportTerm; subjects: ReportSubject[];
   result: ReportStudentResult; subjectStats: ReportSubjectStats[]; classSize: number; card: ReportCardInfo | null;
+  gradingScale?: GradeBand[]; teacherName?: string; teacherSignature?: string | null; principalName?: string; principalSignature?: string | null;
 };
+// Only image data URLs are drawn as signatures; anything else is ignored.
+const sigImg = (src: string | null | undefined) => (src && /^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/.test(src) ? `<img class="sigimg" src="${src}" alt="">` : "");
 
 const esc = (value: string | number | null | undefined) => String(value ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
 const num = (v: number | null | undefined) => (v === null || v === undefined ? "-" : String(v));
@@ -58,11 +66,11 @@ function reportSection(r: PrintableReport) {
       <div><span>Position in class</span><b>${esc(pos)}</b></div>
     </div>
     <div class="remarks">
-      <div><h3>Class teacher's remark</h3><p>${esc(r.card?.teacherRemark || "-")}</p><span class="sig">Signature</span></div>
-      <div><h3>Principal's remark</h3><p>${esc(r.card?.principalRemark || "-")}</p><span class="sig">Signature and stamp</span></div>
+      <div><h3>Class teacher's remark</h3><p>${esc(r.card?.teacherRemark || "-")}</p><span class="sig">${sigImg(r.teacherSignature)}${esc(r.teacherName || "Class teacher")}</span></div>
+      <div><h3>Principal's remark</h3><p>${esc(r.card?.principalRemark || "-")}</p><span class="sig">${sigImg(r.principalSignature)}${esc(r.principalName || "Principal")}</span></div>
     </div>
     <footer>
-      <p class="key">Grading: ${GRADE_KEY.map((g) => `<b>${g.grade}</b> ${g.range} ${esc(g.remark)}`).join(" &middot; ")}</p>
+      <p class="key">Grading: ${(r.gradingScale?.length ? scaleKey(r.gradingScale) : GRADE_KEY).map((g) => `<b>${g.grade}</b> ${g.range} ${esc(g.remark)}`).join(" &middot; ")}</p>
       ${r.term.nextTermBegins ? `<p class="next">Next term begins: <b>${esc(r.term.nextTermBegins)}</b></p>` : ""}
     </footer>
   </section>`;
@@ -90,7 +98,8 @@ export function reportCardsHtml(reports: PrintableReport[]) {
   .remarks{display:grid;grid-template-columns:1fr 1fr;gap:12px}
   .remarks div{border:1px solid #d9d4c7;border-radius:6px;padding:8px 10px;min-height:80px;position:relative}
   h3{margin:0;font:600 10px system-ui,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#5a6a6f}
-  .remarks p{margin:6px 0 22px;font-size:13px}.sig{position:absolute;right:10px;bottom:6px;font:10px system-ui,sans-serif;color:#8a9599;border-top:1px solid #8a9599;padding-top:2px;min-width:120px;text-align:center}
+  .remarks p{margin:6px 0 44px;font-size:13px}.sig{position:absolute;right:10px;bottom:6px;font:10px system-ui,sans-serif;color:#5a6a6f;border-top:1px solid #8a9599;padding-top:2px;min-width:140px;text-align:center}
+  .sigimg{display:block;max-height:34px;max-width:140px;margin:-38px auto 4px;object-fit:contain}
   footer{margin-top:10px;font:10.5px system-ui,sans-serif;color:#5a6a6f}.next{font-size:12px;color:#10232c}
   </style></head><body>${reports.map(reportSection).join("")}</body></html>`;
 }

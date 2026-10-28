@@ -78,6 +78,27 @@ schemas:
       subjectId: { type: integer }
       ca: { type: [number, "null"] }
       exam: { type: [number, "null"] }
+      total: { type: [number, "null"], minimum: 0, maximum: 200, description: "Manual results: a typed total used instead of CA + exam" }
+      grade: { type: [string, "null"], maxLength: 4, description: "Manual results: a typed grade used instead of the scale's" }
+  GradeBand:
+    type: object
+    required: [min, grade, remark]
+    properties:
+      min: { type: integer, minimum: 0, maximum: 100 }
+      grade: { type: string, minLength: 1, maxLength: 4 }
+      remark: { type: string, maxLength: 40 }
+  ReportWorkflow:
+    type: object
+    required: [status, mode, teacherName, teacherSignature, submittedAt, approvedBy, approvedAt, returnNote]
+    properties:
+      status: { type: string, enum: [draft, review, approved, published] }
+      mode: { type: string, enum: [automatic, manual] }
+      teacherName: { type: string }
+      teacherSignature: { type: [string, "null"] }
+      submittedAt: { type: [string, "null"] }
+      approvedBy: { type: string }
+      approvedAt: { type: [string, "null"] }
+      returnNote: { type: string }
   ReportCardInfo:
     type: object
     required: [studentId, teacherRemark, principalRemark, daysPresent, daysOpen]
@@ -128,8 +149,13 @@ schemas:
       name: { type: string }
   ReportWorkspace:
     type: object
-    required: [terms, classes, canAdmin, termId, classId, subjects, students, scores, cards, results, subjectStats, ranked, released]
+    required: [terms, classes, canAdmin, termId, classId, subjects, students, scores, cards, results, subjectStats, ranked, released, workflow, gradingScale, principalName, principalSignature, mySignature]
     properties:
+      workflow: { $ref: "#/schemas/ReportWorkflow" }
+      gradingScale: { type: array, items: { $ref: "#/schemas/GradeBand" } }
+      principalName: { type: string }
+      principalSignature: { type: [string, "null"] }
+      mySignature: { type: [string, "null"], description: The signed-in teacher's saved signature }
       terms: { type: array, items: { $ref: "#/schemas/ReportTerm" } }
       classes:
         type: array
@@ -154,7 +180,34 @@ schemas:
     type: object
     required: [action]
     properties:
-      action: { type: string, enum: [saveTerm, deleteTerm, saveSubject, deleteSubject, saveScores, saveCards, releaseReports] }
+      action: { type: string, enum: [saveTerm, deleteTerm, saveSubject, deleteSubject, saveScores, saveCards, releaseReports, saveSettings, saveSignature, workflow, setMode] }
+      settings:
+        type: object
+        required: [gradingScale, principalName, principalSignature]
+        properties:
+          gradingScale: { type: array, minItems: 2, maxItems: 12, items: { $ref: "#/schemas/GradeBand" } }
+          principalName: { type: string, maxLength: 120 }
+          principalSignature: { type: [string, "null"], maxLength: 200000 }
+      signature:
+        type: object
+        required: [image]
+        properties:
+          image: { type: [string, "null"], maxLength: 200000 }
+      workflow:
+        type: object
+        required: [termId, classId, action]
+        properties:
+          termId: { type: integer }
+          classId: { type: integer }
+          action: { type: string, enum: [submit, withdraw, approve, return, publish, unpublish] }
+          note: { type: string, maxLength: 500 }
+      mode:
+        type: object
+        required: [termId, classId, mode]
+        properties:
+          termId: { type: integer }
+          classId: { type: integer }
+          mode: { type: string, enum: [automatic, manual] }
       term: { $ref: "#/schemas/ReportTermInput" }
       subject: { $ref: "#/schemas/ReportSubjectInput" }
       target:
@@ -183,8 +236,14 @@ schemas:
           released: { type: boolean }
   StudentTermReport:
     type: object
-    required: [term, subjects, result, subjectStats, classSize, card, releasedAt]
+    required: [term, subjects, result, subjectStats, classSize, card, releasedAt, className, gradingScale, teacherName, teacherSignature, principalName, principalSignature]
     properties:
+      className: { type: string, description: The class the student was in for this term }
+      gradingScale: { type: array, items: { $ref: "#/schemas/GradeBand" } }
+      teacherName: { type: string }
+      teacherSignature: { type: [string, "null"] }
+      principalName: { type: string }
+      principalSignature: { type: [string, "null"] }
       term: { $ref: "#/schemas/ReportTerm" }
       subjects: { type: array, items: { $ref: "#/schemas/ReportSubject" } }
       result: { $ref: "#/schemas/ReportStudentResult" }
@@ -207,6 +266,8 @@ components:
     ReportSubject: { $ref: "#/schemas/ReportSubject" }
     ReportSubjectInput: { $ref: "#/schemas/ReportSubjectInput" }
     ReportScore: { $ref: "#/schemas/ReportScore" }
+    GradeBand: { $ref: "#/schemas/GradeBand" }
+    ReportWorkflow: { $ref: "#/schemas/ReportWorkflow" }
     ReportCardInfo: { $ref: "#/schemas/ReportCardInfo" }
     ReportSubjectResult: { $ref: "#/schemas/ReportSubjectResult" }
     ReportStudentResult: { $ref: "#/schemas/ReportStudentResult" }

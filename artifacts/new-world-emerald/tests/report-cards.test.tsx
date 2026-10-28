@@ -29,6 +29,9 @@ const workspace = {
   students: [{ id: 1, studentId: "NWE-1", name: "Ada Obi" }, { id: 2, studentId: "NWE-2", name: "Bayo Ade" }],
   scores: [{ studentId: 1, subjectId: 10, ca: 35, exam: 50 }],
   cards: [], results: [], subjectStats: [], ranked: 1, released: false,
+  gradingScale: [{ min: 70, grade: "A", remark: "Excellent" }, { min: 60, grade: "B", remark: "Very good" }, { min: 50, grade: "C", remark: "Good" }, { min: 45, grade: "D", remark: "Fair" }, { min: 40, grade: "E", remark: "Pass" }, { min: 0, grade: "F", remark: "Fail" }],
+  workflow: { status: "draft", mode: "automatic", teacherName: "", teacherSignature: null, submittedAt: null, approvedBy: "", approvedAt: null, returnNote: "" },
+  principalName: "", principalSignature: null, mySignature: null,
 } as unknown as ReportWorkspace;
 
 describe("report card helpers", () => {
@@ -92,7 +95,7 @@ describe("staff score entry", () => {
     fireEvent.change(screen.getByTestId("input-exam-2"), { target: { value: "30.5" } });
     expect(screen.getByTestId("score-row-2").textContent).toContain("50.5");
     fireEvent.click(save);
-    await waitFor(() => expect(mocks.manage).toHaveBeenCalledWith({ data: { action: "saveScores", scores: { termId: 3, entries: [{ studentId: 2, subjectId: 10, ca: 20, exam: 30.5 }] } } }));
+    await waitFor(() => expect(mocks.manage).toHaveBeenCalledWith({ data: { action: "saveScores", scores: { termId: 3, entries: [{ studentId: 2, subjectId: 10, ca: 20, exam: 30.5, total: null, grade: null }] } } }));
   });
   it("locks inputs once results are released", () => {
     render(wrap(<ScoresEditor ws={workspace} term={term} locked />));

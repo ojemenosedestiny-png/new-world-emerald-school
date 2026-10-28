@@ -910,6 +910,18 @@ export const GetReportWorkspaceQueryParams = zod.object({
   "classId": zod.coerce.number().optional()
 })
 
+export const getReportWorkspaceResponseGradingScaleItemMinMin = 0;
+export const getReportWorkspaceResponseGradingScaleItemMinMax = 100;
+
+export const getReportWorkspaceResponseGradingScaleItemGradeMax = 4;
+
+export const getReportWorkspaceResponseGradingScaleItemRemarkMax = 40;
+
+export const getReportWorkspaceResponseScoresItemTotalMin = 0;
+export const getReportWorkspaceResponseScoresItemTotalMax = 200;
+
+export const getReportWorkspaceResponseScoresItemGradeMax = 4;
+
 export const getReportWorkspaceResponseCardsItemTeacherRemarkMax = 600;
 
 export const getReportWorkspaceResponseCardsItemPrincipalRemarkMax = 600;
@@ -923,6 +935,24 @@ export const getReportWorkspaceResponseCardsItemDaysOpenMax = 366;
 
 
 export const GetReportWorkspaceResponse = zod.object({
+  "workflow": zod.object({
+  "status": zod.enum(['draft', 'review', 'approved', 'published']),
+  "mode": zod.enum(['automatic', 'manual']),
+  "teacherName": zod.string(),
+  "teacherSignature": zod.string().nullable(),
+  "submittedAt": zod.string().nullable(),
+  "approvedBy": zod.string(),
+  "approvedAt": zod.string().nullable(),
+  "returnNote": zod.string()
+}),
+  "gradingScale": zod.array(zod.object({
+  "min": zod.number().min(getReportWorkspaceResponseGradingScaleItemMinMin).max(getReportWorkspaceResponseGradingScaleItemMinMax),
+  "grade": zod.string().min(1).max(getReportWorkspaceResponseGradingScaleItemGradeMax),
+  "remark": zod.string().max(getReportWorkspaceResponseGradingScaleItemRemarkMax)
+})),
+  "principalName": zod.string(),
+  "principalSignature": zod.string().nullable(),
+  "mySignature": zod.string().nullable().describe('The signed-in teacher\'s saved signature'),
   "terms": zod.array(zod.object({
   "id": zod.number(),
   "session": zod.string(),
@@ -953,7 +983,9 @@ export const GetReportWorkspaceResponse = zod.object({
   "studentId": zod.number(),
   "subjectId": zod.number(),
   "ca": zod.number().nullable(),
-  "exam": zod.number().nullable()
+  "exam": zod.number().nullable(),
+  "total": zod.number().min(getReportWorkspaceResponseScoresItemTotalMin).max(getReportWorkspaceResponseScoresItemTotalMax).nullish().describe('Manual results: a typed total used instead of CA + exam'),
+  "grade": zod.string().max(getReportWorkspaceResponseScoresItemGradeMax).nullish().describe('Manual results: a typed grade used instead of the scale\'s')
 })),
   "cards": zod.array(zod.object({
   "studentId": zod.number(),
@@ -992,6 +1024,24 @@ export const GetReportWorkspaceResponse = zod.object({
 })
 
 
+export const manageReportsBodySettingsGradingScaleItemMinMin = 0;
+export const manageReportsBodySettingsGradingScaleItemMinMax = 100;
+
+export const manageReportsBodySettingsGradingScaleItemGradeMax = 4;
+
+export const manageReportsBodySettingsGradingScaleItemRemarkMax = 40;
+
+export const manageReportsBodySettingsGradingScaleMin = 2;
+export const manageReportsBodySettingsGradingScaleMax = 12;
+
+export const manageReportsBodySettingsPrincipalNameMax = 120;
+
+export const manageReportsBodySettingsPrincipalSignatureMax = 200000;
+
+export const manageReportsBodySignatureImageMax = 200000;
+
+export const manageReportsBodyWorkflowNoteMax = 500;
+
 export const manageReportsBodyTermSessionMax = 20;
 
 export const manageReportsBodyTermTermMax = 40;
@@ -1008,6 +1058,11 @@ export const manageReportsBodySubjectNameMax = 80;
 
 export const manageReportsBodySubjectSortOrderMin = 0;
 export const manageReportsBodySubjectSortOrderMax = 1000;
+
+export const manageReportsBodyScoresEntriesItemTotalMin = 0;
+export const manageReportsBodyScoresEntriesItemTotalMax = 200;
+
+export const manageReportsBodyScoresEntriesItemGradeMax = 4;
 
 export const manageReportsBodyScoresEntriesMax = 5000;
 
@@ -1026,7 +1081,30 @@ export const manageReportsBodyCardsEntriesMax = 1000;
 
 
 export const ManageReportsBody = zod.object({
-  "action": zod.enum(['saveTerm', 'deleteTerm', 'saveSubject', 'deleteSubject', 'saveScores', 'saveCards', 'releaseReports']),
+  "action": zod.enum(['saveTerm', 'deleteTerm', 'saveSubject', 'deleteSubject', 'saveScores', 'saveCards', 'releaseReports', 'saveSettings', 'saveSignature', 'workflow', 'setMode']),
+  "settings": zod.object({
+  "gradingScale": zod.array(zod.object({
+  "min": zod.number().min(manageReportsBodySettingsGradingScaleItemMinMin).max(manageReportsBodySettingsGradingScaleItemMinMax),
+  "grade": zod.string().min(1).max(manageReportsBodySettingsGradingScaleItemGradeMax),
+  "remark": zod.string().max(manageReportsBodySettingsGradingScaleItemRemarkMax)
+})).min(manageReportsBodySettingsGradingScaleMin).max(manageReportsBodySettingsGradingScaleMax),
+  "principalName": zod.string().max(manageReportsBodySettingsPrincipalNameMax),
+  "principalSignature": zod.string().max(manageReportsBodySettingsPrincipalSignatureMax).nullable()
+}).optional(),
+  "signature": zod.object({
+  "image": zod.string().max(manageReportsBodySignatureImageMax).nullable()
+}).optional(),
+  "workflow": zod.object({
+  "termId": zod.number(),
+  "classId": zod.number(),
+  "action": zod.enum(['submit', 'withdraw', 'approve', 'return', 'publish', 'unpublish']),
+  "note": zod.string().max(manageReportsBodyWorkflowNoteMax).optional()
+}).optional(),
+  "mode": zod.object({
+  "termId": zod.number(),
+  "classId": zod.number(),
+  "mode": zod.enum(['automatic', 'manual'])
+}).optional(),
   "term": zod.object({
   "id": zod.number().optional(),
   "session": zod.string().min(1).max(manageReportsBodyTermSessionMax),
@@ -1050,7 +1128,9 @@ export const ManageReportsBody = zod.object({
   "studentId": zod.number(),
   "subjectId": zod.number(),
   "ca": zod.number().nullable(),
-  "exam": zod.number().nullable()
+  "exam": zod.number().nullable(),
+  "total": zod.number().min(manageReportsBodyScoresEntriesItemTotalMin).max(manageReportsBodyScoresEntriesItemTotalMax).nullish().describe('Manual results: a typed total used instead of CA + exam'),
+  "grade": zod.string().max(manageReportsBodyScoresEntriesItemGradeMax).nullish().describe('Manual results: a typed grade used instead of the scale\'s')
 })).max(manageReportsBodyScoresEntriesMax)
 }).optional(),
   "cards": zod.object({
@@ -1076,6 +1156,13 @@ export const ManageReportsResponse = zod.object({
 })
 
 
+export const getStudentReportsResponseReportsItemGradingScaleItemMinMin = 0;
+export const getStudentReportsResponseReportsItemGradingScaleItemMinMax = 100;
+
+export const getStudentReportsResponseReportsItemGradingScaleItemGradeMax = 4;
+
+export const getStudentReportsResponseReportsItemGradingScaleItemRemarkMax = 40;
+
 export const getStudentReportsResponseReportsItemCardOneTeacherRemarkMax = 600;
 
 export const getStudentReportsResponseReportsItemCardOnePrincipalRemarkMax = 600;
@@ -1093,6 +1180,16 @@ export const GetStudentReportsResponse = zod.object({
   "studentId": zod.string(),
   "className": zod.string(),
   "reports": zod.array(zod.object({
+  "className": zod.string().describe('The class the student was in for this term'),
+  "gradingScale": zod.array(zod.object({
+  "min": zod.number().min(getStudentReportsResponseReportsItemGradingScaleItemMinMin).max(getStudentReportsResponseReportsItemGradingScaleItemMinMax),
+  "grade": zod.string().min(1).max(getStudentReportsResponseReportsItemGradingScaleItemGradeMax),
+  "remark": zod.string().max(getStudentReportsResponseReportsItemGradingScaleItemRemarkMax)
+})),
+  "teacherName": zod.string(),
+  "teacherSignature": zod.string().nullable(),
+  "principalName": zod.string(),
+  "principalSignature": zod.string().nullable(),
   "term": zod.object({
   "id": zod.number(),
   "session": zod.string(),

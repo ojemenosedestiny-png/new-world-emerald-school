@@ -5,7 +5,7 @@ import express from "express";
 import type { AddressInfo } from "node:net";
 import { eq, inArray } from "drizzle-orm";
 import {
-  db, pool, portalClasses, portalStudents, portalSessions, portalTerms, portalSubjects, portalScores, portalReportCards, portalReportReleases,
+  db, pool, portalClasses, portalStudents, portalSessions, portalTerms, portalSubjects, portalScores, portalReportCards, portalReportReleases, portalReportSettings, portalReportWorkflow,
 } from "@workspace/db";
 import portalRouter from "../routes/portal";
 import { hashPassword } from "./portal-auth";
@@ -139,10 +139,52 @@ test("report cards: setup, validation, scoring, remarks, release and student vis
     assert.deepEqual((await call("/reports", "GET", undefined, login.cookie)).data.reports, []);
     assert.equal((await scores([{ studentId: ada.id, subjectId: maths.id, ca: null, exam: null }])).status, 200);
     assert.equal((await db.select().from(portalScores).where(eq(portalScores.studentId, ada.id))).length, 1);
+
+    // The office sets the grading scale and the principal's signature.
+    const scale = [{ min: 75, grade: "A1", remark: "Excellent" }, { min: 50, grade: "C4", remark: "Credit" }, { min: 0, grade: "F9", remark: "Fail" }];
+    const signature = "data:image/png;base64,iVBORw0KGgo=";
+    assert.equal((await command({ action: "saveSettings", settings: { gradingScale: [{ min: 50, grade: "A", remark: "" }, { min: 60, grade: "B", remark: "" }], principalName: "", principalSignature: null } })).status, 400);
+    assert.equal((await command({ action: "saveSettings", settings: { gradingScale: scale, principalName: "Mrs P. Principal", principalSignature: "data:text/html;base64,PHA+" } })).status, 400);
+    assert.equal((await command({ action: "saveSettings", settings: { gradingScale: scale, principalName: "Mrs P. Principal", principalSignature: signature } })).status, 200);
+    assert.equal((await call("/reports/manage", "POST", { action: "saveSettings", settings: { gradingScale: scale, principalName: "", principalSignature: null } }, login.cookie)).status, 403);
+
+    // Manual results: in manual mode a typed total and grade count; in automatic mode they are ignored.
+    assert.equal((await scores([{ studentId: ada.id, subjectId: maths.id, ca: null, exam: null, total: 72, grade: null }])).status, 200);
+    assert.equal((await db.select().from(portalScores).where(eq(portalScores.studentId, ada.id))).length, 1, "a typed total alone is not saved in automatic mode");
+    assert.equal((await command({ action: "setMode", mode: { termId: term.id, classId: cls.id, mode: "manual" } })).status, 200);
+    assert.equal((await scores([{ studentId: ada.id, subjectId: maths.id, ca: null, exam: null, total: 101, grade: null }])).status, 400);
+    assert.equal((await scores([{ studentId: ada.id, subjectId: maths.id, ca: null, exam: null, total: 72, grade: "Z" }])).status, 400, "grades come from the scale");
+    assert.equal((await scores([{ studentId: ada.id, subjectId: maths.id, ca: null, exam: null, total: 72, grade: null }])).status, 200);
+    const manual = await call(`/reports/manage?termId=${term.id}&classId=${cls.id}`, "GET", undefined, "", true);
+    const adaManual = manual.data.results.find((r: { studentId: number }) => r.studentId === ada.id);
+    assert.deepEqual(adaManual.subjects.map((s: { total: number; grade: string }) => [s.total, s.grade]), [[72, "C4"], [70, "C4"]]);
+    assert.deepEqual([manual.data.workflow.status, manual.data.workflow.mode, manual.data.principalName], ["draft", "manual", "Mrs P. Principal"]);
+
+    // Workflow: review, then approval, then publishing; edits are locked once approved.
+    const flow = (action: string, note?: string) => command({ action: "workflow", workflow: { termId: term.id, classId: cls.id, action, ...(note ? { note } : {}) } });
+    assert.equal((await flow("approve")).status, 400, "the class teacher reviews first");
+    assert.equal((await flow("publish")).status, 400, "approve before publishing");
+    assert.equal((await flow("submit")).status, 200);
+    assert.equal((await call("/reports/manage", "POST", { action: "workflow", workflow: { termId: term.id, classId: cls.id, action: "approve" } }, login.cookie)).status, 403);
+    assert.equal((await flow("approve")).status, 200);
+    assert.equal((await scores([{ studentId: ada.id, subjectId: maths.id, ca: 40, exam: 60 }])).status, 409);
+    assert.equal((await command({ action: "setMode", mode: { termId: term.id, classId: cls.id, mode: "automatic" } })).status, 409);
+    assert.deepEqual((await call("/reports", "GET", undefined, login.cookie)).data.reports, [], "approved is not yet published");
+    assert.equal((await flow("publish")).status, 200);
+    const published = (await call("/reports", "GET", undefined, login.cookie)).data.reports[0];
+    assert.deepEqual([published.className, published.principalName, published.principalSignature, published.gradingScale[0].grade], [cls.name, "Mrs P. Principal", signature, "A1"]);
+    assert.equal(published.result.subjects[0].total, 72);
+    assert.equal((await flow("unpublish")).status, 200);
+    assert.deepEqual((await call("/reports", "GET", undefined, login.cookie)).data.reports, []);
+    assert.equal((await flow("return", "Check the Mathematics totals.")).status, 200);
+    const returned = await call(`/reports/manage?termId=${term.id}&classId=${cls.id}`, "GET", undefined, "", true);
+    assert.deepEqual([returned.data.workflow.status, returned.data.workflow.returnNote], ["draft", "Check the Mathematics totals."]);
+    assert.equal((await scores([{ studentId: ada.id, subjectId: maths.id, ca: 35, exam: 50, total: null, grade: null }])).status, 200);
   } finally {
     await new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
     if (termIds.length) {
       await db.delete(portalReportReleases).where(inArray(portalReportReleases.termId, termIds));
+      await db.delete(portalReportWorkflow).where(inArray(portalReportWorkflow.termId, termIds));
       await db.delete(portalScores).where(inArray(portalScores.termId, termIds));
       await db.delete(portalReportCards).where(inArray(portalReportCards.termId, termIds));
       await db.delete(portalTerms).where(inArray(portalTerms.id, termIds));
@@ -154,6 +196,7 @@ test("report cards: setup, validation, scoring, remarks, release and student vis
       await db.delete(portalStudents).where(inArray(portalStudents.classId, classIds));
       await db.delete(portalClasses).where(inArray(portalClasses.id, classIds));
     }
+    await db.delete(portalReportSettings).where(eq(portalReportSettings.id, 1));
     if (previous === undefined) delete process.env.SCHOOL_ADMIN_EMAILS;
     else process.env.SCHOOL_ADMIN_EMAILS = previous;
     await pool.end();

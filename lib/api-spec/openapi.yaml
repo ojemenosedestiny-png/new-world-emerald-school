@@ -1243,6 +1243,10 @@ components:
       $ref: "./reports.yaml#/schemas/ReportSubjectInput"
     ReportScore:
       $ref: "./reports.yaml#/schemas/ReportScore"
+    GradeBand:
+      $ref: "./reports.yaml#/schemas/GradeBand"
+    ReportWorkflow:
+      $ref: "./reports.yaml#/schemas/ReportWorkflow"
     ReportCardInfo:
       $ref: "./reports.yaml#/schemas/ReportCardInfo"
     ReportSubjectResult:

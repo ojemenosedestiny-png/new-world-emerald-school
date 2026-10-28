@@ -7,7 +7,9 @@ import { parseScoreCsv, parseScorePart, previewGrade } from "./scoreSheet";
 import { useReportCommand } from "./useReportCommand";
 import { BookOpenCheck } from "lucide-react";
 
-type Draft = Record<number, { ca: string; exam: string }>;
+type Entry = { ca: string; exam: string; total: string; grade: string };
+type Draft = Record<number, Entry>;
+const BLANK: Entry = { ca: "", exam: "", total: "", grade: "" };
 const fmt = (v: number | null | undefined) => (v === null || v === undefined ? "" : String(v));
 
 export function ScoresEditor({ ws, term, locked }: { ws: ReportWorkspace; term: ReportTerm; locked: boolean }) {
@@ -20,30 +22,37 @@ export function ScoresEditor({ ws, term, locked }: { ws: ReportWorkspace; term: 
 
   const saved = useMemo(() => {
     const map: Draft = {};
-    for (const s of ws.scores) if (s.subjectId === subjectId) map[s.studentId] = { ca: fmt(s.ca), exam: fmt(s.exam) };
+    for (const s of ws.scores) if (s.subjectId === subjectId) map[s.studentId] = { ca: fmt(s.ca), exam: fmt(s.exam), total: fmt(s.total), grade: s.grade ?? "" };
     return map;
   }, [ws.scores, subjectId]);
   useEffect(() => { setDraft(saved); }, [saved]);
 
   const possible = term.caMax + term.examMax;
+  // Manual mode: the teacher may type a total and a grade; otherwise they come from CA + exam and the scale.
+  const manual = ws.workflow?.mode === "manual";
+  const grades = new Set(ws.gradingScale.map((b) => b.grade.toUpperCase()));
   const rows = ws.students.map((st) => {
-    const d = draft[st.id] ?? { ca: "", exam: "" };
+    const d = { ...BLANK, ...draft[st.id] };
     const ca = parseScorePart(d.ca, term.caMax), exam = parseScorePart(d.exam, term.examMax);
-    const entered = ca.value !== null || exam.value !== null;
-    const total = (ca.value ?? 0) + (exam.value ?? 0);
-    const before = saved[st.id] ?? { ca: "", exam: "" };
-    return { st, d, ca, exam, entered, total, dirty: before.ca !== d.ca || before.exam !== d.exam };
+    const typed = manual ? parseScorePart(d.total, possible) : { value: null };
+    const gradeText = manual ? d.grade.trim().toUpperCase() : "";
+    const gradeError = gradeText && !grades.has(gradeText) ? "Not on the grading scale" : undefined;
+    const entered = ca.value !== null || exam.value !== null || typed.value !== null;
+    const total = typed.value ?? (ca.value ?? 0) + (exam.value ?? 0);
+    const grade = gradeText || previewGrade(possible ? (total / possible) * 100 : 0, ws.gradingScale);
+    const before = { ...BLANK, ...saved[st.id] };
+    return { st, d, ca, exam, typed, gradeText, gradeError, entered, total, grade, dirty: before.ca !== d.ca || before.exam !== d.exam || before.total !== d.total || before.grade !== d.grade };
   });
   const changed = rows.filter((r) => r.dirty);
-  const invalid = rows.some((r) => r.ca.error || r.exam.error);
+  const invalid = rows.some((r) => r.ca.error || r.exam.error || ("error" in r.typed && r.typed.error) || r.gradeError);
   const enteredCount = rows.filter((r) => r.entered).length;
-  const set = (id: number, key: "ca" | "exam", value: string) => setDraft((p) => ({ ...p, [id]: { ...(p[id] ?? { ca: "", exam: "" }), [key]: value } }));
+  const set = (id: number, key: keyof Entry, value: string) => setDraft((p) => ({ ...p, [id]: { ...BLANK, ...p[id], [key]: value } }));
 
-  const save = () => cmd.run({ action: "saveScores", scores: { termId: term.id, entries: changed.map((r) => ({ studentId: r.st.id, subjectId, ca: r.ca.value, exam: r.exam.value })) } }, `Saved ${changed.length} ${changed.length === 1 ? "score" : "scores"}`);
+  const save = () => cmd.run({ action: "saveScores", scores: { termId: term.id, entries: changed.map((r) => ({ studentId: r.st.id, subjectId, ca: r.ca.value, exam: r.exam.value, total: r.typed.value, grade: r.gradeText || null })) } }, `Saved ${changed.length} ${changed.length === 1 ? "score" : "scores"}`);
   const csvRows = useMemo(() => parseScoreCsv(csv, ws.students, term), [csv, ws.students, term]);
   const csvValid = csvRows.filter((r) => !r.error);
   const applyCsv = () => {
-    setDraft((p) => { const next = { ...p }; for (const r of csvValid) next[r.id!] = { ca: fmt(r.ca), exam: fmt(r.exam) }; return next; });
+    setDraft((p) => { const next = { ...p }; for (const r of csvValid) next[r.id!] = { ...BLANK, ...p[r.id!], ca: fmt(r.ca), exam: fmt(r.exam) }; return next; });
     setCsvOpen(false); setCsv("");
   };
 
@@ -75,7 +84,7 @@ export function ScoresEditor({ ws, term, locked }: { ws: ReportWorkspace; term: 
         <div className="overflow-x-auto">
           <table className="w-full min-w-[560px] text-sm">
             <thead className="bg-[hsl(var(--p-paper-2)/0.7)] text-left text-xs uppercase tracking-wider text-[hsl(var(--p-ink)/0.6)]">
-              <tr><th className="px-4 py-2">Student</th><th className="px-2 py-2 w-28">CA /{term.caMax}</th><th className="px-2 py-2 w-28">Exam /{term.examMax}</th><th className="px-2 py-2 w-20">Total</th><th className="px-2 py-2 w-16">Grade</th></tr>
+              <tr><th className="px-4 py-2">Student</th><th className="px-2 py-2 w-28">CA /{term.caMax}</th><th className="px-2 py-2 w-28">Exam /{term.examMax}</th><th className="px-2 py-2 w-24">Total{manual ? ` /${possible}` : ""}</th><th className="px-2 py-2 w-20">Grade</th></tr>
             </thead>
             <tbody className="divide-y divide-[hsl(var(--p-line))]">
               {rows.map((r) => (
@@ -86,13 +95,19 @@ export function ScoresEditor({ ws, term, locked }: { ws: ReportWorkspace; term: 
                       <input inputMode="decimal" className={"portal-input !py-1.5 text-center " + (r[k].error ? "!border-[hsl(var(--p-red))]" : "")} value={r.d[k]} disabled={locked} aria-label={`${k === "ca" ? "CA" : "Exam"} score for ${r.st.name}`} aria-invalid={!!r[k].error} title={r[k].error} onChange={(e) => set(r.st.id, k, e.target.value)} data-testid={`input-${k}-${r.st.id}`} />
                     </td>
                   ))}
-                  <td className="px-2 py-2 font-semibold tabular-nums">{r.entered ? r.total : "-"}</td>
-                  <td className="px-2 py-2 font-bold">{r.entered ? previewGrade(possible ? (r.total / possible) * 100 : 0) : "-"}</td>
+                  {manual ? (<>
+                    <td className="px-2 py-2"><input inputMode="decimal" className={"portal-input !py-1.5 text-center " + ("error" in r.typed && r.typed.error ? "!border-[hsl(var(--p-red))]" : "")} value={r.d.total} disabled={locked} placeholder={r.ca.value !== null || r.exam.value !== null ? String((r.ca.value ?? 0) + (r.exam.value ?? 0)) : ""} aria-label={`Total for ${r.st.name}`} onChange={(e) => set(r.st.id, "total", e.target.value)} data-testid={`input-total-${r.st.id}`} /></td>
+                    <td className="px-2 py-2"><input className={"portal-input !py-1.5 text-center uppercase " + (r.gradeError ? "!border-[hsl(var(--p-red))]" : "")} maxLength={4} value={r.d.grade} disabled={locked} placeholder={r.entered ? r.grade : ""} title={r.gradeError} aria-label={`Grade for ${r.st.name}`} onChange={(e) => set(r.st.id, "grade", e.target.value)} data-testid={`input-grade-${r.st.id}`} /></td>
+                  </>) : (<>
+                    <td className="px-2 py-2 font-semibold tabular-nums">{r.entered ? r.total : "-"}</td>
+                    <td className="px-2 py-2 font-bold">{r.entered ? r.grade : "-"}</td>
+                  </>)}
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
+        {manual && <p className="border-t border-[hsl(var(--p-line))] px-4 py-2 text-xs text-[hsl(var(--p-ink)/0.6)]">Manual results: type a total and grade to use them instead of the calculated ones. Leave them empty to calculate from CA and exam.</p>}
         {invalid && <p className="border-t border-[hsl(var(--p-line))] px-4 py-2 text-xs text-[hsl(var(--p-red))]">Fix the highlighted scores before saving.</p>}
       </div>
 

@@ -12,7 +12,10 @@ function TermReport({ data, report, open, onToggle }: { data: StudentReportsData
   const stats = new Map(report.subjectStats.map((s) => [s.subjectId, s]));
   const r = report.result;
   const print = () => {
-    const ok = printReportCards([{ studentName: data.studentName, studentId: data.studentId, className: data.className, term: report.term, subjects: report.subjects, result: r, subjectStats: report.subjectStats, classSize: report.classSize, card: report.card }]);
+    const ok = printReportCards([{
+      studentName: data.studentName, studentId: data.studentId, className: report.className || data.className, term: report.term, subjects: report.subjects, result: r, subjectStats: report.subjectStats, classSize: report.classSize, card: report.card,
+      gradingScale: report.gradingScale, teacherName: report.teacherName, teacherSignature: report.teacherSignature, principalName: report.principalName, principalSignature: report.principalSignature,
+    }]);
     if (!ok) toast({ variant: "destructive", title: "Pop-up blocked", description: "Allow pop-ups for this site to print your report card." });
   };
   return (

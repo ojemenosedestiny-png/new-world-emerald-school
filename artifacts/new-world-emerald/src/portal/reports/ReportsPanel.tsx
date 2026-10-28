@@ -1,16 +1,17 @@
 import { useEffect, useState } from "react";
 import { useGetReportWorkspace, getGetReportWorkspaceQueryKey, type ReportTermInput, type ReportWorkspace } from "@workspace/api-client-react";
-import { CalendarPlus, FileBarChart, Lock, Pencil, Plus, Send, Trash2, Undo2 } from "lucide-react";
+import { CalendarPlus, FileBarChart, Pencil, Plus, Trash2 } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { EmptyState, ErrorPanel, Field, Skeleton, StatusPill } from "../ui";
+import { EmptyState, ErrorPanel, Field, Skeleton } from "../ui";
 import { errorMessage } from "../lib";
 import { termLabel } from "./reportCard";
 import { useReportCommand } from "./useReportCommand";
 import { ScoresEditor } from "./ScoresEditor";
 import { Broadsheet, RemarksEditor } from "./RemarksBroadsheet";
+import { WorkflowBar, resultsLocked } from "./ResultWorkflow";
+import { ResultSettings } from "./ResultSettings";
 
-type Section = "scores" | "remarks" | "broadsheet" | "subjects";
+type Section = "scores" | "remarks" | "broadsheet" | "subjects" | "settings";
 
 function TermDialog({ initial, onClose }: { initial: ReportTermInput; onClose: () => void }) {
   const cmd = useReportCommand();
@@ -69,12 +70,10 @@ function SubjectsEditor({ ws, classId }: { ws: ReportWorkspace; classId: number 
 }
 
 export function ReportsPanel() {
-  const cmd = useReportCommand();
   const [termId, setTermId] = useState<number | undefined>();
   const [classId, setClassId] = useState<number | undefined>();
   const [section, setSection] = useState<Section>("scores");
   const [termForm, setTermForm] = useState<ReportTermInput | null>(null);
-  const [confirmRelease, setConfirmRelease] = useState<boolean | null>(null);
   const params = termId && classId ? { termId, classId } : undefined;
   const q = useGetReportWorkspace(params, { query: { queryKey: getGetReportWorkspaceQueryKey(params), placeholderData: (prev) => prev } });
   const ws = q.data;
@@ -91,7 +90,8 @@ export function ReportsPanel() {
   const ready = term && cls && ws.termId === term.id && ws.classId === cls.id;
   const blankTerm: ReportTermInput = { session: `${new Date().getFullYear()}/${new Date().getFullYear() + 1}`, term: "First Term", caMax: 40, examMax: 60, nextTermBegins: "" };
   const missing = ready ? ws.students.filter((s) => (ws.results.find((r) => r.studentId === s.id)?.subjectsTaken ?? 0) < ws.subjects.length).length : 0;
-  const sections: [Section, string][] = [["scores", "Scores"], ["remarks", "Remarks & attendance"], ["broadsheet", "Broadsheet"], ...(ws.canAdmin ? [["subjects", "Subjects"] as [Section, string]] : [])];
+  const sections: [Section, string][] = [["scores", "Scores"], ["remarks", "Remarks & attendance"], ["broadsheet", "Broadsheet & print"], ...(ws.canAdmin ? [["subjects", "Subjects"] as [Section, string]] : []), ["settings", ws.canAdmin ? "Settings" : "My signature"]];
+  const locked = resultsLocked(ws);
 
   if (!ws.terms.length) {
     return (
@@ -122,40 +122,21 @@ export function ReportsPanel() {
 
       {!ws.classes.length ? <EmptyState icon={<FileBarChart size={22} />} title="No classes" body="Create a class first in the Classes tab." /> : !ready ? <Skeleton className="h-40" /> : (
         <>
-          <div className={"portal-card flex flex-col gap-3 p-4 sm:flex-row sm:items-center " + (ws.released ? "border-l-4 border-l-[hsl(var(--p-emerald))]" : "")} data-testid="bar-release">
-            <div className="flex-1">
-              <div className="flex items-center gap-2">{ws.released ? <StatusPill tone="green">Released to students</StatusPill> : <StatusPill tone="muted">Not released</StatusPill>}{ws.released && <span className="inline-flex items-center gap-1 text-xs text-[hsl(var(--p-ink)/0.6)]"><Lock size={11} /> Scores and remarks are locked</span>}</div>
-              <p className="mt-1 text-sm text-[hsl(var(--p-ink)/0.65)]">{ws.released ? "Students in this class can view and print their report cards." : missing ? `${missing} of ${ws.students.length} students are missing one or more subject scores.` : ws.students.length ? "All students have scores for every subject." : "No active students in this class."}</p>
-            </div>
-            {ws.canAdmin && (ws.released
-              ? <button className="portal-btn-ghost" disabled={cmd.pending} onClick={() => setConfirmRelease(false)} data-testid="button-withhold-reports"><Undo2 size={13} /> Withhold</button>
-              : <button className="portal-btn-gold portal-btn" disabled={cmd.pending || !ws.ranked} onClick={() => setConfirmRelease(true)} data-testid="button-release-reports"><Send size={14} /> Release report cards</button>)}
-          </div>
+          <WorkflowBar ws={ws} term={term} className={cls.name} missing={missing} onOpenSettings={() => setSection("settings")} />
 
           <div className="flex gap-1 overflow-x-auto rounded-full border border-[hsl(var(--p-line))] bg-[hsl(var(--p-surface)/0.7)] p-1" role="tablist">
             {sections.map(([key, label]) => <button key={key} role="tab" aria-selected={section === key} className={"portal-tab " + (section === key ? "!bg-[hsl(var(--p-ink))] !text-[hsl(var(--p-paper))]" : "")} onClick={() => setSection(key)} data-testid={"report-section-" + key}>{label}</button>)}
           </div>
 
-          {section === "scores" && <ScoresEditor ws={ws} term={term} locked={ws.released} />}
-          {section === "remarks" && <RemarksEditor ws={ws} term={term} locked={ws.released} />}
+          {section === "scores" && <ScoresEditor ws={ws} term={term} locked={locked} />}
+          {section === "remarks" && <RemarksEditor ws={ws} term={term} locked={locked} />}
           {section === "broadsheet" && <Broadsheet ws={ws} term={term} className={cls.name} />}
           {section === "subjects" && ws.canAdmin && <SubjectsEditor ws={ws} classId={cls.id} />}
+          {section === "settings" && <ResultSettings ws={ws} />}
         </>
       )}
 
       {termForm && <TermDialog initial={termForm} onClose={() => setTermForm(null)} />}
-      <AlertDialog open={confirmRelease !== null} onOpenChange={(o) => !o && setConfirmRelease(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle className="font-serif text-2xl">{confirmRelease ? "Release report cards?" : "Withhold report cards?"}</AlertDialogTitle>
-            <AlertDialogDescription>{confirmRelease ? `Every student in ${cls?.name} will be able to view and print their ${term ? termLabel(term) : ""} report card.${missing ? ` ${missing} students are still missing some subject scores.` : ""} Scores and remarks lock until you withhold.` : "Students will no longer see these report cards, and scores and remarks can be edited again."}</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction data-testid="button-confirm-release" onClick={() => { if (term && cls && confirmRelease !== null) void cmd.run({ action: "releaseReports", release: { termId: term.id, classId: cls.id, released: confirmRelease } }, confirmRelease ? "Report cards released" : "Report cards withheld"); setConfirmRelease(null); }}>{confirmRelease ? "Release" : "Withhold"}</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 }

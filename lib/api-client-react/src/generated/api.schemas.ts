@@ -1034,6 +1034,66 @@ export interface ReportScore {
   ca: number | null;
   /** @nullable */
   exam: number | null;
+  /**
+     * Manual results: a typed total used instead of CA + exam
+     * @minimum 0
+     * @maximum 200
+     * @nullable
+     */
+  total?: number | null;
+  /**
+     * Manual results: a typed grade used instead of the scale's
+     * @maxLength 4
+     * @nullable
+     */
+  grade?: string | null;
+}
+
+export interface GradeBand {
+  /**
+     * @minimum 0
+     * @maximum 100
+     */
+  min: number;
+  /**
+     * @minLength 1
+     * @maxLength 4
+     */
+  grade: string;
+  /** @maxLength 40 */
+  remark: string;
+}
+
+export type ReportWorkflowStatus = typeof ReportWorkflowStatus[keyof typeof ReportWorkflowStatus];
+
+
+export const ReportWorkflowStatus = {
+  draft: 'draft',
+  review: 'review',
+  approved: 'approved',
+  published: 'published',
+} as const;
+
+export type ReportWorkflowMode = typeof ReportWorkflowMode[keyof typeof ReportWorkflowMode];
+
+
+export const ReportWorkflowMode = {
+  automatic: 'automatic',
+  manual: 'manual',
+} as const;
+
+export interface ReportWorkflow {
+  status: ReportWorkflowStatus;
+  mode: ReportWorkflowMode;
+  teacherName: string;
+  /** @nullable */
+  teacherSignature: string | null;
+  /** @nullable */
+  submittedAt: string | null;
+  approvedBy: string;
+  /** @nullable */
+  approvedAt: string | null;
+  returnNote: string;
 }
 
 export interface ReportCardInfo {
@@ -1109,6 +1169,53 @@ export interface ReportStudent {
   name: string;
 }
 
+export type ReportWorkspaceWorkflowStatus = typeof ReportWorkspaceWorkflowStatus[keyof typeof ReportWorkspaceWorkflowStatus];
+
+
+export const ReportWorkspaceWorkflowStatus = {
+  draft: 'draft',
+  review: 'review',
+  approved: 'approved',
+  published: 'published',
+} as const;
+
+export type ReportWorkspaceWorkflowMode = typeof ReportWorkspaceWorkflowMode[keyof typeof ReportWorkspaceWorkflowMode];
+
+
+export const ReportWorkspaceWorkflowMode = {
+  automatic: 'automatic',
+  manual: 'manual',
+} as const;
+
+export type ReportWorkspaceWorkflow = {
+  status: ReportWorkspaceWorkflowStatus;
+  mode: ReportWorkspaceWorkflowMode;
+  teacherName: string;
+  /** @nullable */
+  teacherSignature: string | null;
+  /** @nullable */
+  submittedAt: string | null;
+  approvedBy: string;
+  /** @nullable */
+  approvedAt: string | null;
+  returnNote: string;
+};
+
+export type ReportWorkspaceGradingScaleItem = {
+  /**
+     * @minimum 0
+     * @maximum 100
+     */
+  min: number;
+  /**
+     * @minLength 1
+     * @maxLength 4
+     */
+  grade: string;
+  /** @maxLength 40 */
+  remark: string;
+};
+
 export type ReportWorkspaceTermsItem = {
   id: number;
   session: string;
@@ -1144,6 +1251,19 @@ export type ReportWorkspaceScoresItem = {
   ca: number | null;
   /** @nullable */
   exam: number | null;
+  /**
+     * Manual results: a typed total used instead of CA + exam
+     * @minimum 0
+     * @maximum 200
+     * @nullable
+     */
+  total?: number | null;
+  /**
+     * Manual results: a typed grade used instead of the scale's
+     * @maxLength 4
+     * @nullable
+     */
+  grade?: string | null;
 };
 
 export type ReportWorkspaceCardsItem = {
@@ -1201,6 +1321,16 @@ export type ReportWorkspaceSubjectStatsItem = {
 };
 
 export interface ReportWorkspace {
+  workflow: ReportWorkspaceWorkflow;
+  gradingScale: ReportWorkspaceGradingScaleItem[];
+  principalName: string;
+  /** @nullable */
+  principalSignature: string | null;
+  /**
+     * The signed-in teacher's saved signature
+     * @nullable
+     */
+  mySignature: string | null;
   terms: ReportWorkspaceTermsItem[];
   classes: ReportWorkspaceClassesItem[];
   canAdmin: boolean;
@@ -1229,7 +1359,83 @@ export const ReportCommandAction = {
   saveScores: 'saveScores',
   saveCards: 'saveCards',
   releaseReports: 'releaseReports',
+  saveSettings: 'saveSettings',
+  saveSignature: 'saveSignature',
+  workflow: 'workflow',
+  setMode: 'setMode',
 } as const;
+
+export type ReportCommandSettingsGradingScaleItem = {
+  /**
+     * @minimum 0
+     * @maximum 100
+     */
+  min: number;
+  /**
+     * @minLength 1
+     * @maxLength 4
+     */
+  grade: string;
+  /** @maxLength 40 */
+  remark: string;
+};
+
+export type ReportCommandSettings = {
+  /**
+     * @minItems 2
+     * @maxItems 12
+     */
+  gradingScale: ReportCommandSettingsGradingScaleItem[];
+  /** @maxLength 120 */
+  principalName: string;
+  /**
+     * @maxLength 200000
+     * @nullable
+     */
+  principalSignature: string | null;
+};
+
+export type ReportCommandSignature = {
+  /**
+     * @maxLength 200000
+     * @nullable
+     */
+  image: string | null;
+};
+
+export type ReportCommandWorkflowAction = typeof ReportCommandWorkflowAction[keyof typeof ReportCommandWorkflowAction];
+
+
+export const ReportCommandWorkflowAction = {
+  submit: 'submit',
+  withdraw: 'withdraw',
+  approve: 'approve',
+  return: 'return',
+  publish: 'publish',
+  unpublish: 'unpublish',
+} as const;
+
+export type ReportCommandWorkflow = {
+  termId: number;
+  classId: number;
+  action: ReportCommandWorkflowAction;
+  /** @maxLength 500 */
+  note?: string;
+};
+
+export type ReportCommandModeMode = typeof ReportCommandModeMode[keyof typeof ReportCommandModeMode];
+
+
+export const ReportCommandModeMode = {
+  automatic: 'automatic',
+  manual: 'manual',
+} as const;
+
+export type ReportCommandMode = {
+  termId: number;
+  classId: number;
+  mode: ReportCommandModeMode;
+};
 
 export type ReportCommandTerm = {
   id?: number;
@@ -1286,6 +1492,19 @@ export type ReportCommandScoresEntriesItem = {
   ca: number | null;
   /** @nullable */
   exam: number | null;
+  /**
+     * Manual results: a typed total used instead of CA + exam
+     * @minimum 0
+     * @maximum 200
+     * @nullable
+     */
+  total?: number | null;
+  /**
+     * Manual results: a typed grade used instead of the scale's
+     * @maxLength 4
+     * @nullable
+     */
+  grade?: string | null;
 };
 
 export type ReportCommandScores = {
@@ -1328,6 +1547,10 @@ export type ReportCommandRelease = {
 
 export interface ReportCommand {
   action: ReportCommandAction;
+  settings?: ReportCommandSettings;
+  signature?: ReportCommandSignature;
+  workflow?: ReportCommandWorkflow;
+  mode?: ReportCommandMode;
   term?: ReportCommandTerm;
   subject?: ReportCommandSubject;
   target?: ReportCommandTarget;
@@ -1335,6 +1558,21 @@ export interface ReportCommand {
   cards?: ReportCommandCards;
   release?: ReportCommandRelease;
 }
+
+export type StudentTermReportGradingScaleItem = {
+  /**
+     * @minimum 0
+     * @maximum 100
+     */
+  min: number;
+  /**
+     * @minLength 1
+     * @maxLength 4
+     */
+  grade: string;
+  /** @maxLength 40 */
+  remark: string;
+};
 
 export type StudentTermReportTerm = {
   id: number;
@@ -1408,6 +1646,15 @@ export type StudentTermReportCard = {
 } | null;
 
 export interface StudentTermReport {
+  /** The class the student was in for this term */
+  className: string;
+  gradingScale: StudentTermReportGradingScaleItem[];
+  teacherName: string;
+  /** @nullable */
+  teacherSignature: string | null;
+  principalName: string;
+  /** @nullable */
+  principalSignature: string | null;
   term: StudentTermReportTerm;
   subjects: StudentTermReportSubjectsItem[];
   result: StudentTermReportResult;
@@ -1416,6 +1663,21 @@ export interface StudentTermReport {
   card: StudentTermReportCard;
   releasedAt: string;
 }
+
+export type StudentReportsReportsItemGradingScaleItem = {
+  /**
+     * @minimum 0
+     * @maximum 100
+     */
+  min: number;
+  /**
+     * @minLength 1
+     * @maxLength 4
+     */
+  grade: string;
+  /** @maxLength 40 */
+  remark: string;
+};
 
 export type StudentReportsReportsItemTerm = {
   id: number;
@@ -1489,6 +1751,15 @@ export type StudentReportsReportsItemCard = {
 } | null;
 
 export type StudentReportsReportsItem = {
+  /** The class the student was in for this term */
+  className: string;
+  gradingScale: StudentReportsReportsItemGradingScaleItem[];
+  teacherName: string;
+  /** @nullable */
+  teacherSignature: string | null;
+  principalName: string;
+  /** @nullable */
+  principalSignature: string | null;
   term: StudentReportsReportsItemTerm;
   subjects: StudentReportsReportsItemSubjectsItem[];
   result: StudentReportsReportsItemResult;

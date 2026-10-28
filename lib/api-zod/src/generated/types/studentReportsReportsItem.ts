@@ -6,12 +6,22 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { StudentReportsReportsItemCard } from './studentReportsReportsItemCard';
+import type { StudentReportsReportsItemGradingScaleItem } from './studentReportsReportsItemGradingScaleItem';
 import type { StudentReportsReportsItemResult } from './studentReportsReportsItemResult';
 import type { StudentReportsReportsItemSubjectsItem } from './studentReportsReportsItemSubjectsItem';
 import type { StudentReportsReportsItemSubjectStatsItem } from './studentReportsReportsItemSubjectStatsItem';
 import type { StudentReportsReportsItemTerm } from './studentReportsReportsItemTerm';
 
 export type StudentReportsReportsItem = {
+  /** The class the student was in for this term */
+  className: string;
+  gradingScale: StudentReportsReportsItemGradingScaleItem[];
+  teacherName: string;
+  /** @nullable */
+  teacherSignature: string | null;
+  principalName: string;
+  /** @nullable */
+  principalSignature: string | null;
   term: StudentReportsReportsItemTerm;
   subjects: StudentReportsReportsItemSubjectsItem[];
   result: StudentReportsReportsItemResult;

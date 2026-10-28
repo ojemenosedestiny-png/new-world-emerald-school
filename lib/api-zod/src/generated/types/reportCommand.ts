@@ -7,14 +7,22 @@
  */
 import type { ReportCommandAction } from './reportCommandAction';
 import type { ReportCommandCards } from './reportCommandCards';
+import type { ReportCommandMode } from './reportCommandMode';
 import type { ReportCommandRelease } from './reportCommandRelease';
 import type { ReportCommandScores } from './reportCommandScores';
+import type { ReportCommandSettings } from './reportCommandSettings';
+import type { ReportCommandSignature } from './reportCommandSignature';
 import type { ReportCommandSubject } from './reportCommandSubject';
 import type { ReportCommandTarget } from './reportCommandTarget';
 import type { ReportCommandTerm } from './reportCommandTerm';
+import type { ReportCommandWorkflow } from './reportCommandWorkflow';
 
 export interface ReportCommand {
   action: ReportCommandAction;
+  settings?: ReportCommandSettings;
+  signature?: ReportCommandSignature;
+  workflow?: ReportCommandWorkflow;
+  mode?: ReportCommandMode;
   term?: ReportCommandTerm;
   subject?: ReportCommandSubject;
   target?: ReportCommandTarget;

@@ -104,6 +104,8 @@ export function printableFor(ws: ReportWorkspace, term: ReportTerm, className: s
     studentName: st.name, studentId: st.studentId, className, term, subjects: ws.subjects,
     result: ws.results.find((r) => r.studentId === st.id) ?? { studentId: st.id, subjects: [], total: 0, average: null, grade: null, position: null, subjectsTaken: 0 },
     subjectStats: ws.subjectStats, classSize: ws.ranked, card: ws.cards.find((c) => c.studentId === st.id) ?? null,
+    gradingScale: ws.gradingScale, teacherName: ws.workflow?.teacherName, teacherSignature: ws.workflow?.teacherSignature,
+    principalName: ws.principalName, principalSignature: ws.workflow?.status === "approved" || ws.workflow?.status === "published" ? ws.principalSignature : null,
   }));
 }
 

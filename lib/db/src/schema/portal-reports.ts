@@ -1,4 +1,4 @@
-import { pgTable, serial, text, integer, real, timestamp, uniqueIndex, primaryKey } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, integer, real, timestamp, uniqueIndex, primaryKey, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { portalClasses } from "./portal-classes";
 import { portalStudents } from "./portal-students";
@@ -33,6 +33,9 @@ export const portalScores = pgTable("portal_scores", {
   subjectId: integer("subject_id").notNull().references(() => portalSubjects.id),
   ca: real("ca"),
   exam: real("exam"),
+  // Manual results (or imported old results): a typed total and grade used instead of the calculated ones.
+  total: real("total"),
+  grade: text("grade"),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 }, (t) => [uniqueIndex("portal_scores_term_student_subject").on(t.termId, t.studentId, t.subjectId)]);
 export const insertPortalScoreSchema = createInsertSchema(portalScores).omit({ id: true, updatedAt: true });
@@ -57,3 +60,34 @@ export const portalReportReleases = pgTable("portal_report_releases", {
   releasedAt: timestamp("released_at", { withTimezone: true }).notNull().defaultNow(),
 }, (t) => [primaryKey({ columns: [t.termId, t.classId] })]);
 export type PortalReportReleaseRecord = typeof portalReportReleases.$inferSelect;
+
+/** School-wide report settings (one row, id 1): the grading scale, and the principal's name and signature. */
+export const portalReportSettings = pgTable("portal_report_settings", {
+  id: integer("id").primaryKey(),
+  gradingScale: jsonb("grading_scale").$type<{ min: number; grade: string; remark: string }[]>(),
+  principalName: text("principal_name").notNull().default(""),
+  // A small PNG/JPEG/WebP data URL, printed on published report cards.
+  principalSignature: text("principal_signature"),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+export type PortalReportSettingsRecord = typeof portalReportSettings.$inferSelect;
+
+/**
+ * Where a class's results are for a term: draft (scores being entered), review (the class teacher has
+ * checked and signed), approved (the principal or office approved). Published is a row in portal_report_releases.
+ */
+export const portalReportWorkflow = pgTable("portal_report_workflow", {
+  termId: integer("term_id").notNull().references(() => portalTerms.id),
+  classId: integer("class_id").notNull().references(() => portalClasses.id),
+  status: text("status").notNull().default("draft"),
+  // automatic: totals and grades come from CA + exam; manual: the teacher may type totals and grades.
+  mode: text("mode").notNull().default("automatic"),
+  teacherName: text("teacher_name").notNull().default(""),
+  teacherSignature: text("teacher_signature"),
+  submittedAt: timestamp("submitted_at", { withTimezone: true }),
+  approvedBy: text("approved_by").notNull().default(""),
+  approvedAt: timestamp("approved_at", { withTimezone: true }),
+  returnNote: text("return_note").notNull().default(""),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [primaryKey({ columns: [t.termId, t.classId] })]);
+export type PortalReportWorkflowRecord = typeof portalReportWorkflow.$inferSelect;

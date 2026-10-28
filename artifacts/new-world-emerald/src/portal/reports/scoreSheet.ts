@@ -1,8 +1,10 @@
 // Score-entry helpers for the staff report card workspace. The server validates and grades again.
 
-const GRADE_FLOORS: [number, string][] = [[70, "A"], [60, "B"], [50, "C"], [45, "D"], [40, "E"], [0, "F"]];
-export function previewGrade(percent: number) {
-  return GRADE_FLOORS.find(([min]) => percent >= min)?.[1] ?? "F";
+const GRADE_FLOORS = [{ min: 70, grade: "A" }, { min: 60, grade: "B" }, { min: 50, grade: "C" }, { min: 45, grade: "D" }, { min: 40, grade: "E" }, { min: 0, grade: "F" }];
+/** Preview of the grade the server will give, on the school's scale (highest band first). */
+export function previewGrade(percent: number, scale?: { min: number; grade: string }[] | number) {
+  const bands = Array.isArray(scale) && scale.length ? scale : GRADE_FLOORS;
+  return (bands.find((b) => percent >= b.min) ?? bands[bands.length - 1]).grade;
 }
 
 /** "" means not entered; otherwise a number 0..max in half marks, or an error message. */

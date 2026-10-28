@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { buildClassReport, gradeFor, rank, validScorePart } from "./report-cards";
+import { buildClassReport, gradeFor, rank, validScorePart, nextStatus, scaleProblem, signatureProblem } from "./report-cards";
 
 test("grades follow the school scale at every boundary", () => {
   const cases: [number, string, string][] = [
@@ -52,4 +52,46 @@ test("a single entered part still counts toward the subject", () => {
 test("score parts must be empty or between 0 and the maximum in half marks", () => {
   for (const ok of [null, undefined, 0, 12.5, 40]) assert.equal(validScorePart(ok, 40), true, String(ok));
   for (const bad of [-1, 40.5, 12.3, Number.NaN, Infinity]) assert.equal(validScorePart(bad, 40), false, String(bad));
+});
+
+test("report cards: the office's grading scale is checked and used for grades", () => {
+  const scale = [{ min: 75, grade: "A1", remark: "Excellent" }, { min: 50, grade: "C4", remark: "Credit" }, { min: 0, grade: "F9", remark: "Fail" }];
+  assert.equal(scaleProblem(scale), null);
+  assert.match(scaleProblem([{ min: 50, grade: "A", remark: "" }, { min: 60, grade: "B", remark: "" }, { min: 0, grade: "F", remark: "" }])!, /highest minimum/);
+  assert.match(scaleProblem([{ min: 50, grade: "A", remark: "" }, { min: 10, grade: "B", remark: "" }])!, /start at 0/);
+  assert.match(scaleProblem([{ min: 50, grade: "A", remark: "" }, { min: 0, grade: "a", remark: "" }])!, /once/);
+  assert.deepEqual(gradeFor(80, scale), { grade: "A1", remark: "Excellent" });
+  const report = buildClassReport([1], [10], [{ studentId: 1, subjectId: 10, ca: 30, exam: 30 }], { caMax: 40, examMax: 60 }, scale);
+  assert.equal(report.students[0].subjects[0].grade, "C4");
+  assert.equal(report.students[0].grade, "C4");
+});
+
+test("report cards: typed totals and grades replace the calculated ones (manual results)", () => {
+  const report = buildClassReport([1, 2], [10], [
+    { studentId: 1, subjectId: 10, ca: null, exam: null, total: 72, grade: null },
+    { studentId: 2, subjectId: 10, ca: 10, exam: 20, total: null, grade: "A" },
+  ], { caMax: 40, examMax: 60 });
+  const [a, b] = report.students;
+  assert.deepEqual([a.subjects[0].total, a.subjects[0].grade, a.subjects[0].position], [72, "A", 1]);
+  assert.deepEqual([b.subjects[0].total, b.subjects[0].grade, b.subjects[0].remark, b.subjects[0].position], [30, "A", "Excellent", 2]);
+});
+
+test("report cards: results move draft, teacher review, approval, published, and only the office approves", () => {
+  assert.deepEqual(nextStatus("draft", "submit", "teacher"), { status: "review" });
+  assert.deepEqual(nextStatus("review", "withdraw", "teacher"), { status: "draft" });
+  assert.match((nextStatus("review", "approve", "teacher") as { problem: string }).problem, /principal or school office/);
+  assert.deepEqual(nextStatus("review", "approve", "admin"), { status: "approved" });
+  assert.match((nextStatus("draft", "publish", "admin") as { problem: string }).problem, /Approve/);
+  assert.deepEqual(nextStatus("approved", "publish", "admin"), { status: "published" });
+  assert.deepEqual(nextStatus("published", "unpublish", "admin"), { status: "approved" });
+  assert.deepEqual(nextStatus("approved", "return", "admin"), { status: "draft" });
+  assert.match((nextStatus("draft", "approve", "admin") as { problem: string }).problem, /review and sign/);
+});
+
+test("report cards: signatures are small image data URLs", () => {
+  assert.equal(signatureProblem(null), null);
+  assert.equal(signatureProblem("data:image/png;base64,iVBORw0KGgo="), null);
+  assert.match(signatureProblem("data:text/html;base64,PHNjcmlwdD4=")!, /PNG, JPEG or WebP/);
+  assert.match(signatureProblem("javascript:alert(1)")!, /PNG/);
+  assert.match(signatureProblem("data:image/png;base64," + "A".repeat(200_001))!, /too large/);
 });

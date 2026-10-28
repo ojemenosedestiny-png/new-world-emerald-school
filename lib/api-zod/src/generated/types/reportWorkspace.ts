@@ -7,14 +7,26 @@
  */
 import type { ReportWorkspaceCardsItem } from './reportWorkspaceCardsItem';
 import type { ReportWorkspaceClassesItem } from './reportWorkspaceClassesItem';
+import type { ReportWorkspaceGradingScaleItem } from './reportWorkspaceGradingScaleItem';
 import type { ReportWorkspaceResultsItem } from './reportWorkspaceResultsItem';
 import type { ReportWorkspaceScoresItem } from './reportWorkspaceScoresItem';
 import type { ReportWorkspaceStudentsItem } from './reportWorkspaceStudentsItem';
 import type { ReportWorkspaceSubjectsItem } from './reportWorkspaceSubjectsItem';
 import type { ReportWorkspaceSubjectStatsItem } from './reportWorkspaceSubjectStatsItem';
 import type { ReportWorkspaceTermsItem } from './reportWorkspaceTermsItem';
+import type { ReportWorkspaceWorkflow } from './reportWorkspaceWorkflow';
 
 export interface ReportWorkspace {
+  workflow: ReportWorkspaceWorkflow;
+  gradingScale: ReportWorkspaceGradingScaleItem[];
+  principalName: string;
+  /** @nullable */
+  principalSignature: string | null;
+  /**
+     * The signed-in teacher's saved signature
+     * @nullable
+     */
+  mySignature: string | null;
   terms: ReportWorkspaceTermsItem[];
   classes: ReportWorkspaceClassesItem[];
   canAdmin: boolean;

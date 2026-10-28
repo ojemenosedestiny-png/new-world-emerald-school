@@ -17,4 +17,8 @@ export const ReportCommandAction = {
   saveScores: 'saveScores',
   saveCards: 'saveCards',
   releaseReports: 'releaseReports',
+  saveSettings: 'saveSettings',
+  saveSignature: 'saveSignature',
+  workflow: 'workflow',
+  setMode: 'setMode',
 } as const;
