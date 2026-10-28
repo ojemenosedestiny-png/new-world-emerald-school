@@ -17,7 +17,7 @@ export function contentSecurityPolicy(host: string | undefined) {
     "img-src": ["'self'", "data:", "blob:", "https://img.clerk.com", "https://storage.googleapis.com", "https://res.cloudinary.com"],
     "media-src": ["'self'", "blob:", "https://storage.googleapis.com", "https://res.cloudinary.com"],
     // Big videos upload from the browser straight to Cloudinary.
-    "connect-src": ["'self'", ...clerk, "https://clerk-telemetry.com", "https://storage.googleapis.com", "https://api.cloudinary.com"],
+    "connect-src": ["'self'", ...clerk, "https://*.client.protect.clerk.com:*", "https://clerk-telemetry.com", "https://storage.googleapis.com", "https://api.cloudinary.com"],
     // Live updates can embed YouTube's privacy-enhanced player.
     "frame-src": ["'self'", "https://challenges.cloudflare.com", ...clerk, "https://www.youtube-nocookie.com"],
     "worker-src": ["'self'", "blob:"],
@@ -32,10 +32,10 @@ export function contentSecurityPolicy(host: string | undefined) {
 }
 
 /**
- * Baseline security headers on every response. The CSP is report-only until reports
- * confirm nothing legitimate is blocked; set CSP_ENFORCE=true to enforce it.
+ * Baseline security headers on every response. The CSP is enforced: it was checked against every
+ * live page. CSP_REPORT_ONLY=true is an emergency switch back to report-only while a fix is made.
  */
-export function securityHeaders(enforceCsp = process.env.CSP_ENFORCE === "true"): RequestHandler {
+export function securityHeaders(enforceCsp = process.env.CSP_REPORT_ONLY !== "true"): RequestHandler {
   return (req, res, next) => {
     res.setHeader("X-Content-Type-Options", "nosniff");
     res.setHeader("X-Frame-Options", "SAMEORIGIN");

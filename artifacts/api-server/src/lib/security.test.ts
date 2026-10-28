@@ -3,6 +3,7 @@ import { test } from "node:test";
 import type { Request, Response } from "express";
 import { contentSecurityPolicy, securityHeaders } from "./security-headers";
 import { clientIp, sanitizeForAudit } from "./audit-format";
+import { publicRateLimit } from "./public-rate-limit";
 import { adminNeedsMfa, isSuperAdmin, isWebsiteAdmin } from "./website-admin";
 
 function headersFor(req: Partial<Request>, enforce = false) {
@@ -82,4 +83,33 @@ test("super admin and required two-factor for administrators", () => {
       if (v === undefined) delete process.env[k]; else process.env[k] = v;
     }
   }
+});
+
+test("security: the visitor's address comes from Cloudflare, not a header the visitor can write", () => {
+  assert.equal(clientIp({ headers: { "cf-connecting-ip": "203.0.113.7", "x-forwarded-for": "1.2.3.4, 203.0.113.7" }, socket: {} } as unknown as Request), "203.0.113.7");
+  assert.equal(clientIp({ headers: { "cf-connecting-ip": "<script>", "x-forwarded-for": "198.51.100.4" }, socket: {} } as unknown as Request), "198.51.100.4");
+});
+
+test("security: the Content-Security-Policy is enforced unless the emergency switch is on", () => {
+  const before = process.env.CSP_REPORT_ONLY;
+  delete process.env.CSP_REPORT_ONLY;
+  const set: Record<string, string> = {};
+  securityHeaders()({ headers: { host: "school.example" } } as Request, { setHeader: (k: string, v: string) => { set[k] = v; } } as unknown as Response, () => {});
+  assert.ok(set["Content-Security-Policy"]);
+  assert.equal(set["Content-Security-Policy-Report-Only"], undefined);
+  assert.match(set["Content-Security-Policy"], /script-src 'self' [^;]*;/);
+  assert.doesNotMatch(set["Content-Security-Policy"], /script-src[^;]*'unsafe-inline'/);
+  assert.match(set["Content-Security-Policy"], /connect-src[^;]*https:\/\/\*\.client\.protect\.clerk\.com:\*/);
+  if (before === undefined) delete process.env.CSP_REPORT_ONLY; else process.env.CSP_REPORT_ONLY = before;
+});
+
+test("security: public forms are limited per address", () => {
+  const limit = publicRateLimit("test", 2, "Too many.");
+  const send = (ip: string) => {
+    let status = 200, passed = false;
+    const res = { setHeader() {}, status(s: number) { status = s; return this; }, json() { return this; } } as unknown as Response;
+    limit({ method: "POST", headers: { "cf-connecting-ip": ip }, socket: {} } as unknown as Request, res, () => { passed = true; });
+    return passed ? 200 : status;
+  };
+  assert.deepEqual([send("203.0.113.1"), send("203.0.113.1"), send("203.0.113.1"), send("203.0.113.2")], [200, 200, 429, 200]);
 });

@@ -37,6 +37,7 @@ it("reviews a class's totals, ranking and grades, and previews each student's re
   expect(rows[2]).toContain("Chi Eze");
   expect(screen.getByTestId("list-review-grades").textContent).toMatch(/A.*1.*C.*1.*F.*1/);
   expect((screen.getByTestId("frame-result-preview") as HTMLIFrameElement).srcdoc).toContain("Ada Obi");
+  expect(screen.getByTestId("frame-result-preview").getAttribute("sandbox")).toBe("");
   fireEvent.click(screen.getByTestId("review-row-3"));
   expect((screen.getByTestId("frame-result-preview") as HTMLIFrameElement).srcdoc).toContain("Chi Eze");
 });

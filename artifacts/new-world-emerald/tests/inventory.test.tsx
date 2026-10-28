@@ -73,3 +73,11 @@ it("opens an item's history from its row", () => {
   expect(screen.queryByTestId("button-details-edit")).toBeNull();
   expect(screen.queryByTestId("button-delete-item")).toBeNull();
 });
+
+it("exports to CSV without letting a cell run as an Excel formula", async () => {
+  const { toCsv } = await import("../src/portal/manage/InventoryPanel");
+  const csv = toCsv([item({ name: "=HYPERLINK(\"http://evil\")", notes: "+1 spare", location: "@store" })]);
+  expect(csv).toContain(`"'=HYPERLINK(""http://evil"")"`);
+  expect(csv).toContain(`"'+1 spare"`);
+  expect(csv).toContain(`"'@store"`);
+});

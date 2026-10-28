@@ -87,14 +87,14 @@ The free Render plan sleeps when idle, so the first visit after a quiet period i
 |---|---|
 | `SCHOOL_SUPER_ADMIN_EMAILS` | Who can read the audit log. Leave empty to use the first email in `SCHOOL_ADMIN_EMAILS`. |
 | `REQUIRE_ADMIN_MFA` | `true` makes every administrator turn on two-factor authentication before they can manage anything. |
-| `CSP_ENFORCE` | `false` (default) sends the Content-Security-Policy in report-only mode; `true` enforces it. |
+| `CSP_REPORT_ONLY` | Leave unset: the Content-Security-Policy is enforced. `true` is an emergency switch to report-only. |
 
 **Turning on required two-factor (in this order, so nobody is locked out):**
 1. In the Clerk dashboard: *Configure → Multi-factor*, enable **Authenticator application** and **Backup codes**. (Clerk may need a paid plan for MFA on a production instance; development instances include it.)
 2. Sign in to the site, open your account (top right) → *Security*, add an authenticator app and save your backup codes.
 3. In Render set `REQUIRE_ADMIN_MFA=true`. Other administrators are guided through setup the next time they sign in.
 
-**Enforcing the Content-Security-Policy:** watch the Render logs for `CSP violation report` lines for a few days of normal use (sign-in, uploads, printing, exams). If none point at something the site needs, set `CSP_ENFORCE=true`.
+**Content-Security-Policy:** enforced on every page. If something the site needs is ever blocked, Render logs show `CSP violation report` lines; set `CSP_REPORT_ONLY=true` while the policy is fixed, then remove it. The old `CSP_ENFORCE` variable is no longer used and can be deleted.
 
 **Idle sign-out:** staff and students are signed out after 30 minutes without activity (a one-minute warning first). Students in the middle of an exam are not signed out; the exam timer decides.
 

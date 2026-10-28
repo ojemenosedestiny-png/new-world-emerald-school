@@ -36,8 +36,9 @@ export function quantityAfter(quantity: number, kind: InventoryMoveInputKind, am
   return after < 0 ? null : after;
 }
 
-function toCsv(items: InventoryItem[]) {
-  const cell = (v: string | number) => `"${String(v).replace(/"/g, '""')}"`;
+export function toCsv(items: InventoryItem[]) {
+  // Cells starting with = + - @ would run as formulas in Excel, so they are written as plain text.
+  const cell = (v: string | number) => { const t = typeof v === "string" && /^[=+\-@\t\r]/.test(v) ? "'" + v : String(v); return `"${t.replace(/"/g, '""')}"`; };
   const rows = [["Item", "Category", "Class", "Location", "Quantity", "Unit", "Reorder level", "Status", "Condition", "Notes", "Last updated"],
     ...items.map((i) => [i.name, i.category, i.className || "School-wide", i.location, i.quantity, i.unit, i.reorderLevel, STATUS[i.status].label, CONDITIONS[i.condition], i.notes, i.updatedAt.slice(0, 10)])];
   return rows.map((r) => r.map(cell).join(",")).join("\r\n");

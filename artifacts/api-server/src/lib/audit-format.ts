@@ -22,6 +22,9 @@ export function sanitizeForAudit(value: unknown, depth = 0): unknown {
 }
 
 export function clientIp(req: Request) {
+  // Cloudflare sets CF-Connecting-IP itself; the first X-Forwarded-For entry can be written by the visitor.
+  const cf = req.headers["cf-connecting-ip"];
+  if (typeof cf === "string" && /^[0-9a-fA-F:.]{3,64}$/.test(cf.trim())) return cf.trim();
   const forwarded = req.headers["x-forwarded-for"];
   const first = (Array.isArray(forwarded) ? forwarded[0] : forwarded)?.split(",")[0]?.trim();
   return (first || req.ip || req.socket.remoteAddress || "").slice(0, 64) || null;

@@ -115,7 +115,7 @@ export function ResultsReviewBody({ ws, term, className }: { ws: ReportWorkspace
             <div className="min-w-0"><h3 className="truncate font-serif text-lg font-semibold">{selected ? name(selected) : "Preview"}</h3><p className="text-xs text-[hsl(var(--p-ink)/0.6)]">Exactly as the student will see and print it</p></div>
             {selected && <button className="portal-btn !py-1.5 text-xs" onClick={() => print([selected])} data-testid="button-review-print-one"><Printer size={13} /> Print / PDF</button>}
           </div>
-          {selected && <iframe title={`Result preview for ${name(selected)}`} srcDoc={html} className="h-[70dvh] w-full bg-white lg:h-[760px]" data-testid="frame-result-preview" />}
+          {selected && <iframe title={`Result preview for ${name(selected)}`} srcDoc={html} sandbox="" className="h-[70dvh] w-full bg-white lg:h-[760px]" data-testid="frame-result-preview" />}
         </section>
       </div>
     </div>

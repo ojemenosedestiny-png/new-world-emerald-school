@@ -30,8 +30,6 @@ services:
         sync: false
       - key: REQUIRE_ADMIN_MFA
         value: "false"
-      - key: CSP_ENFORCE
-        value: "false"
       - key: RESEND_API_KEY
         sync: false
       - key: EMAIL_FROM
