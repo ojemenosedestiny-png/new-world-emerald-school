@@ -49,8 +49,8 @@ function ClerkProviderWithRoutes() {
       signInUrl={`${basePath}/sign-in`}
       signUpUrl={`${basePath}/sign-up`}
       localization={{
-        signIn: { start: { title: "Staff sign-in", subtitle: "Sign in or create your account with your school-approved email" } },
-        signUp: { start: { title: "Create your staff account", subtitle: "Use the email the school approved for you" } },
+        signIn: { start: { title: "Staff sign-in", subtitle: "Sign in with your school-approved email", titleCombined: "Staff sign-in", subtitleCombined: "Sign in, or create your account the first time" } },
+        signUp: { start: { title: "Create your staff account", subtitle: "Use the email the school approved for you", titleCombined: "Create your staff account", subtitleCombined: "Use the email the school approved for you" } },
       }}
       routerPush={(to) => setLocation(stripBase(to))}
       routerReplace={(to) => setLocation(stripBase(to), { replace: true })}
