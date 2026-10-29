@@ -1,5 +1,6 @@
 import { lazy, useEffect } from "react";
 import { Redirect, Route, Switch, useLocation } from "wouter";
+import { useAuth } from "@clerk/react";
 import Home from "@/pages/Home";
 import { RouteBoundary } from "@/components/RouteBoundary";
 
@@ -17,6 +18,16 @@ const PortalManage = lazy(() => import("@/pages/PortalManage"));
 const Director = lazy(() => import("@/pages/Director"));
 const ActivateAccount = lazy(() => import("@/pages/ActivateAccount"));
 const NotFound = lazy(() => import("@/pages/not-found"));
+
+/** The teacher link: signed-in staff go to their workspace; everyone else to staff sign-in, where a new email continues into creating the account. */
+function TeacherLink() {
+  const { isLoaded, isSignedIn } = useAuth();
+  if (!isLoaded) return null;
+  if (isSignedIn) return <Redirect to="/portal/manage" replace />;
+  const email = new URLSearchParams(window.location.search).get("email") ?? "";
+  const keep = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? "&email=" + encodeURIComponent(email) : "";
+  return <Redirect to={"/sign-in?returnTo=portal" + keep} replace />;
+}
 
 export function AppRoutes() {
   const [location] = useLocation();
@@ -39,7 +50,7 @@ export function AppRoutes() {
         <Route path="/portal/manage" component={PortalManage} />
         {/* The short link teachers are given: staff sign-in, then their own classes. */}
         <Route path="/director" component={Director} />
-        <Route path="/teacher">{() => <Redirect to="/portal/manage" replace />}</Route>
+        <Route path="/teacher" component={TeacherLink} />
         <Route path="/portal/activate" component={ActivateAccount} />
         <Route component={NotFound} />
       </Switch>

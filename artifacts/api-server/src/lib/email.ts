@@ -126,7 +126,7 @@ If you did not change it, contact the school office straight away.`;
 }
 
 
-/** Tells a newly approved teacher how to sign in; staff sign in with a one-time email code, so there is no password. */
+/** Tells a newly approved teacher how to create their account once and then sign in with a one-time email code. */
 export function teacherInviteEmail(p: { teacherName: string; email: string; classNames: string[]; signInUrl: string }) {
   const classes = p.classNames.length ? p.classNames.join(", ") : "none yet (the school office will assign them)";
   const subject = "You have been added as a teacher at New World Emerald";
@@ -138,12 +138,13 @@ export function teacherInviteEmail(p: { teacherName: string; email: string; clas
       Sign in with: <b>${esc(p.email)}</b><br>
       Your classes: <b>${esc(classes)}</b>
     </td></tr></table>
-    <p style="margin:0 0 6px;line-height:1.6"><b>How to sign in</b></p>
-    <ol style="margin:0 0 4px;padding-left:20px;line-height:1.7">
-      <li>Open the link below (bookmark it for next time).</li>
-      <li>Enter this email address.</li>
-      <li>Type the six-digit code we email you. There is no password to remember.</li>
-    </ol>`,
+    <p style="margin:0 0 6px;line-height:1.6"><b>The first time</b></p>
+    <ol style="margin:0 0 10px;padding-left:20px;line-height:1.7">
+      <li>Open the link below. Your email is already filled in; press Continue.</li>
+      <li>Choose a password for your account.</li>
+      <li>Type the six-digit code we email you to confirm it is your address.</li>
+    </ol>
+    <p style="margin:0 0 4px;line-height:1.6"><b>After that</b>, open the same link (bookmark it), enter this email and type the code we send you.</p>`,
     { label: "Open the teacher portal", url: p.signInUrl },
     "Never share your sign-in code. If you were not expecting this email, contact the school office.");
   const text = `Dear ${p.teacherName},
@@ -153,10 +154,12 @@ The school office has given you access to the New World Emerald teacher portal.
 Sign in with: ${p.email}
 Your classes: ${classes}
 
-How to sign in:
-1. Open ${p.signInUrl} (bookmark it for next time).
-2. Enter this email address.
-3. Type the six-digit code we email you. There is no password.
+The first time:
+1. Open ${p.signInUrl}. Your email is already filled in; press Continue.
+2. Choose a password for your account.
+3. Type the six-digit code we email you to confirm your address.
+
+After that, open the same link (bookmark it), enter this email and type the code we send you.
 
 Never share your sign-in code.`;
   return { subject, html, text };

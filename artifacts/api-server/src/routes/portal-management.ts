@@ -24,7 +24,7 @@ async function inviteTeacher(teacher: { name: string; email: string; classIds: n
   if (!emailConfigured()) return "Not emailed: email is not set up yet (RESEND_API_KEY and EMAIL_FROM). Share the teacher link instead.";
   if (!base) return "Not emailed: the site address is not configured (PUBLIC_SITE_URL). Share the teacher link instead.";
   const classes = teacher.classIds.length ? await db.select({ id: portalClasses.id, name: portalClasses.name }).from(portalClasses).where(inArray(portalClasses.id, teacher.classIds)) : [];
-  const mail = teacherInviteEmail({ teacherName: teacher.name, email: teacher.email, classNames: classes.map((c) => c.name).sort(), signInUrl: base + TEACHER_PATH });
+  const mail = teacherInviteEmail({ teacherName: teacher.name, email: teacher.email, classNames: classes.map((c) => c.name).sort(), signInUrl: `${base}${TEACHER_PATH}?email=${encodeURIComponent(teacher.email)}` });
   try {
     const result = await sendEmail({ to: teacher.email, ...mail });
     if (result.sent) return `Invitation emailed to ${teacher.email}.`;

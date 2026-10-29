@@ -63,7 +63,7 @@ export default function PortalManage() {
   const reviews = useListPhotoReviews({ query: { queryKey: getListPhotoReviewsQueryKey(), enabled: signedIn && isStaff, refetchInterval: 60000 } });
 
   if (!isLoaded) return <div className="portal p-10"><Skeleton className="mx-auto h-40 max-w-md" /></div>;
-  if (!signedIn) return <Gate title="Staff sign-in" body="Teachers and school administrators sign in with their approved school email."><Link href="/sign-in?returnTo=portal" className="portal-btn w-full" data-testid="link-staff-signin">Sign in with email</Link></Gate>;
+  if (!signedIn) return <Gate title="Staff sign-in" body="Teachers and school administrators sign in with their approved school email. First time? The same button creates your account."><Link href="/sign-in?returnTo=portal" className="portal-btn w-full" data-testid="link-staff-signin">Sign in with email</Link></Gate>;
   if (session.isLoading) return <div className="portal p-10"><Skeleton className="mx-auto h-40 max-w-md" /></div>;
   if (session.isError) return <div className="portal grid place-items-center px-4"><div className="max-w-md"><ErrorPanel title="Could not check your access" message={errorMessage(session.error)} onRetry={() => session.refetch()} /></div></div>;
   if (session.data?.mfaRequired) return <Gate title="Turn on two-factor" body="Administrator accounts need two-factor authentication."><TwoFactorSetup tone="portal" onCheckAgain={() => void session.refetch()} checking={session.isFetching} /></Gate>;

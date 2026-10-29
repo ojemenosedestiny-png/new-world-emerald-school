@@ -107,6 +107,9 @@ test("teacher invitations carry the sign-in link, the email to use and the class
   assert.match(mail.html, /href="https:\/\/school\.example\/teacher"/);
   assert.match(mail.text, /https:\/\/school\.example\/teacher/);
   assert.doesNotMatch(mail.text, /password:/i, "staff have no password to send");
+  // New teachers have no account yet: the email must say they create one (with a password) the first time.
+  assert.match(mail.text, /The first time:[\s\S]*Choose a password[\s\S]*six-digit code/);
+  assert.doesNotMatch(mail.html, /no password/i);
   assert.match(teacherInviteEmail({ teacherName: "A", email: "a@example.test", classNames: [], signInUrl: "https://x.example/teacher" }).text, /none yet/);
 });
 
