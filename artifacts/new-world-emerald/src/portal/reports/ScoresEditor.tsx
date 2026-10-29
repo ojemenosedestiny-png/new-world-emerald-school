@@ -5,6 +5,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { EmptyState } from "../ui";
 import { parseScoreCsv, parseScorePart, previewGrade } from "./scoreSheet";
 import { useReportCommand } from "./useReportCommand";
+import { CbtScoresDialog } from "./CbtScoresDialog";
 import { BookOpenCheck } from "lucide-react";
 
 type Entry = { ca: string; exam: string; total: string; grade: string };
@@ -18,6 +19,7 @@ export function ScoresEditor({ ws, term, locked: lockedByStatus }: { ws: ReportW
   const [subjectId, setSubjectId] = useState<number>(ws.subjects[0]?.id ?? 0);
   const [draft, setDraft] = useState<Draft>({});
   const [csvOpen, setCsvOpen] = useState(false);
+  const [cbtOpen, setCbtOpen] = useState(false);
   const [csv, setCsv] = useState("");
   useEffect(() => { if (!ws.subjects.some((s) => s.id === subjectId)) setSubjectId(ws.subjects[0]?.id ?? 0); }, [ws.subjects, subjectId]);
 
@@ -60,7 +62,12 @@ export function ScoresEditor({ ws, term, locked: lockedByStatus }: { ws: ReportW
     setCsvOpen(false); setCsv("");
   };
 
-  if (!ws.subjects.length) return <EmptyState icon={<BookOpenCheck size={22} />} title="No subjects for this class" body="An administrator adds the class's subjects in the Subjects tab. Scores are entered per subject." />;
+  if (!ws.subjects.length) return (<>
+    <EmptyState icon={<BookOpenCheck size={22} />} title="No subjects for this class"
+      body={ws.canAdmin ? "Add the class's subjects in the Subjects tab, or add one straight from a CBT exam the class has written, then bring its scores in." : "An administrator adds the class's subjects in the Subjects tab. Scores are entered per subject."}
+      action={ws.canAdmin ? <button className="portal-btn" onClick={() => setCbtOpen(true)} data-testid="button-cbt-empty">Add a subject from a CBT exam</button> : undefined} />
+    {cbtOpen && <CbtScoresDialog ws={ws} term={term} onClose={() => setCbtOpen(false)} />}
+  </>);
   if (!ws.students.length) return <EmptyState icon={<BookOpenCheck size={22} />} title="No active students" body="Enrol students in this class to enter their scores." />;
   const subject = ws.subjects.find((s) => s.id === subjectId);
 
@@ -81,6 +88,7 @@ export function ScoresEditor({ ws, term, locked: lockedByStatus }: { ws: ReportW
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[hsl(var(--p-line))] px-4 py-3">
           <p className="text-sm"><b>{subject?.name}</b> <span className="text-[hsl(var(--p-ink)/0.6)]">/ {enteredCount} of {ws.students.length} entered / CA out of {term.caMax}, exam out of {term.examMax}</span></p>
           <div className="flex gap-2">
+            <button className="portal-btn-ghost" disabled={locked} onClick={() => setCbtOpen(true)} data-testid="button-import-cbt"><FileUp size={13} /> From CBT exam</button>
             <button className="portal-btn-ghost" disabled={locked} onClick={() => setCsvOpen(true)} data-testid="button-import-scores"><FileUp size={13} /> Paste or upload</button>
             <button className="portal-btn" disabled={locked || !changed.length || invalid || cmd.pending} onClick={() => void save()} data-testid="button-save-scores"><Save size={14} /> {cmd.pending ? "Saving..." : changed.length ? `Save ${changed.length} ${changed.length === 1 ? "change" : "changes"}` : "Saved"}</button>
           </div>
@@ -115,6 +123,7 @@ export function ScoresEditor({ ws, term, locked: lockedByStatus }: { ws: ReportW
         {invalid && <p className="border-t border-[hsl(var(--p-line))] px-4 py-2 text-xs text-[hsl(var(--p-red))]">Fix the highlighted scores before saving.</p>}
       </div>
 
+      {cbtOpen && <CbtScoresDialog ws={ws} term={term} subjectId={subjectId} onClose={() => setCbtOpen(false)} />}
       <Dialog open={csvOpen} onOpenChange={setCsvOpen}>
         <DialogContent className="portal !min-h-0 max-h-[92dvh] max-w-xl overflow-y-auto rounded-2xl">
           <DialogHeader><DialogTitle className="font-serif text-2xl">Import {subject?.name} scores</DialogTitle>

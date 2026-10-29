@@ -74,7 +74,8 @@ export function WorkflowBar({ ws, term, className, missing, onOpenSettings }: { 
           <p className="text-[hsl(var(--p-ink)/0.75)]" data-testid="text-workflow-summary">{SUMMARY[w.status]}</p>
           {w.status === "draft" && w.returnNote && <p className="mt-1.5 rounded-lg bg-[hsl(var(--p-gold-soft)/0.7)] px-3 py-1.5 text-xs font-semibold" data-testid="text-return-note">Returned: {w.returnNote}</p>}
           {w.teacherName && w.status !== "draft" && <p className="mt-1 text-xs text-[hsl(var(--p-ink)/0.6)]">Signed by {w.teacherName}{w.submittedAt ? `, ${new Date(w.submittedAt).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}` : ""}{w.approvedBy && (w.status === "approved" || w.status === "published") ? ` · Approved by ${w.approvedBy}` : ""}</p>}
-          {w.status === "draft" && !missing && ws.students.length > 0 && <p className="mt-1 text-xs font-semibold text-[hsl(var(--p-emerald))]">All students have scores for every subject.</p>}
+          {w.status === "draft" && !ws.subjects.length && <p className="mt-1 text-xs font-semibold text-[hsl(var(--p-gold-ink))]" data-testid="text-no-subjects">No subjects yet: add the class's subjects before entering scores.</p>}
+          {w.status === "draft" && ws.subjects.length > 0 && !missing && ws.students.length > 0 && <p className="mt-1 text-xs font-semibold text-[hsl(var(--p-emerald))]">All students have scores for every subject.</p>}
           {w.status === "draft" && missing > 0 && <p className="mt-1 text-xs text-[hsl(var(--p-ink)/0.6)]">{missing} of {ws.students.length} students are missing one or more subject scores.</p>}
         </div>
         <div className="flex flex-wrap items-center gap-2">
