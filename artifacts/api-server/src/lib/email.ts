@@ -191,3 +191,13 @@ export function directorReportEmail(r: import("./director").DirectorReport, dash
     ...rows.map(([k, v]) => `${k}: ${v}`), "", `Dashboard: ${dashboardUrl}`].join("\n");
   return { subject, html, text };
 }
+
+/** A message from the Director to staff. The text is escaped; blank lines start new paragraphs. */
+export function staffBroadcastEmail(p: { subject: string; message: string; senderName: string; portalUrl: string }) {
+  const paragraphs = p.message.trim().split(/\n\s*\n/).map((para) => `<p style="margin:0 0 12px;line-height:1.65">${esc(para.trim()).replace(/\n/g, "<br>")}</p>`).join("");
+  const html = layout(p.subject, `${paragraphs}<p style="margin:16px 0 0;line-height:1.6">${esc(p.senderName)}<br><span style="color:#5c6b70">Director, New World Emerald Private School</span></p>`,
+    { label: "Open the staff portal", url: p.portalUrl },
+    "You receive this because you are a member of staff at New World Emerald Private School.");
+  const text = `${p.message.trim()}\n\n${p.senderName}\nDirector, New World Emerald Private School\n\nStaff portal: ${p.portalUrl}`;
+  return { subject: p.subject, html, text };
+}

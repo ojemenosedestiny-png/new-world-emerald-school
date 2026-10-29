@@ -1,14 +1,16 @@
 import { Router, type Request, type Response } from "express";
 import { and, asc, count, eq, gte, inArray, lte, sql, sum } from "drizzle-orm";
 import {
-  admissionApplicationsTable, db, directorReports, feePaymentReportsTable, liveUpdatesTable, portalAssignments, portalAttempts,
+  admissionApplicationsTable, db, directorBroadcasts, directorReports, feePaymentReportsTable, liveUpdatesTable, portalAssignments, portalAttempts,
   portalAttendance, portalAuditLog, portalClasses, portalExams, portalLoginEvents, portalMessages, portalStudents, portalSubmissions,
   portalTeachers, storeOrdersTable,
 } from "@workspace/db";
-import { directorEmails } from "../lib/approved-identities";
+import { approvedEmails, directorEmails } from "../lib/approved-identities";
+import { SendDirectorBroadcastBody } from "@workspace/api-zod";
+import { BROADCASTS_PER_DAY, MAX_RECIPIENTS, broadcastProblem, broadcastRecipients, type Audience } from "../lib/director-broadcast";
 import { isDirector } from "../lib/website-admin";
 import { siteBaseUrl } from "../lib/accounts";
-import { directorReportEmail, emailConfigured, sendEmail } from "../lib/email";
+import { directorReportEmail, emailConfigured, sendEmail, staffBroadcastEmail } from "../lib/email";
 import { REPORT_PERIODS, highlights, mondayOf, percent, reportWindow, weeklyReportDue, type DirectorReport } from "../lib/director";
 import { schoolDate } from "../lib/learning";
 import { logger } from "../lib/logger";
@@ -145,5 +147,47 @@ export function startDirectorWeeklyReport() {
   setTimeout(tick, 60_000).unref();
   setInterval(tick, 30 * 60_000).unref();
 }
+
+// ---- Emails from the Director to staff (teachers and administrators only)
+async function recipientsFor(audience: Audience) {
+  const teachers = await db.select({ email: portalTeachers.email, active: portalTeachers.active }).from(portalTeachers);
+  return broadcastRecipients(audience, teachers, approvedEmails());
+}
+const broadcastView = (b: typeof directorBroadcasts.$inferSelect) => ({
+  id: b.id, audience: b.audience as Audience, subject: b.subject, message: b.message, recipients: b.recipients, sent: b.sent, failed: b.failed, sentBy: b.sentBy, createdAt: b.createdAt.toISOString(),
+});
+
+router.get("/director/broadcasts", async (req, res) => {
+  if (!directorOnly(req, res)) return;
+  const [teachers, admins, all] = await Promise.all([recipientsFor("teachers"), recipientsFor("admins"), recipientsFor("all")]);
+  const history = await db.select().from(directorBroadcasts).orderBy(sql`${directorBroadcasts.createdAt} desc`).limit(50);
+  res.json({ counts: { teachers: teachers.length, admins: admins.length, all: all.length }, emailReady: emailConfigured(), history: history.map(broadcastView) });
+});
+
+router.post("/director/broadcasts", async (req, res) => {
+  if (!directorOnly(req, res)) return;
+  const parsed = SendDirectorBroadcastBody.safeParse(req.body);
+  if (!parsed.success) { res.status(400).json({ error: "Choose who to email, and add a subject and a message." }); return; }
+  const { audience, subject, message } = parsed.data;
+  const problem = broadcastProblem(subject, message);
+  if (problem) { res.status(400).json({ error: problem }); return; }
+  if (!emailConfigured()) { res.status(503).json({ error: "Email is not set up yet (RESEND_API_KEY and EMAIL_FROM)." }); return; }
+  const [{ c: today }] = await db.select({ c: count() }).from(directorBroadcasts).where(gte(directorBroadcasts.createdAt, new Date(Date.now() - 86_400_000)));
+  if (Number(today) >= BROADCASTS_PER_DAY) { res.status(429).json({ error: `You can send up to ${BROADCASTS_PER_DAY} staff emails a day. Please try again tomorrow.` }); return; }
+  const to = await recipientsFor(audience);
+  if (!to.length) { res.status(400).json({ error: "There is nobody to email in that group yet." }); return; }
+  if (to.length > MAX_RECIPIENTS) { res.status(400).json({ error: `That group has more than ${MAX_RECIPIENTS} people. Please contact support.` }); return; }
+  const email = staffBroadcastEmail({ subject: subject.trim(), message, senderName: req.dbUser?.firstName ? `${req.dbUser.firstName} ${req.dbUser.lastName ?? ""}`.trim() : "The Director", portalUrl: `${siteBaseUrl() ?? ""}/portal/manage` });
+  let sent = 0;
+  // One copy per person, so nobody sees anyone else's address; paced for the email provider's limit.
+  for (const address of to) {
+    const result = await sendEmail({ to: address, ...email });
+    if (result.sent) sent++;
+    else logger.warn({ reason: result.reason }, "Director staff email not delivered");
+    await new Promise((resolve) => setTimeout(resolve, 550));
+  }
+  const [row] = await db.insert(directorBroadcasts).values({ audience, subject: subject.trim(), message, recipients: to.length, sent, failed: to.length - sent, sentBy: req.identity?.email ?? "" }).returning();
+  res.json(broadcastView(row));
+});
 
 export default router;

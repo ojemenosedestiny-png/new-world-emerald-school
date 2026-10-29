@@ -101,6 +101,8 @@ paths:
     $ref: "./director.yaml#/paths/overview"
   /director/report/send:
     $ref: "./director.yaml#/paths/sendReport"
+  /director/broadcasts:
+    $ref: "./director.yaml#/paths/broadcasts"
   /portal/my-fees:
     $ref: "./fees.yaml#/paths/myFees"
   /portal/students/{id}/fees:
@@ -1039,6 +1041,12 @@ components:
   schemas:
     DirectorReport:
       $ref: "./director.yaml#/schemas/DirectorReport"
+    DirectorBroadcastInput:
+      $ref: "./director.yaml#/schemas/DirectorBroadcastInput"
+    DirectorBroadcast:
+      $ref: "./director.yaml#/schemas/DirectorBroadcast"
+    DirectorBroadcasts:
+      $ref: "./director.yaml#/schemas/DirectorBroadcasts"
     FeeItem:
       $ref: "./fees.yaml#/schemas/FeeItem"
     FeeTotals:

@@ -8,6 +8,7 @@
 import type { PortalAttemptAnswers } from './portalAttemptAnswers';
 import type { PortalAttemptMarksItem } from './portalAttemptMarksItem';
 import type { PortalAttemptQuestionsItem } from './portalAttemptQuestionsItem';
+import type { PortalAttemptReviewItem } from './portalAttemptReviewItem';
 import type { PortalAttemptStatus } from './portalAttemptStatus';
 
 export interface PortalAttempt {
@@ -32,4 +33,6 @@ export interface PortalAttempt {
   marks?: PortalAttemptMarksItem[];
   lockdown?: boolean;
   focusLosses?: number;
+  /** After submitting, the right answer to each multiple-choice question (no score) */
+  review?: PortalAttemptReviewItem[];
 }

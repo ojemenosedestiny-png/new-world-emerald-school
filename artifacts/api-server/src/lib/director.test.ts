@@ -66,3 +66,21 @@ test("director: a 30-day view says so in every highlight and covers 30 Lagos dat
   const w = reportWindow(new Date("2026-10-26T06:30:00Z"), 30);
   assert.deepEqual([w.fromDate, w.toDate], ["2026-09-27", "2026-10-26"]);
 });
+
+test("director: staff emails go only to active teachers and administrators, once each, escaped", async () => {
+  const { broadcastRecipients, broadcastProblem } = await import("./director-broadcast");
+  const { staffBroadcastEmail } = await import("./email");
+  const teachers = [{ email: "Teacher.One@School.example", active: true }, { email: "old@school.example", active: false }, { email: "office@school.example", active: true }];
+  const admins = ["office@school.example", "director@school.example", "not-an-email"];
+  assert.deepEqual(broadcastRecipients("teachers", teachers, admins), ["office@school.example", "teacher.one@school.example"]);
+  assert.deepEqual(broadcastRecipients("admins", teachers, admins), ["director@school.example", "office@school.example"]);
+  assert.deepEqual(broadcastRecipients("all", teachers, admins), ["director@school.example", "office@school.example", "teacher.one@school.example"]);
+  assert.match(broadcastProblem("Hi\nBcc: x@y.z", "Body")!, /one line/);
+  assert.match(broadcastProblem(" ", "Body")!, /subject/);
+  assert.equal(broadcastProblem("Staff meeting", "Body"), null);
+  const mail = staffBroadcastEmail({ subject: "Staff meeting", message: "Meet at <b>2pm</b>.\n\nBring your mark books.", senderName: "Mrs Director", portalUrl: "https://school.example/portal/manage" });
+  assert.match(mail.html, /Meet at &lt;b&gt;2pm&lt;\/b&gt;\./);
+  assert.doesNotMatch(mail.html, /<b>2pm<\/b>/);
+  assert.equal((mail.html.match(/<p style="margin:0 0 12px/g) ?? []).length, 2);
+  assert.match(mail.text, /Bring your mark books\.\n\nMrs Director/);
+});

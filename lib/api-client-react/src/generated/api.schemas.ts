@@ -91,6 +91,62 @@ export interface DirectorReport {
   highlights: string[];
 }
 
+export type DirectorBroadcastInputAudience = typeof DirectorBroadcastInputAudience[keyof typeof DirectorBroadcastInputAudience];
+
+
+export const DirectorBroadcastInputAudience = {
+  teachers: 'teachers',
+  admins: 'admins',
+  all: 'all',
+} as const;
+
+export interface DirectorBroadcastInput {
+  audience: DirectorBroadcastInputAudience;
+  /**
+     * @minLength 1
+     * @maxLength 150
+     */
+  subject: string;
+  /**
+     * @minLength 1
+     * @maxLength 10000
+     */
+  message: string;
+}
+
+export type DirectorBroadcastAudience = typeof DirectorBroadcastAudience[keyof typeof DirectorBroadcastAudience];
+
+
+export const DirectorBroadcastAudience = {
+  teachers: 'teachers',
+  admins: 'admins',
+  all: 'all',
+} as const;
+
+export interface DirectorBroadcast {
+  id: number;
+  audience: DirectorBroadcastAudience;
+  subject: string;
+  message: string;
+  recipients: number;
+  sent: number;
+  failed: number;
+  sentBy: string;
+  createdAt: string;
+}
+
+export type DirectorBroadcastsCounts = {
+  teachers: number;
+  admins: number;
+  all: number;
+};
+
+export interface DirectorBroadcasts {
+  counts: DirectorBroadcastsCounts;
+  emailReady: boolean;
+  history: DirectorBroadcast[];
+}
+
 export type FeeItemKind = typeof FeeItemKind[keyof typeof FeeItemKind];
 
 
@@ -2136,7 +2192,7 @@ export interface PortalExam {
   drawCount?: number;
   /** Full screen, no copy or paste, and exits from the exam screen are recorded */
   lockdown?: boolean;
-  /** Each student sees their result as soon as it is marked, without a release step */
+  /** After submitting, each student sees the right answer to every multiple-choice question; scores wait for release */
   instantResults?: boolean;
 }
 
@@ -2224,6 +2280,12 @@ export type PortalAttemptMarksItem = {
   feedback: string;
 };
 
+export type PortalAttemptReviewItem = {
+  questionId: string;
+  correctAnswer: number;
+  correct: boolean;
+};
+
 export interface PortalAttempt {
   id: number;
   examId: number;
@@ -2246,6 +2308,8 @@ export interface PortalAttempt {
   marks?: PortalAttemptMarksItem[];
   lockdown?: boolean;
   focusLosses?: number;
+  /** After submitting, the right answer to each multiple-choice question (no score) */
+  review?: PortalAttemptReviewItem[];
 }
 
 export type PortalAnswerInputAnswers = {[key: string]: string};
@@ -2366,6 +2430,12 @@ export type PortalDashboardAttemptsItemMarksItem = {
   feedback: string;
 };
 
+export type PortalDashboardAttemptsItemReviewItem = {
+  questionId: string;
+  correctAnswer: number;
+  correct: boolean;
+};
+
 export type PortalDashboardAttemptsItem = {
   id: number;
   examId: number;
@@ -2388,6 +2458,8 @@ export type PortalDashboardAttemptsItem = {
   marks?: PortalDashboardAttemptsItemMarksItem[];
   lockdown?: boolean;
   focusLosses?: number;
+  /** After submitting, the right answer to each multiple-choice question (no score) */
+  review?: PortalDashboardAttemptsItemReviewItem[];
 };
 
 export type PortalDashboardMaterialsItem = {
@@ -2495,6 +2567,12 @@ export type PortalStaffAttempt = ({
 }[];
   lockdown?: boolean;
   focusLosses?: number;
+  /** After submitting, the right answer to each multiple-choice question (no score) */
+  review?: {
+  questionId: string;
+  correctAnswer: number;
+  correct: boolean;
+}[];
 }) & ({
   studentName: string;
   studentId: string;
@@ -2707,7 +2785,7 @@ export type PortalManagementExamsItem = {
   drawCount?: number;
   /** Full screen, no copy or paste, and exits from the exam screen are recorded */
   lockdown?: boolean;
-  /** Each student sees their result as soon as it is marked, without a release step */
+  /** After submitting, each student sees the right answer to every multiple-choice question; scores wait for release */
   instantResults?: boolean;
 };
 
@@ -2772,6 +2850,12 @@ export type PortalManagementAttemptsItem = ({
 }[];
   lockdown?: boolean;
   focusLosses?: number;
+  /** After submitting, the right answer to each multiple-choice question (no score) */
+  review?: {
+  questionId: string;
+  correctAnswer: number;
+  correct: boolean;
+}[];
 }) & ({
   studentName: string;
   studentId: string;
@@ -3070,7 +3154,7 @@ export type PortalCommandExam = {
   drawCount?: number;
   /** Full screen, no copy or paste, and exits from the exam screen are recorded */
   lockdown?: boolean;
-  /** Each student sees their result as soon as it is marked, without a release step */
+  /** After submitting, each student sees the right answer to every multiple-choice question; scores wait for release */
   instantResults?: boolean;
 };
 

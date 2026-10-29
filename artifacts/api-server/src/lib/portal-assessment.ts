@@ -44,7 +44,10 @@ export async function finalizeExpired(attempt: PortalAttemptRecord) {
   });
 }
 export function attemptView(attempt: PortalAttemptRecord, exam: PortalExamRecord, staff = false) {
-  const released = (exam.resultsReleased || exam.instantResults) && attempt.status === "marked";
+  const released = exam.resultsReleased && attempt.status === "marked";
+  // After submitting, students see which multiple-choice answers were right and the right answer for
+  // each (in their own option order); their score stays hidden until the school releases results.
+  const showAnswers = exam.instantResults && attempt.status !== "in_progress";
   return {
     id: attempt.id, examId: exam.id, title: exam.title, subject: exam.subject, mode: exam.mode,
     instructions: exam.instructions, fileId: exam.mode === "pdf" ? exam.fileId : null,
@@ -52,6 +55,7 @@ export function attemptView(attempt: PortalAttemptRecord, exam: PortalExamRecord
     answers: attempt.answers, startedAt: attempt.startedAt.toISOString(), deadline: attempt.deadline.toISOString(),
     serverNow: new Date().toISOString(), savedAt: attempt.savedAt.toISOString(), status: attempt.status,
     totalMarks: attempt.questions.reduce((sum, q) => sum + q.marks, 0), resultsReleased: released, lockdown: exam.lockdown,
+    ...(showAnswers ? { review: attempt.questions.filter((q) => q.type === "mcq" && q.correctAnswer != null).map((q) => ({ questionId: q.id, correctAnswer: q.correctAnswer!, correct: attempt.answers[q.id] === String(q.correctAnswer) })) } : {}),
     ...((staff || released) ? { score: attempt.marks.reduce((s, m) => s + m.score, 0), marks: attempt.marks } : {}),
   };
 }

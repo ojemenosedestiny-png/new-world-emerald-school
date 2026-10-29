@@ -23,7 +23,63 @@ paths:
                 required: [message]
                 properties:
                   message: { type: string }
+  broadcasts:
+    get:
+      operationId: listDirectorBroadcasts
+      responses:
+        "200":
+          description: How many staff each audience reaches, and the emails sent so far (Director only)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DirectorBroadcasts" }
+    post:
+      operationId: sendDirectorBroadcast
+      description: Email teachers and/or administrators (Director only). Each person gets their own copy.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/DirectorBroadcastInput" }
+      responses:
+        "200":
+          description: What was sent
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DirectorBroadcast" }
 schemas:
+  DirectorBroadcastInput:
+    type: object
+    required: [audience, subject, message]
+    properties:
+      audience: { type: string, enum: [teachers, admins, all] }
+      subject: { type: string, minLength: 1, maxLength: 150 }
+      message: { type: string, minLength: 1, maxLength: 10000 }
+  DirectorBroadcast:
+    type: object
+    required: [id, audience, subject, message, recipients, sent, failed, sentBy, createdAt]
+    properties:
+      id: { type: integer }
+      audience: { type: string, enum: [teachers, admins, all] }
+      subject: { type: string }
+      message: { type: string }
+      recipients: { type: integer }
+      sent: { type: integer }
+      failed: { type: integer }
+      sentBy: { type: string }
+      createdAt: { type: string }
+  DirectorBroadcasts:
+    type: object
+    required: [counts, emailReady, history]
+    properties:
+      counts:
+        type: object
+        required: [teachers, admins, all]
+        properties:
+          teachers: { type: integer }
+          admins: { type: integer }
+          all: { type: integer }
+      emailReady: { type: boolean }
+      history: { type: array, items: { $ref: "#/components/schemas/DirectorBroadcast" } }
   DirectorReport:
     type: object
     required: [days, from, to, generatedAt, admissions, students, staff, attendance, learning, money, messages, website, security, highlights]
@@ -115,3 +171,6 @@ schemas:
 components:
   schemas:
     DirectorReport: { $ref: "#/schemas/DirectorReport" }
+    DirectorBroadcastInput: { $ref: "#/schemas/DirectorBroadcastInput" }
+    DirectorBroadcast: { $ref: "#/schemas/DirectorBroadcast" }
+    DirectorBroadcasts: { $ref: "#/schemas/DirectorBroadcasts" }

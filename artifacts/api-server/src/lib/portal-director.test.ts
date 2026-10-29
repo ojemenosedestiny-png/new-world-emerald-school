@@ -4,7 +4,7 @@ import { randomUUID } from "node:crypto";
 import express from "express";
 import type { AddressInfo } from "node:net";
 import { eq, inArray, like } from "drizzle-orm";
-import { admissionApplicationsTable, db, directorReports, pool, portalAttendance, portalClasses, portalStudents } from "@workspace/db";
+import { admissionApplicationsTable, db, directorBroadcasts, directorReports, pool, portalAttendance, portalClasses, portalStudents, portalTeachers } from "@workspace/db";
 import directorRouter, { sendWeeklyDirectorReport } from "../routes/director";
 import { mondayOf } from "./director";
 import { schoolDate } from "./learning";
@@ -86,8 +86,36 @@ test("director: sole access, live figures and a once-a-week report", async () =>
     assert.equal(sent.length, 1);
     assert.equal(sent[0].to, director);
     assert.match(sent[0].subject, /^Weekly school report/);
+
+    // Staff emails: only the Director, only to active teachers and administrators, one copy each.
+    await db.insert(portalTeachers).values([
+      { email: `teacher-${marker}@example.test`.toLowerCase(), name: "Mr Teacher", classIds: [] },
+      { email: `gone-${marker}@example.test`.toLowerCase(), name: "Ms Gone", classIds: [], active: false },
+    ]);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const staffMail = async (method: string, who?: string, body?: unknown): Promise<{ status: number; data: any }> => {
+      const r = await realFetch(root + "/director/broadcasts", { method, headers: { "Content-Type": "application/json", ...(who ? { "X-Test-User": who } : {}) }, ...(body ? { body: JSON.stringify(body) } : {}) });
+      return { status: r.status, data: await r.json() };
+    };
+    assert.equal((await staffMail("GET", admin)).status, 403);
+    assert.equal((await staffMail("POST", admin, { audience: "all", subject: "x", message: "y" })).status, 403);
+    const before = await staffMail("GET", director);
+    assert.equal(before.data.counts.admins, 2);
+    assert.equal((await staffMail("POST", director, { audience: "students", subject: "x", message: "y" })).status, 400, "never students or parents");
+    const already = sent.length;
+    const out = await staffMail("POST", director, { audience: "all", subject: `Staff meeting ${marker}`, message: "Meet at 2pm." });
+    assert.equal(out.status, 200, JSON.stringify(out.data));
+    const to = sent.slice(already).map((m) => m.to);
+    assert.equal(to.length, before.data.counts.all);
+    assert.equal(new Set(to).size, to.length, "one copy each");
+    assert.ok(to.includes(`teacher-${marker}@example.test`.toLowerCase()) && to.includes(admin) && to.includes(director));
+    assert.ok(!to.includes(`gone-${marker}@example.test`.toLowerCase()), "inactive teachers are not emailed");
+    assert.deepEqual([out.data.sent, out.data.failed, out.data.sentBy], [to.length, 0, director]);
+    assert.equal((await staffMail("GET", director)).data.history[0].subject, `Staff meeting ${marker}`);
   } finally {
     globalThis.fetch = realFetch;
+    await db.delete(portalTeachers).where(like(portalTeachers.email, `%-${marker}@example.test`.toLowerCase()));
+    await db.delete(directorBroadcasts).where(like(directorBroadcasts.subject, `%${marker}`));
     await new Promise<void>((resolve, reject) => server.close((e) => (e ? reject(e) : resolve())));
     await db.delete(directorReports).where(eq(directorReports.weekStart, mondayOf(new Date("2026-10-26T06:30:00Z"))));
     await db.delete(admissionApplicationsTable).where(like(admissionApplicationsTable.studentFirstName, `${marker}%`));

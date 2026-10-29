@@ -49,6 +49,6 @@ export interface PortalExam {
   drawCount?: number;
   /** Full screen, no copy or paste, and exits from the exam screen are recorded */
   lockdown?: boolean;
-  /** Each student sees their result as soon as it is marked, without a release step */
+  /** After submitting, each student sees the right answer to every multiple-choice question; scores wait for release */
   instantResults?: boolean;
 }

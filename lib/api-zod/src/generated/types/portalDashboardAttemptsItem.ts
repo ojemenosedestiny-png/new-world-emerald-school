@@ -8,6 +8,7 @@
 import type { PortalDashboardAttemptsItemAnswers } from './portalDashboardAttemptsItemAnswers';
 import type { PortalDashboardAttemptsItemMarksItem } from './portalDashboardAttemptsItemMarksItem';
 import type { PortalDashboardAttemptsItemQuestionsItem } from './portalDashboardAttemptsItemQuestionsItem';
+import type { PortalDashboardAttemptsItemReviewItem } from './portalDashboardAttemptsItemReviewItem';
 import type { PortalDashboardAttemptsItemStatus } from './portalDashboardAttemptsItemStatus';
 
 export type PortalDashboardAttemptsItem = {
@@ -32,4 +33,6 @@ export type PortalDashboardAttemptsItem = {
   marks?: PortalDashboardAttemptsItemMarksItem[];
   lockdown?: boolean;
   focusLosses?: number;
+  /** After submitting, the right answer to each multiple-choice question (no score) */
+  review?: PortalDashboardAttemptsItemReviewItem[];
 };

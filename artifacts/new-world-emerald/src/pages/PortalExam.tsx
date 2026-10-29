@@ -93,6 +93,7 @@ export default function PortalExam() {
   const answered = attempt.questions.length - unanswered.length;
   const released = attempt.status === "marked" && attempt.resultsReleased && typeof attempt.score === "number";
   const marks = new Map((released ? attempt.marks ?? [] : []).map((m) => [m.questionId, m]));
+  const review = new Map((attempt.review ?? []).map((r) => [r.questionId, r]));
   const pdf = attempt.mode === "pdf" && !!attempt.fileId && inProgress && !expired;
 
   return (
@@ -156,9 +157,10 @@ export default function PortalExam() {
           )}
           <div className="space-y-4">
             {pdf && <p className="text-sm text-[hsl(var(--p-ink)/0.65)]">Read the questions on the paper, then record your answers in the matching slots below.</p>}
+            {review.size > 0 && !released && <p className="rounded-xl bg-[hsl(var(--p-emerald-soft)/0.6)] p-4 text-sm" data-testid="text-answer-review">Your answers are checked below: the right answer is shown for every multiple-choice question. Your score will appear when the school releases results.</p>}
             {attempt.questions.map((question, i) => {
               const first = question.passage ? attempt.questions.findIndex((q) => q.passage === question.passage) : i;
-              return <QuestionCard key={question.id} q={question} index={i} value={sync.answers[question.id] ?? ""} onChange={(v) => sync.setAnswer(question.id, v)} disabled={locked || sync.submitting} mark={marks.get(question.id)} compact={!!pdf} sharedWith={first < i ? first + 1 : undefined} />;
+              return <QuestionCard key={question.id} q={question} index={i} value={sync.answers[question.id] ?? ""} onChange={(v) => sync.setAnswer(question.id, v)} disabled={locked || sync.submitting} mark={marks.get(question.id)} compact={!!pdf} sharedWith={first < i ? first + 1 : undefined} review={review.get(question.id)} />;
             })}
           </div>
         </div>

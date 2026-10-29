@@ -67,6 +67,12 @@ export type PortalManagementAttemptsItem = ({
 }[];
   lockdown?: boolean;
   focusLosses?: number;
+  /** After submitting, the right answer to each multiple-choice question (no score) */
+  review?: {
+  questionId: string;
+  correctAnswer: number;
+  correct: boolean;
+}[];
 }) & ({
   studentName: string;
   studentId: string;

@@ -139,7 +139,12 @@ export const GetPortalDashboardResponse = zod.object({
   "feedback": zod.string().max(getPortalDashboardResponseAttemptsItemMarksItemFeedbackMax)
 })).optional(),
   "lockdown": zod.boolean().optional(),
-  "focusLosses": zod.number().optional()
+  "focusLosses": zod.number().optional(),
+  "review": zod.array(zod.object({
+  "questionId": zod.string(),
+  "correctAnswer": zod.number(),
+  "correct": zod.boolean()
+})).optional().describe('After submitting, the right answer to each multiple-choice question (no score)')
 })),
   "materials": zod.array(zod.object({
   "id": zod.number().optional(),
@@ -217,7 +222,12 @@ export const StartPortalExamResponse = zod.object({
   "feedback": zod.string().max(startPortalExamResponseMarksItemFeedbackMax)
 })).optional(),
   "lockdown": zod.boolean().optional(),
-  "focusLosses": zod.number().optional()
+  "focusLosses": zod.number().optional(),
+  "review": zod.array(zod.object({
+  "questionId": zod.string(),
+  "correctAnswer": zod.number(),
+  "correct": zod.boolean()
+})).optional().describe('After submitting, the right answer to each multiple-choice question (no score)')
 })
 
 
@@ -278,7 +288,12 @@ export const GetPortalAttemptResponse = zod.object({
   "feedback": zod.string().max(getPortalAttemptResponseMarksItemFeedbackMax)
 })).optional(),
   "lockdown": zod.boolean().optional(),
-  "focusLosses": zod.number().optional()
+  "focusLosses": zod.number().optional(),
+  "review": zod.array(zod.object({
+  "questionId": zod.string(),
+  "correctAnswer": zod.number(),
+  "correct": zod.boolean()
+})).optional().describe('After submitting, the right answer to each multiple-choice question (no score)')
 })
 
 
@@ -347,7 +362,12 @@ export const SavePortalAnswersResponse = zod.object({
   "feedback": zod.string().max(savePortalAnswersResponseMarksItemFeedbackMax)
 })).optional(),
   "lockdown": zod.boolean().optional(),
-  "focusLosses": zod.number().optional()
+  "focusLosses": zod.number().optional(),
+  "review": zod.array(zod.object({
+  "questionId": zod.string(),
+  "correctAnswer": zod.number(),
+  "correct": zod.boolean()
+})).optional().describe('After submitting, the right answer to each multiple-choice question (no score)')
 })
 
 
@@ -416,7 +436,12 @@ export const SubmitPortalAttemptResponse = zod.object({
   "feedback": zod.string().max(submitPortalAttemptResponseMarksItemFeedbackMax)
 })).optional(),
   "lockdown": zod.boolean().optional(),
-  "focusLosses": zod.number().optional()
+  "focusLosses": zod.number().optional(),
+  "review": zod.array(zod.object({
+  "questionId": zod.string(),
+  "correctAnswer": zod.number(),
+  "correct": zod.boolean()
+})).optional().describe('After submitting, the right answer to each multiple-choice question (no score)')
 })
 
 
@@ -585,7 +610,7 @@ export const GetPortalManagementResponse = zod.object({
   "shuffleOptions": zod.boolean().optional().describe('Each student gets multiple-choice options in a different order'),
   "drawCount": zod.number().min(getPortalManagementResponseExamsItemDrawCountMin).max(getPortalManagementResponseExamsItemDrawCountMax).optional().describe('Question bank: questions per student, drawn at random (0 = all)'),
   "lockdown": zod.boolean().optional().describe('Full screen, no copy or paste, and exits from the exam screen are recorded'),
-  "instantResults": zod.boolean().optional().describe('Each student sees their result as soon as it is marked, without a release step')
+  "instantResults": zod.boolean().optional().describe('After submitting, each student sees the right answer to every multiple-choice question; scores wait for release')
 })),
   "attempts": zod.array(zod.object({
   "id": zod.number(),
@@ -619,7 +644,12 @@ export const GetPortalManagementResponse = zod.object({
   "feedback": zod.string().max(getPortalManagementResponseAttemptsItemOneMarksItemFeedbackMax)
 })).optional(),
   "lockdown": zod.boolean().optional(),
-  "focusLosses": zod.number().optional()
+  "focusLosses": zod.number().optional(),
+  "review": zod.array(zod.object({
+  "questionId": zod.string(),
+  "correctAnswer": zod.number(),
+  "correct": zod.boolean()
+})).optional().describe('After submitting, the right answer to each multiple-choice question (no score)')
 }).and(zod.object({
   "studentName": zod.string(),
   "studentId": zod.string(),
@@ -783,7 +813,7 @@ export const ManagePortalBody = zod.object({
   "shuffleOptions": zod.boolean().optional().describe('Each student gets multiple-choice options in a different order'),
   "drawCount": zod.number().min(managePortalBodyExamDrawCountMin).max(managePortalBodyExamDrawCountMax).optional().describe('Question bank: questions per student, drawn at random (0 = all)'),
   "lockdown": zod.boolean().optional().describe('Full screen, no copy or paste, and exits from the exam screen are recorded'),
-  "instantResults": zod.boolean().optional().describe('Each student sees their result as soon as it is marked, without a release step')
+  "instantResults": zod.boolean().optional().describe('After submitting, each student sees the right answer to every multiple-choice question; scores wait for release')
 }).optional(),
   "material": zod.object({
   "id": zod.number().optional(),
@@ -2113,6 +2143,55 @@ export const GetDirectorOverviewResponse = zod.object({
 
 export const SendDirectorReportResponse = zod.object({
   "message": zod.string()
+})
+
+
+export const ListDirectorBroadcastsResponse = zod.object({
+  "counts": zod.object({
+  "teachers": zod.number(),
+  "admins": zod.number(),
+  "all": zod.number()
+}),
+  "emailReady": zod.boolean(),
+  "history": zod.array(zod.object({
+  "id": zod.number(),
+  "audience": zod.enum(['teachers', 'admins', 'all']),
+  "subject": zod.string(),
+  "message": zod.string(),
+  "recipients": zod.number(),
+  "sent": zod.number(),
+  "failed": zod.number(),
+  "sentBy": zod.string(),
+  "createdAt": zod.string()
+}))
+})
+
+
+/**
+ * Email teachers and/or administrators (Director only). Each person gets their own copy.
+ */
+export const sendDirectorBroadcastBodySubjectMax = 150;
+
+export const sendDirectorBroadcastBodyMessageMax = 10000;
+
+
+
+export const SendDirectorBroadcastBody = zod.object({
+  "audience": zod.enum(['teachers', 'admins', 'all']),
+  "subject": zod.string().min(1).max(sendDirectorBroadcastBodySubjectMax),
+  "message": zod.string().min(1).max(sendDirectorBroadcastBodyMessageMax)
+})
+
+export const SendDirectorBroadcastResponse = zod.object({
+  "id": zod.number(),
+  "audience": zod.enum(['teachers', 'admins', 'all']),
+  "subject": zod.string(),
+  "message": zod.string(),
+  "recipients": zod.number(),
+  "sent": zod.number(),
+  "failed": zod.number(),
+  "sentBy": zod.string(),
+  "createdAt": zod.string()
 })
 
 

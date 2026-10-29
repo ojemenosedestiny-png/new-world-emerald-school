@@ -46,6 +46,9 @@ import type {
   DirectUploadRequest,
   DirectUploadSignature,
   DirectUploadToken,
+  DirectorBroadcast,
+  DirectorBroadcastInput,
+  DirectorBroadcasts,
   DirectorReport,
   EmailTestResult,
   EnrolStudentInput,
@@ -3718,6 +3721,145 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
         TContext
       > => {
       return useMutation(getSendDirectorReportMutationOptions(options));
+    }
+
+export const getListDirectorBroadcastsUrl = () => {
+
+
+
+
+  return `/api/director/broadcasts`
+}
+
+export const listDirectorBroadcasts = async ( options?: RequestInit): Promise<DirectorBroadcasts> => {
+
+  return customFetch<DirectorBroadcasts>(getListDirectorBroadcastsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListDirectorBroadcastsQueryKey = () => {
+    return [
+    `/api/director/broadcasts`
+    ] as const;
+    }
+
+
+export const getListDirectorBroadcastsQueryOptions = <TData = Awaited<ReturnType<typeof listDirectorBroadcasts>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listDirectorBroadcasts>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListDirectorBroadcastsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listDirectorBroadcasts>>> = ({ signal }) => listDirectorBroadcasts({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listDirectorBroadcasts>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListDirectorBroadcastsQueryResult = NonNullable<Awaited<ReturnType<typeof listDirectorBroadcasts>>>
+export type ListDirectorBroadcastsQueryError = ErrorType<unknown>
+
+
+
+export function useListDirectorBroadcasts<TData = Awaited<ReturnType<typeof listDirectorBroadcasts>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listDirectorBroadcasts>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListDirectorBroadcastsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getSendDirectorBroadcastUrl = () => {
+
+
+
+
+  return `/api/director/broadcasts`
+}
+
+/**
+ * Email teachers and/or administrators (Director only). Each person gets their own copy.
+ */
+export const sendDirectorBroadcast = async (directorBroadcastInput: DirectorBroadcastInput, options?: RequestInit): Promise<DirectorBroadcast> => {
+
+  return customFetch<DirectorBroadcast>(getSendDirectorBroadcastUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(directorBroadcastInput)
+  }
+);}
+
+
+
+
+
+export const getSendDirectorBroadcastMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof sendDirectorBroadcast>>, TError,{data: BodyType<DirectorBroadcastInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof sendDirectorBroadcast>>, TError,{data: BodyType<DirectorBroadcastInput>}, TContext> => {
+
+const mutationKey = ['sendDirectorBroadcast'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof sendDirectorBroadcast>>, {data: BodyType<DirectorBroadcastInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  sendDirectorBroadcast(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SendDirectorBroadcastMutationResult = NonNullable<Awaited<ReturnType<typeof sendDirectorBroadcast>>>
+    export type SendDirectorBroadcastMutationBody = BodyType<DirectorBroadcastInput>
+    export type SendDirectorBroadcastMutationError = ErrorType<unknown>
+
+    export const useSendDirectorBroadcast = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof sendDirectorBroadcast>>, TError,{data: BodyType<DirectorBroadcastInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof sendDirectorBroadcast>>,
+        TError,
+        {data: BodyType<DirectorBroadcastInput>},
+        TContext
+      > => {
+      return useMutation(getSendDirectorBroadcastMutationOptions(options));
     }
 
 export const getGetMyFeesUrl = () => {

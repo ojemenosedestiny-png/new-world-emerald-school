@@ -92,8 +92,16 @@ test("cbt: each student gets their own drawn, shuffled paper that marks correctl
     assert.equal((await call(`/attempts/${a.data.id}/focus-loss`, "POST", undefined, adaS)).data.focusLosses, 2);
     const submitted = await call(`/attempts/${a.data.id}/submit`, "POST", { answers }, { cookie: adaS.cookie });
     assert.equal(submitted.data.status, "marked");
-    // Results show straight away by default: no release step for multiple choice.
-    assert.deepEqual([submitted.data.resultsReleased, submitted.data.score], [true, 10]);
+    // After submitting, the right answers show at once; the score waits for the teacher to release it.
+    assert.deepEqual([submitted.data.resultsReleased, "score" in submitted.data], [false, false]);
+    assert.equal(submitted.data.review.length, 5);
+    for (const r of submitted.data.review as { questionId: string; correctAnswer: number; correct: boolean }[]) {
+      const q = submitted.data.questions.find((x: { id: string }) => x.id === r.questionId);
+      const original = bank.find((b) => b.id === r.questionId)!;
+      assert.equal(q.options[r.correctAnswer], original.options[original.correctAnswer!], "the right answer is in the student's own option order");
+      assert.equal(r.correct, true);
+    }
+    assert.equal((await call(`/attempts/${a.data.id}`, "GET", undefined, bayoS)).status, 404, "no one else sees Ada's answers");
     assert.equal((await call(`/attempts/${a.data.id}/focus-loss`, "POST", undefined, adaS)).status, 404);
     const staff = (await call("/manage", "GET", undefined, { admin: true })).data.attempts.find((x: { id: number }) => x.id === a.data.id);
     assert.deepEqual([staff.score, staff.focusLosses], [10, 2]);
@@ -143,9 +151,9 @@ test("cbt: each student gets their own drawn, shuffled paper that marks correctl
     assert.equal(started.status, 200);
     assert.deepEqual(started.data.questions.map((q: { passage?: string; diagramFileId?: string | null }) => [q.passage, q.diagramFileId]), [[passage, null], [passage, diagramId]]);
     assert.equal((await call(`/diagrams/${foreignId}`, "GET", undefined, bayoS)).status, 404, "another class's diagram");
-    // With instant results off, the score waits for the teacher to release it.
+    // With answer review off, nothing about the answers is shown after submitting.
     const held = await call(`/attempts/${started.data.id}/submit`, "POST", { answers: {} }, bayoS);
-    assert.deepEqual([held.data.status, held.data.resultsReleased, "score" in held.data], ["marked", false, false]);
+    assert.deepEqual([held.data.status, held.data.resultsReleased, "score" in held.data, "review" in held.data], ["marked", false, false, false]);
   } finally {
     await new Promise<void>((resolve, reject) => server.close((e) => (e ? reject(e) : resolve())));
     // Practice tests went to every class in this disposable database; remove the ones nobody sat.
