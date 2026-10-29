@@ -120,6 +120,16 @@ export function examWindow(startsAt: string, endsAt: string, now = Date.now()): 
 
 type ExamTiming = { id: number; startsAt: string; endsAt: string };
 type AttemptStatus = { examId: number; status: string };
+/** The exams a student still has to act on: being written, open or upcoming. Finished and closed exams leave the list (scores are in the GradeSheet). */
+export function activeStudentExams<T extends ExamTiming>(exams: T[], attempts: AttemptStatus[], now = Date.now()): T[] {
+  const status = new Map(attempts.map((a) => [a.examId, a.status]));
+  return exams.filter((e) => {
+    const s = status.get(e.id);
+    if (s) return s === "in_progress";
+    return examWindow(e.startsAt, e.endsAt, now) !== "closed";
+  });
+}
+
 /** Dashboard order: still writing, open now, upcoming, submitted, then closed. */
 export function sortStudentExams<T extends ExamTiming>(exams: T[], attempts: AttemptStatus[], now = Date.now()): T[] {
   const status = new Map(attempts.map((a) => [a.examId, a.status]));

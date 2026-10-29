@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { useToast } from "@/hooks/use-toast";
 import { EmptyState, ErrorPanel, Skeleton, StatusPill } from "./ui";
 import { PasswordChange } from "./PasswordChange";
-import { clearDrafts, clearStudentQueries, errorMessage, examWindow, formatDateTime, sortStudentExams } from "./lib";
+import { activeStudentExams, clearDrafts, clearStudentQueries, errorMessage, examWindow, formatDateTime, sortStudentExams } from "./lib";
 import { studentAverage } from "./manage/results";
 import { StudentReports } from "./reports/StudentReports";
 import { StudentHome, type StudentSection } from "./StudentHome";
@@ -103,8 +103,9 @@ export function StudentDashboard({ session, theme }: { session: PortalSession; t
   const data = dash.data;
   const attemptByExam = useMemo(() => new Map((data?.attempts ?? []).map((a) => [a.examId, a])), [data]);
   const examIds = useMemo(() => new Set((data?.exams ?? []).map((e) => e.id)), [data]);
-  const orphanAttempts = (data?.attempts ?? []).filter((a) => !examIds.has(a.examId));
-  const exams = useMemo(() => sortStudentExams(data?.exams ?? [], data?.attempts ?? []), [data]);
+  const orphanAttempts = (data?.attempts ?? []).filter((a) => !examIds.has(a.examId) && a.status === "in_progress");
+  // A finished exam leaves this list straight away; its score appears in the GradeSheet once released.
+  const exams = useMemo(() => sortStudentExams(activeStudentExams(data?.exams ?? [], data?.attempts ?? []), data?.attempts ?? []), [data]);
   const average = studentAverage(data?.attempts ?? []);
 
   const titles: Record<StudentSection, string> = { home: "Home", exams: "Exams", results: "GradeSheet", reports: "Report cards", revision: "Library", notices: "Notices", profile: "Profile", events: "Events", staff: "Staffs", gallery: "Gallery", attendance: "Attendance", assignments: "Assignments", messages: "Messages", fees: "Fees", boarding: "Hostel & bus" };
@@ -166,8 +167,8 @@ export function StudentDashboard({ session, theme }: { session: PortalSession; t
             {section === "boarding" && <StudentFacilities />}
 
             {section === "exams" && <div className="space-y-3">
-              {data.exams.length === 0 && orphanAttempts.length === 0 ? (
-                <EmptyState icon={<ClipboardList size={22} />} title="No exams scheduled" body="When your teacher publishes an exam for your class, it will appear here with its date and time." />
+              {exams.length === 0 && orphanAttempts.length === 0 ? (
+                <EmptyState icon={<ClipboardList size={22} />} title="No exams right now" body="When your teacher publishes an exam for your class, it will appear here with its date and time. Finished exams leave this list; your scores appear in the GradeSheet once released." />
               ) : (
                 <>
                   {exams.map((exam) => <ExamRow key={exam.id} exam={exam} attempt={attemptByExam.get(exam.id)} />)}

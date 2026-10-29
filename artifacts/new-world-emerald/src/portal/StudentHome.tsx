@@ -3,7 +3,7 @@ import { useGetStudentReports, getGetStudentReportsQueryKey, useListMyAssignment
 import { Award, Bell, BookOpen, CalendarCheck, CalendarDays, ChevronRight, ClipboardList, FileBarChart, Images, MapPin, Megaphone, Menu, MessagesSquare, NotebookPen, Search, Timer, UserRound, Users, Wallet, type LucideIcon } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useOpenShellMenu } from "./shell/AppShell";
-import { examWindow } from "./lib";
+import { activeStudentExams, examWindow } from "./lib";
 import { markSeen, readSeen, searchPortal, studentNotifications } from "./notifications";
 import { calendarItems, upcomingItems, whenText } from "./events";
 import { Avatar } from "./photos";
@@ -49,7 +49,7 @@ export function StudentHome({ data, name, studentId, onGo }: { data: PortalDashb
     { section: "revision", label: "Library", detail: "Notes and resources", icon: BookOpen, tile: "183 60% 36%" },
   ];
   const hits = searchPortal(query, data, features, events.data);
-  const upcoming = upcomingItems(calendarItems(events.data, data.exams.filter((e) => examWindow(e.startsAt, e.endsAt, now) !== "closed")), now, 4);
+  const upcoming = upcomingItems(calendarItems(events.data, activeStudentExams(data.exams, data.attempts, now)), now, 4);
   const day = (d: Date, opts: Intl.DateTimeFormatOptions) => new Intl.DateTimeFormat("en-NG", opts).format(d);
 
   return (

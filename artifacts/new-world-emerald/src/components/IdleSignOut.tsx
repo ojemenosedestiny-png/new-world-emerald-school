@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
-export const IDLE_MINUTES = 30;
+export const IDLE_MINUTES = 60;
 const WARNING_SECONDS = 60;
 const EVENTS = ["pointerdown", "keydown", "wheel", "touchstart", "scroll"] as const;
 const KEY = "nwe-last-activity";
