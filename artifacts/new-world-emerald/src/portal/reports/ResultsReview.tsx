@@ -5,7 +5,7 @@ import { useToast } from "@/hooks/use-toast";
 import { EmptyState, ErrorPanel, Field, Skeleton } from "../ui";
 import { errorMessage } from "../lib";
 import { ordinal, printReportCards, reportCardsHtml, termLabel } from "./reportCard";
-import { printableFor } from "./RemarksBroadsheet";
+import { ClassPrintButtons, printableFor } from "./RemarksBroadsheet";
 import { WorkflowBar } from "./ResultWorkflow";
 
 const STATUS = { draft: "Draft", review: "Waiting for approval", approved: "Approved", published: "Published" } as const;
@@ -57,7 +57,7 @@ export function ResultsReviewBody({ ws, term, className }: { ws: ReportWorkspace
           <section className="portal-card overflow-hidden">
             <div className="flex items-center justify-between gap-2 border-b border-[hsl(var(--p-line))] px-4 py-3">
               <h3 className="font-serif text-lg font-semibold">Class ranking</h3>
-              <button className="portal-btn-ghost !py-1.5 text-xs" onClick={() => print()} data-testid="button-review-print-all"><Printer size={13} /> Print all</button>
+              <ClassPrintButtons ws={ws} term={term} className={className} compact />
             </div>
             <div className="max-h-[520px] overflow-auto">
               <table className="w-full text-sm" data-testid="table-review-ranking">

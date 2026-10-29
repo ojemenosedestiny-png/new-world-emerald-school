@@ -4,7 +4,7 @@ import { Eye, Printer, Save, Sparkles } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { EmptyState } from "../ui";
 import { errorMessage } from "../lib";
-import { ordinal, printReportCards, type PrintableReport } from "./reportCard";
+import { ordinal, printReportCards, type BroadsheetData, type PrintableReport } from "./reportCard";
 import { suggestedRemarks } from "./scoreSheet";
 import { useReportCommand } from "./useReportCommand";
 import { Users } from "lucide-react";
@@ -109,6 +109,31 @@ export function printableFor(ws: ReportWorkspace, term: ReportTerm, className: s
   }));
 }
 
+/** The class broadsheet data for printing, with signatures once the results are approved. */
+export function broadsheetFor(ws: ReportWorkspace, term: ReportTerm, className: string): BroadsheetData {
+  const signed = ws.workflow?.status === "approved" || ws.workflow?.status === "published";
+  return {
+    className, term, subjects: ws.subjects, students: ws.students, results: ws.results, subjectStats: ws.subjectStats, gradingScale: ws.gradingScale,
+    teacherName: ws.workflow?.teacherName, teacherSignature: ws.workflow?.teacherSignature, principalName: ws.principalName, principalSignature: signed ? ws.principalSignature : null,
+  };
+}
+
+/** Print buttons for a whole class: the broadsheet, every report card, or both as one PDF. */
+export function ClassPrintButtons({ ws, term, className, compact }: { ws: ReportWorkspace; term: ReportTerm; className: string; compact?: boolean }) {
+  const { toast } = useToast();
+  const go = (cards: boolean, sheet: boolean) => {
+    if (!printReportCards(cards ? printableFor(ws, term, className) : [], sheet ? broadsheetFor(ws, term, className) : undefined)) toast({ variant: "destructive", title: "Pop-up blocked", description: "Allow pop-ups for this site to print results." });
+  };
+  const cls = compact ? "portal-btn-ghost !py-1.5 text-xs" : "portal-btn-ghost";
+  return (
+    <div className="flex flex-wrap gap-2">
+      <button className={cls} onClick={() => go(false, true)} data-testid="button-print-broadsheet"><Printer size={compact ? 13 : 14} /> Broadsheet</button>
+      <button className={cls} onClick={() => go(true, false)} data-testid="button-print-all-reports"><Printer size={compact ? 13 : 14} /> All report cards</button>
+      <button className={compact ? "portal-btn !py-1.5 text-xs" : "portal-btn"} onClick={() => go(true, true)} data-testid="button-print-result-pack"><Printer size={compact ? 13 : 14} /> Full result pack (PDF)</button>
+    </div>
+  );
+}
+
 export function Broadsheet({ ws, term, className }: { ws: ReportWorkspace; term: ReportTerm; className: string }) {
   const { toast } = useToast();
   const print = (ids?: number[]) => { if (!printReportCards(printableFor(ws, term, className, ids))) toast({ variant: "destructive", title: "Pop-up blocked", description: "Allow pop-ups for this site to print report cards." }); };
@@ -118,7 +143,7 @@ export function Broadsheet({ ws, term, className }: { ws: ReportWorkspace; term:
     <div className="space-y-3">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-[hsl(var(--p-ink)/0.65)]">{ws.ranked} of {ws.students.length} students ranked. Totals out of {term.caMax + term.examMax}.</p>
-        <button className="portal-btn" onClick={() => print()} data-testid="button-print-all-reports"><Printer size={14} /> Print all report cards</button>
+        <ClassPrintButtons ws={ws} term={term} className={className} />
       </div>
       <div className="portal-card overflow-x-auto">
         <table className="w-full min-w-[640px] text-sm" data-testid="table-broadsheet">

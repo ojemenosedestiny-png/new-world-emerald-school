@@ -77,8 +77,66 @@ function reportSection(r: PrintableReport) {
 }
 
 /** A print-ready A4 document; one page per student. */
-export function reportCardsHtml(reports: PrintableReport[]) {
-  return `<!doctype html><html><head><meta charset="utf-8"><title>Report card${reports.length > 1 ? "s" : ""}</title><style>
+/** A whole class's results for one term on one landscape page (or more): every student and subject, ranked. */
+export type BroadsheetData = {
+  className: string; term: ReportTerm; subjects: ReportSubject[]; students: { id: number; studentId: string; name: string }[];
+  results: ReportStudentResult[]; subjectStats: ReportSubjectStats[]; gradingScale?: GradeBand[];
+  teacherName?: string; teacherSignature?: string | null; principalName?: string; principalSignature?: string | null;
+};
+
+function broadsheetSection(b: BroadsheetData) {
+  const byId = new Map(b.students.map((s) => [s.id, s]));
+  const scale = b.gradingScale?.length ? b.gradingScale : null;
+  const ranked = [...b.results].filter((r) => r.average !== null).sort((x, y) => (x.position ?? 9999) - (y.position ?? 9999));
+  const unranked = b.results.filter((r) => r.average === null);
+  const averages = ranked.map((r) => r.average!);
+  const passMark = scale && scale.length > 1 ? scale[scale.length - 2].min : 40;
+  const avg = averages.length ? Math.round((averages.reduce((x, y) => x + y, 0) / averages.length) * 10) / 10 : null;
+  const head = b.subjects.map((s) => `<th class="v"><span>${esc(s.name)}</span></th>`).join("");
+  const row = (r: ReportStudentResult, i: number) => {
+    const st = byId.get(r.studentId);
+    const cells = b.subjects.map((s) => {
+      const x = r.subjects.find((y) => y.subjectId === s.id);
+      return x ? `<td>${x.total}<small>${esc(x.grade)}</small></td>` : `<td class="m">-</td>`;
+    }).join("");
+    return `<tr><td>${r.position ? ordinal(r.position) : "-"}</td><td class="l"><b>${esc(st?.name ?? "Student")}</b><small class="id">${esc(st?.studentId ?? "")}</small></td>${cells}<td class="b">${r.total}</td><td class="b">${num(r.average)}</td><td class="b">${esc(r.grade ?? "-")}</td><td>${r.subjectsTaken}</td></tr>`;
+  };
+  const statRow = (label: string, pick: (s: ReportSubjectStats) => number) => `<tr class="foot"><td></td><td class="l">${label}</td>${b.subjects.map((s) => { const st = b.subjectStats.find((x) => x.subjectId === s.id); return `<td>${st ? pick(st) : "-"}</td>`; }).join("")}<td colspan="4"></td></tr>`;
+  const grades = (scale ?? []).map((g) => `<b>${esc(g.grade)}</b> ${ranked.filter((r) => r.grade === g.grade).length}`).join(" &middot; ");
+  return `
+  <section class="sheet">
+    <header>
+      <img src="${esc(window.location.origin + import.meta.env.BASE_URL.replace(/\/$/, "") + "/logo.jpg")}" alt="">
+      <div><h1>New World Emerald Private School</h1><p class="sub">Broadsheet</p><p class="term">${esc(b.className)} &middot; ${esc(termLabel(b.term))} &middot; totals out of ${b.term.caMax + b.term.examMax}</p></div>
+    </header>
+    <div class="facts">
+      <span>Students ranked <b>${ranked.length}</b> of ${b.students.length}</span>
+      <span>Class average <b>${avg === null ? "-" : avg + "%"}</b></span>
+      <span>Highest <b>${averages.length ? Math.max(...averages) + "%" : "-"}</b></span>
+      <span>Lowest <b>${averages.length ? Math.min(...averages) + "%" : "-"}</b></span>
+      <span>Passed (${passMark}%+) <b>${averages.filter((a) => a >= passMark).length}</b></span>
+      ${grades ? `<span>Grades: ${grades}</span>` : ""}
+    </div>
+    <table class="bs">
+      <thead><tr><th>Pos.</th><th class="l">Student</th>${head}<th class="v"><span>Total</span></th><th class="v"><span>Average %</span></th><th class="v"><span>Grade</span></th><th class="v"><span>Subjects</span></th></tr></thead>
+      <tbody>${[...ranked, ...unranked].map(row).join("") || `<tr><td colspan="${b.subjects.length + 6}">No results recorded.</td></tr>`}
+      ${statRow("Subject average", (s) => s.average)}${statRow("Highest", (s) => s.highest)}${statRow("Lowest", (s) => s.lowest)}</tbody>
+    </table>
+    <div class="signs">
+      <span>${sigImg(b.teacherSignature)}${esc(b.teacherName || "Class teacher")}</span>
+      <span>${sigImg(b.principalSignature)}${esc(b.principalName || "Principal")}</span>
+      <span class="date">Printed ${new Date().toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}</span>
+    </div>
+  </section>`;
+}
+
+/** The broadsheet on its own, or followed by every student's report card, as one printable document. */
+export function resultPackHtml(broadsheet: BroadsheetData, reports: PrintableReport[] = []) {
+  return reportCardsHtml(reports, broadsheet);
+}
+
+export function reportCardsHtml(reports: PrintableReport[], broadsheet?: BroadsheetData) {
+  return `<!doctype html><html><head><meta charset="utf-8"><title>${broadsheet ? `${esc(broadsheet.className)} results, ${esc(termLabel(broadsheet.term))}` : `Report card${reports.length > 1 ? "s" : ""}`}</title><style>
   @page{size:A4;margin:12mm}
   body{font-family:Georgia,"Times New Roman",serif;color:#10232c;margin:0}
   .card{padding:6mm 2mm;break-after:page}.card:last-child{break-after:auto}
@@ -101,14 +159,25 @@ export function reportCardsHtml(reports: PrintableReport[]) {
   .remarks p{margin:6px 0 44px;font-size:13px}.sig{position:absolute;right:10px;bottom:6px;font:10px system-ui,sans-serif;color:#5a6a6f;border-top:1px solid #8a9599;padding-top:2px;min-width:140px;text-align:center}
   .sigimg{display:block;max-height:34px;max-width:140px;margin:-38px auto 4px;object-fit:contain}
   footer{margin-top:10px;font:10.5px system-ui,sans-serif;color:#5a6a6f}.next{font-size:12px;color:#10232c}
-  </style></head><body>${reports.map(reportSection).join("")}</body></html>`;
+  @page sheet{size:A4 landscape;margin:9mm}
+  .sheet{page:sheet;break-after:page}.sheet:last-child{break-after:auto}
+  .facts{display:flex;flex-wrap:wrap;gap:6px 16px;margin:10px 0;font:11px system-ui,sans-serif;color:#5a6a6f}.facts b{color:#14533c}
+  table.bs{font-size:9.5px}table.bs th,table.bs td{padding:3px 3px}
+  table.bs th.v{height:92px;vertical-align:bottom;padding:2px}table.bs th.v span{writing-mode:vertical-rl;transform:rotate(180deg);white-space:nowrap;font-weight:600}
+  table.bs td small{display:block;font-size:8px;opacity:.75}table.bs td small.id{font-family:Consolas,monospace}
+  table.bs td.m{color:#aab}table.bs tr.foot td{background:#eef5f0;font-weight:600}
+  table.bs thead{display:table-header-group}table.bs tr{break-inside:avoid}
+  .signs{display:flex;gap:40px;margin-top:26px;font:10px system-ui,sans-serif;color:#5a6a6f}
+  .signs span{position:relative;border-top:1px solid #8a9599;padding-top:3px;min-width:170px;text-align:center}.signs .date{border:0;margin-left:auto;text-align:right}
+  .signs .sigimg{margin:-38px auto 4px}
+  </style></head><body>${broadsheet ? broadsheetSection(broadsheet) : ""}${reports.map(reportSection).join("")}</body></html>`;
 }
 
-export function printReportCards(reports: PrintableReport[]) {
-  const w = window.open("", "_blank", "width=900,height=1000");
+export function printReportCards(reports: PrintableReport[], broadsheet?: BroadsheetData) {
+  const w = window.open("", "_blank", "width=1100,height=1000");
   if (!w) return false;
   w.document.open();
-  w.document.write(reportCardsHtml(reports));
+  w.document.write(reportCardsHtml(reports, broadsheet));
   w.document.close();
   printWhenLoaded(w);
   return true;

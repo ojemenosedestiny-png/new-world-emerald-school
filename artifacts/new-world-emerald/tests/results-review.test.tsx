@@ -47,3 +47,20 @@ it("new exams show each student's result as soon as it is marked unless the teac
   render(wrap(<ExamEditor data={data as never} initial={{ ...blankExam(1) } as PortalExam} onClose={() => {}} />));
   expect((screen.getByTestId("checkbox-instant-results") as HTMLInputElement).checked).toBe(true);
 });
+
+it("compiles the whole class onto a printable broadsheet, alone or before every report card", async () => {
+  const { resultPackHtml } = await import("../src/portal/reports/reportCard");
+  const { broadsheetFor, printableFor } = await import("../src/portal/reports/RemarksBroadsheet");
+  const html = resultPackHtml(broadsheetFor(ws, term, "SS 3"));
+  expect(html).toContain("Broadsheet");
+  expect(html).toContain("SS 3");
+  expect(html).toContain("@page sheet{size:A4 landscape");
+  expect(html.indexOf("Ada Obi")).toBeLessThan(html.indexOf("Bayo Ade"));
+  expect(html.indexOf("Bayo Ade")).toBeLessThan(html.indexOf("Chi Eze"));
+  expect(html).toContain("Subject average");
+  expect(html).not.toContain("<tfoot>");
+  expect(html).not.toContain("Student Report Card");
+  const pack = resultPackHtml(broadsheetFor(ws, term, "SS 3"), printableFor(ws, term, "SS 3"));
+  expect((pack.match(/Student Report Card/g) ?? []).length).toBe(3);
+  expect(pack.indexOf("Broadsheet")).toBeLessThan(pack.indexOf("Student Report Card"));
+});
