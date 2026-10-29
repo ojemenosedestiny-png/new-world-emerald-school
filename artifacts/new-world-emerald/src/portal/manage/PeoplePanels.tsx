@@ -16,6 +16,8 @@ import { StudentActivityDialogBody } from "../security/SecurityPanels";
 import { OfficeFeeStatement } from "../FeeStatement";
 import { AccountLinkDialog, EnrolStudentDialog, useAccountLink } from "./accounts";
 
+export const SECONDARY_CLASSES = ["JSS 1", "JSS 2", "JSS 3", "SS 1", "SS 2", "SS 3"];
+
 export function ClassesPanel({ data }: { data: PortalManagement }) {
   const cmd = useCommand();
   const [editing, setEditing] = useState<{ id?: number; name: string } | null>(null);
@@ -23,9 +25,18 @@ export function ClassesPanel({ data }: { data: PortalManagement }) {
     if (!editing || !editing.name.trim()) return;
     if (await cmd.run({ action: "saveClass", schoolClass: { ...editing, name: editing.name.trim() } }, editing.id ? "Class renamed" : "Class created")) setEditing(null);
   };
+  // Secondary school in one click: JSS 1 to SS 3, skipping any class that already exists (spacing and case ignored).
+  const key = (n: string) => n.toLowerCase().replace(/[^a-z0-9]/g, "");
+  const missingSecondary = SECONDARY_CLASSES.filter((n) => !data.classes.some((c) => key(c.name) === key(n)));
+  const addSecondary = async () => {
+    for (const name of missingSecondary) if (!(await cmd.run({ action: "saveClass", schoolClass: { name } }, `${name} created`))) break;
+  };
   return (
     <div className="space-y-4">
-      <div className="flex justify-end"><button className="portal-btn" onClick={() => setEditing({ name: "" })} data-testid="button-add-class"><Plus size={15} /> New class</button></div>
+      <div className="flex flex-wrap justify-end gap-2">
+        {missingSecondary.length > 0 && <button className="portal-btn-ghost" disabled={cmd.pending} onClick={() => void addSecondary()} title={missingSecondary.join(", ")} data-testid="button-add-secondary"><Plus size={15} /> Add secondary classes ({missingSecondary.length})</button>}
+        <button className="portal-btn" onClick={() => setEditing({ name: "" })} data-testid="button-add-class"><Plus size={15} /> New class</button>
+      </div>
       {data.classes.length === 0 ? <EmptyState icon={<School size={22} />} title="No classes yet" body="Create the school's classes first. Students, teachers and exams are all organised by class." /> : (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {data.classes.map((c) => (

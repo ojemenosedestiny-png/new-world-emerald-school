@@ -56,12 +56,13 @@ schemas:
       nextTermBegins: { type: [string, "null"], maxLength: 40 }
   ReportSubject:
     type: object
-    required: [id, classId, name, sortOrder]
+    required: [id, classId, name, sortOrder, teacherId]
     properties:
       id: { type: integer }
       classId: { type: integer }
       name: { type: string }
       sortOrder: { type: integer }
+      teacherId: { type: [integer, "null"], description: The subject teacher }
   ReportSubjectInput:
     type: object
     required: [classId, name]
@@ -70,6 +71,7 @@ schemas:
       classId: { type: integer }
       name: { type: string, minLength: 1, maxLength: 80 }
       sortOrder: { type: integer, minimum: 0, maximum: 1000 }
+      teacherId: { type: [integer, "null"] }
   ReportScore:
     type: object
     required: [studentId, subjectId, ca, exam]
@@ -149,13 +151,24 @@ schemas:
       name: { type: string }
   ReportWorkspace:
     type: object
-    required: [terms, classes, canAdmin, termId, classId, subjects, students, scores, cards, results, subjectStats, ranked, released, workflow, gradingScale, principalName, principalSignature, mySignature]
+    required: [terms, classes, canAdmin, termId, classId, subjects, students, scores, cards, results, subjectStats, ranked, released, workflow, gradingScale, principalName, principalSignature, mySignature, isClassTeacher, editableSubjectIds, teachers]
     properties:
       workflow: { $ref: "#/schemas/ReportWorkflow" }
       gradingScale: { type: array, items: { $ref: "#/schemas/GradeBand" } }
       principalName: { type: string }
       principalSignature: { type: [string, "null"] }
       mySignature: { type: [string, "null"], description: The signed-in teacher's saved signature }
+      isClassTeacher: { type: boolean, description: "The office or the class teacher: may write remarks, sign and send results" }
+      editableSubjectIds: { type: [array, "null"], items: { type: integer }, description: "Subjects whose scores the signed-in teacher may enter (null: all)" }
+      teachers:
+        type: array
+        description: Active teachers, for the office to choose subject teachers
+        items:
+          type: object
+          required: [id, name]
+          properties:
+            id: { type: integer }
+            name: { type: string }
       terms: { type: array, items: { $ref: "#/schemas/ReportTerm" } }
       classes:
         type: array

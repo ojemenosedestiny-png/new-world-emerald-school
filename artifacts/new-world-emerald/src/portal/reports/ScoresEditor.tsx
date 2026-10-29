@@ -12,7 +12,8 @@ type Draft = Record<number, Entry>;
 const BLANK: Entry = { ca: "", exam: "", total: "", grade: "" };
 const fmt = (v: number | null | undefined) => (v === null || v === undefined ? "" : String(v));
 
-export function ScoresEditor({ ws, term, locked }: { ws: ReportWorkspace; term: ReportTerm; locked: boolean }) {
+export function ScoresEditor({ ws, term, locked: lockedByStatus }: { ws: ReportWorkspace; term: ReportTerm; locked: boolean }) {
+  let locked = lockedByStatus;
   const cmd = useReportCommand();
   const [subjectId, setSubjectId] = useState<number>(ws.subjects[0]?.id ?? 0);
   const [draft, setDraft] = useState<Draft>({});
@@ -44,6 +45,9 @@ export function ScoresEditor({ ws, term, locked }: { ws: ReportWorkspace; term: 
     return { st, d, ca, exam, typed, gradeText, gradeError, entered, total, grade, dirty: before.ca !== d.ca || before.exam !== d.exam || before.total !== d.total || before.grade !== d.grade };
   });
   const changed = rows.filter((r) => r.dirty);
+  // A subject teacher may change only their own subjects; others are shown read-only.
+  const canEdit = (id: number) => !ws.editableSubjectIds || ws.editableSubjectIds.includes(id);
+  locked = locked || !canEdit(subjectId);
   const invalid = rows.some((r) => r.ca.error || r.exam.error || ("error" in r.typed && r.typed.error) || r.gradeError);
   const enteredCount = rows.filter((r) => r.entered).length;
   const set = (id: number, key: keyof Entry, value: string) => setDraft((p) => ({ ...p, [id]: { ...BLANK, ...p[id], [key]: value } }));
@@ -67,7 +71,7 @@ export function ScoresEditor({ ws, term, locked }: { ws: ReportWorkspace; term: 
           const count = ws.scores.filter((x) => x.subjectId === s.id).length;
           return (
             <button key={s.id} role="tab" aria-selected={s.id === subjectId} className={"portal-tab border border-[hsl(var(--p-line))] " + (s.id === subjectId ? "!bg-[hsl(var(--p-ink))] !text-[hsl(var(--p-paper))]" : "bg-[hsl(var(--p-surface)/0.7)]")} onClick={() => { if (!changed.length || window.confirm("Discard unsaved scores for this subject?")) setSubjectId(s.id); }} data-testid={"subject-tab-" + s.id}>
-              {s.name} <span className="opacity-60">{count}/{ws.students.length}</span>
+              {s.name} <span className="opacity-60">{count}/{ws.students.length}</span>{ws.editableSubjectIds && !ws.editableSubjectIds.includes(s.id) && <span className="ml-1 text-[10px] opacity-60">view only</span>}
             </button>
           );
         })}

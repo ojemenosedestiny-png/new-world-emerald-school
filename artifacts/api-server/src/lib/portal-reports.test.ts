@@ -5,7 +5,7 @@ import express from "express";
 import type { AddressInfo } from "node:net";
 import { eq, inArray } from "drizzle-orm";
 import {
-  db, pool, portalClasses, portalStudents, portalSessions, portalTerms, portalSubjects, portalScores, portalReportCards, portalReportReleases, portalReportSettings, portalReportWorkflow,
+  db, pool, portalClasses, portalStudents, portalSessions, portalTerms, portalSubjects, portalScores, portalReportCards, portalReportReleases, portalReportSettings, portalReportWorkflow, portalTeachers,
 } from "@workspace/db";
 import portalRouter from "../routes/portal";
 import { hashPassword } from "./portal-auth";
@@ -75,6 +75,16 @@ test("report cards: setup, validation, scoring, remarks, release and student vis
     const maths = subjects.find((s) => s.classId === cls.id && s.name === "Mathematics")!;
     const english = subjects.find((s) => s.classId === cls.id && s.name === "English Language")!;
     const otherMaths = subjects.find((s) => s.classId === other.id)!;
+
+    // The office names a subject teacher for each subject; only active teachers can be chosen.
+    const [subjectTeacher] = await db.insert(portalTeachers).values({ email: `maths-${marker}@example.test`.toLowerCase(), name: "Mr Maths", classIds: [] }).returning();
+    assert.equal((await command({ action: "saveSubject", subject: { id: maths.id, classId: cls.id, name: "Mathematics", teacherId: 999999 } })).status, 404);
+    assert.equal((await command({ action: "saveSubject", subject: { id: maths.id, classId: cls.id, name: "Mathematics", teacherId: subjectTeacher.id } })).status, 200);
+    const withTeacher = await call(`/reports/manage?termId=${term.id}&classId=${cls.id}`, "GET", undefined, "", true);
+    assert.equal(withTeacher.data.subjects.find((x: { id: number }) => x.id === maths.id).teacherId, subjectTeacher.id);
+    assert.ok(withTeacher.data.teachers.some((t: { id: number; name: string }) => t.id === subjectTeacher.id && t.name === "Mr Maths"));
+    assert.deepEqual([withTeacher.data.isClassTeacher, withTeacher.data.editableSubjectIds], [true, null], "the office edits every subject");
+    await db.delete(portalTeachers).where(eq(portalTeachers.id, subjectTeacher.id));
 
     // Score validation: maximum, half marks, and the subject must belong to the student's class.
     const scores = (entries: unknown[]) => command({ action: "saveScores", scores: { termId: term.id, entries } });

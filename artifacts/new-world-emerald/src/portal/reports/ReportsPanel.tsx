@@ -58,8 +58,13 @@ function SubjectsEditor({ ws, classId }: { ws: ReportWorkspace; classId: number 
               {editing?.id === s.id
                 ? <input className="portal-input !py-1.5 flex-1" value={editing.name} maxLength={80} onChange={(e) => setEditing({ ...editing, name: e.target.value })} aria-label="Subject name" autoFocus />
                 : <p className="flex-1 font-medium">{s.name}</p>}
+              <select aria-label={"Subject teacher for " + s.name} className="portal-input !w-auto !py-1.5 text-sm" value={s.teacherId ?? ""} disabled={cmd.pending}
+                onChange={(e) => void cmd.run({ action: "saveSubject", subject: { id: s.id, classId, name: s.name, sortOrder: s.sortOrder, teacherId: e.target.value ? Number(e.target.value) : null } }, "Subject teacher saved")} data-testid={"select-subject-teacher-" + s.id}>
+                <option value="">No subject teacher</option>
+                {ws.teachers.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+              </select>
               {editing?.id === s.id
-                ? <button className="portal-btn !py-1.5 text-xs" disabled={!editing.name.trim() || cmd.pending} onClick={async () => { if (await cmd.run({ action: "saveSubject", subject: { id: s.id, classId, name: editing.name.trim(), sortOrder: s.sortOrder } }, "Subject renamed")) setEditing(null); }}>Save</button>
+                ? <button className="portal-btn !py-1.5 text-xs" disabled={!editing.name.trim() || cmd.pending} onClick={async () => { if (await cmd.run({ action: "saveSubject", subject: { id: s.id, classId, name: editing.name.trim(), sortOrder: s.sortOrder, teacherId: s.teacherId } }, "Subject renamed")) setEditing(null); }}>Save</button>
                 : <button className="portal-btn-ghost !px-2" onClick={() => setEditing({ id: s.id, name: s.name })} aria-label={"Rename " + s.name}><Pencil size={13} /></button>}
               <button className="portal-btn-ghost !px-2 text-[hsl(var(--p-red))]" disabled={cmd.pending} onClick={() => { if (window.confirm(`Delete ${s.name}? Subjects with scores cannot be deleted.`)) void cmd.run({ action: "deleteSubject", target: { id: s.id } }, "Subject deleted"); }} aria-label={"Delete " + s.name} data-testid={"button-delete-subject-" + s.id}><Trash2 size={13} /></button>
             </div>
@@ -91,7 +96,9 @@ export function ReportsPanel() {
   const ready = term && cls && ws.termId === term.id && ws.classId === cls.id;
   const blankTerm: ReportTermInput = { session: `${new Date().getFullYear()}/${new Date().getFullYear() + 1}`, term: "First Term", caMax: 40, examMax: 60, nextTermBegins: "" };
   const missing = ready ? ws.students.filter((s) => (ws.results.find((r) => r.studentId === s.id)?.subjectsTaken ?? 0) < ws.subjects.length).length : 0;
-  const sections: [Section, string][] = [["scores", "Scores"], ["remarks", "Remarks & attendance"], ["review", "Review & preview"], ["broadsheet", "Broadsheet & print"], ...(ws.canAdmin ? [["subjects", "Subjects"] as [Section, string]] : []), ["settings", ws.canAdmin ? "Settings" : "My signature"]];
+  const sections: [Section, string][] = ws.isClassTeacher || !ready
+    ? [["scores", "Scores"], ["remarks", "Remarks & attendance"], ["review", "Review & preview"], ["broadsheet", "Broadsheet & print"], ...(ws.canAdmin ? [["subjects", "Subjects"] as [Section, string]] : []), ["settings", ws.canAdmin ? "Settings" : "My signature"]]
+    : [["scores", "Scores"]];
   const locked = resultsLocked(ws);
 
   if (!ws.terms.length) {
@@ -123,13 +130,14 @@ export function ReportsPanel() {
 
       {!ws.classes.length ? <EmptyState icon={<FileBarChart size={22} />} title="No classes" body="Create a class first in the Classes tab." /> : !ready ? <Skeleton className="h-40" /> : (
         <>
-          <WorkflowBar ws={ws} term={term} className={cls.name} missing={missing} onOpenSettings={() => setSection("settings")} />
+          {ws.isClassTeacher ? <WorkflowBar ws={ws} term={term} className={cls.name} missing={missing} onOpenSettings={() => setSection("settings")} />
+            : <p className="portal-card p-4 text-sm" data-testid="text-subject-teacher">You are the subject teacher for {ws.subjects.filter((x) => ws.editableSubjectIds?.includes(x.id)).map((x) => x.name).join(", ")} in {cls.name}. Enter those scores here; the class teacher adds remarks and sends the results for approval.</p>}
 
           <div className="flex gap-1 overflow-x-auto rounded-full border border-[hsl(var(--p-line))] bg-[hsl(var(--p-surface)/0.7)] p-1" role="tablist">
             {sections.map(([key, label]) => <button key={key} role="tab" aria-selected={section === key} className={"portal-tab " + (section === key ? "!bg-[hsl(var(--p-ink))] !text-[hsl(var(--p-paper))]" : "")} onClick={() => setSection(key)} data-testid={"report-section-" + key}>{label}</button>)}
           </div>
 
-          {section === "scores" && <ScoresEditor ws={ws} term={term} locked={locked} />}
+          {(section === "scores" || !ws.isClassTeacher) && <ScoresEditor ws={ws} term={term} locked={locked} />}
           {section === "remarks" && <RemarksEditor ws={ws} term={term} locked={locked} />}
           {section === "review" && <ResultsReviewBody ws={ws} term={term} className={cls.name} />}
           {section === "broadsheet" && <Broadsheet ws={ws} term={term} className={cls.name} />}

@@ -22,3 +22,4 @@ export * from "./portal-learning";
 export * from "./portal-messages";
 export * from "./director-reports";
 export * from "./portal-inventory";
+export * from "./portal-facilities";

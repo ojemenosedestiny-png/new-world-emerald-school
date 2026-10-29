@@ -62,25 +62,36 @@ portalReportsRouter.get("/reports/manage", async (req, res) => {
   staffOnly(actor);
   const query = GetReportWorkspaceQueryParams.parse(req.query);
   const terms = await db.select().from(portalTerms).orderBy(desc(portalTerms.createdAt), desc(portalTerms.id));
-  const classes = await db.select().from(portalClasses).where(actor.role === "admin" ? undefined : inArray(portalClasses.id, actor.classIds.length ? actor.classIds : [-1])).orderBy(asc(portalClasses.name));
-  const empty = { subjects: [], students: [], scores: [], cards: [], results: [], subjectStats: [], ranked: 0, released: false, workflow: workflowView(undefined, false) };
-  const settings = await reportSettings();
   const me = actor.role === "teacher" ? await teacherRecord(req.identity?.email) : undefined;
+  const taught = await subjectsTaught(me?.id);
+  const visible = [...new Set([...actor.classIds, ...taught.map((t) => t.classId)])];
+  const classes = await db.select().from(portalClasses).where(actor.role === "admin" ? undefined : inArray(portalClasses.id, visible.length ? visible : [-1])).orderBy(asc(portalClasses.name));
+  const empty = { subjects: [], students: [], scores: [], cards: [], results: [], subjectStats: [], ranked: 0, released: false, workflow: workflowView(undefined, false), isClassTeacher: false, editableSubjectIds: [] as number[] };
+  const settings = await reportSettings();
+  const teachers = actor.role === "admin" ? (await db.select({ id: portalTeachers.id, name: portalTeachers.name }).from(portalTeachers).where(eq(portalTeachers.active, true)).orderBy(asc(portalTeachers.name))) : [];
   const base = {
     terms: terms.map(termView), classes: classes.map((c) => ({ id: c.id, name: c.name })), canAdmin: actor.role === "admin", termId: query.termId ?? null, classId: query.classId ?? null,
-    gradingScale: settings.gradingScale, principalName: settings.principalName, principalSignature: settings.principalSignature, mySignature: me?.signature ?? null,
+    gradingScale: settings.gradingScale, principalName: settings.principalName, principalSignature: settings.principalSignature, mySignature: me?.signature ?? null, teachers,
   };
   if (!query.termId || !query.classId) { res.json({ ...base, ...empty }); return; }
-  classAllowed(actor, query.classId);
+  const isClassTeacher = actor.role === "admin" || actor.classIds.includes(query.classId);
+  const mine = taught.filter((t) => t.classId === query.classId).map((t) => t.id);
+  check(isClassTeacher || mine.length, "You do not teach this class.", 403);
   const d = await classData(query.termId, query.classId);
   res.json({
-    ...base,
+    ...base, isClassTeacher, editableSubjectIds: isClassTeacher ? null : mine,
     subjects: d.subjects, students: d.students,
     scores: d.scores.map((s) => ({ studentId: s.studentId, subjectId: s.subjectId, ca: s.ca, exam: s.exam, total: s.total, grade: s.grade })),
     cards: d.cards.map(cardView), results: d.report.students, subjectStats: d.report.subjectStats, ranked: d.report.ranked, released: !!d.release,
     workflow: workflowView(d.workflow, !!d.release),
   });
 });
+
+/** Subjects a teacher is the subject teacher for. */
+async function subjectsTaught(teacherId: number | undefined) {
+  if (!teacherId) return [];
+  return db.select({ id: portalSubjects.id, classId: portalSubjects.classId }).from(portalSubjects).where(eq(portalSubjects.teacherId, teacherId));
+}
 
 /** Students the actor may edit, keyed by id, with their class. Rejects anyone outside the actor's classes. */
 async function editableStudents(actor: PortalActor, ids: number[]) {
@@ -153,11 +164,16 @@ portalReportsRouter.post("/reports/manage", async (req, res) => {
       const [cls] = await db.select().from(portalClasses).where(eq(portalClasses.id, s.classId));
       check(cls, "Class not found.", 404);
       const existing = await db.select({ id: portalSubjects.id, name: portalSubjects.name }).from(portalSubjects).where(eq(portalSubjects.classId, s.classId));
+      const teacherId = s.teacherId ?? null;
+      if (teacherId !== null) {
+        const [t] = await db.select({ id: portalTeachers.id }).from(portalTeachers).where(and(eq(portalTeachers.id, teacherId), eq(portalTeachers.active, true)));
+        check(t, "Choose an active teacher.", 404);
+      }
       check(!existing.some((e) => e.id !== s.id && e.name.toLowerCase() === name.toLowerCase()), "This class already has that subject.", 409);
       if (s.id) {
-        const rows = await db.update(portalSubjects).set({ name, sortOrder: s.sortOrder ?? 0 }).where(and(eq(portalSubjects.id, s.id), eq(portalSubjects.classId, s.classId))).returning();
+        const rows = await db.update(portalSubjects).set({ name, sortOrder: s.sortOrder ?? 0, teacherId }).where(and(eq(portalSubjects.id, s.id), eq(portalSubjects.classId, s.classId))).returning();
         check(rows.length, "Subject not found.", 404);
-      } else await db.insert(portalSubjects).values({ classId: s.classId, name, sortOrder: s.sortOrder ?? existing.length });
+      } else await db.insert(portalSubjects).values({ classId: s.classId, name, sortOrder: s.sortOrder ?? existing.length, teacherId });
       break;
     }
     case "deleteSubject": {
@@ -173,7 +189,12 @@ portalReportsRouter.post("/reports/manage", async (req, res) => {
       check(data && data.entries.length, "Scores required.");
       const [term] = await db.select().from(portalTerms).where(eq(portalTerms.id, data.termId));
       check(term, "Term not found.", 404);
-      const studentClass = await editableStudents(actor, data.entries.map((e) => e.studentId));
+      const taughtIds = new Set((await subjectsTaught(actor.role === "teacher" ? (await teacherRecord(req.identity?.email))?.id : undefined)).map((t) => t.id));
+      const ownClass = (classId: number) => actor.role === "admin" || actor.classIds.includes(classId);
+      const rows = await db.select({ id: portalStudents.id, classId: portalStudents.classId, active: portalStudents.active }).from(portalStudents).where(inArray(portalStudents.id, [...new Set(data.entries.map((e) => e.studentId))]));
+      check(rows.length === new Set(data.entries.map((e) => e.studentId)).size && rows.every((r) => r.active), "One or more students were not found.", 404);
+      const studentClass = new Map(rows.map((r) => [r.id, r.classId]));
+      for (const e of data.entries) check(ownClass(studentClass.get(e.studentId)!) || taughtIds.has(e.subjectId), "You can only enter scores for your own classes or the subjects you teach.", 403);
       const subjects = await db.select({ id: portalSubjects.id, classId: portalSubjects.classId }).from(portalSubjects).where(inArray(portalSubjects.id, [...new Set(data.entries.map((e) => e.subjectId))]));
       const subjectClass = new Map(subjects.map((s) => [s.id, s.classId]));
       const seen = new Set<string>();

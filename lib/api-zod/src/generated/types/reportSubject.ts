@@ -11,4 +11,9 @@ export interface ReportSubject {
   classId: number;
   name: string;
   sortOrder: number;
+  /**
+     * The subject teacher
+     * @nullable
+     */
+  teacherId: number | null;
 }

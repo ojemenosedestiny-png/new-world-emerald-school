@@ -8,7 +8,7 @@ import { markSeen, readSeen, searchPortal, studentNotifications } from "./notifi
 import { calendarItems, upcomingItems, whenText } from "./events";
 import { Avatar } from "./photos";
 
-export type StudentSection = "home" | "exams" | "results" | "reports" | "revision" | "notices" | "profile" | "events" | "staff" | "gallery" | "attendance" | "assignments" | "messages" | "fees";
+export type StudentSection = "home" | "exams" | "results" | "reports" | "revision" | "notices" | "profile" | "events" | "staff" | "gallery" | "attendance" | "assignments" | "messages" | "fees" | "boarding";
 
 type Feature = { section: StudentSection; label: string; detail: string; icon: LucideIcon; tile: string; badge?: number };
 

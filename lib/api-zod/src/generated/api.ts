@@ -985,6 +985,12 @@ export const GetReportWorkspaceResponse = zod.object({
   "principalName": zod.string(),
   "principalSignature": zod.string().nullable(),
   "mySignature": zod.string().nullable().describe('The signed-in teacher\'s saved signature'),
+  "isClassTeacher": zod.boolean().describe('The office or the class teacher: may write remarks, sign and send results'),
+  "editableSubjectIds": zod.array(zod.number()).nullable().describe('Subjects whose scores the signed-in teacher may enter (null: all)'),
+  "teachers": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string()
+})).describe('Active teachers, for the office to choose subject teachers'),
   "terms": zod.array(zod.object({
   "id": zod.number(),
   "session": zod.string(),
@@ -1004,7 +1010,8 @@ export const GetReportWorkspaceResponse = zod.object({
   "id": zod.number(),
   "classId": zod.number(),
   "name": zod.string(),
-  "sortOrder": zod.number()
+  "sortOrder": zod.number(),
+  "teacherId": zod.number().nullable().describe('The subject teacher')
 })),
   "students": zod.array(zod.object({
   "id": zod.number(),
@@ -1149,7 +1156,8 @@ export const ManageReportsBody = zod.object({
   "id": zod.number().optional(),
   "classId": zod.number(),
   "name": zod.string().min(1).max(manageReportsBodySubjectNameMax),
-  "sortOrder": zod.number().min(manageReportsBodySubjectSortOrderMin).max(manageReportsBodySubjectSortOrderMax).optional()
+  "sortOrder": zod.number().min(manageReportsBodySubjectSortOrderMin).max(manageReportsBodySubjectSortOrderMax).optional(),
+  "teacherId": zod.number().nullish()
 }).optional(),
   "target": zod.object({
   "id": zod.number()
@@ -1234,7 +1242,8 @@ export const GetStudentReportsResponse = zod.object({
   "id": zod.number(),
   "classId": zod.number(),
   "name": zod.string(),
-  "sortOrder": zod.number()
+  "sortOrder": zod.number(),
+  "teacherId": zod.number().nullable().describe('The subject teacher')
 })),
   "result": zod.object({
   "studentId": zod.number(),
@@ -2398,6 +2407,210 @@ export const RecordInventoryMoveResponse = zod.object({
   "status": zod.enum(['ok', 'low', 'out']),
   "canEdit": zod.boolean().describe('Whether the signed-in staff member may edit or remove this item\'s details'),
   "updatedAt": zod.string()
+})
+
+
+/**
+ * Hostel blocks, rooms and occupants, and transport routes and riders (school office only)
+ */
+export const getFacilitiesResponseRoutesItemStopsItemNameMax = 80;
+
+export const getFacilitiesResponseRoutesItemStopsItemPickupMax = 5;
+
+export const getFacilitiesResponseRoutesItemStopsItemDropoffMax = 5;
+
+
+
+export const GetFacilitiesResponse = zod.object({
+  "blocks": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "gender": zod.enum(['boys', 'girls', 'mixed']),
+  "description": zod.string(),
+  "imageUrl": zod.string(),
+  "rooms": zod.array(zod.object({
+  "id": zod.number(),
+  "blockId": zod.number(),
+  "name": zod.string(),
+  "beds": zod.number(),
+  "priceKobo": zod.number(),
+  "imageUrl": zod.string(),
+  "notes": zod.string(),
+  "occupants": zod.array(zod.object({
+  "studentId": zod.number(),
+  "studentCode": zod.string(),
+  "name": zod.string(),
+  "className": zod.string(),
+  "detail": zod.string().describe('The bed space')
+})),
+  "status": zod.enum(['available', 'full'])
+}))
+})),
+  "routes": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "stops": zod.array(zod.object({
+  "name": zod.string().max(getFacilitiesResponseRoutesItemStopsItemNameMax),
+  "pickup": zod.string().max(getFacilitiesResponseRoutesItemStopsItemPickupMax).describe('HH:MM, or empty'),
+  "dropoff": zod.string().max(getFacilitiesResponseRoutesItemStopsItemDropoffMax).describe('HH:MM, or empty')
+})),
+  "driverName": zod.string(),
+  "driverPhone": zod.string(),
+  "vehicle": zod.string(),
+  "plate": zod.string(),
+  "feeKobo": zod.number(),
+  "notes": zod.string(),
+  "active": zod.boolean(),
+  "riders": zod.array(zod.object({
+  "studentId": zod.number(),
+  "studentCode": zod.string(),
+  "name": zod.string(),
+  "className": zod.string(),
+  "detail": zod.string().describe('The bed space')
+}))
+})),
+  "students": zod.array(zod.object({
+  "id": zod.number(),
+  "studentCode": zod.string(),
+  "name": zod.string(),
+  "className": zod.string()
+}))
+})
+
+
+export const manageFacilitiesBodyBlockNameMax = 80;
+
+export const manageFacilitiesBodyBlockDescriptionMax = 600;
+
+export const manageFacilitiesBodyBlockImageUrlMax = 1000;
+
+export const manageFacilitiesBodyRoomNameMax = 60;
+
+export const manageFacilitiesBodyRoomBedsMax = 100;
+
+export const manageFacilitiesBodyRoomPriceKoboMin = 0;
+export const manageFacilitiesBodyRoomPriceKoboMax = 2000000000;
+
+export const manageFacilitiesBodyRoomImageUrlMax = 1000;
+
+export const manageFacilitiesBodyRoomNotesMax = 600;
+
+export const manageFacilitiesBodyAllocationBedMax = 40;
+
+export const manageFacilitiesBodyRouteNameMax = 80;
+
+export const manageFacilitiesBodyRouteStopsItemNameMax = 80;
+
+export const manageFacilitiesBodyRouteStopsItemPickupMax = 5;
+
+export const manageFacilitiesBodyRouteStopsItemDropoffMax = 5;
+
+export const manageFacilitiesBodyRouteStopsMax = 40;
+
+export const manageFacilitiesBodyRouteDriverNameMax = 80;
+
+export const manageFacilitiesBodyRouteDriverPhoneMax = 20;
+
+export const manageFacilitiesBodyRouteVehicleMax = 80;
+
+export const manageFacilitiesBodyRoutePlateMax = 20;
+
+export const manageFacilitiesBodyRouteFeeKoboMin = 0;
+export const manageFacilitiesBodyRouteFeeKoboMax = 2000000000;
+
+export const manageFacilitiesBodyRouteNotesMax = 600;
+
+export const manageFacilitiesBodyAssignmentStopMax = 80;
+
+
+
+export const ManageFacilitiesBody = zod.object({
+  "action": zod.enum(['saveBlock', 'deleteBlock', 'saveRoom', 'deleteRoom', 'allocate', 'unallocate', 'saveRoute', 'deleteRoute', 'assignRoute', 'unassignRoute']),
+  "id": zod.number().optional().describe('The block'),
+  "block": zod.object({
+  "id": zod.number().optional(),
+  "name": zod.string().min(1).max(manageFacilitiesBodyBlockNameMax),
+  "gender": zod.enum(['boys', 'girls', 'mixed']),
+  "description": zod.string().max(manageFacilitiesBodyBlockDescriptionMax),
+  "imageUrl": zod.string().max(manageFacilitiesBodyBlockImageUrlMax)
+}).optional(),
+  "room": zod.object({
+  "id": zod.number().optional(),
+  "blockId": zod.number(),
+  "name": zod.string().min(1).max(manageFacilitiesBodyRoomNameMax),
+  "beds": zod.number().min(1).max(manageFacilitiesBodyRoomBedsMax),
+  "priceKobo": zod.number().min(manageFacilitiesBodyRoomPriceKoboMin).max(manageFacilitiesBodyRoomPriceKoboMax),
+  "imageUrl": zod.string().max(manageFacilitiesBodyRoomImageUrlMax),
+  "notes": zod.string().max(manageFacilitiesBodyRoomNotesMax)
+}).optional(),
+  "allocation": zod.object({
+  "studentId": zod.number(),
+  "roomId": zod.number(),
+  "bed": zod.string().max(manageFacilitiesBodyAllocationBedMax)
+}).optional(),
+  "route": zod.object({
+  "id": zod.number().optional(),
+  "name": zod.string().min(1).max(manageFacilitiesBodyRouteNameMax),
+  "stops": zod.array(zod.object({
+  "name": zod.string().max(manageFacilitiesBodyRouteStopsItemNameMax),
+  "pickup": zod.string().max(manageFacilitiesBodyRouteStopsItemPickupMax).describe('HH:MM, or empty'),
+  "dropoff": zod.string().max(manageFacilitiesBodyRouteStopsItemDropoffMax).describe('HH:MM, or empty')
+})).max(manageFacilitiesBodyRouteStopsMax),
+  "driverName": zod.string().max(manageFacilitiesBodyRouteDriverNameMax),
+  "driverPhone": zod.string().max(manageFacilitiesBodyRouteDriverPhoneMax),
+  "vehicle": zod.string().max(manageFacilitiesBodyRouteVehicleMax),
+  "plate": zod.string().max(manageFacilitiesBodyRoutePlateMax),
+  "feeKobo": zod.number().min(manageFacilitiesBodyRouteFeeKoboMin).max(manageFacilitiesBodyRouteFeeKoboMax),
+  "notes": zod.string().max(manageFacilitiesBodyRouteNotesMax),
+  "active": zod.boolean()
+}).optional(),
+  "assignment": zod.object({
+  "studentId": zod.number(),
+  "routeId": zod.number(),
+  "stop": zod.string().max(manageFacilitiesBodyAssignmentStopMax)
+}).optional()
+})
+
+export const ManageFacilitiesResponse = zod.object({
+  "message": zod.string(),
+  "studentId": zod.string().optional().describe('The Student ID of a student just enrolled')
+})
+
+
+export const getMyFacilitiesResponseTransportTwoStopsItemNameMax = 80;
+
+export const getMyFacilitiesResponseTransportTwoStopsItemPickupMax = 5;
+
+export const getMyFacilitiesResponseTransportTwoStopsItemDropoffMax = 5;
+
+
+
+export const GetMyFacilitiesResponse = zod.object({
+  "hostel": zod.union([zod.null(),zod.object({
+  "block": zod.string(),
+  "gender": zod.string(),
+  "room": zod.string(),
+  "bed": zod.string(),
+  "priceKobo": zod.number(),
+  "imageUrl": zod.string(),
+  "roommates": zod.number().describe('How many others share the room')
+})]),
+  "transport": zod.union([zod.null(),zod.object({
+  "route": zod.string(),
+  "stop": zod.string(),
+  "pickup": zod.string(),
+  "dropoff": zod.string(),
+  "driverName": zod.string(),
+  "driverPhone": zod.string(),
+  "vehicle": zod.string(),
+  "plate": zod.string(),
+  "feeKobo": zod.number(),
+  "stops": zod.array(zod.object({
+  "name": zod.string().max(getMyFacilitiesResponseTransportTwoStopsItemNameMax),
+  "pickup": zod.string().max(getMyFacilitiesResponseTransportTwoStopsItemPickupMax).describe('HH:MM, or empty'),
+  "dropoff": zod.string().max(getMyFacilitiesResponseTransportTwoStopsItemDropoffMax).describe('HH:MM, or empty')
+}))
+})])
 })
 
 

@@ -113,6 +113,10 @@ paths:
     $ref: "./inventory.yaml#/paths/inventoryItem"
   /portal/inventory/{id}/moves:
     $ref: "./inventory.yaml#/paths/inventoryMoves"
+  /portal/facilities:
+    $ref: "./facilities.yaml#/paths/manage"
+  /portal/my-facilities:
+    $ref: "./facilities.yaml#/paths/mine"
   /portal/my-messages:
     $ref: "./messages.yaml#/paths/myMessages"
   /portal/my-messages/read:
@@ -1067,6 +1071,22 @@ components:
       $ref: "./inventory.yaml#/schemas/InventoryMoveInput"
     InventoryMove:
       $ref: "./inventory.yaml#/schemas/InventoryMove"
+    TransportStop:
+      $ref: "./facilities.yaml#/schemas/TransportStop"
+    FacilityPerson:
+      $ref: "./facilities.yaml#/schemas/FacilityPerson"
+    HostelRoom:
+      $ref: "./facilities.yaml#/schemas/HostelRoom"
+    HostelBlock:
+      $ref: "./facilities.yaml#/schemas/HostelBlock"
+    TransportRoute:
+      $ref: "./facilities.yaml#/schemas/TransportRoute"
+    Facilities:
+      $ref: "./facilities.yaml#/schemas/Facilities"
+    FacilitiesCommand:
+      $ref: "./facilities.yaml#/schemas/FacilitiesCommand"
+    MyFacilities:
+      $ref: "./facilities.yaml#/schemas/MyFacilities"
     MessageChannel:
       $ref: "./messages.yaml#/schemas/MessageChannel"
     PortalChatMessage:

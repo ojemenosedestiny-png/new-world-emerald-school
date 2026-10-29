@@ -13,6 +13,7 @@ import type { ReportWorkspaceScoresItem } from './reportWorkspaceScoresItem';
 import type { ReportWorkspaceStudentsItem } from './reportWorkspaceStudentsItem';
 import type { ReportWorkspaceSubjectsItem } from './reportWorkspaceSubjectsItem';
 import type { ReportWorkspaceSubjectStatsItem } from './reportWorkspaceSubjectStatsItem';
+import type { ReportWorkspaceTeachersItem } from './reportWorkspaceTeachersItem';
 import type { ReportWorkspaceTermsItem } from './reportWorkspaceTermsItem';
 import type { ReportWorkspaceWorkflow } from './reportWorkspaceWorkflow';
 
@@ -27,6 +28,15 @@ export interface ReportWorkspace {
      * @nullable
      */
   mySignature: string | null;
+  /** The office or the class teacher: may write remarks, sign and send results */
+  isClassTeacher: boolean;
+  /**
+     * Subjects whose scores the signed-in teacher may enter (null: all)
+     * @nullable
+     */
+  editableSubjectIds: number[] | null;
+  /** Active teachers, for the office to choose subject teachers */
+  teachers: ReportWorkspaceTeachersItem[];
   terms: ReportWorkspaceTermsItem[];
   classes: ReportWorkspaceClassesItem[];
   canAdmin: boolean;

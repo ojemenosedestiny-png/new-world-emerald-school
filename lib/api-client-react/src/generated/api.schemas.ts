@@ -315,6 +315,239 @@ export interface InventoryMove {
   createdAt: string;
 }
 
+export interface TransportStop {
+  /** @maxLength 80 */
+  name: string;
+  /**
+     * HH:MM, or empty
+     * @maxLength 5
+     */
+  pickup: string;
+  /**
+     * HH:MM, or empty
+     * @maxLength 5
+     */
+  dropoff: string;
+}
+
+export interface FacilityPerson {
+  studentId: number;
+  studentCode: string;
+  name: string;
+  className: string;
+  /** The bed space */
+  detail: string;
+}
+
+export type HostelRoomStatus = typeof HostelRoomStatus[keyof typeof HostelRoomStatus];
+
+
+export const HostelRoomStatus = {
+  available: 'available',
+  full: 'full',
+} as const;
+
+export interface HostelRoom {
+  id: number;
+  blockId: number;
+  name: string;
+  beds: number;
+  priceKobo: number;
+  imageUrl: string;
+  notes: string;
+  occupants: FacilityPerson[];
+  status: HostelRoomStatus;
+}
+
+export type HostelBlockGender = typeof HostelBlockGender[keyof typeof HostelBlockGender];
+
+
+export const HostelBlockGender = {
+  boys: 'boys',
+  girls: 'girls',
+  mixed: 'mixed',
+} as const;
+
+export interface HostelBlock {
+  id: number;
+  name: string;
+  gender: HostelBlockGender;
+  description: string;
+  imageUrl: string;
+  rooms: HostelRoom[];
+}
+
+export interface TransportRoute {
+  id: number;
+  name: string;
+  stops: TransportStop[];
+  driverName: string;
+  driverPhone: string;
+  vehicle: string;
+  plate: string;
+  feeKobo: number;
+  notes: string;
+  active: boolean;
+  riders: FacilityPerson[];
+}
+
+export type FacilitiesStudentsItem = {
+  id: number;
+  studentCode: string;
+  name: string;
+  className: string;
+};
+
+export interface Facilities {
+  blocks: HostelBlock[];
+  routes: TransportRoute[];
+  students: FacilitiesStudentsItem[];
+}
+
+export type FacilitiesCommandAction = typeof FacilitiesCommandAction[keyof typeof FacilitiesCommandAction];
+
+
+export const FacilitiesCommandAction = {
+  saveBlock: 'saveBlock',
+  deleteBlock: 'deleteBlock',
+  saveRoom: 'saveRoom',
+  deleteRoom: 'deleteRoom',
+  allocate: 'allocate',
+  unallocate: 'unallocate',
+  saveRoute: 'saveRoute',
+  deleteRoute: 'deleteRoute',
+  assignRoute: 'assignRoute',
+  unassignRoute: 'unassignRoute',
+} as const;
+
+export type FacilitiesCommandBlockGender = typeof FacilitiesCommandBlockGender[keyof typeof FacilitiesCommandBlockGender];
+
+
+export const FacilitiesCommandBlockGender = {
+  boys: 'boys',
+  girls: 'girls',
+  mixed: 'mixed',
+} as const;
+
+export type FacilitiesCommandBlock = {
+  id?: number;
+  /**
+     * @minLength 1
+     * @maxLength 80
+     */
+  name: string;
+  gender: FacilitiesCommandBlockGender;
+  /** @maxLength 600 */
+  description: string;
+  /** @maxLength 1000 */
+  imageUrl: string;
+};
+
+export type FacilitiesCommandRoom = {
+  id?: number;
+  blockId: number;
+  /**
+     * @minLength 1
+     * @maxLength 60
+     */
+  name: string;
+  /**
+     * @minimum 1
+     * @maximum 100
+     */
+  beds: number;
+  /**
+     * @minimum 0
+     * @maximum 2000000000
+     */
+  priceKobo: number;
+  /** @maxLength 1000 */
+  imageUrl: string;
+  /** @maxLength 600 */
+  notes: string;
+};
+
+export type FacilitiesCommandAllocation = {
+  studentId: number;
+  roomId: number;
+  /** @maxLength 40 */
+  bed: string;
+};
+
+export type FacilitiesCommandRoute = {
+  id?: number;
+  /**
+     * @minLength 1
+     * @maxLength 80
+     */
+  name: string;
+  /** @maxItems 40 */
+  stops: TransportStop[];
+  /** @maxLength 80 */
+  driverName: string;
+  /** @maxLength 20 */
+  driverPhone: string;
+  /** @maxLength 80 */
+  vehicle: string;
+  /** @maxLength 20 */
+  plate: string;
+  /**
+     * @minimum 0
+     * @maximum 2000000000
+     */
+  feeKobo: number;
+  /** @maxLength 600 */
+  notes: string;
+  active: boolean;
+};
+
+export type FacilitiesCommandAssignment = {
+  studentId: number;
+  routeId: number;
+  /** @maxLength 80 */
+  stop: string;
+};
+
+export interface FacilitiesCommand {
+  action: FacilitiesCommandAction;
+  /** The block */
+  id?: number;
+  block?: FacilitiesCommandBlock;
+  room?: FacilitiesCommandRoom;
+  allocation?: FacilitiesCommandAllocation;
+  route?: FacilitiesCommandRoute;
+  assignment?: FacilitiesCommandAssignment;
+}
+
+export type MyFacilitiesHostel = {
+  block: string;
+  gender: string;
+  room: string;
+  bed: string;
+  priceKobo: number;
+  imageUrl: string;
+  /** How many others share the room */
+  roommates: number;
+} | null;
+
+export type MyFacilitiesTransport = {
+  route: string;
+  stop: string;
+  pickup: string;
+  dropoff: string;
+  driverName: string;
+  driverPhone: string;
+  vehicle: string;
+  plate: string;
+  feeKobo: number;
+  stops: TransportStop[];
+} | null;
+
+export interface MyFacilities {
+  hostel: MyFacilitiesHostel;
+  transport: MyFacilitiesTransport;
+}
+
 export type MessageChannel = typeof MessageChannel[keyof typeof MessageChannel];
 
 
@@ -1066,6 +1299,11 @@ export interface ReportSubject {
   classId: number;
   name: string;
   sortOrder: number;
+  /**
+     * The subject teacher
+     * @nullable
+     */
+  teacherId: number | null;
 }
 
 export interface ReportSubjectInput {
@@ -1081,6 +1319,8 @@ export interface ReportSubjectInput {
      * @maximum 1000
      */
   sortOrder?: number;
+  /** @nullable */
+  teacherId?: number | null;
 }
 
 export interface ReportScore {
@@ -1272,6 +1512,11 @@ export type ReportWorkspaceGradingScaleItem = {
   remark: string;
 };
 
+export type ReportWorkspaceTeachersItem = {
+  id: number;
+  name: string;
+};
+
 export type ReportWorkspaceTermsItem = {
   id: number;
   session: string;
@@ -1292,6 +1537,11 @@ export type ReportWorkspaceSubjectsItem = {
   classId: number;
   name: string;
   sortOrder: number;
+  /**
+     * The subject teacher
+     * @nullable
+     */
+  teacherId: number | null;
 };
 
 export type ReportWorkspaceStudentsItem = {
@@ -1387,6 +1637,15 @@ export interface ReportWorkspace {
      * @nullable
      */
   mySignature: string | null;
+  /** The office or the class teacher: may write remarks, sign and send results */
+  isClassTeacher: boolean;
+  /**
+     * Subjects whose scores the signed-in teacher may enter (null: all)
+     * @nullable
+     */
+  editableSubjectIds: number[] | null;
+  /** Active teachers, for the office to choose subject teachers */
+  teachers: ReportWorkspaceTeachersItem[];
   terms: ReportWorkspaceTermsItem[];
   classes: ReportWorkspaceClassesItem[];
   canAdmin: boolean;
@@ -1535,6 +1794,8 @@ export type ReportCommandSubject = {
      * @maximum 1000
      */
   sortOrder?: number;
+  /** @nullable */
+  teacherId?: number | null;
 };
 
 export type ReportCommandTarget = {
@@ -1645,6 +1906,11 @@ export type StudentTermReportSubjectsItem = {
   classId: number;
   name: string;
   sortOrder: number;
+  /**
+     * The subject teacher
+     * @nullable
+     */
+  teacherId: number | null;
 };
 
 export type StudentTermReportResultSubjectsItem = {
@@ -1750,6 +2016,11 @@ export type StudentReportsReportsItemSubjectsItem = {
   classId: number;
   name: string;
   sortOrder: number;
+  /**
+     * The subject teacher
+     * @nullable
+     */
+  teacherId: number | null;
 };
 
 export type StudentReportsReportsItemResultSubjectsItem = {

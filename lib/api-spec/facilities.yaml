@@ -1,0 +1,202 @@
+paths:
+  manage:
+    get:
+      operationId: getFacilities
+      description: Hostel blocks, rooms and occupants, and transport routes and riders (school office only)
+      responses:
+        "200":
+          description: Everything the office needs to manage boarding and transport
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Facilities" }
+    post:
+      operationId: manageFacilities
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/FacilitiesCommand" }
+      responses:
+        "200":
+          description: Saved
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PortalMessage" }
+  mine:
+    get:
+      operationId: getMyFacilities
+      responses:
+        "200":
+          description: The signed-in student's hostel room and bus route, if any
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MyFacilities" }
+schemas:
+  TransportStop:
+    type: object
+    required: [name, pickup, dropoff]
+    properties:
+      name: { type: string, maxLength: 80 }
+      pickup: { type: string, maxLength: 5, description: "HH:MM, or empty" }
+      dropoff: { type: string, maxLength: 5, description: "HH:MM, or empty" }
+  FacilityPerson:
+    type: object
+    required: [studentId, studentCode, name, className, detail]
+    properties:
+      studentId: { type: integer }
+      studentCode: { type: string }
+      name: { type: string }
+      className: { type: string }
+      detail: { type: string, description: The bed space, or the bus stop }
+  HostelRoom:
+    type: object
+    required: [id, blockId, name, beds, priceKobo, imageUrl, notes, occupants, status]
+    properties:
+      id: { type: integer }
+      blockId: { type: integer }
+      name: { type: string }
+      beds: { type: integer }
+      priceKobo: { type: integer }
+      imageUrl: { type: string }
+      notes: { type: string }
+      occupants: { type: array, items: { $ref: "#/components/schemas/FacilityPerson" } }
+      status: { type: string, enum: [available, full] }
+  HostelBlock:
+    type: object
+    required: [id, name, gender, description, imageUrl, rooms]
+    properties:
+      id: { type: integer }
+      name: { type: string }
+      gender: { type: string, enum: [boys, girls, mixed] }
+      description: { type: string }
+      imageUrl: { type: string }
+      rooms: { type: array, items: { $ref: "#/components/schemas/HostelRoom" } }
+  TransportRoute:
+    type: object
+    required: [id, name, stops, driverName, driverPhone, vehicle, plate, feeKobo, notes, active, riders]
+    properties:
+      id: { type: integer }
+      name: { type: string }
+      stops: { type: array, items: { $ref: "#/components/schemas/TransportStop" } }
+      driverName: { type: string }
+      driverPhone: { type: string }
+      vehicle: { type: string }
+      plate: { type: string }
+      feeKobo: { type: integer }
+      notes: { type: string }
+      active: { type: boolean }
+      riders: { type: array, items: { $ref: "#/components/schemas/FacilityPerson" } }
+  Facilities:
+    type: object
+    required: [blocks, routes, students]
+    properties:
+      blocks: { type: array, items: { $ref: "#/components/schemas/HostelBlock" } }
+      routes: { type: array, items: { $ref: "#/components/schemas/TransportRoute" } }
+      students:
+        type: array
+        items:
+          type: object
+          required: [id, studentCode, name, className]
+          properties:
+            id: { type: integer }
+            studentCode: { type: string }
+            name: { type: string }
+            className: { type: string }
+  FacilitiesCommand:
+    type: object
+    required: [action]
+    properties:
+      action: { type: string, enum: [saveBlock, deleteBlock, saveRoom, deleteRoom, allocate, unallocate, saveRoute, deleteRoute, assignRoute, unassignRoute] }
+      id: { type: integer, description: The block, room, route or student the action is for }
+      block:
+        type: object
+        required: [name, gender, description, imageUrl]
+        properties:
+          id: { type: integer }
+          name: { type: string, minLength: 1, maxLength: 80 }
+          gender: { type: string, enum: [boys, girls, mixed] }
+          description: { type: string, maxLength: 600 }
+          imageUrl: { type: string, maxLength: 1000 }
+      room:
+        type: object
+        required: [blockId, name, beds, priceKobo, imageUrl, notes]
+        properties:
+          id: { type: integer }
+          blockId: { type: integer }
+          name: { type: string, minLength: 1, maxLength: 60 }
+          beds: { type: integer, minimum: 1, maximum: 100 }
+          priceKobo: { type: integer, minimum: 0, maximum: 2000000000 }
+          imageUrl: { type: string, maxLength: 1000 }
+          notes: { type: string, maxLength: 600 }
+      allocation:
+        type: object
+        required: [studentId, roomId, bed]
+        properties:
+          studentId: { type: integer }
+          roomId: { type: integer }
+          bed: { type: string, maxLength: 40 }
+      route:
+        type: object
+        required: [name, stops, driverName, driverPhone, vehicle, plate, feeKobo, notes, active]
+        properties:
+          id: { type: integer }
+          name: { type: string, minLength: 1, maxLength: 80 }
+          stops: { type: array, maxItems: 40, items: { $ref: "#/components/schemas/TransportStop" } }
+          driverName: { type: string, maxLength: 80 }
+          driverPhone: { type: string, maxLength: 20 }
+          vehicle: { type: string, maxLength: 80 }
+          plate: { type: string, maxLength: 20 }
+          feeKobo: { type: integer, minimum: 0, maximum: 2000000000 }
+          notes: { type: string, maxLength: 600 }
+          active: { type: boolean }
+      assignment:
+        type: object
+        required: [studentId, routeId, stop]
+        properties:
+          studentId: { type: integer }
+          routeId: { type: integer }
+          stop: { type: string, maxLength: 80 }
+  MyFacilities:
+    type: object
+    required: [hostel, transport]
+    properties:
+      hostel:
+        oneOf:
+          - type: "null"
+          - type: object
+            required: [block, gender, room, bed, priceKobo, imageUrl, roommates]
+            properties:
+              block: { type: string }
+              gender: { type: string }
+              room: { type: string }
+              bed: { type: string }
+              priceKobo: { type: integer }
+              imageUrl: { type: string }
+              roommates: { type: integer, description: How many others share the room }
+      transport:
+        oneOf:
+          - type: "null"
+          - type: object
+            required: [route, stop, pickup, dropoff, driverName, driverPhone, vehicle, plate, feeKobo, stops]
+            properties:
+              route: { type: string }
+              stop: { type: string }
+              pickup: { type: string }
+              dropoff: { type: string }
+              driverName: { type: string }
+              driverPhone: { type: string }
+              vehicle: { type: string }
+              plate: { type: string }
+              feeKobo: { type: integer }
+              stops: { type: array, items: { $ref: "#/components/schemas/TransportStop" } }
+components:
+  schemas:
+    TransportStop: { $ref: "#/schemas/TransportStop" }
+    FacilityPerson: { $ref: "#/schemas/FacilityPerson" }
+    HostelRoom: { $ref: "#/schemas/HostelRoom" }
+    HostelBlock: { $ref: "#/schemas/HostelBlock" }
+    TransportRoute: { $ref: "#/schemas/TransportRoute" }
+    Facilities: { $ref: "#/schemas/Facilities" }
+    FacilitiesCommand: { $ref: "#/schemas/FacilitiesCommand" }
+    MyFacilities: { $ref: "#/schemas/MyFacilities" }
+    PortalMessage: { $ref: "./portal.yaml#/schemas/PortalMessage" }

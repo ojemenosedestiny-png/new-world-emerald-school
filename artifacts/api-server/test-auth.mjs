@@ -7,7 +7,7 @@ import { fileURLToPath } from "node:url";
 
 const directory = await mkdtemp(join(tmpdir(), "school-auth-tests-"));
 try {
-  const tests = ["website-admin", "school-identity", "report-cards", "security", "accounts", "community", "cloudinary", "site-redirects", "clerk-email-webhook", "live-updates", "learning", "messages", "fees", "cbt", "director", "pdf-import", "inventory", "admissions", "result-import"];
+  const tests = ["website-admin", "school-identity", "report-cards", "security", "accounts", "community", "cloudinary", "site-redirects", "clerk-email-webhook", "live-updates", "learning", "messages", "fees", "cbt", "director", "pdf-import", "inventory", "admissions", "result-import", "facilities"];
   // pdfjs is loaded from this package at run time, as in the server build.
   await symlink(fileURLToPath(new URL("./node_modules", import.meta.url)), join(directory, "node_modules"), "junction");
   await build({

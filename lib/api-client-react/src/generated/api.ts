@@ -52,6 +52,8 @@ import type {
   DirectorReport,
   EmailTestResult,
   EnrolStudentInput,
+  Facilities,
+  FacilitiesCommand,
   FeePaymentReport,
   FeePaymentReportInput,
   FeePaymentReportReceipt,
@@ -84,6 +86,7 @@ import type {
   MessageReadInput,
   MessageThreadSummary,
   MyAttendance,
+  MyFacilities,
   MyMessages,
   MyPhoto,
   PaymentProof,
@@ -4353,6 +4356,216 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       > => {
       return useMutation(getRecordInventoryMoveMutationOptions(options));
     }
+
+export const getGetFacilitiesUrl = () => {
+
+
+
+
+  return `/api/portal/facilities`
+}
+
+/**
+ * Hostel blocks, rooms and occupants, and transport routes and riders (school office only)
+ */
+export const getFacilities = async ( options?: RequestInit): Promise<Facilities> => {
+
+  return customFetch<Facilities>(getGetFacilitiesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetFacilitiesQueryKey = () => {
+    return [
+    `/api/portal/facilities`
+    ] as const;
+    }
+
+
+export const getGetFacilitiesQueryOptions = <TData = Awaited<ReturnType<typeof getFacilities>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getFacilities>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetFacilitiesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getFacilities>>> = ({ signal }) => getFacilities({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getFacilities>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetFacilitiesQueryResult = NonNullable<Awaited<ReturnType<typeof getFacilities>>>
+export type GetFacilitiesQueryError = ErrorType<unknown>
+
+
+
+export function useGetFacilities<TData = Awaited<ReturnType<typeof getFacilities>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getFacilities>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetFacilitiesQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getManageFacilitiesUrl = () => {
+
+
+
+
+  return `/api/portal/facilities`
+}
+
+export const manageFacilities = async (facilitiesCommand: FacilitiesCommand, options?: RequestInit): Promise<PortalMessage> => {
+
+  return customFetch<PortalMessage>(getManageFacilitiesUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(facilitiesCommand)
+  }
+);}
+
+
+
+
+
+export const getManageFacilitiesMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof manageFacilities>>, TError,{data: BodyType<FacilitiesCommand>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof manageFacilities>>, TError,{data: BodyType<FacilitiesCommand>}, TContext> => {
+
+const mutationKey = ['manageFacilities'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof manageFacilities>>, {data: BodyType<FacilitiesCommand>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  manageFacilities(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ManageFacilitiesMutationResult = NonNullable<Awaited<ReturnType<typeof manageFacilities>>>
+    export type ManageFacilitiesMutationBody = BodyType<FacilitiesCommand>
+    export type ManageFacilitiesMutationError = ErrorType<unknown>
+
+    export const useManageFacilities = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof manageFacilities>>, TError,{data: BodyType<FacilitiesCommand>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof manageFacilities>>,
+        TError,
+        {data: BodyType<FacilitiesCommand>},
+        TContext
+      > => {
+      return useMutation(getManageFacilitiesMutationOptions(options));
+    }
+
+export const getGetMyFacilitiesUrl = () => {
+
+
+
+
+  return `/api/portal/my-facilities`
+}
+
+export const getMyFacilities = async ( options?: RequestInit): Promise<MyFacilities> => {
+
+  return customFetch<MyFacilities>(getGetMyFacilitiesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetMyFacilitiesQueryKey = () => {
+    return [
+    `/api/portal/my-facilities`
+    ] as const;
+    }
+
+
+export const getGetMyFacilitiesQueryOptions = <TData = Awaited<ReturnType<typeof getMyFacilities>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMyFacilities>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetMyFacilitiesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMyFacilities>>> = ({ signal }) => getMyFacilities({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMyFacilities>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetMyFacilitiesQueryResult = NonNullable<Awaited<ReturnType<typeof getMyFacilities>>>
+export type GetMyFacilitiesQueryError = ErrorType<unknown>
+
+
+
+export function useGetMyFacilities<TData = Awaited<ReturnType<typeof getMyFacilities>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMyFacilities>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetMyFacilitiesQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 
 export const getGetMyMessagesUrl = () => {
 

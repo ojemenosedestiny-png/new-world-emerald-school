@@ -21,6 +21,8 @@ export const portalSubjects = pgTable("portal_subjects", {
   classId: integer("class_id").notNull().references(() => portalClasses.id),
   name: text("name").notNull(),
   sortOrder: integer("sort_order").notNull().default(0),
+  // The subject teacher, who may enter this subject's scores even without being the class teacher.
+  teacherId: integer("teacher_id"),
 }, (t) => [uniqueIndex("portal_subjects_class_name").on(t.classId, t.name)]);
 export const insertPortalSubjectSchema = createInsertSchema(portalSubjects).omit({ id: true });
 export type PortalSubjectRecord = typeof portalSubjects.$inferSelect;

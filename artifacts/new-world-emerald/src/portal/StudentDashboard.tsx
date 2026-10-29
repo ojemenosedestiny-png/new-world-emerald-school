@@ -6,7 +6,7 @@ import {
   getGetPortalSessionQueryKey,
   type PortalSession, type PortalDashboardExamsItem, type PortalDashboardAttemptsItem,
 } from "@workspace/api-client-react";
-import { Award, BookOpen, CalendarCheck, CalendarClock, CalendarDays, ClipboardList, FileBarChart, Home, Images, KeyRound, LayoutGrid, Megaphone, MessagesSquare, NotebookPen, PlayCircle, Timer, UserRound, Users, Wallet } from "lucide-react";
+import { Award, BookOpen, Bus, CalendarCheck, CalendarClock, CalendarDays, ClipboardList, FileBarChart, Home, Images, KeyRound, LayoutGrid, Megaphone, MessagesSquare, NotebookPen, PlayCircle, Timer, UserRound, Users, Wallet } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { EmptyState, ErrorPanel, Skeleton, StatusPill } from "./ui";
@@ -24,6 +24,7 @@ import { StudentAttendance } from "./StudentAttendance";
 import { StudentMessages } from "./StudentMessages";
 import { StudentLibrary } from "./StudentLibrary";
 import { StudentFees } from "./FeeStatement";
+import { StudentFacilities } from "./StudentFacilities";
 import { AppShell, type NavGroup } from "./shell/AppShell";
 import { IdleSignOut } from "@/components/IdleSignOut";
 import type { usePortalTheme } from "./shell/theme";
@@ -106,7 +107,7 @@ export function StudentDashboard({ session, theme }: { session: PortalSession; t
   const exams = useMemo(() => sortStudentExams(data?.exams ?? [], data?.attempts ?? []), [data]);
   const average = studentAverage(data?.attempts ?? []);
 
-  const titles: Record<StudentSection, string> = { home: "Home", exams: "Exams", results: "GradeSheet", reports: "Report cards", revision: "Library", notices: "Notices", profile: "Profile", events: "Events", staff: "Staffs", gallery: "Gallery", attendance: "Attendance", assignments: "Assignments", messages: "Messages", fees: "Fees" };
+  const titles: Record<StudentSection, string> = { home: "Home", exams: "Exams", results: "GradeSheet", reports: "Report cards", revision: "Library", notices: "Notices", profile: "Profile", events: "Events", staff: "Staffs", gallery: "Gallery", attendance: "Attendance", assignments: "Assignments", messages: "Messages", fees: "Fees", boarding: "Hostel & bus" };
   const openCount = (data?.exams ?? []).filter((e) => examWindow(e.startsAt, e.endsAt) === "open" && attemptByExam.get(e.id)?.status !== "submitted" && attemptByExam.get(e.id)?.status !== "marked").length;
   const groups: NavGroup<StudentSection>[] = [
     { items: [{ key: "home", label: "Home", icon: Home, testId: "tab-home" }, { key: "profile", label: "Profile", icon: UserRound, testId: "tab-profile" }, { key: "messages", label: "Messages", icon: MessagesSquare, badge: unreadMessages, testId: "tab-messages" }] },
@@ -121,6 +122,7 @@ export function StudentDashboard({ session, theme }: { session: PortalSession; t
     { label: "School life", items: [
       { key: "attendance", label: "Attendance", icon: CalendarCheck, testId: "tab-attendance" },
       { key: "fees", label: "Fees", icon: Wallet, testId: "tab-fees" },
+      { key: "boarding", label: "Hostel & bus", icon: Bus, testId: "tab-boarding" },
       { key: "events", label: "Events", icon: CalendarDays, testId: "tab-events" },
       { key: "staff", label: "Staffs", icon: Users, testId: "tab-staff" },
       { key: "gallery", label: "Gallery", icon: Images, testId: "tab-gallery" },
@@ -161,6 +163,7 @@ export function StudentDashboard({ session, theme }: { session: PortalSession; t
             {section === "assignments" && <StudentAssignments />}
             {section === "messages" && <StudentMessages />}
             {section === "fees" && <StudentFees />}
+            {section === "boarding" && <StudentFacilities />}
 
             {section === "exams" && <div className="space-y-3">
               {data.exams.length === 0 && orphanAttempts.length === 0 ? (

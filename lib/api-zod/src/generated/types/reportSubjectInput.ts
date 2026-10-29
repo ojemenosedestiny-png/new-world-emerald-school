@@ -19,4 +19,6 @@ export interface ReportSubjectInput {
      * @maximum 1000
      */
   sortOrder?: number;
+  /** @nullable */
+  teacherId?: number | null;
 }
