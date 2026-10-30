@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { usePageTitle } from "@/lib/pageTitle";
 import { useForm, type FieldValues, type Path, type UseFormRegister } from "react-hook-form";
 import { Link, useSearch } from "wouter";
 import {
@@ -69,6 +70,7 @@ function Field<T extends FieldValues>({ label, name, type = "text", register, re
 }
 
 export default function SchoolCommerce() {
+  usePageTitle("Uniforms & School Payments | New World Emerald Private School");
   const queryClient = useQueryClient();
   const search = useSearch();
   const requestedSection = new URLSearchParams(search).get("section");

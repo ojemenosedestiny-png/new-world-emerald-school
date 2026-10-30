@@ -16,6 +16,7 @@ import { AcademicCalendar } from '@/components/AcademicCalendar';
 import { LiveUpdates } from '@/components/LiveUpdates';
 import { ScrollProgress, CookieBanner, FloatingButtons } from '@/components/Widgets';
 import { isSchoolSectionVisible, useSchoolContentRevision } from '@/lib/siteContent';
+import { usePageTitle } from "@/lib/pageTitle";
 
 const schoolSections = [
   { name: "Hero", Component: Hero },
@@ -38,6 +39,7 @@ const schoolSections = [
 ];
 
 export default function Home() {
+  usePageTitle("New World Emerald Private School | Kubwa, Abuja");
   useSchoolContentRevision();
   const queryClient = useQueryClient();
   const productsFetching = useIsFetching({ queryKey: getListStoreProductsQueryKey() });

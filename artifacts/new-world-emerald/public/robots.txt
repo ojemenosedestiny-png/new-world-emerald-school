@@ -1,2 +1,7 @@
+# New World Emerald Private School
+# The live server generates this file from its configured domain; this copy is for other hosts.
 User-agent: *
 Allow: /
+Disallow: /api/
+
+Sitemap: https://newworldemeraldprivateschool.com/sitemap.xml

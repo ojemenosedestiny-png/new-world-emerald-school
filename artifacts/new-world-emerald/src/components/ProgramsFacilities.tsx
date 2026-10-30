@@ -97,7 +97,9 @@ export function Programs() {
               <div className="relative h-56 overflow-hidden">
                 <img 
                   src={prog.img} 
-                  alt={prog.title} 
+                  alt={`${prog.title} at New World Emerald Private School`} 
+                  loading="lazy"
+                  decoding="async"
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 motion-reduce:transform-none"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-secondary/35 to-transparent pointer-events-none" />
@@ -191,7 +193,9 @@ export function Facilities() {
             >
               <img 
                 src={fac.img} 
-                alt={fac.name} 
+                alt={`${fac.name} at New World Emerald Private School`} 
+                loading="lazy"
+                decoding="async"
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex items-end p-6 md:p-8">

@@ -34,10 +34,12 @@ export function Hero() {
           </motion.p>
           <motion.h1
             variants={fadeUp}
-            aria-label="Building Future Leaders With Global Vision."
+            aria-label="New World Emerald Private School: Building Future Leaders With Global Vision."
             data-testid="hero-headline"
             className="mb-5 max-w-[15ch] font-serif text-[clamp(2rem,8.2vw,4.6rem)] font-bold leading-[1.08] tracking-[-0.035em] text-white sm:max-w-[17ch] sm:text-5xl md:mb-6 md:text-7xl"
           >
+            {/* The school name is shown just above as the eyebrow; it is part of the page heading for search engines and screen readers. */}
+            <span className="sr-only">New World Emerald Private School: </span>
             <span className="block"><AnimatedHeadlineText text="Building Future Leaders" /></span>
             <span className="mt-1 block text-accent"><AnimatedHeadlineText text="With Global Vision." /></span>
           </motion.h1>
