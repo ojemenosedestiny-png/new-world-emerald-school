@@ -156,7 +156,9 @@ export default function Admin() {
   const login = () => setLocation("/sign-in");
   const logout = () => void signOut({ redirectUrl: import.meta.env.BASE_URL });
   const queryClient = useQueryClient();
-  const accessQuery = useGetWebsiteAdminAccess({ query: { queryKey: [...getGetWebsiteAdminAccessQueryKey(), user?.externalId ?? user?.id ?? "anonymous"], enabled: isAuthenticated, retry: false } });
+  const accessQuery = useGetWebsiteAdminAccess({ query: { queryKey: [...getGetWebsiteAdminAccessQueryKey(), user?.externalId ?? user?.id ?? "anonymous"], enabled: isAuthenticated, retry: false,
+    // A newly approved administrator is confirmed a few seconds after signing up: check again for about a minute before giving up.
+    refetchInterval: (query) => query.state.data?.isAdmin === false && query.state.dataUpdateCount < 8 ? 8000 : false } });
   const isAdmin = accessQuery.data?.isAdmin === true;
   const applicationsQuery = useListAdmissionApplications({
     query: {

@@ -170,7 +170,9 @@ export default function Director() {
   const [days, setDays] = useState<7 | 30>(7);
   const [view, setView] = useState<"overview" | "results" | "email">("overview");
   const signedIn = isLoaded && isSignedIn === true;
-  const q = useGetDirectorOverview({ days }, { query: { queryKey: getGetDirectorOverviewQueryKey({ days }), enabled: signedIn, retry: false, refetchInterval: 5 * 60_000 } });
+  const q = useGetDirectorOverview({ days }, { query: { queryKey: getGetDirectorOverviewQueryKey({ days }), enabled: signedIn, refetchInterval: 5 * 60_000,
+    // Right after the Director signs up, the server needs a few seconds to confirm the new account: keep asking for about 30 seconds.
+    retry: (count, error) => error instanceof ApiError && error.status === 403 && count < 6, retryDelay: 5000 } });
   const send = useSendDirectorReport();
 
   if (!isLoaded) return <div className="portal p-10"><Skeleton className="mx-auto h-40 max-w-md" /></div>;
