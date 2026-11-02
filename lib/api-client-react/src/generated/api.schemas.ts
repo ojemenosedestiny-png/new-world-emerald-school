@@ -742,6 +742,8 @@ export interface PrincipalTeacher {
   /** @nullable */
   photoFileId: string | null;
   subjectCount: number;
+  /** Class teacher or subject teacher in this section, or not yet assigned anywhere */
+  inSection: boolean;
 }
 
 export interface PrincipalOverview {
@@ -4787,12 +4789,39 @@ export type SendDirectorReport200 = {
   message: string;
 };
 
+export type GetPrincipalOverviewParams = {
+/**
+ * primary (Year 1 to Year 6) or secondary (JSS 1 to SS 3, the default)
+ */
+section?: GetPrincipalOverviewSection;
+};
+
+export type GetPrincipalOverviewSection = typeof GetPrincipalOverviewSection[keyof typeof GetPrincipalOverviewSection];
+
+
+export const GetPrincipalOverviewSection = {
+  primary: 'primary',
+  secondary: 'secondary',
+} as const;
+
 export type GetPrincipalActivityParams = {
 /**
  * @pattern ^\d{4}-\d{2}-\d{2}$
  */
 date?: string;
+/**
+ * primary (Year 1 to Year 6) or secondary (JSS 1 to SS 3, the default)
+ */
+section?: GetPrincipalActivitySection;
 };
+
+export type GetPrincipalActivitySection = typeof GetPrincipalActivitySection[keyof typeof GetPrincipalActivitySection];
+
+
+export const GetPrincipalActivitySection = {
+  primary: 'primary',
+  secondary: 'secondary',
+} as const;
 
 export type GetLocalAccount200 = {
   id: string;

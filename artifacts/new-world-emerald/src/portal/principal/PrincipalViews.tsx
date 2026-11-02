@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   useManagePrincipal, getGetPrincipalOverviewQueryKey, getGetPrincipalActivityQueryKey, useGetPrincipalActivity,
-  type PrincipalOverview, type PrincipalClass, type PrincipalCommand, type PrincipalTeacherDay,
+  type PrincipalOverview, type PrincipalClass, type PrincipalCommand, type PrincipalTeacher, type PrincipalTeacherDay, type GetPrincipalActivitySection,
 } from "@workspace/api-client-react";
 import { ArrowLeftRight, CalendarDays, ChevronLeft, ChevronRight, Clock, Search, UserMinus, UserPlus, Users } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -30,6 +30,16 @@ function usePrincipalCommand() {
   return { run, pending: m.isPending };
 }
 
+/** Teacher choices: this section's teachers first, then any other teacher (some teach in both schools). */
+function TeacherOptions({ teachers }: { teachers: PrincipalTeacher[] }) {
+  const here = teachers.filter((t) => t.inSection), elsewhere = teachers.filter((t) => !t.inSection);
+  if (!elsewhere.length) return <>{here.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}</>;
+  return (<>
+    {here.length > 0 && <optgroup label="Teachers in this school">{here.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}</optgroup>}
+    <optgroup label="Other teachers">{elsewhere.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}</optgroup>
+  </>);
+}
+
 function Figures({ items }: { items: [string, string | number, boolean?][] }) {
   return (
     <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -43,18 +53,18 @@ function Figures({ items }: { items: [string, string | number, boolean?][] }) {
   );
 }
 
-/** Every class: its class teachers (assign, change, remove) and the teacher for each subject. */
-export function ClassesView({ data }: { data: PrincipalOverview }) {
+/** Every class in the section: its class teachers (assign, change, remove) and the teacher for each subject. */
+export function ClassesView({ data, classes = "JSS 1 to SS 3" }: { data: PrincipalOverview; classes?: string }) {
   const cmd = usePrincipalCommand();
   const [search, setSearch] = useState("");
   const [replacing, setReplacing] = useState<{ cls: PrincipalClass; teacherId: number } | null>(null);
   const shown = data.classes.filter((c) => !search.trim() || c.name.toLowerCase().includes(search.trim().toLowerCase()) || c.teachers.some((t) => t.name.toLowerCase().includes(search.trim().toLowerCase())));
   const noTeacher = data.classes.filter((c) => !c.teachers.length).length;
   const noSubjectTeacher = data.classes.reduce((n, c) => n + c.subjects.filter((s) => !s.teacherId).length, 0);
-  if (!data.classes.length) return <EmptyState icon={<Users size={22} />} title="No classes yet" body="The school office adds classes in the staff portal. They then appear here to assign teachers." />;
+  if (!data.classes.length) return <EmptyState icon={<Users size={22} />} title="No classes yet" body={`Classes ${classes} appear here once the school office adds them in the staff portal (named like ${classes.split(" to ")[0]}).`} />;
   return (
     <div className="space-y-5">
-      <Figures items={[["Classes", data.classes.length], ["Teachers", data.teachers.length], ["Classes without a class teacher", noTeacher, noTeacher > 0], ["Subjects without a teacher", noSubjectTeacher, noSubjectTeacher > 0]]} />
+      <Figures items={[["Classes", data.classes.length], ["Teachers", data.teachers.filter((t) => t.inSection).length], ["Classes without a class teacher", noTeacher, noTeacher > 0], ["Subjects without a teacher", noSubjectTeacher, noSubjectTeacher > 0]]} />
       <label className="relative block max-w-sm">
         <span className="sr-only">Search classes or teachers</span>
         <Search size={15} className={"absolute left-3 top-1/2 -translate-y-1/2 " + MUTED} aria-hidden="true" />
@@ -93,7 +103,7 @@ function ClassCard({ cls, data, cmd, onReplace }: { cls: PrincipalClass; data: P
         <label className="min-w-0 flex-1"><span className="sr-only">Teacher to assign to {cls.name}</span>
           <select className="portal-input" value={pick} onChange={(e) => setPick(e.target.value)} disabled={!available.length} data-testid={`select-assign-${cls.id}`}>
             <option value="">{available.length ? "Choose a teacher to assign" : "Every teacher is already here"}</option>
-            {available.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+            <TeacherOptions teachers={available} />
           </select>
         </label>
         <button type="button" className="portal-btn" disabled={!pick || cmd.pending} onClick={async () => { if (await cmd.run({ action: "assign", classId: cls.id, teacherId: Number(pick) })) setPick(""); }} data-testid={`button-assign-${cls.id}`}><UserPlus size={15} aria-hidden="true" /> Assign</button>
@@ -108,7 +118,7 @@ function ClassCard({ cls, data, cmd, onReplace }: { cls: PrincipalClass; data: P
                 <select className={"portal-input !py-1.5 text-sm " + (s.teacherId ? "" : "!border-[hsl(var(--p-gold))]")} value={s.teacherId ?? ""} disabled={cmd.pending}
                   onChange={(e) => void cmd.run({ action: "setSubjectTeacher", classId: cls.id, subjectId: s.id, teacherId: e.target.value ? Number(e.target.value) : null })} data-testid={`select-subject-${s.id}`}>
                   <option value="">No teacher</option>
-                  {data.teachers.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+                  <TeacherOptions teachers={data.teachers} />
                 </select>
               </label>
             </li>
@@ -133,7 +143,7 @@ function ReplaceDialog({ data, cls, teacherId, cmd, onClose }: { data: Principal
         <label className="block text-sm font-semibold">New teacher
           <select className="portal-input mt-1" value={into} onChange={(e) => setInto(e.target.value)} data-testid="select-replace-teacher">
             <option value="">Choose a teacher</option>
-            {data.teachers.filter((t) => t.id !== teacherId).map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+            <TeacherOptions teachers={data.teachers.filter((t) => t.id !== teacherId)} />
           </select>
         </label>
         <DialogFooter className="gap-2">
@@ -145,17 +155,18 @@ function ReplaceDialog({ data, cls, teacherId, cmd, onClose }: { data: Principal
   );
 }
 
-/** Each teacher with their classes and subjects. */
+/** Each of the section's teachers with their classes and subjects here. */
 export function TeachersView({ data }: { data: PrincipalOverview }) {
+  const teachers = data.teachers.filter((t) => t.inSection);
   const className = new Map(data.classes.map((c) => [c.id, c.name]));
   const subjectsOf = (id: number) => data.classes.flatMap((c) => c.subjects.filter((s) => s.teacherId === id).map((s) => `${s.name} (${c.name})`));
-  if (!data.teachers.length) return <EmptyState icon={<Users size={22} />} title="No teachers yet" body="The school office adds teachers in the staff portal under Teachers." />;
+  if (!teachers.length) return <EmptyState icon={<Users size={22} />} title="No teachers yet" body="The school office adds teachers in the staff portal under Teachers." />;
   return (
     <div className="portal-card overflow-x-auto !p-0">
       <table className="w-full min-w-[640px] text-sm">
         <thead className={"text-left text-xs uppercase tracking-wider " + MUTED}><tr><th className="px-4 py-3">Teacher</th><th className="px-3 py-3">Class teacher of</th><th className="px-3 py-3">Subjects</th></tr></thead>
         <tbody>
-          {data.teachers.map((t) => {
+          {teachers.map((t) => {
             const classes = t.classIds.map((id) => className.get(id)).filter(Boolean);
             const subjects = subjectsOf(t.id);
             return (
@@ -178,9 +189,9 @@ const KIND_LABEL: Record<keyof PrincipalTeacherDay["counts"], string> = {
 };
 
 /** What each teacher did on a chosen day. */
-export function ActivityView({ today }: { today: string }) {
+export function ActivityView({ today, section = "secondary" }: { today: string; section?: GetPrincipalActivitySection }) {
   const [date, setDate] = useState(today);
-  const q = useGetPrincipalActivity({ date }, { query: { queryKey: getGetPrincipalActivityQueryKey({ date }), refetchInterval: date === today ? 60_000 : false } });
+  const q = useGetPrincipalActivity({ date, section }, { query: { queryKey: getGetPrincipalActivityQueryKey({ date, section }), refetchInterval: date === today ? 60_000 : false } });
   const teachers = useMemo(() => [...(q.data?.teachers ?? [])].sort((a, b) => (a.firstSeen ? 0 : 1) - (b.firstSeen ? 0 : 1) || (a.firstSeen ?? "").localeCompare(b.firstSeen ?? "") || a.name.localeCompare(b.name)), [q.data]);
   const active = teachers.filter((t) => t.firstSeen).length;
   return (

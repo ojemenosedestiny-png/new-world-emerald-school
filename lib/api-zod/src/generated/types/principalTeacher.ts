@@ -14,4 +14,6 @@ export interface PrincipalTeacher {
   /** @nullable */
   photoFileId: string | null;
   subjectCount: number;
+  /** Class teacher or subject teacher in this section, or not yet assigned anywhere */
+  inSection: boolean;
 }

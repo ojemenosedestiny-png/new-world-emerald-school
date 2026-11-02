@@ -56,8 +56,9 @@ export function AppRoutes() {
         <Route path="/portal/activate" component={ActivateAccount} />
         {/* Parents: every child registered with their email, school fees by Paystack, wallet and receipts. */}
         <Route path="/parents" component={ParentPortal} />
-        {/* The principal: assign teachers to classes and see each teacher's day. */}
-        <Route path="/principal" component={Principal} />
+        {/* The principals: assign teachers to classes and see each teacher's day. Secondary (JSS 1 to SS 3) and primary (Year 1 to Year 6). */}
+        <Route path="/principal">{() => <Principal section="secondary" />}</Route>
+        <Route path="/principal/primary">{() => <Principal section="primary" />}</Route>
         <Route component={NotFound} />
       </Switch>
     </RouteBoundary>

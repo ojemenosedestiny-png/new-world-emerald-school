@@ -71,3 +71,22 @@ export function lagosDay(date: string): { start: Date; end: Date } | null {
 export function lagosToday(now = new Date()) {
   return new Date(now.getTime() + 3_600_000).toISOString().slice(0, 10);
 }
+
+/** The two principals: primary (Year 1 to Year 6) and secondary (Year 7 / JSS 1 to SS 3). */
+export type SchoolSection = "primary" | "secondary";
+
+/**
+ * Which principal a class belongs to, from its name: "Year 1"–"Year 6", "Primary 4", "Basic 3" or "Grade 2" are
+ * primary; "JSS 1"–"JSS 3", "SS 1"–"SS 3" and "Year 7"–"Year 12" are secondary. Nursery, creche and anything
+ * else belongs to neither.
+ */
+export function classSection(name: string): SchoolSection | null {
+  const n = name.toLowerCase().replace(/[^a-z0-9]+/g, " ");
+  if (/\b(jss|js|jhs|sss|ss|shs)\s*[1-3](?!\d)/.test(n)) return "secondary";
+  const year = /\b(year|yr|grade|basic|primary|pry)\s*(\d{1,2})(?!\d)/.exec(n);
+  if (!year) return null;
+  const y = Number(year[2]);
+  if (y >= 1 && y <= 6) return "primary";
+  if (y >= 7 && y <= 12 && year[1] !== "primary" && year[1] !== "pry") return "secondary";
+  return null;
+}

@@ -66,6 +66,7 @@ import type {
   GetDirectorOverviewParams,
   GetLocalAccount200,
   GetPrincipalActivityParams,
+  GetPrincipalOverviewParams,
   GetReportWorkspaceParams,
   HealthStatus,
   ImportPortalPdfParams,
@@ -4926,20 +4927,27 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       return useMutation(getAdjustParentWalletMutationOptions(options));
     }
 
-export const getGetPrincipalOverviewUrl = () => {
+export const getGetPrincipalOverviewUrl = (params?: GetPrincipalOverviewParams,) => {
+  const normalizedParams = new URLSearchParams();
 
+  Object.entries(params || {}).forEach(([key, value]) => {
 
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
 
+  const stringifiedParams = normalizedParams.toString();
 
-  return `/api/portal/principal`
+  return stringifiedParams.length > 0 ? `/api/portal/principal?${stringifiedParams}` : `/api/portal/principal`
 }
 
 /**
- * Every class with its class teachers and subject teachers, and every active teacher (principal only)
+ * Every class with its class teachers and subject teachers, and every active teacher (the section's principal only)
  */
-export const getPrincipalOverview = async ( options?: RequestInit): Promise<PrincipalOverview> => {
+export const getPrincipalOverview = async (params?: GetPrincipalOverviewParams, options?: RequestInit): Promise<PrincipalOverview> => {
 
-  return customFetch<PrincipalOverview>(getGetPrincipalOverviewUrl(),
+  return customFetch<PrincipalOverview>(getGetPrincipalOverviewUrl(params),
   {
     ...options,
     method: 'GET'
@@ -4952,23 +4960,23 @@ export const getPrincipalOverview = async ( options?: RequestInit): Promise<Prin
 
 
 
-export const getGetPrincipalOverviewQueryKey = () => {
+export const getGetPrincipalOverviewQueryKey = (params?: GetPrincipalOverviewParams,) => {
     return [
-    `/api/portal/principal`
+    `/api/portal/principal`, ...(params ? [params] : [])
     ] as const;
     }
 
 
-export const getGetPrincipalOverviewQueryOptions = <TData = Awaited<ReturnType<typeof getPrincipalOverview>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPrincipalOverview>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+export const getGetPrincipalOverviewQueryOptions = <TData = Awaited<ReturnType<typeof getPrincipalOverview>>, TError = ErrorType<unknown>>(params?: GetPrincipalOverviewParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPrincipalOverview>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetPrincipalOverviewQueryKey();
+  const queryKey =  queryOptions?.queryKey ?? getGetPrincipalOverviewQueryKey(params);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getPrincipalOverview>>> = ({ signal }) => getPrincipalOverview({ signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getPrincipalOverview>>> = ({ signal }) => getPrincipalOverview(params, { signal, ...requestOptions });
 
 
 
@@ -4983,11 +4991,11 @@ export type GetPrincipalOverviewQueryError = ErrorType<unknown>
 
 
 export function useGetPrincipalOverview<TData = Awaited<ReturnType<typeof getPrincipalOverview>>, TError = ErrorType<unknown>>(
-  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPrincipalOverview>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+ params?: GetPrincipalOverviewParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPrincipalOverview>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
-  const queryOptions = getGetPrincipalOverviewQueryOptions(options)
+  const queryOptions = getGetPrincipalOverviewQueryOptions(params,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
@@ -5009,7 +5017,7 @@ export const getManagePrincipalUrl = () => {
 }
 
 /**
- * Assign, replace or remove a class teacher, or set a subject's teacher (principal only)
+ * Assign, replace or remove a class teacher, or set a subject's teacher (the section's principal only)
  */
 export const managePrincipal = async (principalCommand: PrincipalCommand, options?: RequestInit): Promise<PortalMessage> => {
 
@@ -5084,7 +5092,7 @@ export const getGetPrincipalActivityUrl = (params?: GetPrincipalActivityParams,)
 }
 
 /**
- * What each teacher did on one day, Lagos time (principal only)
+ * What each teacher did on one day, Lagos time (the section's principal only)
  */
 export const getPrincipalActivity = async (params?: GetPrincipalActivityParams, options?: RequestInit): Promise<PrincipalActivity> => {
 

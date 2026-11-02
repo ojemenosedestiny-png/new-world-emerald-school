@@ -2892,8 +2892,12 @@ export const AdjustParentWalletResponse = zod.object({
 
 
 /**
- * Every class with its class teachers and subject teachers, and every active teacher (principal only)
+ * Every class with its class teachers and subject teachers, and every active teacher (the section's principal only)
  */
+export const GetPrincipalOverviewQueryParams = zod.object({
+  "section": zod.enum(['primary', 'secondary']).optional().describe('primary (Year 1 to Year 6) or secondary (JSS 1 to SS 3, the default)')
+})
+
 export const GetPrincipalOverviewResponse = zod.object({
   "today": zod.string(),
   "classes": zod.array(zod.object({
@@ -2917,13 +2921,14 @@ export const GetPrincipalOverviewResponse = zod.object({
   "email": zod.string(),
   "classIds": zod.array(zod.number()),
   "photoFileId": zod.string().nullable(),
-  "subjectCount": zod.number()
+  "subjectCount": zod.number(),
+  "inSection": zod.boolean().describe('Class teacher or subject teacher in this section, or not yet assigned anywhere')
 }))
 })
 
 
 /**
- * Assign, replace or remove a class teacher, or set a subject's teacher (principal only)
+ * Assign, replace or remove a class teacher, or set a subject's teacher (the section's principal only)
  */
 export const ManagePrincipalBody = zod.object({
   "action": zod.enum(['assign', 'remove', 'replace', 'setSubjectTeacher']),
@@ -2940,13 +2945,14 @@ export const ManagePrincipalResponse = zod.object({
 
 
 /**
- * What each teacher did on one day, Lagos time (principal only)
+ * What each teacher did on one day, Lagos time (the section's principal only)
  */
 export const getPrincipalActivityQueryDateRegExp = new RegExp('^\\d{4}-\\d{2}-\\d{2}$');
 
 
 export const GetPrincipalActivityQueryParams = zod.object({
-  "date": zod.coerce.string().regex(getPrincipalActivityQueryDateRegExp).optional()
+  "date": zod.coerce.string().regex(getPrincipalActivityQueryDateRegExp).optional(),
+  "section": zod.enum(['primary', 'secondary']).optional().describe('primary (Year 1 to Year 6) or secondary (JSS 1 to SS 3, the default)')
 })
 
 export const GetPrincipalActivityResponse = zod.object({

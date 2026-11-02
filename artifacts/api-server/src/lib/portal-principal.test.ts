@@ -12,12 +12,13 @@ import { setApprovedIdentitiesForTest } from "./approved-identities";
 test("principal: assigns and replaces teachers, and sees each teacher's day", async () => {
   const marker = `QA-PRN-${randomUUID().slice(0, 8)}`.toUpperCase();
   const lower = marker.toLowerCase();
-  const principal = `principal-${lower}@example.test`, office = `office-${lower}@example.test`, boss = `boss-${lower}@example.test`;
-  const saved = { admins: process.env.SCHOOL_ADMIN_EMAILS, principals: process.env.SCHOOL_PRINCIPAL_EMAILS, supers: process.env.SCHOOL_SUPER_ADMIN_EMAILS };
-  process.env.SCHOOL_ADMIN_EMAILS = [boss, principal, office].join(",");
+  const principal = `principal-${lower}@example.test`, primaryHead = `primary-${lower}@example.test`, office = `office-${lower}@example.test`, boss = `boss-${lower}@example.test`;
+  const saved = { admins: process.env.SCHOOL_ADMIN_EMAILS, principals: process.env.SCHOOL_PRINCIPAL_EMAILS, primary: process.env.SCHOOL_PRIMARY_PRINCIPAL_EMAILS, supers: process.env.SCHOOL_SUPER_ADMIN_EMAILS };
+  process.env.SCHOOL_ADMIN_EMAILS = [boss, principal, primaryHead, office].join(",");
   process.env.SCHOOL_SUPER_ADMIN_EMAILS = boss;
   process.env.SCHOOL_PRINCIPAL_EMAILS = principal;
-  setApprovedIdentitiesForTest([[`id-${principal}`, { email: principal, mfa: true }], [`id-${office}`, { email: office, mfa: true }]]);
+  process.env.SCHOOL_PRIMARY_PRINCIPAL_EMAILS = primaryHead;
+  setApprovedIdentitiesForTest([[`id-${principal}`, { email: principal, mfa: true }], [`id-${office}`, { email: office, mfa: true }], [`id-${primaryHead}`, { email: primaryHead, mfa: true }], [`id-${boss}`, { email: boss, mfa: true }]]);
   const app = express();
   app.use(express.json());
   app.use((req, _res, next) => {
@@ -43,10 +44,12 @@ test("principal: assigns and replaces teachers, and sees each teacher's day", as
   try {
     const [jss1] = await db.insert(portalClasses).values({ name: `${marker} JSS 1` }).returning();
     const [jss2] = await db.insert(portalClasses).values({ name: `${marker} JSS 2` }).returning();
-    classIds.push(jss1.id, jss2.id);
+    const [year3] = await db.insert(portalClasses).values({ name: `${marker} Year 3` }).returning();
+    classIds.push(jss1.id, jss2.id, year3.id);
     const [musa] = await db.insert(portalTeachers).values({ email: `musa-${lower}@example.test`, name: `${marker} Mr Musa`, classIds: [jss1.id], active: true }).returning();
     const [ngozi] = await db.insert(portalTeachers).values({ email: `ngozi-${lower}@example.test`, name: `${marker} Mrs Ngozi`, classIds: [], active: true }).returning();
-    teacherIds.push(musa.id, ngozi.id);
+    const [bisi] = await db.insert(portalTeachers).values({ email: `bisi-${lower}@example.test`, name: `${marker} Miss Bisi`, classIds: [year3.id], active: true }).returning();
+    teacherIds.push(musa.id, ngozi.id, bisi.id);
     const [maths] = await db.insert(portalSubjects).values({ classId: jss1.id, name: "Mathematics", teacherId: musa.id }).returning();
     const [english] = await db.insert(portalSubjects).values({ classId: jss1.id, name: "English" }).returning();
 
@@ -59,6 +62,24 @@ test("principal: assigns and replaces teachers, and sees each teacher's day", as
     const jss1View = home.data.classes.find((c: { id: number }) => c.id === jss1.id);
     assert.deepEqual(jss1View.teachers.map((t: { name: string }) => t.name), [`${marker} Mr Musa`]);
     assert.deepEqual(jss1View.subjects.map((s: { name: string; teacherName: string | null }) => [s.name, s.teacherName]), [["English", null], ["Mathematics", `${marker} Mr Musa`]]);
+
+    // Two principals: the secondary one (the default) sees JSS 1 to SS 3; the primary one, Year 1 to Year 6.
+    assert.equal(home.data.classes.some((c: { id: number }) => c.id === year3.id), false);
+    const mine = (data: { teachers: { id: number; inSection: boolean }[] }, id: number) => data.teachers.find((t) => t.id === id)?.inSection;
+    assert.deepEqual([mine(home.data, musa.id), mine(home.data, ngozi.id), mine(home.data, bisi.id)], [true, true, false]);
+    assert.equal((await call("/principal?section=primary", principal)).status, 403);
+    assert.equal((await call("/principal", primaryHead)).status, 403);
+    const primary = await call("/principal?section=primary", primaryHead);
+    assert.equal(primary.status, 200, JSON.stringify(primary.data));
+    assert.deepEqual(primary.data.classes.map((c: { id: number }) => c.id).filter((id: number) => classIds.includes(id)), [year3.id]);
+    assert.deepEqual([mine(primary.data, musa.id), mine(primary.data, ngozi.id), mine(primary.data, bisi.id)], [false, true, true]);
+    assert.equal((await call("/principal?section=nursery", primaryHead)).status, 400);
+    // Each changes only their own classes; the super administrator opens both.
+    assert.equal((await call("/principal", primaryHead, { action: "assign", classId: jss2.id, teacherId: ngozi.id })).status, 403);
+    assert.equal((await call("/principal", principal, { action: "assign", classId: year3.id, teacherId: ngozi.id })).status, 403);
+    assert.equal((await call("/principal", primaryHead, { action: "assign", classId: year3.id, teacherId: ngozi.id })).status, 200);
+    assert.equal((await call("/principal", primaryHead, { action: "remove", classId: year3.id, teacherId: ngozi.id })).status, 200);
+    assert.equal((await call("/principal?section=primary", boss)).status, 200);
 
     // Assign, refuse a repeat, set a subject teacher, and remove.
     assert.equal((await call("/principal", principal, { action: "assign", classId: jss2.id, teacherId: ngozi.id })).status, 200);
@@ -95,15 +116,20 @@ test("principal: assigns and replaces teachers, and sees each teacher's day", as
     assert.deepEqual([musaDay.firstSeen, musaDay.lastSeen], ["2026-11-04T06:50:00.000Z", "2026-11-04T13:10:00.000Z"]);
     const ngoziDay = activity.data.teachers.find((t: { id: number }) => t.id === ngozi.id);
     assert.deepEqual([ngoziDay.actions.length, ngoziDay.firstSeen, ngoziDay.classes], [0, null, [`${marker} JSS 1`]]);
+    assert.equal(activity.data.teachers.some((t: { id: number }) => t.id === bisi.id), false);
+    const primaryDay = await call(`/principal/activity?date=${day}&section=primary`, primaryHead);
+    assert.equal(primaryDay.status, 200, JSON.stringify(primaryDay.data));
+    assert.deepEqual(primaryDay.data.teachers.filter((t: { id: number }) => teacherIds.includes(t.id)).map((t: { id: number; classes: string[] }) => [t.id, t.classes]), [[bisi.id, [`${marker} Year 3`]], [musa.id, []]], "Mr Musa has no class now, so both principals see him");
+    assert.equal((await call(`/principal/activity?date=${day}&section=primary`, principal)).status, 403);
   } finally {
     server.close();
-    const emails = [`musa-${lower}@example.test`, `ngozi-${lower}@example.test`];
+    const emails = [`musa-${lower}@example.test`, `ngozi-${lower}@example.test`, `bisi-${lower}@example.test`];
     await db.delete(portalAuditLog).where(inArray(portalAuditLog.actorLabel, [...emails, emails[0].toUpperCase()]));
     if (teacherIds.length) await db.delete(portalTeacherPresence).where(inArray(portalTeacherPresence.teacherId, teacherIds));
     await db.delete(portalSubjects).where(inArray(portalSubjects.classId, classIds.length ? classIds : [-1]));
     await db.delete(portalTeachers).where(like(portalTeachers.name, `${marker}%`));
     if (classIds.length) await db.delete(portalClasses).where(inArray(portalClasses.id, classIds));
-    for (const [k, v] of [["SCHOOL_ADMIN_EMAILS", saved.admins], ["SCHOOL_PRINCIPAL_EMAILS", saved.principals], ["SCHOOL_SUPER_ADMIN_EMAILS", saved.supers]] as const) {
+    for (const [k, v] of [["SCHOOL_ADMIN_EMAILS", saved.admins], ["SCHOOL_PRINCIPAL_EMAILS", saved.principals], ["SCHOOL_PRIMARY_PRINCIPAL_EMAILS", saved.primary], ["SCHOOL_SUPER_ADMIN_EMAILS", saved.supers]] as const) {
       if (v === undefined) delete process.env[k]; else process.env[k] = v;
     }
     await pool.end();

@@ -5,10 +5,15 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { GetPrincipalActivitySection } from './getPrincipalActivitySection';
 
 export type GetPrincipalActivityParams = {
 /**
  * @pattern ^\d{4}-\d{2}-\d{2}$
  */
 date?: string;
+/**
+ * primary (Year 1 to Year 6) or secondary (JSS 1 to SS 3, the default)
+ */
+section?: GetPrincipalActivitySection;
 };

@@ -6,11 +6,11 @@ import type { PrincipalOverview } from "@workspace/api-client-react";
 import { ActivityView, ClassesView, TeachersView } from "../src/portal/principal/PrincipalViews";
 
 const zero = { register: 0, scores: 0, exams: 0, marking: 0, messages: 0, assignments: 0, notes: 0, announcements: 0, other: 0 };
-const api = vi.hoisted(() => ({ manage: vi.fn(async () => ({ message: "Saved." })), activity: null as unknown }));
+const api = vi.hoisted(() => ({ manage: vi.fn(async () => ({ message: "Saved." })), activity: null as unknown, activityParams: vi.fn() }));
 vi.mock("@workspace/api-client-react", async (original) => ({
   ...await original<typeof import("@workspace/api-client-react")>(),
   useManagePrincipal: () => ({ mutateAsync: api.manage, isPending: false }),
-  useGetPrincipalActivity: () => ({ isLoading: false, isError: false, data: api.activity, refetch: vi.fn() }),
+  useGetPrincipalActivity: (params: unknown) => { api.activityParams(params); return { isLoading: false, isError: false, data: api.activity, refetch: vi.fn() }; },
 }));
 vi.mock("@/hooks/use-toast", () => ({ useToast: () => ({ toast: vi.fn() }) }));
 const wrap = (c: ReactNode) => <QueryClientProvider client={new QueryClient()}>{c}</QueryClientProvider>;
@@ -23,8 +23,10 @@ const data: PrincipalOverview = {
     { id: 2, name: "JSS 2", students: 20, teachers: [], subjects: [] },
   ],
   teachers: [
-    { id: 7, name: "Mr Musa", email: "musa@example.test", classIds: [1], photoFileId: null, subjectCount: 1 },
-    { id: 8, name: "Mrs Ngozi", email: "ngozi@example.test", classIds: [], photoFileId: null, subjectCount: 0 },
+    { id: 7, name: "Mr Musa", email: "musa@example.test", classIds: [1], photoFileId: null, subjectCount: 1, inSection: true },
+    { id: 8, name: "Mrs Ngozi", email: "ngozi@example.test", classIds: [], photoFileId: null, subjectCount: 0, inSection: true },
+    // Teaches in the other school (primary): offered last, and not listed among this school's teachers.
+    { id: 9, name: "Miss Bisi", email: "bisi@example.test", classIds: [40], photoFileId: null, subjectCount: 0, inSection: false },
   ],
 };
 
@@ -57,10 +59,26 @@ it("removes a teacher only after confirming", async () => {
   confirm.mockRestore();
 });
 
-it("lists teachers with their classes and flags anyone without a class", () => {
+it("lists this school's teachers with their classes and flags anyone without a class", () => {
   render(wrap(<TeachersView data={data} />));
   expect(within(screen.getByTestId("principal-teacher-7")).getByText("JSS 1")).toBeTruthy();
   expect(within(screen.getByTestId("principal-teacher-8")).getByText("No class")).toBeTruthy();
+  expect(screen.queryByTestId("principal-teacher-9")).toBeNull();
+});
+
+it("offers this school's teachers first, then teachers from the other school", () => {
+  render(wrap(<ClassesView data={data} />));
+  expect(screen.getByText("Teachers").nextElementSibling?.textContent).toBe("2");
+  const groups = [...screen.getByTestId("select-assign-2").querySelectorAll("optgroup")].map((g) => [g.label, [...g.querySelectorAll("option")].map((o) => o.textContent)]);
+  expect(groups).toEqual([["Teachers in this school", ["Mr Musa", "Mrs Ngozi"]], ["Other teachers", ["Miss Bisi"]]]);
+});
+
+it("names the primary school's classes when it has none yet, and asks for the primary school's activity", () => {
+  render(wrap(<ClassesView data={{ ...data, classes: [] }} classes="Year 1 to Year 6" />));
+  expect(screen.getByText(/Classes Year 1 to Year 6 appear here/)).toBeTruthy();
+  api.activity = { date: "2026-11-04", today: "2026-11-04", teachers: [] };
+  render(wrap(<ActivityView today="2026-11-04" section="primary" />));
+  expect(api.activityParams).toHaveBeenCalledWith({ date: "2026-11-04", section: "primary" });
 });
 
 it("shows each teacher's day: active times, what they did, and who did nothing", () => {

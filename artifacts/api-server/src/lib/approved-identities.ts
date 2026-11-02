@@ -31,11 +31,12 @@ export function directorEmails(): string[] {
 }
 
 /**
- * The principal (SCHOOL_PRINCIPAL_EMAILS): opens the principal portal to assign teachers to classes and see
- * teachers' daily activity. Must also be an approved administrator. No default: unset means nobody.
+ * The secondary principal (SCHOOL_PRINCIPAL_EMAILS, JSS 1 to SS 3) and the primary principal
+ * (SCHOOL_PRIMARY_PRINCIPAL_EMAILS, Year 1 to Year 6): each opens their own principal portal to assign teachers
+ * to classes and see teachers' daily activity. Must also be approved administrators. No default: unset means nobody.
  */
-export function principalEmails(): string[] {
-  const listed = (process.env.SCHOOL_PRINCIPAL_EMAILS ?? "").split(/[,;\s]+/).map((v) => v.trim().toLowerCase()).filter(Boolean);
+export function principalEmails(section: "primary" | "secondary" = "secondary"): string[] {
+  const listed = (process.env[section === "primary" ? "SCHOOL_PRIMARY_PRINCIPAL_EMAILS" : "SCHOOL_PRINCIPAL_EMAILS"] ?? "").split(/[,;\s]+/).map((v) => v.trim().toLowerCase()).filter(Boolean);
   return listed.filter((e) => approvedEmails().includes(e));
 }
 

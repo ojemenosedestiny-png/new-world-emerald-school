@@ -1,25 +1,43 @@
 import { Router, type Request } from "express";
 import { and, asc, eq, gte, inArray, lt, sql } from "drizzle-orm";
 import { db, portalAuditLog, portalClasses, portalStudents, portalSubjects, portalTeacherPresence, portalTeachers } from "@workspace/db";
-import { ManagePrincipalBody, GetPrincipalActivityQueryParams } from "@workspace/api-zod";
+import { ManagePrincipalBody, GetPrincipalActivityQueryParams, GetPrincipalOverviewQueryParams } from "@workspace/api-zod";
 import { check } from "../lib/portal-auth";
 import { isPrincipal } from "../lib/website-admin";
-import { describeActivity, lagosDay, lagosToday, type ActivityKind } from "../lib/principal";
+import { classSection, describeActivity, lagosDay, lagosToday, type ActivityKind, type SchoolSection } from "../lib/principal";
 
 export const portalPrincipalRouter = Router();
 
-function principalOnly(req: Request) {
+// Two principals share these routes: secondary (JSS 1 to SS 3, the default) and primary (Year 1 to Year 6).
+function principalOnly(req: Request, section: SchoolSection) {
   check(req.dbUser, "Sign in with the principal's email.", 401);
-  check(isPrincipal(req), "This page is for the principal only.", 403);
+  check(isPrincipal(req, section), `This page is for the ${section} school principal only.`, 403);
 }
 
-/** Every class with its class teachers and subject teachers, and every active teacher with their classes. */
-portalPrincipalRouter.get("/principal", async (req, res) => {
-  principalOnly(req);
-  const [classes, teachers, subjects, counts] = await Promise.all([
+/**
+ * A section's classes, and its teachers: anyone who is a class or subject teacher there, or not yet
+ * assigned anywhere (so either principal can take them on).
+ */
+async function sectionStaff(section: SchoolSection) {
+  const [allClasses, teachers, allSubjects] = await Promise.all([
     db.select().from(portalClasses).orderBy(asc(portalClasses.name)),
     db.select().from(portalTeachers).where(eq(portalTeachers.active, true)).orderBy(asc(portalTeachers.name)),
     db.select().from(portalSubjects).orderBy(asc(portalSubjects.sortOrder), asc(portalSubjects.name)),
+  ]);
+  const classes = allClasses.filter((c) => classSection(c.name) === section);
+  const ids = new Set(classes.map((c) => c.id));
+  const subjects = allSubjects.filter((s) => ids.has(s.classId));
+  const inSection = (t: typeof teachers[number]) => t.classIds.some((id) => ids.has(id)) || subjects.some((s) => s.teacherId === t.id)
+    || (!t.classIds.length && !allSubjects.some((s) => s.teacherId === t.id));
+  return { classes, teachers, subjects, inSection };
+}
+
+/** The section's classes with their class teachers and subject teachers, and every active teacher with their classes. */
+portalPrincipalRouter.get("/principal", async (req, res) => {
+  const section = GetPrincipalOverviewQueryParams.parse(req.query).section ?? "secondary";
+  principalOnly(req, section);
+  const [{ classes, teachers, subjects, inSection }, counts] = await Promise.all([
+    sectionStaff(section),
     db.select({ classId: portalStudents.classId, n: sql<number>`count(*)::int` }).from(portalStudents).where(eq(portalStudents.active, true)).groupBy(portalStudents.classId),
   ]);
   const studentCount = new Map(counts.map((c) => [c.classId, c.n]));
@@ -31,7 +49,7 @@ portalPrincipalRouter.get("/principal", async (req, res) => {
       teachers: teachers.filter((t) => t.classIds.includes(c.id)).map((t) => ({ id: t.id, name: t.name })),
       subjects: subjects.filter((s) => s.classId === c.id).map((s) => ({ id: s.id, name: s.name, teacherId: s.teacherId, teacherName: s.teacherId === null ? null : teacherName.get(s.teacherId) ?? null })),
     })),
-    teachers: teachers.map((t) => ({ id: t.id, name: t.name, email: t.email, classIds: t.classIds, photoFileId: t.photoFileId ?? null, subjectCount: subjects.filter((s) => s.teacherId === t.id).length })),
+    teachers: teachers.map((t) => ({ id: t.id, name: t.name, email: t.email, classIds: t.classIds, photoFileId: t.photoFileId ?? null, subjectCount: subjects.filter((s) => s.teacherId === t.id).length, inSection: inSection(t) })),
   });
 });
 
@@ -44,10 +62,13 @@ async function activeTeacher(id: number | null | undefined) {
 
 /** Assign, replace or remove a class teacher, or set a subject's teacher. Each change is in the audit log. */
 portalPrincipalRouter.post("/principal", async (req, res) => {
-  principalOnly(req);
+  check(req.dbUser, "Sign in with the principal's email.", 401);
   const body = ManagePrincipalBody.parse(req.body);
   const [cls] = await db.select().from(portalClasses).where(eq(portalClasses.id, body.classId));
   check(cls, "Class not found.", 404);
+  // Each principal changes only their own section's classes.
+  const section = classSection(cls.name);
+  check(section && isPrincipal(req, section), `${cls.name} is not one of your classes.`, 403);
   let message = "Saved.";
   switch (body.action) {
     case "assign": {
@@ -100,12 +121,14 @@ const KINDS: ActivityKind[] = ["register", "scores", "exams", "marking", "messag
 
 /** What each teacher did on one day (Lagos time): when they were in the portal and every change they made. */
 portalPrincipalRouter.get("/principal/activity", async (req, res) => {
-  principalOnly(req);
   const query = GetPrincipalActivityQueryParams.parse(req.query);
+  const section = query.section ?? "secondary";
+  principalOnly(req, section);
   const date = query.date ?? lagosToday();
   const day = lagosDay(date);
   check(day, "Choose a valid date.");
-  const teachers = await db.select({ id: portalTeachers.id, name: portalTeachers.name, email: portalTeachers.email, classIds: portalTeachers.classIds }).from(portalTeachers).where(eq(portalTeachers.active, true)).orderBy(asc(portalTeachers.name));
+  const staff = await sectionStaff(section);
+  const teachers = staff.teachers.filter(staff.inSection);
   const emails = teachers.map((t) => t.email.toLowerCase());
   const rows = emails.length
     ? await db.select({ at: portalAuditLog.at, actorLabel: portalAuditLog.actorLabel, action: portalAuditLog.action }).from(portalAuditLog)
@@ -115,7 +138,7 @@ portalPrincipalRouter.get("/principal/activity", async (req, res) => {
   const presence = teachers.length
     ? await db.select().from(portalTeacherPresence).where(and(eq(portalTeacherPresence.day, date), inArray(portalTeacherPresence.teacherId, teachers.map((t) => t.id))))
     : [];
-  const classNames = new Map((await db.select({ id: portalClasses.id, name: portalClasses.name }).from(portalClasses)).map((c) => [c.id, c.name]));
+  const classNames = new Map(staff.classes.map((c) => [c.id, c.name]));
   const result = teachers.map((t) => {
     const actions = rows.filter((r) => r.actorLabel.toLowerCase() === t.email.toLowerCase())
       .map((r) => ({ at: r.at.toISOString(), ...describeActivity(r.action) }))

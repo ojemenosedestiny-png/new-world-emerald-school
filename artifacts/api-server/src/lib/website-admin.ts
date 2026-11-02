@@ -25,9 +25,12 @@ export function isDirector(req: Request): boolean {
   return isWebsiteAdmin(req) && directorEmails().includes(req.identity!.email!.trim().toLowerCase());
 }
 
-/** The principal (SCHOOL_PRINCIPAL_EMAILS), or the super administrator, may open the principal portal. */
-export function isPrincipal(req: Request): boolean {
-  return isWebsiteAdmin(req) && (principalEmails().includes(req.identity!.email!.trim().toLowerCase()) || isSuperAdmin(req));
+/**
+ * The principal of a section (secondary: SCHOOL_PRINCIPAL_EMAILS; primary: SCHOOL_PRIMARY_PRINCIPAL_EMAILS),
+ * or the super administrator, may open that section's principal portal.
+ */
+export function isPrincipal(req: Request, section: "primary" | "secondary" = "secondary"): boolean {
+  return isWebsiteAdmin(req) && (principalEmails(section).includes(req.identity!.email!.trim().toLowerCase()) || isSuperAdmin(req));
 }
 
 export function requireWebsiteAdmin(req: Request, res: Response): boolean {
