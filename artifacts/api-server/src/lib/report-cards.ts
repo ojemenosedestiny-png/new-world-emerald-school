@@ -1,12 +1,12 @@
 // Report card calculations. Pure functions so every rule is unit tested.
 
+/** The school's grading system: A 80+, B 65-79, C 55-64, D 50-54, U (ungraded) below 50. The office can change it in Settings. */
 export const GRADE_SCALE = [
-  { min: 70, grade: "A", remark: "Excellent" },
-  { min: 60, grade: "B", remark: "Very good" },
-  { min: 50, grade: "C", remark: "Good" },
-  { min: 45, grade: "D", remark: "Fair" },
-  { min: 40, grade: "E", remark: "Pass" },
-  { min: 0, grade: "F", remark: "Fail" },
+  { min: 80, grade: "A", remark: "Excellent" },
+  { min: 65, grade: "B", remark: "Very good" },
+  { min: 55, grade: "C", remark: "Good" },
+  { min: 50, grade: "D", remark: "Pass" },
+  { min: 0, grade: "U", remark: "Ungraded" },
 ] as const;
 
 export type GradeBand = { min: number; grade: string; remark: string };

@@ -2,12 +2,11 @@ import type { GradeBand, ReportCardInfo, ReportStudentResult, ReportSubject, Rep
 
 // Display copy of the server's grade scale (lib/report-cards.ts); the server assigns the grades.
 export const GRADE_KEY = [
-  { range: "70 - 100", grade: "A", remark: "Excellent" },
-  { range: "60 - 69", grade: "B", remark: "Very good" },
-  { range: "50 - 59", grade: "C", remark: "Good" },
-  { range: "45 - 49", grade: "D", remark: "Fair" },
-  { range: "40 - 44", grade: "E", remark: "Pass" },
-  { range: "0 - 39", grade: "F", remark: "Fail" },
+  { range: "80 - 100", grade: "A", remark: "Excellent" },
+  { range: "65 - 79", grade: "B", remark: "Very good" },
+  { range: "55 - 64", grade: "C", remark: "Good" },
+  { range: "50 - 54", grade: "D", remark: "Pass" },
+  { range: "0 - 49", grade: "U", remark: "Ungraded" },
 ];
 
 /** "70 - 100" style ranges for a scale listed from the highest band down. */

@@ -113,7 +113,7 @@ test("report cards: setup, validation, scoring, remarks, release and student vis
     assert.equal(ws.data.canAdmin, true);
     assert.deepEqual(ws.data.students.map((s: { name: string }) => s.name), ["Ada Obi", "Bayo Ade"]);
     const adaResult = ws.data.results.find((r: { studentId: number }) => r.studentId === ada.id);
-    assert.deepEqual([adaResult.total, adaResult.average, adaResult.grade, adaResult.position], [155, 77.5, "A", 1]);
+    assert.deepEqual([adaResult.total, adaResult.average, adaResult.grade, adaResult.position], [155, 77.5, "B", 1]);
     assert.equal(ws.data.released, false);
 
     // Nothing is visible to students before release.
@@ -128,7 +128,7 @@ test("report cards: setup, validation, scoring, remarks, release and student vis
     assert.equal(report.term.session, sessionName);
     assert.equal(report.term.nextTermBegins, "12 January");
     assert.equal(report.result.studentId, ada.id);
-    assert.deepEqual(report.result.subjects.map((s: { total: number; grade: string; position: number }) => [s.total, s.grade, s.position]), [[85, "A", 1], [70, "A", 2]]);
+    assert.deepEqual(report.result.subjects.map((s: { total: number; grade: string; position: number }) => [s.total, s.grade, s.position]), [[85, "A", 1], [70, "B", 2]]);
     assert.equal(report.classSize, 2);
     assert.deepEqual(report.card, { studentId: ada.id, teacherRemark: "A focused and diligent pupil.", principalRemark: "Excellent result. Keep it up.", daysPresent: 58, daysOpen: 60 });
     assert.equal(JSON.stringify(mine.data).includes(bayo.name), false, "another student's identity must not leak");

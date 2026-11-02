@@ -39,7 +39,8 @@ describe("report card helpers", () => {
     expect([1, 2, 3, 4, 11, 12, 13, 21, 22, 23, 101, 111, 112].map(ordinal)).toEqual(["1st", "2nd", "3rd", "4th", "11th", "12th", "13th", "21st", "22nd", "23rd", "101st", "111th", "112th"]);
   });
   it("previews the same grade boundaries the server uses", () => {
-    expect([100, 70, 69.9, 60, 50, 49, 45, 44, 40, 39.9, 0].map(previewGrade)).toEqual(["A", "A", "B", "B", "C", "D", "D", "E", "E", "F", "F"]);
+    // 80+ A, 65-79 B, 55-64 C, 50-54 D, 49 and below U (ungraded).
+    expect([100, 80, 79.9, 65, 64.9, 55, 54.5, 50, 49.9, 49, 0].map((p) => previewGrade(p))).toEqual(["A", "A", "B", "B", "C", "C", "D", "D", "U", "U", "U"]);
   });
   it("validates score parts", () => {
     expect(parseScorePart("", 40)).toEqual({ value: null });

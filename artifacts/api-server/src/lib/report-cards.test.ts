@@ -4,9 +4,10 @@ import { buildClassReport, gradeFor, rank, validScorePart, nextStatus, scaleProb
 
 test("grades follow the school scale at every boundary", () => {
   const cases: [number, string, string][] = [
-    [100, "A", "Excellent"], [70, "A", "Excellent"], [69.9, "B", "Very good"], [60, "B", "Very good"],
-    [59.5, "C", "Good"], [50, "C", "Good"], [49, "D", "Fair"], [45, "D", "Fair"], [44.5, "E", "Pass"],
-    [40, "E", "Pass"], [39.9, "F", "Fail"], [0, "F", "Fail"],
+    // The school's grading system: 80+ A, 65-79 B, 55-64 C, 50-54 D, 49 and below U (ungraded).
+    [100, "A", "Excellent"], [80, "A", "Excellent"], [79.9, "B", "Very good"], [79, "B", "Very good"], [65, "B", "Very good"],
+    [64.9, "C", "Good"], [64, "C", "Good"], [55, "C", "Good"], [54.5, "D", "Pass"], [54, "D", "Pass"], [50, "D", "Pass"],
+    [49.9, "U", "Ungraded"], [49, "U", "Ungraded"], [0, "U", "Ungraded"],
   ];
   for (const [percent, grade, remark] of cases) assert.deepEqual(gradeFor(percent), { grade, remark }, String(percent));
 });
@@ -29,11 +30,11 @@ test("class report computes totals, grades, subject positions, averages and clas
     { studentId: 99, subjectId: 10, ca: 40, exam: 60 },  // not in class: ignored
   ], { caMax: 40, examMax: 60 });
   const s = (id: number) => report.students.find((r) => r.studentId === id)!;
-  assert.deepEqual(s(1).subjects.map((r) => [r.subjectId, r.total, r.grade, r.position]), [[10, 85, "A", 1], [20, 70, "A", 2]]);
-  assert.deepEqual(s(2).subjects.map((r) => [r.subjectId, r.total, r.grade, r.position]), [[10, 50.5, "C", 3], [20, 95, "A", 1]]);
+  assert.deepEqual(s(1).subjects.map((r) => [r.subjectId, r.total, r.grade, r.position]), [[10, 85, "A", 1], [20, 70, "B", 2]]);
+  assert.deepEqual(s(2).subjects.map((r) => [r.subjectId, r.total, r.grade, r.position]), [[10, 50.5, "D", 3], [20, 95, "A", 1]]);
   // Student 3 took one subject: averaged over subjects taken, so 85% ranks first.
   assert.deepEqual([s(3).subjectsTaken, s(3).average, s(3).position], [1, 85, 1]);
-  assert.deepEqual([s(1).total, s(1).average, s(1).grade, s(1).position], [155, 77.5, "A", 2]);
+  assert.deepEqual([s(1).total, s(1).average, s(1).grade, s(1).position], [155, 77.5, "B", 2]);
   assert.deepEqual([s(2).total, s(2).average, s(2).position], [145.5, 72.8, 3]);
   assert.equal(s(4).position, null);
   assert.equal(s(4).average, null);
@@ -46,7 +47,7 @@ test("class report computes totals, grades, subject positions, averages and clas
 
 test("a single entered part still counts toward the subject", () => {
   const report = buildClassReport([1], [10], [{ studentId: 1, subjectId: 10, ca: 30, exam: null }], { caMax: 40, examMax: 60 });
-  assert.deepEqual(report.students[0].subjects.map((r) => [r.total, r.percent, r.grade]), [[30, 30, "F"]]);
+  assert.deepEqual(report.students[0].subjects.map((r) => [r.total, r.percent, r.grade]), [[30, 30, "U"]]);
 });
 
 test("score parts must be empty or between 0 and the maximum in half marks", () => {
@@ -72,7 +73,7 @@ test("report cards: typed totals and grades replace the calculated ones (manual 
     { studentId: 2, subjectId: 10, ca: 10, exam: 20, total: null, grade: "A" },
   ], { caMax: 40, examMax: 60 });
   const [a, b] = report.students;
-  assert.deepEqual([a.subjects[0].total, a.subjects[0].grade, a.subjects[0].position], [72, "A", 1]);
+  assert.deepEqual([a.subjects[0].total, a.subjects[0].grade, a.subjects[0].position], [72, "B", 1]);
   assert.deepEqual([b.subjects[0].total, b.subjects[0].grade, b.subjects[0].remark, b.subjects[0].position], [30, "A", "Excellent", 2]);
 });
 

@@ -1,6 +1,6 @@
 // Score-entry helpers for the staff report card workspace. The server validates and grades again.
 
-const GRADE_FLOORS = [{ min: 70, grade: "A" }, { min: 60, grade: "B" }, { min: 50, grade: "C" }, { min: 45, grade: "D" }, { min: 40, grade: "E" }, { min: 0, grade: "F" }];
+const GRADE_FLOORS = [{ min: 80, grade: "A" }, { min: 65, grade: "B" }, { min: 55, grade: "C" }, { min: 50, grade: "D" }, { min: 0, grade: "U" }];
 /** Preview of the grade the server will give, on the school's scale (highest band first). */
 export function previewGrade(percent: number, scale?: { min: number; grade: string }[] | number) {
   const bands = Array.isArray(scale) && scale.length ? scale : GRADE_FLOORS;
@@ -48,9 +48,9 @@ export function parseScoreCsv(text: string, students: { id: number; studentId: s
 /** Starter remarks by average; staff edit or replace them. */
 export function suggestedRemarks(average: number | null): string[] {
   if (average === null) return [];
-  if (average >= 70) return ["An excellent result. Keep up the outstanding work.", "Hardworking, focused and a pleasure to teach."];
-  if (average >= 60) return ["A very good result. Aim even higher next term.", "Consistent effort is paying off. Well done."];
-  if (average >= 50) return ["A good result with room to improve. Keep working hard.", "Capable student who should be more consistent."];
-  if (average >= 40) return ["A fair result. More effort and regular revision are needed.", "Needs to pay closer attention in class and complete all work."];
+  if (average >= 80) return ["An excellent result. Keep up the outstanding work.", "Hardworking, focused and a pleasure to teach."];
+  if (average >= 65) return ["A very good result. Aim even higher next term.", "Consistent effort is paying off. Well done."];
+  if (average >= 55) return ["A good result with room to improve. Keep working hard.", "Capable student who should be more consistent."];
+  if (average >= 50) return ["A fair result. More effort and regular revision are needed.", "Needs to pay closer attention in class and complete all work."];
   return ["This result is below expectation. Extra support and revision are required.", "Please see the class teacher to agree a plan for improvement."];
 }
