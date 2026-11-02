@@ -44,29 +44,34 @@ export interface PortalActor {
   student?: PortalStudentRecord;
 }
 const verifiedStaff = new Map<string, { email: string; until: number }>();
+/**
+ * The signed-in person's primary email, lowercased, only once they have confirmed it with Clerk; otherwise null.
+ * Looked up from Clerk (not the session claims) and cached for a minute. Used for teachers and parents.
+ */
+export async function verifiedClerkEmail(req: Request): Promise<string | null> {
+  if (!req.dbUser) return null;
+  const clerkId = getAuth(req).userId;
+  if (!clerkId) return null;
+  let verified = verifiedStaff.get(clerkId);
+  if (!verified || verified.until < Date.now()) {
+    const user = await clerkClient.users.getUser(clerkId);
+    const primary = user.emailAddresses.find((e) => e.id === user.primaryEmailAddressId);
+    if (primary?.verification?.status !== "verified") return null;
+    verified = { email: primary.emailAddress.toLowerCase(), until: Date.now() + 60_000 };
+    if (verifiedStaff.size > 1000) verifiedStaff.clear();
+    verifiedStaff.set(clerkId, verified);
+  }
+  return verified.email;
+}
 export async function portalActor(req: Request): Promise<PortalActor> {
   // Staff permissions are always rechecked, including after revocation.
   if (isWebsiteAdmin(req)) return { role: "admin", name: req.dbUser?.firstName || "School office", classIds: [], mustChangePassword: false };
   // An approved administrator without required two-factor gets no staff access until it is on.
   if (adminNeedsMfa(req)) return { role: "guest", name: "", classIds: [], mustChangePassword: false };
-  if (req.dbUser) {
-    const clerkId = getAuth(req).userId;
-    if (clerkId) {
-      let verified = verifiedStaff.get(clerkId);
-      if (!verified || verified.until < Date.now()) {
-        const user = await clerkClient.users.getUser(clerkId);
-        const primary = user.emailAddresses.find((e) => e.id === user.primaryEmailAddressId);
-        if (primary?.verification?.status === "verified") {
-          verified = { email: primary.emailAddress.toLowerCase(), until: Date.now() + 60_000 };
-          if (verifiedStaff.size > 1000) verifiedStaff.clear();
-          verifiedStaff.set(clerkId, verified);
-        } else verified = undefined;
-      }
-      if (verified) {
-        const [teacher] = await db.select().from(portalTeachers).where(and(eq(portalTeachers.email, verified.email), eq(portalTeachers.active, true)));
-        if (teacher) return { role: "teacher", name: teacher.name, classIds: teacher.classIds, mustChangePassword: false };
-      }
-    }
+  const email = await verifiedClerkEmail(req);
+  if (email) {
+    const [teacher] = await db.select().from(portalTeachers).where(and(eq(portalTeachers.email, email), eq(portalTeachers.active, true)));
+    if (teacher) return { role: "teacher", name: teacher.name, classIds: teacher.classIds, mustChangePassword: false };
   }
   const token = sessionToken(req);
   if (/^[a-f0-9]{64}$/.test(token)) {

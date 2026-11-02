@@ -17,6 +17,7 @@ const PortalExam = lazy(() => import("@/pages/PortalExam"));
 const PortalManage = lazy(() => import("@/pages/PortalManage"));
 const Director = lazy(() => import("@/pages/Director"));
 const ActivateAccount = lazy(() => import("@/pages/ActivateAccount"));
+const ParentPortal = lazy(() => import("@/pages/ParentPortal"));
 const NotFound = lazy(() => import("@/pages/not-found"));
 
 /** The teacher link: signed-in staff go to their workspace; everyone else to staff sign-in, where a new email continues into creating the account. */
@@ -52,6 +53,8 @@ export function AppRoutes() {
         <Route path="/director" component={Director} />
         <Route path="/teacher" component={TeacherLink} />
         <Route path="/portal/activate" component={ActivateAccount} />
+        {/* Parents: every child registered with their email, school fees by Paystack, wallet and receipts. */}
+        <Route path="/parents" component={ParentPortal} />
         <Route component={NotFound} />
       </Switch>
     </RouteBoundary>

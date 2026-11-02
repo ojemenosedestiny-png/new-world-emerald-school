@@ -2215,6 +2215,7 @@ export const GetMyFeesResponse = zod.object({
   "term": zod.string(),
   "academicYear": zod.string(),
   "amountKobo": zod.number(),
+  "paidKobo": zod.number().describe('Paid so far: the whole amount once paid, or part of it after a part payment online'),
   "reference": zod.string().nullable(),
   "status": zod.enum(['due', 'pending', 'paid'])
 })),
@@ -2249,6 +2250,7 @@ export const GetStudentFeesResponse = zod.object({
   "term": zod.string(),
   "academicYear": zod.string(),
   "amountKobo": zod.number(),
+  "paidKobo": zod.number().describe('Paid so far: the whole amount once paid, or part of it after a part payment online'),
   "reference": zod.string().nullable(),
   "status": zod.enum(['due', 'pending', 'paid'])
 })),
@@ -2611,6 +2613,239 @@ export const GetMyFacilitiesResponse = zod.object({
   "dropoff": zod.string().max(getMyFacilitiesResponseTransportTwoStopsItemDropoffMax).describe('HH:MM, or empty')
 }))
 })])
+})
+
+
+/**
+ * The signed-in parent's children (matched by the guardian email the school recorded), their fee statements, wallet and payments
+ */
+export const GetParentOverviewResponse = zod.object({
+  "email": zod.string(),
+  "paystackReady": zod.boolean(),
+  "classCount": zod.number(),
+  "wallet": zod.object({
+  "balanceKobo": zod.number(),
+  "entries": zod.array(zod.object({
+  "amountKobo": zod.number(),
+  "balanceAfterKobo": zod.number(),
+  "kind": zod.string(),
+  "paymentReference": zod.string().nullable(),
+  "note": zod.string(),
+  "createdAt": zod.coerce.date()
+}))
+}),
+  "children": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "studentId": zod.string(),
+  "photoImageId": zod.string().nullable(),
+  "statement": zod.object({
+  "studentName": zod.string(),
+  "studentId": zod.string(),
+  "className": zod.string(),
+  "items": zod.array(zod.object({
+  "key": zod.string(),
+  "kind": zod.enum(['class', 'individual']),
+  "description": zod.string(),
+  "term": zod.string(),
+  "academicYear": zod.string(),
+  "amountKobo": zod.number(),
+  "paidKobo": zod.number().describe('Paid so far: the whole amount once paid, or part of it after a part payment online'),
+  "reference": zod.string().nullable(),
+  "status": zod.enum(['due', 'pending', 'paid'])
+})),
+  "totals": zod.object({
+  "totalKobo": zod.number(),
+  "paidKobo": zod.number(),
+  "pendingKobo": zod.number(),
+  "outstandingKobo": zod.number()
+}),
+  "payments": zod.array(zod.object({
+  "reference": zod.string(),
+  "description": zod.string(),
+  "amountKobo": zod.number(),
+  "status": zod.string(),
+  "createdAt": zod.coerce.date()
+}))
+})
+})),
+  "outstanding": zod.array(zod.object({
+  "studentId": zod.number(),
+  "studentCode": zod.string(),
+  "studentName": zod.string(),
+  "className": zod.string(),
+  "itemKey": zod.string(),
+  "description": zod.string(),
+  "term": zod.string(),
+  "academicYear": zod.string(),
+  "outstandingKobo": zod.number()
+})),
+  "payments": zod.array(zod.object({
+  "reference": zod.string(),
+  "status": zod.enum(['pending', 'success', 'failed']),
+  "parentEmail": zod.string(),
+  "cardKobo": zod.number(),
+  "walletUsedKobo": zod.number(),
+  "walletCreditKobo": zod.number(),
+  "appliedKobo": zod.number(),
+  "allocations": zod.array(zod.object({
+  "studentId": zod.number(),
+  "studentCode": zod.string(),
+  "studentName": zod.string(),
+  "className": zod.string(),
+  "itemKey": zod.string(),
+  "description": zod.string(),
+  "term": zod.string(),
+  "academicYear": zod.string(),
+  "amountKobo": zod.number()
+})),
+  "channel": zod.string().nullable(),
+  "gatewayResponse": zod.string().nullable(),
+  "createdAt": zod.coerce.date(),
+  "paidAt": zod.coerce.date().nullable(),
+  "settledAt": zod.coerce.date().nullable()
+}))
+})
+
+
+/**
+ * Starts a school-fee payment. With amountKobo 0 the wallet pays; otherwise the parent is sent to Paystack's checkout.
+ */
+export const startParentPaymentBodyItemsItemItemKeyMax = 40;
+
+export const startParentPaymentBodyItemsMax = 60;
+
+export const startParentPaymentBodyAmountKoboMin = 0;
+
+
+
+export const StartParentPaymentBody = zod.object({
+  "items": zod.array(zod.object({
+  "studentId": zod.number(),
+  "itemKey": zod.string().max(startParentPaymentBodyItemsItemItemKeyMax)
+})).max(startParentPaymentBodyItemsMax),
+  "amountKobo": zod.number().min(startParentPaymentBodyAmountKoboMin)
+})
+
+export const StartParentPaymentResponse = zod.object({
+  "reference": zod.string(),
+  "authorizationUrl": zod.string().nullable(),
+  "payment": zod.union([zod.object({
+  "reference": zod.string(),
+  "status": zod.enum(['pending', 'success', 'failed']),
+  "parentEmail": zod.string(),
+  "cardKobo": zod.number(),
+  "walletUsedKobo": zod.number(),
+  "walletCreditKobo": zod.number(),
+  "appliedKobo": zod.number(),
+  "allocations": zod.array(zod.object({
+  "studentId": zod.number(),
+  "studentCode": zod.string(),
+  "studentName": zod.string(),
+  "className": zod.string(),
+  "itemKey": zod.string(),
+  "description": zod.string(),
+  "term": zod.string(),
+  "academicYear": zod.string(),
+  "amountKobo": zod.number()
+})),
+  "channel": zod.string().nullable(),
+  "gatewayResponse": zod.string().nullable(),
+  "createdAt": zod.coerce.date(),
+  "paidAt": zod.coerce.date().nullable(),
+  "settledAt": zod.coerce.date().nullable()
+}),zod.null()])
+})
+
+
+export const VerifyParentPaymentParams = zod.object({
+  "reference": zod.coerce.string()
+})
+
+export const VerifyParentPaymentResponse = zod.object({
+  "reference": zod.string(),
+  "status": zod.enum(['pending', 'success', 'failed']),
+  "parentEmail": zod.string(),
+  "cardKobo": zod.number(),
+  "walletUsedKobo": zod.number(),
+  "walletCreditKobo": zod.number(),
+  "appliedKobo": zod.number(),
+  "allocations": zod.array(zod.object({
+  "studentId": zod.number(),
+  "studentCode": zod.string(),
+  "studentName": zod.string(),
+  "className": zod.string(),
+  "itemKey": zod.string(),
+  "description": zod.string(),
+  "term": zod.string(),
+  "academicYear": zod.string(),
+  "amountKobo": zod.number()
+})),
+  "channel": zod.string().nullable(),
+  "gatewayResponse": zod.string().nullable(),
+  "createdAt": zod.coerce.date(),
+  "paidAt": zod.coerce.date().nullable(),
+  "settledAt": zod.coerce.date().nullable()
+})
+
+
+/**
+ * Every parent payment, receipts and wallet balances (school office only)
+ */
+export const GetParentPaymentsResponse = zod.object({
+  "paystackReady": zod.boolean(),
+  "studentsWithoutParentEmail": zod.number(),
+  "payments": zod.array(zod.object({
+  "reference": zod.string(),
+  "status": zod.enum(['pending', 'success', 'failed']),
+  "parentEmail": zod.string(),
+  "cardKobo": zod.number(),
+  "walletUsedKobo": zod.number(),
+  "walletCreditKobo": zod.number(),
+  "appliedKobo": zod.number(),
+  "allocations": zod.array(zod.object({
+  "studentId": zod.number(),
+  "studentCode": zod.string(),
+  "studentName": zod.string(),
+  "className": zod.string(),
+  "itemKey": zod.string(),
+  "description": zod.string(),
+  "term": zod.string(),
+  "academicYear": zod.string(),
+  "amountKobo": zod.number()
+})),
+  "channel": zod.string().nullable(),
+  "gatewayResponse": zod.string().nullable(),
+  "createdAt": zod.coerce.date(),
+  "paidAt": zod.coerce.date().nullable(),
+  "settledAt": zod.coerce.date().nullable()
+})),
+  "wallets": zod.array(zod.object({
+  "email": zod.string(),
+  "balanceKobo": zod.number(),
+  "updatedAt": zod.coerce.date()
+}))
+})
+
+
+/**
+ * Adds to or takes from a parent's wallet, for example after a cash refund (school office only)
+ */
+export const adjustParentWalletBodyEmailMax = 254;
+
+export const adjustParentWalletBodyNoteMax = 300;
+
+
+
+export const AdjustParentWalletBody = zod.object({
+  "email": zod.string().max(adjustParentWalletBodyEmailMax),
+  "amountKobo": zod.number(),
+  "note": zod.string().max(adjustParentWalletBodyNoteMax)
+})
+
+export const AdjustParentWalletResponse = zod.object({
+  "message": zod.string(),
+  "studentId": zod.string().optional().describe('The Student ID of a student just enrolled')
 })
 
 

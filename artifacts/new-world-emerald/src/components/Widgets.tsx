@@ -2,7 +2,7 @@ import { AnimatedHeading } from "@/components/AnimatedHeading";
 import { asset } from "@/lib/asset";
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence, useScroll, useSpring } from 'framer-motion';
-import { MessageSquare, X, Send, ChevronUp, User, LogIn, Lock, XCircle, FileText, Phone, MessageCircle } from 'lucide-react';
+import { MessageSquare, X, Send, ChevronUp, User, LogIn, Lock, XCircle, FileText, Phone, MessageCircle, Wallet } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useLocation } from 'wouter';
 import { useQueryClient } from '@tanstack/react-query';
@@ -334,9 +334,12 @@ export function PortalsModal({ isOpen, onClose }: { isOpen: boolean, onClose: ()
 
               {activeTab === 'parent' && (
                 <div className="space-y-4 text-center">
-                  <p className="text-sm text-muted-foreground">Parents do not need an account. Pay school fees, report a payment, or order uniforms and books online. For your child's progress, contact the school office.</p>
-                  <button onClick={() => go("/commerce?section=fees")} className="w-full py-3 bg-primary text-primary-foreground font-semibold rounded-xl shadow-lg shadow-primary/20 hover:bg-primary/90 transition-all flex items-center justify-center gap-2" data-testid="button-modal-parent">
-                    <FileText size={18} /> Fees, uniforms and school payments
+                  <p className="text-sm text-muted-foreground">See all your children registered at the school and pay their school fees online with Paystack. Sign in with the email address the school has for you.</p>
+                  <button onClick={() => go("/parents")} className="w-full py-3 bg-primary text-primary-foreground font-semibold rounded-xl shadow-lg shadow-primary/20 hover:bg-primary/90 transition-all flex items-center justify-center gap-2" data-testid="button-modal-parent-portal">
+                    <Wallet size={18} /> Parent portal: pay school fees
+                  </button>
+                  <button onClick={() => go("/commerce?section=fees")} className="w-full py-3 border border-border font-semibold rounded-xl hover:bg-muted transition-all flex items-center justify-center gap-2" data-testid="button-modal-parent">
+                    <FileText size={18} /> Uniforms, and bank transfer reports
                   </button>
                   <p className="text-xs text-muted-foreground">Your child signs in on the Student tab with the ID and password the school gave them.</p>
                 </div>

@@ -1,0 +1,187 @@
+paths:
+  overview:
+    get:
+      operationId: getParentOverview
+      description: The signed-in parent's children (matched by the guardian email the school recorded), their fee statements, wallet and payments
+      responses:
+        "200":
+          description: Everything the parent portal shows
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ParentOverview" }
+  payments:
+    post:
+      operationId: startParentPayment
+      description: Starts a school-fee payment. With amountKobo 0 the wallet pays; otherwise the parent is sent to Paystack's checkout.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ParentPaymentRequest" }
+      responses:
+        "200":
+          description: Where to send the parent next
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ParentPaymentStart" }
+  verify:
+    post:
+      operationId: verifyParentPayment
+      parameters:
+        - { name: reference, in: path, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: The payment, after checking with Paystack
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ParentPayment" }
+  office:
+    get:
+      operationId: getParentPayments
+      description: Every parent payment, receipts and wallet balances (school office only)
+      responses:
+        "200":
+          description: Payments and wallets
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ParentPaymentsOffice" }
+  adjust:
+    post:
+      operationId: adjustParentWallet
+      description: Adds to or takes from a parent's wallet, for example after a cash refund (school office only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ParentWalletAdjustment" }
+      responses:
+        "200":
+          description: Saved
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PortalMessage" }
+schemas:
+  ParentPaymentAllocation:
+    type: object
+    required: [studentId, studentCode, studentName, className, itemKey, description, term, academicYear, amountKobo]
+    properties:
+      studentId: { type: integer }
+      studentCode: { type: string }
+      studentName: { type: string }
+      className: { type: string }
+      itemKey: { type: string }
+      description: { type: string }
+      term: { type: string }
+      academicYear: { type: string }
+      amountKobo: { type: integer }
+  ParentPayment:
+    type: object
+    required: [reference, status, parentEmail, cardKobo, walletUsedKobo, walletCreditKobo, appliedKobo, allocations, channel, gatewayResponse, createdAt, paidAt, settledAt]
+    properties:
+      reference: { type: string }
+      status: { type: string, enum: [pending, success, failed] }
+      parentEmail: { type: string }
+      cardKobo: { type: integer }
+      walletUsedKobo: { type: integer }
+      walletCreditKobo: { type: integer }
+      appliedKobo: { type: integer }
+      allocations: { type: array, items: { $ref: "#/components/schemas/ParentPaymentAllocation" } }
+      channel: { type: ["string", "null"] }
+      gatewayResponse: { type: ["string", "null"] }
+      createdAt: { type: string, format: date-time }
+      paidAt: { type: ["string", "null"], format: date-time }
+      settledAt: { type: ["string", "null"], format: date-time }
+  ParentWalletEntry:
+    type: object
+    required: [amountKobo, balanceAfterKobo, kind, paymentReference, note, createdAt]
+    properties:
+      amountKobo: { type: integer }
+      balanceAfterKobo: { type: integer }
+      kind: { type: string }
+      paymentReference: { type: ["string", "null"] }
+      note: { type: string }
+      createdAt: { type: string, format: date-time }
+  ParentChild:
+    type: object
+    required: [id, name, studentId, photoImageId, statement]
+    properties:
+      id: { type: integer }
+      name: { type: string }
+      studentId: { type: string }
+      photoImageId: { type: ["string", "null"] }
+      statement: { $ref: "#/components/schemas/FeeStatement" }
+  ParentOutstandingItem:
+    type: object
+    required: [studentId, studentCode, studentName, className, itemKey, description, term, academicYear, outstandingKobo]
+    properties:
+      studentId: { type: integer }
+      studentCode: { type: string }
+      studentName: { type: string }
+      className: { type: string }
+      itemKey: { type: string }
+      description: { type: string }
+      term: { type: string }
+      academicYear: { type: string }
+      outstandingKobo: { type: integer }
+  ParentOverview:
+    type: object
+    required: [email, paystackReady, classCount, wallet, children, outstanding, payments]
+    properties:
+      email: { type: string }
+      paystackReady: { type: boolean }
+      classCount: { type: integer }
+      wallet:
+        type: object
+        required: [balanceKobo, entries]
+        properties:
+          balanceKobo: { type: integer }
+          entries: { type: array, items: { $ref: "#/components/schemas/ParentWalletEntry" } }
+      children: { type: array, items: { $ref: "#/components/schemas/ParentChild" } }
+      outstanding: { type: array, items: { $ref: "#/components/schemas/ParentOutstandingItem" } }
+      payments: { type: array, items: { $ref: "#/components/schemas/ParentPayment" } }
+  ParentPaymentRequest:
+    type: object
+    required: [items, amountKobo]
+    properties:
+      items:
+        type: array
+        maxItems: 60
+        items:
+          type: object
+          required: [studentId, itemKey]
+          properties:
+            studentId: { type: integer }
+            itemKey: { type: string, maxLength: 40 }
+      amountKobo: { type: integer, minimum: 0 }
+  ParentPaymentStart:
+    type: object
+    required: [reference, authorizationUrl, payment]
+    properties:
+      reference: { type: string }
+      authorizationUrl: { type: ["string", "null"] }
+      payment:
+        oneOf:
+          - { $ref: "#/components/schemas/ParentPayment" }
+          - { type: "null" }
+  ParentWalletBalance:
+    type: object
+    required: [email, balanceKobo, updatedAt]
+    properties:
+      email: { type: string }
+      balanceKobo: { type: integer }
+      updatedAt: { type: string, format: date-time }
+  ParentPaymentsOffice:
+    type: object
+    required: [paystackReady, studentsWithoutParentEmail, payments, wallets]
+    properties:
+      paystackReady: { type: boolean }
+      studentsWithoutParentEmail: { type: integer }
+      payments: { type: array, items: { $ref: "#/components/schemas/ParentPayment" } }
+      wallets: { type: array, items: { $ref: "#/components/schemas/ParentWalletBalance" } }
+  ParentWalletAdjustment:
+    type: object
+    required: [email, amountKobo, note]
+    properties:
+      email: { type: string, maxLength: 254 }
+      amountKobo: { type: integer }
+      note: { type: string, maxLength: 300 }

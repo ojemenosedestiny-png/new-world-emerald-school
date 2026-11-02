@@ -22,7 +22,7 @@ paths:
 schemas:
   FeeItem:
     type: object
-    required: [key, kind, description, term, academicYear, amountKobo, reference, status]
+    required: [key, kind, description, term, academicYear, amountKobo, paidKobo, reference, status]
     properties:
       key: { type: string }
       kind: { type: string, enum: [class, individual] }
@@ -30,6 +30,7 @@ schemas:
       term: { type: string }
       academicYear: { type: string }
       amountKobo: { type: integer }
+      paidKobo: { type: integer, description: "Paid so far: the whole amount once paid, or part of it after a part payment online" }
       reference: { type: ["string", "null"] }
       status: { type: string, enum: [due, pending, paid] }
   FeeTotals:

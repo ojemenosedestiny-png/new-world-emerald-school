@@ -39,7 +39,7 @@ export function FeeStatementView({ s, forOffice = false }: { s: Statement; forOf
                 <p className="text-xs text-[hsl(var(--p-ink)/0.6)]">{i.term} / {i.academicYear}{i.kind === "individual" ? " / Individual charge" : " / Class fee"}{i.reference ? <> / Ref <span className="font-mono">{i.reference}</span></> : null}</p>
               </div>
               <p className="font-bold tabular-nums">{naira(i.amountKobo)}</p>
-              {i.status === "paid" ? <StatusPill tone="green">Paid</StatusPill> : i.status === "pending" ? <StatusPill tone="gold">Being checked</StatusPill> : <StatusPill tone="red">Due</StatusPill>}
+              {i.status === "paid" ? <StatusPill tone="green">Paid</StatusPill> : i.status === "pending" ? <StatusPill tone="gold">Being checked</StatusPill> : i.paidKobo > 0 ? <StatusPill tone="gold">{naira(i.paidKobo)} paid</StatusPill> : <StatusPill tone="red">Due</StatusPill>}
             </li>
           ))}
         </ul>

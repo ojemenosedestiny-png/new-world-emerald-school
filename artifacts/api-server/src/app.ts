@@ -15,6 +15,7 @@ import { mountCspReports, securityHeaders } from "./lib/security-headers";
 import { auditStaffChanges } from "./lib/audit";
 import { siteRedirects } from "./lib/site-redirects";
 import { clerkEmailWebhook } from "./routes/clerk-email-webhook";
+import { paystackWebhook } from "./routes/paystack-webhook";
 
 const app: Express = express();
 // Do not advertise the framework in every response.
@@ -49,6 +50,8 @@ serveFrontend(app, undefined, loadSiteContentSnapshot);
 app.use(cors({ credentials: true, origin: true }));
 // Clerk's signed email webhook needs the raw body, so it is mounted before the JSON parser.
 app.post("/api/webhooks/clerk-email", express.raw({ type: "application/json", limit: "1mb" }), clerkEmailWebhook);
+// Paystack signs its payment notices over the raw body too.
+app.post("/api/webhooks/paystack", express.raw({ type: "application/json", limit: "256kb" }), paystackWebhook);
 app.use(express.json({ limit: "2mb" }));
 app.use(express.urlencoded({ extended: true }));
 app.use(

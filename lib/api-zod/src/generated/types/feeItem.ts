@@ -15,6 +15,8 @@ export interface FeeItem {
   term: string;
   academicYear: string;
   amountKobo: number;
+  /** Paid so far: the whole amount once paid, or part of it after a part payment online */
+  paidKobo: number;
   /** @nullable */
   reference: string | null;
   status: FeeItemStatus;

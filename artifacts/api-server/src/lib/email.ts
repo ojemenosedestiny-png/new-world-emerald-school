@@ -204,3 +204,33 @@ export function staffBroadcastEmail(p: { subject: string; message: string; sende
   const text = `${p.message.trim()}\n\n${p.senderName}\nDirector, New World Emerald Private School\n\nStaff portal: ${p.portalUrl}`;
   return { subject: p.subject, html, text };
 }
+
+/** The parent's receipt after a school-fee payment: what was paid for each child, and their wallet balance. */
+export function feeReceiptEmail(p: {
+  reference: string; paidAt: Date; cardKobo: number; walletUsedKobo: number; walletCreditKobo: number; balanceAfterKobo: number;
+  lines: { studentName: string; studentCode: string; description: string; term: string; academicYear: string; amountKobo: number }[]; portalUrl: string;
+}) {
+  const ng = (kobo: number) => `NGN ${(kobo / 100).toLocaleString("en-NG", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  const when = new Intl.DateTimeFormat("en-GB", { timeZone: "Africa/Lagos", dateStyle: "medium", timeStyle: "short" }).format(p.paidAt);
+  const applied = p.lines.reduce((n, l) => n + l.amountKobo, 0);
+  const subject = `Payment receipt ${p.reference}: ${ng(applied)} school fees`;
+  const rows = p.lines.map((l) => `<tr><td style="padding:6px 0;border-bottom:1px solid #eee">${esc(l.studentName)} <span style="color:#5c6b70">(${esc(l.studentCode)})</span><br><span style="color:#5c6b70;font-size:12px">${esc(l.description)} · ${esc(l.term)} ${esc(l.academicYear)}</span></td><td style="padding:6px 0;border-bottom:1px solid #eee;text-align:right;white-space:nowrap">${ng(l.amountKobo)}</td></tr>`).join("");
+  const html = layout("Payment received", `
+    <p style="margin:0 0 12px;line-height:1.6">Thank you. Your payment to New World Emerald Private School has been received.</p>
+    <p style="margin:0 0 12px;font-size:13px;color:#5c6b70">Receipt <b style="font-family:Consolas,monospace;color:#10232c">${esc(p.reference)}</b> · ${esc(when)}</p>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="font-size:14px">${rows}
+      <tr><td style="padding:8px 0;font-weight:700">Total applied to school fees</td><td style="padding:8px 0;text-align:right;font-weight:700">${ng(applied)}</td></tr></table>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:10px;background:#f4f1ea;border-radius:10px;font-size:13px"><tr><td style="padding:10px 14px;line-height:1.7">
+      Paid by card or bank (Paystack): <b>${ng(p.cardKobo)}</b><br>
+      From your school wallet: <b>${ng(p.walletUsedKobo)}</b><br>
+      Added to your school wallet: <b>${ng(p.walletCreditKobo)}</b><br>
+      Wallet balance now: <b>${ng(p.balanceAfterKobo)}</b>
+    </td></tr></table>`,
+    { label: "Open the parent portal", url: p.portalUrl },
+    "Any wallet balance is used automatically the next time you pay. Keep this email as your receipt.");
+  const text = [`Payment received. Receipt ${p.reference} (${when}).`, "",
+    ...p.lines.map((l) => `${l.studentName} (${l.studentCode}): ${l.description}, ${l.term} ${l.academicYear}: ${ng(l.amountKobo)}`),
+    "", `Total applied: ${ng(applied)}`, `Paid via Paystack: ${ng(p.cardKobo)}`, `From wallet: ${ng(p.walletUsedKobo)}`,
+    `Added to wallet: ${ng(p.walletCreditKobo)}`, `Wallet balance now: ${ng(p.balanceAfterKobo)}`, "", p.portalUrl].join("\n");
+  return { subject, html, text };
+}

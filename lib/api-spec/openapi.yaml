@@ -117,6 +117,16 @@ paths:
     $ref: "./facilities.yaml#/paths/manage"
   /portal/my-facilities:
     $ref: "./facilities.yaml#/paths/mine"
+  /portal/parent:
+    $ref: "./parents.yaml#/paths/overview"
+  /portal/parent/payments:
+    $ref: "./parents.yaml#/paths/payments"
+  /portal/parent/payments/{reference}/verify:
+    $ref: "./parents.yaml#/paths/verify"
+  /portal/parent-payments:
+    $ref: "./parents.yaml#/paths/office"
+  /portal/parent-wallets/adjust:
+    $ref: "./parents.yaml#/paths/adjust"
   /portal/my-messages:
     $ref: "./messages.yaml#/paths/myMessages"
   /portal/my-messages/read:
@@ -1087,6 +1097,28 @@ components:
       $ref: "./facilities.yaml#/schemas/FacilitiesCommand"
     MyFacilities:
       $ref: "./facilities.yaml#/schemas/MyFacilities"
+    ParentPaymentAllocation:
+      $ref: "./parents.yaml#/schemas/ParentPaymentAllocation"
+    ParentPayment:
+      $ref: "./parents.yaml#/schemas/ParentPayment"
+    ParentWalletEntry:
+      $ref: "./parents.yaml#/schemas/ParentWalletEntry"
+    ParentChild:
+      $ref: "./parents.yaml#/schemas/ParentChild"
+    ParentOutstandingItem:
+      $ref: "./parents.yaml#/schemas/ParentOutstandingItem"
+    ParentOverview:
+      $ref: "./parents.yaml#/schemas/ParentOverview"
+    ParentPaymentRequest:
+      $ref: "./parents.yaml#/schemas/ParentPaymentRequest"
+    ParentPaymentStart:
+      $ref: "./parents.yaml#/schemas/ParentPaymentStart"
+    ParentWalletBalance:
+      $ref: "./parents.yaml#/schemas/ParentWalletBalance"
+    ParentPaymentsOffice:
+      $ref: "./parents.yaml#/schemas/ParentPaymentsOffice"
+    ParentWalletAdjustment:
+      $ref: "./parents.yaml#/schemas/ParentWalletAdjustment"
     MessageChannel:
       $ref: "./messages.yaml#/schemas/MessageChannel"
     PortalChatMessage:

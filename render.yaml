@@ -32,6 +32,9 @@ services:
         value: "false"
       - key: RESEND_API_KEY
         sync: false
+      # Paystack secret key (sk_live_... or sk_test_...) for parents paying school fees online.
+      - key: PAYSTACK_SECRET_KEY
+        sync: false
       - key: EMAIL_FROM
         sync: false
       - key: PUBLIC_SITE_URL

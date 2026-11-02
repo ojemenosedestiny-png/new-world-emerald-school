@@ -171,6 +171,8 @@ export interface FeeItem {
   term: string;
   academicYear: string;
   amountKobo: number;
+  /** Paid so far: the whole amount once paid, or part of it after a part payment online */
+  paidKobo: number;
   /** @nullable */
   reference: string | null;
   status: FeeItemStatus;
@@ -546,6 +548,134 @@ export type MyFacilitiesTransport = {
 export interface MyFacilities {
   hostel: MyFacilitiesHostel;
   transport: MyFacilitiesTransport;
+}
+
+export interface ParentPaymentAllocation {
+  studentId: number;
+  studentCode: string;
+  studentName: string;
+  className: string;
+  itemKey: string;
+  description: string;
+  term: string;
+  academicYear: string;
+  amountKobo: number;
+}
+
+export type ParentPaymentStatus = typeof ParentPaymentStatus[keyof typeof ParentPaymentStatus];
+
+
+export const ParentPaymentStatus = {
+  pending: 'pending',
+  success: 'success',
+  failed: 'failed',
+} as const;
+
+export interface ParentPayment {
+  reference: string;
+  status: ParentPaymentStatus;
+  parentEmail: string;
+  cardKobo: number;
+  walletUsedKobo: number;
+  walletCreditKobo: number;
+  appliedKobo: number;
+  allocations: ParentPaymentAllocation[];
+  /** @nullable */
+  channel: string | null;
+  /** @nullable */
+  gatewayResponse: string | null;
+  createdAt: string;
+  /** @nullable */
+  paidAt: string | null;
+  /** @nullable */
+  settledAt: string | null;
+}
+
+export interface ParentWalletEntry {
+  amountKobo: number;
+  balanceAfterKobo: number;
+  kind: string;
+  /** @nullable */
+  paymentReference: string | null;
+  note: string;
+  createdAt: string;
+}
+
+export interface ParentChild {
+  id: number;
+  name: string;
+  studentId: string;
+  /** @nullable */
+  photoImageId: string | null;
+  statement: FeeStatement;
+}
+
+export interface ParentOutstandingItem {
+  studentId: number;
+  studentCode: string;
+  studentName: string;
+  className: string;
+  itemKey: string;
+  description: string;
+  term: string;
+  academicYear: string;
+  outstandingKobo: number;
+}
+
+export type ParentOverviewWallet = {
+  balanceKobo: number;
+  entries: ParentWalletEntry[];
+};
+
+export interface ParentOverview {
+  email: string;
+  paystackReady: boolean;
+  classCount: number;
+  wallet: ParentOverviewWallet;
+  children: ParentChild[];
+  outstanding: ParentOutstandingItem[];
+  payments: ParentPayment[];
+}
+
+export type ParentPaymentRequestItemsItem = {
+  studentId: number;
+  /** @maxLength 40 */
+  itemKey: string;
+};
+
+export interface ParentPaymentRequest {
+  /** @maxItems 60 */
+  items: ParentPaymentRequestItemsItem[];
+  /** @minimum 0 */
+  amountKobo: number;
+}
+
+export interface ParentPaymentStart {
+  reference: string;
+  /** @nullable */
+  authorizationUrl: string | null;
+  payment: ParentPayment | null;
+}
+
+export interface ParentWalletBalance {
+  email: string;
+  balanceKobo: number;
+  updatedAt: string;
+}
+
+export interface ParentPaymentsOffice {
+  paystackReady: boolean;
+  studentsWithoutParentEmail: number;
+  payments: ParentPayment[];
+  wallets: ParentWalletBalance[];
+}
+
+export interface ParentWalletAdjustment {
+  /** @maxLength 254 */
+  email: string;
+  amountKobo: number;
+  /** @maxLength 300 */
+  note: string;
 }
 
 export type MessageChannel = typeof MessageChannel[keyof typeof MessageChannel];

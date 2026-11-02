@@ -29,7 +29,7 @@ test("the public homepage route does not depend on signed-in status", async () =
   const signIn = await readFile(new URL("./src/pages/SchoolSignIn.tsx", import.meta.url), "utf8");
   // Sign-in defaults to /admin; the only alternative is the allow-listed portal return target.
   assert.match(signIn, /const target = basePath \+ \(token \? RETURN_TARGETS\[token\] : "\/admin"\);/);
-  // Allow-list of internal return paths only: the staff portal and the Director dashboard.
-  assert.match(signIn, /RETURN_TARGETS: Record<string, string> = \{ portal: "\/portal\/manage", director: "\/director" \};/);
+  // Allow-list of internal return paths only: the staff portal, the Director dashboard and the parent portal.
+  assert.match(signIn, /RETURN_TARGETS: Record<string, string> = \{ portal: "\/portal\/manage", director: "\/director", parents: "\/parents" \};/);
   assert.match(signIn, /<SignIn [^>]*forceRedirectUrl=\{target\}/);
 });

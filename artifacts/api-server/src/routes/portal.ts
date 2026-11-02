@@ -15,6 +15,7 @@ import { portalFeesRouter } from "./portal-fees";
 import { portalInventoryRouter } from "./portal-inventory";
 import { portalResultImportRouter } from "./portal-result-import";
 import { portalFacilitiesRouter } from "./portal-facilities";
+import { portalParentRouter } from "./portal-parent";
 
 const portalRouter = Router();
 portalRouter.use(portalOriginGuard);
@@ -33,6 +34,7 @@ portalRouter.use(portalFeesRouter);
 portalRouter.use(portalInventoryRouter);
 portalRouter.use(portalResultImportRouter);
 portalRouter.use(portalFacilitiesRouter);
+portalRouter.use(portalParentRouter);
 const errors: ErrorRequestHandler = (error, req, res, _next) => {
   if (res.headersSent) { if (!res.destroyed) res.destroy(); return; }
   if (error instanceof PortalError) { res.status(error.status).json({ error: error.message }); return; }

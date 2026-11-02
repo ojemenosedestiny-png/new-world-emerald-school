@@ -58,17 +58,25 @@ test("the API process can serve the built website without hiding API routes", as
   await new Promise<void>((resolve) => server.once("listening", resolve));
   const root = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
   try {
-    for (const route of ["/", "/admin", "/portal/exam/3", "/sign-in/factor-one"]) {
+    // The homepage gets its search title; signed-in areas keep the shell and are marked noindex.
+    const home = await fetch(root + "/");
+    assert.equal(home.status, 200);
+    assert.match(await home.text(), /<title>New World Emerald Private School \| Kubwa, Abuja<\/title>/);
+    assert.equal(home.headers.get("x-robots-tag"), null);
+    for (const route of ["/admin", "/portal/exam/3", "/sign-in/factor-one", "/parents"]) {
       const res = await fetch(root + route);
       assert.equal(res.status, 200, route);
       assert.match(await res.text(), /<title>School<\/title>/);
       assert.equal(res.headers.get("cache-control"), "no-cache");
+      assert.equal(res.headers.get("x-robots-tag"), "noindex, nofollow", route);
     }
+    assert.equal((await fetch(root + "/no-such-page")).status, 404, "unknown addresses are real 404s");
     const asset = await fetch(root + "/assets/app-abc123.js");
     assert.equal(asset.status, 200);
     assert.match(asset.headers.get("cache-control") ?? "", /immutable/);
     assert.equal((await fetch(root + "/assets/missing.js")).status, 404);
-    assert.equal(await (await fetch(root + "/robots.txt")).text(), "User-agent: *");
+    // robots.txt is generated from the configured domain, ahead of any static copy in the build.
+    assert.match(await (await fetch(root + "/robots.txt")).text(), /Sitemap: https:\/\/\S+\/sitemap\.xml/);
     assert.deepEqual(await (await fetch(root + "/api/healthz")).json(), { status: "ok" });
     const unknownApi = await fetch(root + "/api/not-a-route");
     assert.equal(unknownApi.status, 404);

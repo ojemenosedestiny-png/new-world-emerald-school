@@ -9,8 +9,8 @@ afterEach(cleanup);
 const statement: FeeStatement = {
   studentName: "Ada Obi", studentId: "NWE/2026/00001", className: "JSS 1",
   items: [
-    { key: "class-1", kind: "class", description: "Tuition", term: "First Term", academicYear: "2026/2027", amountKobo: 150_000_00, reference: null, status: "paid" },
-    { key: "charge-4", kind: "individual", description: "Excursion", term: "First Term", academicYear: "2026/2027", amountKobo: 10_000_00, reference: "NWE-FEE-4", status: "due" },
+    { key: "class-1", kind: "class", description: "Tuition", term: "First Term", academicYear: "2026/2027", amountKobo: 150_000_00, paidKobo: 150_000_00, reference: null, status: "paid" },
+    { key: "charge-4", kind: "individual", description: "Excursion", term: "First Term", academicYear: "2026/2027", amountKobo: 10_000_00, paidKobo: 0, reference: "NWE-FEE-4", status: "due" },
   ],
   totals: { totalKobo: 160_000_00, paidKobo: 150_000_00, pendingKobo: 0, outstandingKobo: 10_000_00 },
   payments: [{ reference: "NWE-PAY-1", description: "", amountKobo: 150_000_00, status: "confirmed", createdAt: new Date().toISOString() }],

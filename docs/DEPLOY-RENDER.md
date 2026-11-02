@@ -159,3 +159,17 @@ Staff sign in with Clerk. Clerk's emails (verification codes, password resets, i
 
 If Resend refuses an email, the site answers with an error and Clerk retries it automatically; the reason appears in the Render logs ("Clerk email not sent through Resend"). To go back, switch **Delivered by Clerk** on again.
 
+
+## Parent portal: Paystack school-fee payments
+
+Parents sign in at `/parents` with the email recorded as the parent email on their child's student record, and pay
+school fees through Paystack. Overpayments go to the parent's school wallet and are used first on the next payment.
+
+1. In Paystack: **Settings → API Keys & Webhooks**. Copy the **secret key** (`sk_test_...` to try it, `sk_live_...` for real money).
+2. In Render: add `PAYSTACK_SECRET_KEY` with that value (never put it in the code or a chat).
+3. In Paystack, set the **Webhook URL** to `https://newworldemeraldprivateschool.com/api/webhooks/paystack`. Payments are
+   also confirmed when the parent returns from Paystack, so the webhook is a safety net for parents who close the page.
+4. Every student needs a parent email (Portal → Students → Edit). The **Online payments** page in the staff portal shows how many are missing.
+
+Payments are applied only after the server confirms them with Paystack for the exact amount in naira. Receipts are in
+**Portal → Online payments**, and are emailed to the parent when email (Resend) is set up.

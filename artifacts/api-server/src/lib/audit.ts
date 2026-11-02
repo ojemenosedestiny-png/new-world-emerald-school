@@ -10,7 +10,7 @@ import { clientIp, sanitizeForAudit } from "./audit-format";
 export { clientIp, sanitizeForAudit };
 
 export type AuditEntry = {
-  actorKind: "staff" | "student" | "system"; actorId?: string | null; actorLabel?: string; action: string;
+  actorKind: "staff" | "student" | "parent" | "system"; actorId?: string | null; actorLabel?: string; action: string;
   targetType?: string | null; targetId?: string | number | null; outcome?: "success" | "denied" | "failed";
   status?: number; before?: unknown; after?: unknown; ip?: string | null; userAgent?: string | null;
 };

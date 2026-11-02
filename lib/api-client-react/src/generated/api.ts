@@ -89,6 +89,12 @@ import type {
   MyFacilities,
   MyMessages,
   MyPhoto,
+  ParentOverview,
+  ParentPayment,
+  ParentPaymentRequest,
+  ParentPaymentStart,
+  ParentPaymentsOffice,
+  ParentWalletAdjustment,
   PaymentProof,
   PaymentProofAttach,
   PaymentProofAttached,
@@ -4566,6 +4572,355 @@ export function useGetMyFacilities<TData = Awaited<ReturnType<typeof getMyFacili
 
 
 
+
+export const getGetParentOverviewUrl = () => {
+
+
+
+
+  return `/api/portal/parent`
+}
+
+/**
+ * The signed-in parent's children (matched by the guardian email the school recorded), their fee statements, wallet and payments
+ */
+export const getParentOverview = async ( options?: RequestInit): Promise<ParentOverview> => {
+
+  return customFetch<ParentOverview>(getGetParentOverviewUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetParentOverviewQueryKey = () => {
+    return [
+    `/api/portal/parent`
+    ] as const;
+    }
+
+
+export const getGetParentOverviewQueryOptions = <TData = Awaited<ReturnType<typeof getParentOverview>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getParentOverview>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetParentOverviewQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getParentOverview>>> = ({ signal }) => getParentOverview({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getParentOverview>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetParentOverviewQueryResult = NonNullable<Awaited<ReturnType<typeof getParentOverview>>>
+export type GetParentOverviewQueryError = ErrorType<unknown>
+
+
+
+export function useGetParentOverview<TData = Awaited<ReturnType<typeof getParentOverview>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getParentOverview>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetParentOverviewQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getStartParentPaymentUrl = () => {
+
+
+
+
+  return `/api/portal/parent/payments`
+}
+
+/**
+ * Starts a school-fee payment. With amountKobo 0 the wallet pays; otherwise the parent is sent to Paystack's checkout.
+ */
+export const startParentPayment = async (parentPaymentRequest: ParentPaymentRequest, options?: RequestInit): Promise<ParentPaymentStart> => {
+
+  return customFetch<ParentPaymentStart>(getStartParentPaymentUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(parentPaymentRequest)
+  }
+);}
+
+
+
+
+
+export const getStartParentPaymentMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof startParentPayment>>, TError,{data: BodyType<ParentPaymentRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof startParentPayment>>, TError,{data: BodyType<ParentPaymentRequest>}, TContext> => {
+
+const mutationKey = ['startParentPayment'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof startParentPayment>>, {data: BodyType<ParentPaymentRequest>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  startParentPayment(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type StartParentPaymentMutationResult = NonNullable<Awaited<ReturnType<typeof startParentPayment>>>
+    export type StartParentPaymentMutationBody = BodyType<ParentPaymentRequest>
+    export type StartParentPaymentMutationError = ErrorType<unknown>
+
+    export const useStartParentPayment = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof startParentPayment>>, TError,{data: BodyType<ParentPaymentRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof startParentPayment>>,
+        TError,
+        {data: BodyType<ParentPaymentRequest>},
+        TContext
+      > => {
+      return useMutation(getStartParentPaymentMutationOptions(options));
+    }
+
+export const getVerifyParentPaymentUrl = (reference: string,) => {
+
+
+
+
+  return `/api/portal/parent/payments/${reference}/verify`
+}
+
+export const verifyParentPayment = async (reference: string, options?: RequestInit): Promise<ParentPayment> => {
+
+  return customFetch<ParentPayment>(getVerifyParentPaymentUrl(reference),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getVerifyParentPaymentMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof verifyParentPayment>>, TError,{reference: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof verifyParentPayment>>, TError,{reference: string}, TContext> => {
+
+const mutationKey = ['verifyParentPayment'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof verifyParentPayment>>, {reference: string}> = (props) => {
+          const {reference} = props ?? {};
+
+          return  verifyParentPayment(reference,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type VerifyParentPaymentMutationResult = NonNullable<Awaited<ReturnType<typeof verifyParentPayment>>>
+
+    export type VerifyParentPaymentMutationError = ErrorType<unknown>
+
+    export const useVerifyParentPayment = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof verifyParentPayment>>, TError,{reference: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof verifyParentPayment>>,
+        TError,
+        {reference: string},
+        TContext
+      > => {
+      return useMutation(getVerifyParentPaymentMutationOptions(options));
+    }
+
+export const getGetParentPaymentsUrl = () => {
+
+
+
+
+  return `/api/portal/parent-payments`
+}
+
+/**
+ * Every parent payment, receipts and wallet balances (school office only)
+ */
+export const getParentPayments = async ( options?: RequestInit): Promise<ParentPaymentsOffice> => {
+
+  return customFetch<ParentPaymentsOffice>(getGetParentPaymentsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetParentPaymentsQueryKey = () => {
+    return [
+    `/api/portal/parent-payments`
+    ] as const;
+    }
+
+
+export const getGetParentPaymentsQueryOptions = <TData = Awaited<ReturnType<typeof getParentPayments>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getParentPayments>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetParentPaymentsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getParentPayments>>> = ({ signal }) => getParentPayments({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getParentPayments>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetParentPaymentsQueryResult = NonNullable<Awaited<ReturnType<typeof getParentPayments>>>
+export type GetParentPaymentsQueryError = ErrorType<unknown>
+
+
+
+export function useGetParentPayments<TData = Awaited<ReturnType<typeof getParentPayments>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getParentPayments>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetParentPaymentsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getAdjustParentWalletUrl = () => {
+
+
+
+
+  return `/api/portal/parent-wallets/adjust`
+}
+
+/**
+ * Adds to or takes from a parent's wallet, for example after a cash refund (school office only)
+ */
+export const adjustParentWallet = async (parentWalletAdjustment: ParentWalletAdjustment, options?: RequestInit): Promise<PortalMessage> => {
+
+  return customFetch<PortalMessage>(getAdjustParentWalletUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(parentWalletAdjustment)
+  }
+);}
+
+
+
+
+
+export const getAdjustParentWalletMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adjustParentWallet>>, TError,{data: BodyType<ParentWalletAdjustment>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adjustParentWallet>>, TError,{data: BodyType<ParentWalletAdjustment>}, TContext> => {
+
+const mutationKey = ['adjustParentWallet'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adjustParentWallet>>, {data: BodyType<ParentWalletAdjustment>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  adjustParentWallet(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdjustParentWalletMutationResult = NonNullable<Awaited<ReturnType<typeof adjustParentWallet>>>
+    export type AdjustParentWalletMutationBody = BodyType<ParentWalletAdjustment>
+    export type AdjustParentWalletMutationError = ErrorType<unknown>
+
+    export const useAdjustParentWallet = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adjustParentWallet>>, TError,{data: BodyType<ParentWalletAdjustment>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adjustParentWallet>>,
+        TError,
+        {data: BodyType<ParentWalletAdjustment>},
+        TContext
+      > => {
+      return useMutation(getAdjustParentWalletMutationOptions(options));
+    }
 
 export const getGetMyMessagesUrl = () => {
 
