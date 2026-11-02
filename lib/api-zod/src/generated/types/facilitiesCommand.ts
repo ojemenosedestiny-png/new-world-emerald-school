@@ -8,6 +8,7 @@
 import type { FacilitiesCommandAction } from './facilitiesCommandAction';
 import type { FacilitiesCommandAllocation } from './facilitiesCommandAllocation';
 import type { FacilitiesCommandAssignment } from './facilitiesCommandAssignment';
+import type { FacilitiesCommandBilling } from './facilitiesCommandBilling';
 import type { FacilitiesCommandBlock } from './facilitiesCommandBlock';
 import type { FacilitiesCommandRoom } from './facilitiesCommandRoom';
 import type { FacilitiesCommandRoute } from './facilitiesCommandRoute';
@@ -18,6 +19,8 @@ export interface FacilitiesCommand {
   id?: number;
   block?: FacilitiesCommandBlock;
   room?: FacilitiesCommandRoom;
+  /** Bill every boarder's room price and every rider's bus fee for one term, as fee charges on their statements */
+  billing?: FacilitiesCommandBilling;
   allocation?: FacilitiesCommandAllocation;
   route?: FacilitiesCommandRoute;
   assignment?: FacilitiesCommandAssignment;

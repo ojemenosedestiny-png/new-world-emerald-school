@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { allocationProblem, roomProblem, roomStatus, safeImageUrl, stopsProblem, validPhone } from "./facilities";
+import { allocationProblem, billingProblem, facilityCharges, roomProblem, roomStatus, safeImageUrl, stopsProblem, validPhone } from "./facilities";
 
 test("hostel: rooms fill up, bed labels are unique, and a room cannot shrink below its occupants", () => {
   assert.equal(roomStatus(4, 3), "available");
@@ -26,4 +26,22 @@ test("transport: stops need names and proper times; phones and photo links are c
   assert.equal(safeImageUrl("/objects/uploads/abc"), true);
   assert.equal(safeImageUrl("javascript:alert(1)"), false);
   assert.equal(safeImageUrl("data:image/png;base64,AAAA"), false);
+});
+
+test("hostel and bus fees: one charge per student, term and kind, with a fixed reference; free places are not billed", () => {
+  const charges = facilityCharges(" First Term ", "2026/2027", [
+    { kind: "hostel", studentCode: "NWE/2026/00014", studentName: "Ada Obi", className: "JSS 2", place: "Emerald House, room 3", amountKobo: 150_000_00 },
+    { kind: "bus", studentCode: "NWE/2026/00014", studentName: "Ada Obi", className: "JSS 2", place: "Kubwa route", amountKobo: 40_000_00 },
+    { kind: "bus", studentCode: "NWE/2026/00031", studentName: "Ben Eze", className: "SS 1", place: "Free shuttle", amountKobo: 0 },
+  ]);
+  assert.deepEqual(charges.map((c) => [c.reference, c.description, c.term, c.amountKobo]), [
+    ["HOSTEL-2026-2027-FIRST-TERM-NWE-2026-00014", "Hostel: Emerald House, room 3", "First Term", 150_000_00],
+    ["BUS-2026-2027-FIRST-TERM-NWE-2026-00014", "School bus: Kubwa route", "First Term", 40_000_00],
+  ]);
+  // The same term written differently gives the same reference, so it is never billed twice.
+  assert.equal(facilityCharges("first term", "2026/2027", [{ kind: "hostel", studentCode: "nwe/2026/00014", studentName: "", className: "", place: "", amountKobo: 1 }])[0].reference, charges[0].reference);
+  assert.equal(billingProblem("First Term", "2026/2027", ["hostel"]), null);
+  assert.match(billingProblem("First Term", "2026/2028", ["hostel"])!, /2026\/2027/);
+  assert.match(billingProblem("", "2026/2027", ["bus"])!, /term/);
+  assert.match(billingProblem("First Term", "2026/2027", [])!, /hostel fees, bus fees or both/);
 });

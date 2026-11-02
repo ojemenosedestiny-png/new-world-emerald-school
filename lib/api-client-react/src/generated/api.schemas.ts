@@ -420,6 +420,7 @@ export const FacilitiesCommandAction = {
   deleteRoute: 'deleteRoute',
   assignRoute: 'assignRoute',
   unassignRoute: 'unassignRoute',
+  billTerm: 'billTerm',
 } as const;
 
 export type FacilitiesCommandBlockGender = typeof FacilitiesCommandBlockGender[keyof typeof FacilitiesCommandBlockGender];
@@ -469,6 +470,37 @@ export type FacilitiesCommandRoom = {
   notes: string;
 };
 
+export type FacilitiesCommandBillingKindsItem = typeof FacilitiesCommandBillingKindsItem[keyof typeof FacilitiesCommandBillingKindsItem];
+
+
+export const FacilitiesCommandBillingKindsItem = {
+  hostel: 'hostel',
+  bus: 'bus',
+} as const;
+
+/**
+ * Bill every boarder's room price and every rider's bus fee for one term, as fee charges on their statements
+ */
+export type FacilitiesCommandBilling = {
+  /**
+     * @minLength 1
+     * @maxLength 40
+     */
+  term: string;
+  /**
+     * @minLength 9
+     * @maxLength 9
+     */
+  academicYear: string;
+  /**
+     * @minItems 1
+     * @maxItems 2
+     */
+  kinds: FacilitiesCommandBillingKindsItem[];
+  /** true only counts who would be billed; nothing is saved */
+  preview: boolean;
+};
+
 export type FacilitiesCommandAllocation = {
   studentId: number;
   roomId: number;
@@ -516,6 +548,8 @@ export interface FacilitiesCommand {
   id?: number;
   block?: FacilitiesCommandBlock;
   room?: FacilitiesCommandRoom;
+  /** Bill every boarder's room price and every rider's bus fee for one term, as fee charges on their statements */
+  billing?: FacilitiesCommandBilling;
   allocation?: FacilitiesCommandAllocation;
   route?: FacilitiesCommandRoute;
   assignment?: FacilitiesCommandAssignment;

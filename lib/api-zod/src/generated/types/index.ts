@@ -69,6 +69,8 @@ export * from './facilitiesCommand';
 export * from './facilitiesCommandAction';
 export * from './facilitiesCommandAllocation';
 export * from './facilitiesCommandAssignment';
+export * from './facilitiesCommandBilling';
+export * from './facilitiesCommandBillingKindsItem';
 export * from './facilitiesCommandBlock';
 export * from './facilitiesCommandBlockGender';
 export * from './facilitiesCommandRoom';

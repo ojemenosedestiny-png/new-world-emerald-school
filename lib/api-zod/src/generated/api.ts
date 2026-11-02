@@ -2497,6 +2497,13 @@ export const manageFacilitiesBodyRoomImageUrlMax = 1000;
 
 export const manageFacilitiesBodyRoomNotesMax = 600;
 
+export const manageFacilitiesBodyBillingTermMax = 40;
+
+export const manageFacilitiesBodyBillingAcademicYearMin = 9;
+export const manageFacilitiesBodyBillingAcademicYearMax = 9;
+
+export const manageFacilitiesBodyBillingKindsMax = 2;
+
 export const manageFacilitiesBodyAllocationBedMax = 40;
 
 export const manageFacilitiesBodyRouteNameMax = 80;
@@ -2527,7 +2534,7 @@ export const manageFacilitiesBodyAssignmentStopMax = 80;
 
 
 export const ManageFacilitiesBody = zod.object({
-  "action": zod.enum(['saveBlock', 'deleteBlock', 'saveRoom', 'deleteRoom', 'allocate', 'unallocate', 'saveRoute', 'deleteRoute', 'assignRoute', 'unassignRoute']),
+  "action": zod.enum(['saveBlock', 'deleteBlock', 'saveRoom', 'deleteRoom', 'allocate', 'unallocate', 'saveRoute', 'deleteRoute', 'assignRoute', 'unassignRoute', 'billTerm']),
   "id": zod.number().optional().describe('The block'),
   "block": zod.object({
   "id": zod.number().optional(),
@@ -2545,6 +2552,12 @@ export const ManageFacilitiesBody = zod.object({
   "imageUrl": zod.string().max(manageFacilitiesBodyRoomImageUrlMax),
   "notes": zod.string().max(manageFacilitiesBodyRoomNotesMax)
 }).optional(),
+  "billing": zod.object({
+  "term": zod.string().min(1).max(manageFacilitiesBodyBillingTermMax),
+  "academicYear": zod.string().min(manageFacilitiesBodyBillingAcademicYearMin).max(manageFacilitiesBodyBillingAcademicYearMax),
+  "kinds": zod.array(zod.enum(['hostel', 'bus'])).min(1).max(manageFacilitiesBodyBillingKindsMax),
+  "preview": zod.boolean().describe('true only counts who would be billed; nothing is saved')
+}).optional().describe('Bill every boarder\'s room price and every rider\'s bus fee for one term, as fee charges on their statements'),
   "allocation": zod.object({
   "studentId": zod.number(),
   "roomId": zod.number(),

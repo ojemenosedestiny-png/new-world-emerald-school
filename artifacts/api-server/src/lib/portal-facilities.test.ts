@@ -4,7 +4,7 @@ import { randomUUID } from "node:crypto";
 import express from "express";
 import type { AddressInfo } from "node:net";
 import { inArray, like } from "drizzle-orm";
-import { db, pool, portalClasses, portalHostelBlocks, portalSessions, portalStudents, portalTransportRoutes } from "@workspace/db";
+import { db, individualFeeChargesTable, pool, portalClasses, portalHostelBlocks, portalSessions, portalStudents, portalTransportRoutes } from "@workspace/db";
 import portalRouter from "../routes/portal";
 import { hashPassword } from "./portal-auth";
 
@@ -85,7 +85,31 @@ test("facilities: the office allocates rooms and routes within capacity; each st
     assert.equal((await cmd({ action: "unallocate", id: bayo.id })).status, 200);
     assert.equal((await cmd({ action: "allocate", allocation: { studentId: chi.id, roomId: room.id, bed: "Bed 2" } })).status, 200);
     assert.equal((await cmd({ action: "saveRoute", route: { id: route.id, name: `${marker} Route`, stops: [{ name: "Ikeja", pickup: "06:45", dropoff: "15:40" }], driverName: "", driverPhone: "", vehicle: "", plate: "", feeKobo: 0, notes: "", active: true } })).status, 409);
+
+    // Billing a term: Ada and Chi board (₦150,000 each), Ada rides the bus (₦40,000). A preview saves nothing.
+    const bill = (preview: boolean, kinds = ["hostel", "bus"], academicYear = "2026/2027") => cmd({ action: "billTerm", billing: { term: "First Term", academicYear, kinds, preview } });
+    assert.equal((await bill(false, ["hostel"], "2026-27")).status, 400, "session must look like 2026/2027");
+    const preview = await bill(true);
+    assert.equal(preview.status, 200, JSON.stringify(preview.data));
+    assert.equal(preview.data.message, "This will bill 2 boarders (₦300,000.00) and 1 bus rider (₦40,000.00) for First Term 2026/2027.");
+    assert.equal((await db.select().from(individualFeeChargesTable).where(like(individualFeeChargesTable.studentIdentifier, `${marker}%`))).length, 0);
+    const billed = await bill(false);
+    assert.match(billed.data.message, /^Billed 2 boarders \(₦300,000\.00\) and 1 bus rider \(₦40,000\.00\) for First Term 2026\/2027\./);
+    const charges = await db.select().from(individualFeeChargesTable).where(like(individualFeeChargesTable.studentIdentifier, `${marker}%`));
+    assert.deepEqual(charges.map((c) => [c.studentName, c.description, c.amountKobo, c.status]).sort(), [
+      ["Ada Obi", `Hostel: ${marker} Block, room Room 1`, 15_000_000, "due"],
+      ["Ada Obi", `School bus: ${marker} Route`, 4_000_000, "due"],
+      ["Chi Eze", `Hostel: ${marker} Block, room Room 1`, 15_000_000, "due"],
+    ]);
+    // Billing again charges nobody twice; a student who moves in later is billed on the next run.
+    assert.match((await bill(false)).data.message, /^Nobody new to bill for First Term 2026\/2027\. 3 already billed/);
+    assert.equal((await db.select().from(individualFeeChargesTable).where(like(individualFeeChargesTable.studentIdentifier, `${marker}%`))).length, 3);
+    // The charges are on the student's fee statement.
+    const statement = (await call(`/students/${ada.id}/fees`, "GET", undefined, { admin: true })).data;
+    assert.equal(statement.totals.outstandingKobo, 19_000_000);
+    assert.equal((await call("/facilities", "POST", { action: "billTerm", billing: { term: "First Term", academicYear: "2026/2027", kinds: ["bus"], preview: true } }, adaS)).status, 403);
   } finally {
+    await db.delete(individualFeeChargesTable).where(like(individualFeeChargesTable.studentIdentifier, `${marker}%`));
     await new Promise<void>((resolve, reject) => server.close((e) => (e ? reject(e) : resolve())));
     await db.delete(portalHostelBlocks).where(like(portalHostelBlocks.name, `${marker}%`));
     await db.delete(portalTransportRoutes).where(like(portalTransportRoutes.name, `${marker}%`));

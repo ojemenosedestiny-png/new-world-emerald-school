@@ -20,4 +20,5 @@ export const FacilitiesCommandAction = {
   deleteRoute: 'deleteRoute',
   assignRoute: 'assignRoute',
   unassignRoute: 'unassignRoute',
+  billTerm: 'billTerm',
 } as const;

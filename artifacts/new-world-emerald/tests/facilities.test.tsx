@@ -2,7 +2,7 @@ import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/re
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 import { afterEach, expect, it, vi } from "vitest";
-import { HostelPanel, TransportPanel } from "../src/portal/manage/FacilitiesPanels";
+import { HostelPanel, TransportPanel, currentSession } from "../src/portal/manage/FacilitiesPanels";
 import { StudentFacilities } from "../src/portal/StudentFacilities";
 
 const api = vi.hoisted(() => ({ manage: vi.fn(async () => ({ message: "Saved." })), mine: null as unknown }));
@@ -57,4 +57,34 @@ it("a student sees their room and bus, and a clear message when they have neithe
   api.mine = { hostel: null, transport: null };
   render(wrap(<StudentFacilities />));
   expect(screen.getByText("No hostel room or bus route")).toBeTruthy();
+});
+
+it("bills a term's hostel and bus fees: the office checks first, then creates the charges", async () => {
+  api.manage.mockImplementationOnce(async () => ({ message: "This will bill 2 boarders (₦300,000.00) and 1 bus rider (₦40,000.00) for Second Term 2026/2027." }));
+  render(wrap(<HostelPanel />));
+  fireEvent.click(screen.getByTestId("button-bill-hostel"));
+  fireEvent.change(screen.getByTestId("select-bill-term"), { target: { value: "Second Term" } });
+  fireEvent.change(screen.getByTestId("input-bill-session"), { target: { value: "2026/2027" } });
+  fireEvent.click(screen.getByTestId("check-bill-bus"));
+  fireEvent.click(screen.getByTestId("button-bill-check"));
+  await waitFor(() => expect(screen.getByTestId("text-bill-preview").textContent).toMatch(/2 boarders/));
+  expect(api.manage).toHaveBeenCalledWith({ data: { action: "billTerm", billing: { term: "Second Term", academicYear: "2026/2027", kinds: ["hostel", "bus"], preview: true } } });
+  fireEvent.click(screen.getByTestId("button-bill-create"));
+  await waitFor(() => expect(api.manage).toHaveBeenLastCalledWith({ data: { action: "billTerm", billing: { term: "Second Term", academicYear: "2026/2027", kinds: ["hostel", "bus"], preview: false } } }));
+});
+
+it("changing the term after checking asks for a fresh check before billing", async () => {
+  api.manage.mockImplementationOnce(async () => ({ message: "This will bill 1 bus rider (₦40,000.00) for First Term 2026/2027." }));
+  render(wrap(<TransportPanel />));
+  fireEvent.click(screen.getByTestId("button-bill-bus"));
+  fireEvent.click(screen.getByTestId("button-bill-check"));
+  await waitFor(() => expect(screen.getByTestId("button-bill-create")).toBeTruthy());
+  fireEvent.change(screen.getByTestId("select-bill-term"), { target: { value: "Third Term" } });
+  expect(screen.queryByTestId("button-bill-create")).toBeNull();
+  expect(screen.getByTestId("button-bill-check")).toBeTruthy();
+});
+
+it("suggests the session a term belongs to", () => {
+  expect(currentSession(new Date("2026-11-04"))).toBe("2026/2027");
+  expect(currentSession(new Date("2027-03-10"))).toBe("2026/2027");
 });

@@ -1,11 +1,11 @@
 import { Router, type Request } from "express";
 import { and, asc, eq, inArray } from "drizzle-orm";
 import {
-  db, portalClasses, portalHostelAllocations, portalHostelBlocks, portalHostelRooms, portalStudents, portalTransportAssignments, portalTransportRoutes,
+  db, individualFeeChargesTable, portalClasses, portalHostelAllocations, portalHostelBlocks, portalHostelRooms, portalStudents, portalTransportAssignments, portalTransportRoutes,
 } from "@workspace/db";
 import { ManageFacilitiesBody } from "@workspace/api-zod";
 import { check, portalActor, studentOnly } from "../lib/portal-auth";
-import { allocationProblem, roomProblem, roomStatus, safeImageUrl, stopsProblem, validPhone } from "../lib/facilities";
+import { allocationProblem, billingProblem, facilityCharges, roomProblem, roomStatus, safeImageUrl, stopsProblem, validPhone, type FacilityBillee } from "../lib/facilities";
 
 export const portalFacilitiesRouter = Router();
 
@@ -158,6 +158,57 @@ portalFacilitiesRouter.post("/facilities", async (req, res) => {
       await db.insert(portalTransportAssignments).values({ routeId: route.id, studentId: a.studentId, stop: stop.name })
         .onConflictDoUpdate({ target: portalTransportAssignments.studentId, set: { routeId: route.id, stop: stop.name, assignedAt: new Date() } });
       message = "Student assigned to the route.";
+      break;
+    }
+    case "billTerm": {
+      const b = body.billing;
+      check(b, "Choose the term to bill.");
+      const kinds = [...new Set(b.kinds)];
+      const problem = billingProblem(b.term, b.academicYear, kinds);
+      check(!problem, problem ?? "");
+      const [students, classes] = await Promise.all([
+        db.select({ id: portalStudents.id, code: portalStudents.studentId, name: portalStudents.name, classId: portalStudents.classId }).from(portalStudents).where(eq(portalStudents.active, true)),
+        db.select().from(portalClasses),
+      ]);
+      const byId = new Map(students.map((s) => [s.id, s]));
+      const className = new Map(classes.map((c) => [c.id, c.name]));
+      const billees: FacilityBillee[] = [];
+      const add = (kind: "hostel" | "bus", studentId: number, place: string, amountKobo: number) => {
+        const s = byId.get(studentId);
+        if (s) billees.push({ kind, studentCode: s.code, studentName: s.name, className: className.get(s.classId) ?? "", place, amountKobo });
+      };
+      if (kinds.includes("hostel")) {
+        const rows = await db.select({ a: portalHostelAllocations, r: portalHostelRooms, bl: portalHostelBlocks }).from(portalHostelAllocations)
+          .innerJoin(portalHostelRooms, eq(portalHostelRooms.id, portalHostelAllocations.roomId)).innerJoin(portalHostelBlocks, eq(portalHostelBlocks.id, portalHostelRooms.blockId));
+        for (const row of rows) add("hostel", row.a.studentId, `${row.bl.name}, room ${row.r.name}`, row.r.priceKobo);
+      }
+      if (kinds.includes("bus")) {
+        const rows = await db.select({ a: portalTransportAssignments, r: portalTransportRoutes }).from(portalTransportAssignments)
+          .innerJoin(portalTransportRoutes, eq(portalTransportRoutes.id, portalTransportAssignments.routeId)).where(eq(portalTransportRoutes.active, true));
+        for (const row of rows) add("bus", row.a.studentId, row.r.name, row.r.feeKobo);
+      }
+      const charges = facilityCharges(b.term, b.academicYear, billees);
+      const existing = charges.length
+        ? new Set((await db.select({ reference: individualFeeChargesTable.reference }).from(individualFeeChargesTable).where(inArray(individualFeeChargesTable.reference, charges.map((c) => c.reference)))).map((r) => r.reference))
+        : new Set<string>();
+      const fresh = charges.filter((c) => !existing.has(c.reference));
+      const ng = (kobo: number) => "₦" + (kobo / 100).toLocaleString("en-NG", { minimumFractionDigits: 2 });
+      const summary = (list: typeof charges) => {
+        const hostel = list.filter((c) => c.reference.startsWith("HOSTEL-"));
+        const bus = list.filter((c) => c.reference.startsWith("BUS-"));
+        const part = (n: number, one: string, many: string, kobo: number) => `${n} ${n === 1 ? one : many} (${ng(kobo)})`;
+        const sum = (l: typeof charges) => l.reduce((n, c) => n + c.amountKobo, 0);
+        return [kinds.includes("hostel") ? part(hostel.length, "boarder", "boarders", sum(hostel)) : null, kinds.includes("bus") ? part(bus.length, "bus rider", "bus riders", sum(bus)) : null].filter(Boolean).join(" and ");
+      };
+      const period = `${b.term.trim()} ${b.academicYear.trim()}`;
+      const skipped = existing.size ? ` ${existing.size} already billed for ${period} ${existing.size === 1 ? "is" : "are"} left as they are.` : "";
+      if (b.preview) {
+        message = fresh.length ? `This will bill ${summary(fresh)} for ${period}.${skipped}` : `Nobody new to bill for ${period}.${skipped}`;
+        break;
+      }
+      const created = fresh.length ? await db.insert(individualFeeChargesTable).values(fresh).onConflictDoNothing().returning({ reference: individualFeeChargesTable.reference }) : [];
+      const made = new Set(created.map((c) => c.reference));
+      message = made.size ? `Billed ${summary(fresh.filter((c) => made.has(c.reference)))} for ${period}. Parents see the charges in the parent portal.${skipped}` : `Nobody new to bill for ${period}.${skipped}`;
       break;
     }
     case "unassignRoute": {

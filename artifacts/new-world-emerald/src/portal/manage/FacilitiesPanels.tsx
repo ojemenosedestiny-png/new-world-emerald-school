@@ -4,7 +4,7 @@ import {
   useGetFacilities, getGetFacilitiesQueryKey, useManageFacilities,
   type Facilities, type FacilitiesCommand, type FacilitiesCommandBlock, type FacilitiesCommandRoom, type FacilitiesCommandRoute, type HostelRoom, type TransportRoute,
 } from "@workspace/api-client-react";
-import { BedDouble, Bus, Pencil, Plus, Trash2, UserMinus, UserPlus } from "lucide-react";
+import { BedDouble, Bus, Pencil, Plus, Receipt, Trash2, UserMinus, UserPlus } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { ProductPhotoUpload } from "@/components/ProductPhotoUpload";
@@ -29,6 +29,67 @@ function useFacilitiesCommand() {
     } catch (e) { toast({ variant: "destructive", title: "Not saved", description: errorMessage(e) }); return false; }
   };
   return { run, pending: m.isPending };
+}
+
+/** The session a term most likely belongs to: from September the new session has started. */
+export function currentSession(now = new Date()) {
+  const y = now.getFullYear();
+  return now.getMonth() >= 8 ? `${y}/${y + 1}` : `${y - 1}/${y}`;
+}
+const TERMS = ["First Term", "Second Term", "Third Term"];
+
+/**
+ * Bills a term's hostel and bus fees as charges on each boarder's and rider's fee statement. The office checks
+ * the count and total first; billing again never charges anyone twice.
+ */
+function BillTermDialog({ defaultKind, onClose }: { defaultKind: "hostel" | "bus"; onClose: () => void }) {
+  const m = useManageFacilities();
+  const cmd = useFacilitiesCommand();
+  const [term, setTerm] = useState(TERMS[0]);
+  const [session, setSession] = useState(currentSession());
+  const [kinds, setKinds] = useState<("hostel" | "bus")[]>([defaultKind]);
+  const [preview, setPreview] = useState<{ key: string; message: string } | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const key = JSON.stringify([term, session.trim(), [...kinds].sort()]);
+  const billing = (p: boolean) => ({ term, academicYear: session.trim(), kinds, preview: p });
+  const check = async () => {
+    setError(null);
+    try { setPreview({ key, message: (await m.mutateAsync({ data: { action: "billTerm", billing: billing(true) } })).message }); }
+    catch (e) { setPreview(null); setError(errorMessage(e)); }
+  };
+  const toggle = (k: "hostel" | "bus") => setKinds((cur) => cur.includes(k) ? cur.filter((x) => x !== k) : [...cur, k]);
+  const checked = preview?.key === key;
+  return (
+    <Dialog open onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="portal !min-h-0 max-w-md rounded-2xl">
+        <DialogHeader>
+          <DialogTitle className="font-serif text-2xl">Bill this term</DialogTitle>
+          <DialogDescription>Each boarder is charged their room&apos;s price and each rider their route&apos;s fee. The charges appear on the student&apos;s fee statement and in the parent portal, ready to pay online.</DialogDescription>
+        </DialogHeader>
+        <div className="space-y-3">
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Term" htmlFor="bill-term"><select id="bill-term" className="portal-input" value={term} onChange={(e) => setTerm(e.target.value)} data-testid="select-bill-term">{TERMS.map((t) => <option key={t}>{t}</option>)}</select></Field>
+            <Field label="Session" htmlFor="bill-session"><input id="bill-session" className="portal-input" value={session} onChange={(e) => setSession(e.target.value)} placeholder="2026/2027" data-testid="input-bill-session" /></Field>
+          </div>
+          <fieldset className="grid grid-cols-2 gap-2"><legend className="mb-1 text-sm font-semibold">Fees to bill</legend>
+            <label className="flex items-center gap-2 rounded-lg border border-[hsl(var(--p-line))] p-2.5 text-sm"><input type="checkbox" checked={kinds.includes("hostel")} onChange={() => toggle("hostel")} data-testid="check-bill-hostel" /> Hostel fees</label>
+            <label className="flex items-center gap-2 rounded-lg border border-[hsl(var(--p-line))] p-2.5 text-sm"><input type="checkbox" checked={kinds.includes("bus")} onChange={() => toggle("bus")} data-testid="check-bill-bus" /> Bus fees</label>
+          </fieldset>
+          {checked && <p className="rounded-xl bg-[hsl(var(--p-emerald-soft)/0.7)] p-3 text-sm" role="status" data-testid="text-bill-preview">{preview.message}</p>}
+          {error && <p className="text-sm text-[hsl(var(--p-red))]" role="alert">{error}</p>}
+          <p className="text-xs text-[hsl(var(--p-ink)/0.6)]">Rooms and routes priced at ₦0 are not billed. Students who join a room or route later are billed when you run this again.</p>
+        </div>
+        <DialogFooter className="gap-2">
+          <button type="button" className="portal-btn-ghost" onClick={onClose}>Cancel</button>
+          {!checked ? (
+            <button type="button" className="portal-btn" disabled={!kinds.length || m.isPending} onClick={() => void check()} data-testid="button-bill-check">{m.isPending ? "Checking..." : "Check"}</button>
+          ) : (
+            <button type="button" className="portal-btn" disabled={cmd.pending || preview.message.startsWith("Nobody new")} onClick={async () => { if (await cmd.run({ action: "billTerm", billing: billing(false) })) onClose(); }} data-testid="button-bill-create">{cmd.pending ? "Creating..." : "Create charges"}</button>
+          )}
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
 }
 
 function Figures({ items }: { items: [string, string, string?][] }) {
@@ -122,6 +183,7 @@ export function HostelPanel() {
   const [block, setBlock] = useState<FacilitiesCommandBlock | null>(null);
   const [room, setRoom] = useState<FacilitiesCommandRoom | null>(null);
   const [allocating, setAllocating] = useState<HostelRoom | null>(null);
+  const [billing, setBilling] = useState(false);
   if (q.isLoading) return <Skeleton className="h-72" />;
   if (q.isError || !q.data) return <ErrorPanel title="Hostels did not load" message={errorMessage(q.error)} onRetry={() => q.refetch()} />;
   const data = q.data;
@@ -131,7 +193,11 @@ export function HostelPanel() {
   return (
     <div className="space-y-4">
       <Figures items={[["Blocks", String(data.blocks.length)], ["Rooms", String(rooms.length)], ["Bed spaces", String(beds)], ["Occupied", beds ? `${Math.round((used / beds) * 100)}%` : "-"], ["Free beds", String(beds - used), beds - used ? "text-[hsl(var(--p-emerald))]" : "text-[hsl(var(--p-red))]"]]} />
-      <div className="flex justify-end"><button className="portal-btn" onClick={() => setBlock({ name: "", gender: "mixed", description: "", imageUrl: "" })} data-testid="button-add-block"><Plus size={15} /> Add block</button></div>
+      <div className="flex flex-wrap justify-end gap-2">
+        <button className="portal-btn-ghost" disabled={!used} onClick={() => setBilling(true)} data-testid="button-bill-hostel"><Receipt size={15} /> Bill this term</button>
+        <button className="portal-btn" onClick={() => setBlock({ name: "", gender: "mixed", description: "", imageUrl: "" })} data-testid="button-add-block"><Plus size={15} /> Add block</button>
+      </div>
+      {billing && <BillTermDialog defaultKind="hostel" onClose={() => setBilling(false)} />}
       {!data.blocks.length ? <EmptyState icon={<BedDouble size={22} />} title="No hostel blocks yet" body="Add each boarding house, then its rooms and bed spaces. You can then allocate students." /> : data.blocks.map((b) => {
         const bBeds = b.rooms.reduce((s, r) => s + r.beds, 0), bUsed = b.rooms.reduce((s, r) => s + r.occupants.length, 0);
         return (
@@ -241,6 +307,7 @@ export function TransportPanel() {
   const cmd = useFacilitiesCommand();
   const [route, setRoute] = useState<FacilitiesCommandRoute | null>(null);
   const [assigning, setAssigning] = useState<TransportRoute | null>(null);
+  const [billing, setBilling] = useState(false);
   if (q.isLoading) return <Skeleton className="h-72" />;
   if (q.isError || !q.data) return <ErrorPanel title="Transport did not load" message={errorMessage(q.error)} onRetry={() => q.refetch()} />;
   const data = q.data;
@@ -248,7 +315,11 @@ export function TransportPanel() {
   return (
     <div className="space-y-4">
       <Figures items={[["Routes", String(data.routes.length)], ["Running", String(data.routes.filter((r) => r.active).length)], ["Students riding", String(riders)], ["Stops", String(data.routes.reduce((s, r) => s + r.stops.length, 0))]]} />
-      <div className="flex justify-end"><button className="portal-btn" onClick={() => setRoute({ name: "", stops: [{ name: "", pickup: "", dropoff: "" }], driverName: "", driverPhone: "", vehicle: "", plate: "", feeKobo: 0, notes: "", active: true })} data-testid="button-add-route"><Plus size={15} /> Add route</button></div>
+      <div className="flex flex-wrap justify-end gap-2">
+        <button className="portal-btn-ghost" disabled={!riders} onClick={() => setBilling(true)} data-testid="button-bill-bus"><Receipt size={15} /> Bill this term</button>
+        <button className="portal-btn" onClick={() => setRoute({ name: "", stops: [{ name: "", pickup: "", dropoff: "" }], driverName: "", driverPhone: "", vehicle: "", plate: "", feeKobo: 0, notes: "", active: true })} data-testid="button-add-route"><Plus size={15} /> Add route</button>
+      </div>
+      {billing && <BillTermDialog defaultKind="bus" onClose={() => setBilling(false)} />}
       {!data.routes.length ? <EmptyState icon={<Bus size={22} />} title="No routes yet" body="Add each bus route with its stops and times, then assign students to their stop." /> : data.routes.map((r) => (
         <section key={r.id} className="portal-card overflow-hidden" data-testid={"route-" + r.id}>
           <div className="flex flex-wrap items-center gap-3 border-b border-[hsl(var(--p-line))] p-4">

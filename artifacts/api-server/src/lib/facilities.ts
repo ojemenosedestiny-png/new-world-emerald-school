@@ -43,3 +43,32 @@ export const validPhone = (p: string) => p === "" || /^\+?[\d\s-]{7,20}$/.test(p
 
 /** Photos must be web addresses or the site's own public paths; never javascript: or data: links. */
 export const safeImageUrl = (u: string) => u === "" || /^https:\/\/[^\s"'<>]+$/i.test(u) || /^\/[^\s"'<>]*$/.test(u);
+
+export type FeeKind = "hostel" | "bus";
+/** A boarder (room price) or a bus rider (route fee) to be billed for a term. */
+export type FacilityBillee = { kind: FeeKind; studentCode: string; studentName: string; className: string; place: string; amountKobo: number };
+
+const refPart = (v: string) => v.trim().toUpperCase().replace(/[^A-Z0-9]+/g, "-").replace(/^-|-$/g, "");
+
+/**
+ * The fee charge for each boarder and rider for one term. The reference is fixed for a student, term and kind,
+ * so billing a term twice never charges anyone twice. Free rooms and routes (₦0) are not billed.
+ */
+export function facilityCharges(term: string, academicYear: string, billees: FacilityBillee[]) {
+  return billees.filter((b) => b.amountKobo > 0).map((b) => ({
+    reference: [b.kind === "hostel" ? "HOSTEL" : "BUS", refPart(academicYear), refPart(term), refPart(b.studentCode)].join("-"),
+    studentName: b.studentName, studentIdentifier: b.studentCode, className: b.className,
+    term: term.trim(), academicYear: academicYear.trim(),
+    description: b.kind === "hostel" ? `Hostel: ${b.place}` : `School bus: ${b.place}`,
+    amountKobo: b.amountKobo,
+  }));
+}
+
+/** Why a term cannot be billed, or null. The session is written like 2026/2027. */
+export function billingProblem(term: string, academicYear: string, kinds: FeeKind[]) {
+  if (!term.trim()) return "Choose the term.";
+  const m = /^(\d{4})\/(\d{4})$/.exec(academicYear.trim());
+  if (!m || Number(m[2]) !== Number(m[1]) + 1) return "Write the session like 2026/2027.";
+  if (!kinds.length) return "Choose hostel fees, bus fees or both.";
+  return null;
+}
