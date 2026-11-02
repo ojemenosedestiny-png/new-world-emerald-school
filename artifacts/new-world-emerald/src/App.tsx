@@ -4,7 +4,6 @@ import { ClerkProvider, useClerk } from "@clerk/react";
 import { publishableKeyFromHost } from "@clerk/react/internal";
 import { clerkAppearance } from "@/lib/clerkAppearance";
 import { Toaster } from '@/components/ui/toaster';
-import { TooltipProvider } from '@/components/ui/tooltip';
 import { AppRoutes } from "@/AppRoutes";
 import { useLocation, Router as WouterRouter } from 'wouter';
 import { SiteContentRuntime } from '@/lib/siteContent';
@@ -58,10 +57,9 @@ function ClerkProviderWithRoutes() {
     <QueryClientProvider client={queryClient}>
       <ClerkQueryClientCacheInvalidator />
       <SiteContentRuntime>
-      <TooltipProvider>
-          <AppRoutes />
-        <Toaster />
-      </TooltipProvider>
+      {/* No TooltipProvider here: nothing on the site uses tooltips, and it loaded the tooltip library on every page. */}
+      <AppRoutes />
+      <Toaster />
       </SiteContentRuntime>
     </QueryClientProvider>
     </ClerkProvider>
