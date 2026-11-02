@@ -5,6 +5,7 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { StudentTermReportCardTraits } from './studentTermReportCardTraits';
 
 export type StudentTermReportCard = {
   studentId: number;
@@ -24,4 +25,6 @@ export type StudentTermReportCard = {
      * @nullable
      */
   daysOpen: number | null;
+  /** Behaviour ratings from 1 to 5, keyed by trait name. Leave out to keep what is saved. */
+  traits?: StudentTermReportCardTraits;
 } | null;

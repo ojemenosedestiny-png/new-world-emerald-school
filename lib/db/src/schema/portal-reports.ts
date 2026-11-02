@@ -8,7 +8,9 @@ export const portalTerms = pgTable("portal_terms", {
   id: serial("id").primaryKey(),
   session: text("session").notNull(),
   term: text("term").notNull(),
+  // CA 1 (caMax) and, when the school splits it, CA 2 (ca2Max; 0 means a single CA column).
   caMax: integer("ca_max").notNull().default(40),
+  ca2Max: integer("ca2_max").notNull().default(0),
   examMax: integer("exam_max").notNull().default(60),
   nextTermBegins: text("next_term_begins"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
@@ -34,7 +36,10 @@ export const portalScores = pgTable("portal_scores", {
   studentId: integer("student_id").notNull().references(() => portalStudents.id),
   subjectId: integer("subject_id").notNull().references(() => portalSubjects.id),
   ca: real("ca"),
+  ca2: real("ca2"),
   exam: real("exam"),
+  // The subject teacher's comment on this student's result in this subject.
+  comment: text("comment").notNull().default(""),
   // Manual results (or imported old results): a typed total and grade used instead of the calculated ones.
   total: real("total"),
   grade: text("grade"),
@@ -51,6 +56,8 @@ export const portalReportCards = pgTable("portal_report_cards", {
   principalRemark: text("principal_remark").notNull().default(""),
   daysPresent: integer("days_present"),
   daysOpen: integer("days_open"),
+  // Affective (behaviour) ratings on a 5-point scale, keyed by trait name.
+  traits: jsonb("traits").$type<Record<string, number>>().notNull().default({}),
 }, (t) => [uniqueIndex("portal_report_cards_term_student").on(t.termId, t.studentId)]);
 export const insertPortalReportCardSchema = createInsertSchema(portalReportCards).omit({ id: true });
 export type PortalReportCardRecord = typeof portalReportCards.$inferSelect;

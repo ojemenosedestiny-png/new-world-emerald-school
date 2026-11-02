@@ -79,7 +79,7 @@ describe("manual results and settings", () => {
     expect((screen.getByTestId("button-save-scores") as HTMLButtonElement).disabled).toBe(true);
     fireEvent.change(screen.getByTestId("input-grade-1"), { target: { value: "a1" } });
     fireEvent.click(screen.getByTestId("button-save-scores"));
-    await waitFor(() => expect(mocks.manage).toHaveBeenCalledWith({ data: { action: "saveScores", scores: { termId: 3, entries: [{ studentId: 1, subjectId: 10, ca: 30, exam: 30, total: 82, grade: "A1" }] } } }));
+    await waitFor(() => expect(mocks.manage).toHaveBeenCalledWith({ data: { action: "saveScores", scores: { termId: 3, entries: [{ studentId: 1, subjectId: 10, ca: 30, exam: 30, comment: "", total: 82, grade: "A1" }] } } }));
   });
 
   it("the office edits the grading scale and principal; a teacher only sees their signature", async () => {
@@ -107,6 +107,6 @@ describe("manual results and settings", () => {
     expect(html).toContain("Mr Bayo");
     expect(html).toContain("Mrs P. Principal");
     expect(html).not.toContain("javascript:");
-    expect(html).toContain("<b>A1</b> 75 - 100");
+    expect(html).toContain(`<td class="l">75 - 100</td><td class="b">A1</td>`);
   });
 });

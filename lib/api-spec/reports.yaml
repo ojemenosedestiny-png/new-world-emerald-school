@@ -36,12 +36,13 @@ paths:
 schemas:
   ReportTerm:
     type: object
-    required: [id, session, term, caMax, examMax, nextTermBegins]
+    required: [id, session, term, caMax, ca2Max, examMax, nextTermBegins]
     properties:
       id: { type: integer }
       session: { type: string }
       term: { type: string }
-      caMax: { type: integer }
+      caMax: { type: integer, description: "CA 1 maximum (the only CA when ca2Max is 0)" }
+      ca2Max: { type: integer, description: "CA 2 maximum; 0 means a single CA column" }
       examMax: { type: integer }
       nextTermBegins: { type: [string, "null"] }
   ReportTermInput:
@@ -52,6 +53,7 @@ schemas:
       session: { type: string, minLength: 1, maxLength: 20 }
       term: { type: string, minLength: 1, maxLength: 40 }
       caMax: { type: integer, minimum: 0, maximum: 100 }
+      ca2Max: { type: integer, minimum: 0, maximum: 100, description: "Leave out to keep the term's current CA 2 maximum (0 for a new term)" }
       examMax: { type: integer, minimum: 0, maximum: 100 }
       nextTermBegins: { type: [string, "null"], maxLength: 40 }
   ReportSubject:
@@ -63,6 +65,7 @@ schemas:
       name: { type: string }
       sortOrder: { type: integer }
       teacherId: { type: [integer, "null"], description: The subject teacher }
+      teacherName: { type: [string, "null"], description: "The subject teacher's name, for the report card" }
   ReportSubjectInput:
     type: object
     required: [classId, name]
@@ -78,9 +81,11 @@ schemas:
     properties:
       studentId: { type: integer }
       subjectId: { type: integer }
-      ca: { type: [number, "null"] }
+      ca: { type: [number, "null"], description: CA 1 }
+      ca2: { type: [number, "null"], description: "CA 2. Leave out to keep what is saved." }
       exam: { type: [number, "null"] }
-      total: { type: [number, "null"], minimum: 0, maximum: 200, description: "Manual results: a typed total used instead of CA + exam" }
+      comment: { type: [string, "null"], maxLength: 300, description: "The subject teacher's comment on this result. Leave out to keep what is saved." }
+      total: { type: [number, "null"], minimum: 0, maximum: 300, description: "Manual results: a typed total used instead of CA + exam" }
       grade: { type: [string, "null"], maxLength: 4, description: "Manual results: a typed grade used instead of the scale's" }
   GradeBand:
     type: object
@@ -110,13 +115,19 @@ schemas:
       principalRemark: { type: string, maxLength: 600 }
       daysPresent: { type: [integer, "null"], minimum: 0, maximum: 366 }
       daysOpen: { type: [integer, "null"], minimum: 0, maximum: 366 }
+      traits:
+        type: object
+        description: "Behaviour ratings from 1 to 5, keyed by trait name. Leave out to keep what is saved."
+        additionalProperties: { type: integer, minimum: 1, maximum: 5 }
   ReportSubjectResult:
     type: object
-    required: [subjectId, ca, exam, total, percent, grade, remark, position]
+    required: [subjectId, ca, ca2, exam, total, percent, grade, remark, position, comment]
     properties:
       subjectId: { type: integer }
       ca: { type: [number, "null"] }
+      ca2: { type: [number, "null"] }
       exam: { type: [number, "null"] }
+      comment: { type: string, description: "The subject teacher's comment" }
       total: { type: number }
       percent: { type: number }
       grade: { type: string }

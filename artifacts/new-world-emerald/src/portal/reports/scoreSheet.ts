@@ -18,29 +18,36 @@ export function parseScorePart(raw: string, max: number): { value: number | null
   return { value };
 }
 
-export type CsvScoreRow = { line: number; studentId: string; ca: number | null; exam: number | null; id?: number; error?: string };
+export type CsvScoreRow = { line: number; studentId: string; ca: number | null; ca2: number | null; exam: number | null; id?: number; error?: string };
 
-/** Parses "Student ID, CA, Exam" lines (comma or tab). A header row is skipped. */
-export function parseScoreCsv(text: string, students: { id: number; studentId: string }[], maxima: { caMax: number; examMax: number }): CsvScoreRow[] {
+/**
+ * Parses "Student ID, CA, Exam" lines (comma or tab), or "Student ID, CA 1, CA 2, Exam" when the term has
+ * a CA 2. A header row is skipped.
+ */
+export function parseScoreCsv(text: string, students: { id: number; studentId: string }[], maxima: { caMax: number; ca2Max?: number; examMax: number }): CsvScoreRow[] {
+  const twoCa = (maxima.ca2Max ?? 0) > 0;
   const byCode = new Map(students.map((s) => [s.studentId.toUpperCase(), s.id]));
   const seen = new Set<string>();
   const rows: CsvScoreRow[] = [];
   text.split(/\r?\n/).forEach((raw, index) => {
     if (!raw.trim()) return;
     const parts = (raw.includes("\t") ? raw.split("\t") : raw.split(",")).map((p) => p.trim().replace(/^"(.*)"$/, "$1").trim());
-    const [code = "", caRaw = "", examRaw = ""] = parts;
+    const [code = "", caRaw = "", ...rest] = parts;
+    const [ca2Raw, examRaw = ""] = twoCa ? [rest[0] ?? "", rest[1] ?? ""] : ["", rest[0] ?? ""];
     if (rows.length === 0 && /id/i.test(code) && /ca|exam|score/i.test(parts.slice(1).join(" "))) return;
     const studentId = code.toUpperCase();
     const ca = parseScorePart(caRaw, maxima.caMax);
+    const ca2 = twoCa ? parseScorePart(ca2Raw, maxima.ca2Max!) : { value: null };
     const exam = parseScorePart(examRaw, maxima.examMax);
     const id = byCode.get(studentId);
     let error: string | undefined;
     if (!id) error = "Student ID not in this class";
     else if (seen.has(studentId)) error = "Student listed twice";
-    else if (ca.error) error = `CA: ${ca.error}`;
+    else if (ca.error) error = twoCa ? `CA 1: ${ca.error}` : `CA: ${ca.error}`;
+    else if ("error" in ca2 && ca2.error) error = `CA 2: ${ca2.error}`;
     else if (exam.error) error = `Exam: ${exam.error}`;
     seen.add(studentId);
-    rows.push({ line: index + 1, studentId, ca: ca.value, exam: exam.value, id, error });
+    rows.push({ line: index + 1, studentId, ca: ca.value, ca2: ca2.value, exam: exam.value, id, error });
   });
   return rows;
 }

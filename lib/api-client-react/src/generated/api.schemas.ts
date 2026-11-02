@@ -1423,7 +1423,10 @@ export interface ReportTerm {
   id: number;
   session: string;
   term: string;
+  /** CA 1 maximum (the only CA when ca2Max is 0) */
   caMax: number;
+  /** CA 2 maximum; 0 means a single CA column */
+  ca2Max: number;
   examMax: number;
   /** @nullable */
   nextTermBegins: string | null;
@@ -1447,6 +1450,12 @@ export interface ReportTermInput {
      */
   caMax: number;
   /**
+     * Leave out to keep the term's current CA 2 maximum (0 for a new term)
+     * @minimum 0
+     * @maximum 100
+     */
+  ca2Max?: number;
+  /**
      * @minimum 0
      * @maximum 100
      */
@@ -1468,6 +1477,11 @@ export interface ReportSubject {
      * @nullable
      */
   teacherId: number | null;
+  /**
+     * The subject teacher's name, for the report card
+     * @nullable
+     */
+  teacherName?: string | null;
 }
 
 export interface ReportSubjectInput {
@@ -1490,14 +1504,28 @@ export interface ReportSubjectInput {
 export interface ReportScore {
   studentId: number;
   subjectId: number;
-  /** @nullable */
+  /**
+     * CA 1
+     * @nullable
+     */
   ca: number | null;
+  /**
+     * CA 2. Leave out to keep what is saved.
+     * @nullable
+     */
+  ca2?: number | null;
   /** @nullable */
   exam: number | null;
   /**
+     * The subject teacher's comment on this result. Leave out to keep what is saved.
+     * @maxLength 300
+     * @nullable
+     */
+  comment?: string | null;
+  /**
      * Manual results: a typed total used instead of CA + exam
      * @minimum 0
-     * @maximum 200
+     * @maximum 300
      * @nullable
      */
   total?: number | null;
@@ -1556,6 +1584,11 @@ export interface ReportWorkflow {
   returnNote: string;
 }
 
+/**
+ * Behaviour ratings from 1 to 5, keyed by trait name. Leave out to keep what is saved.
+ */
+export type ReportCardInfoTraits = {[key: string]: number};
+
 export interface ReportCardInfo {
   studentId: number;
   /** @maxLength 600 */
@@ -1574,6 +1607,8 @@ export interface ReportCardInfo {
      * @nullable
      */
   daysOpen: number | null;
+  /** Behaviour ratings from 1 to 5, keyed by trait name. Leave out to keep what is saved. */
+  traits?: ReportCardInfoTraits;
 }
 
 export interface ReportSubjectResult {
@@ -1581,7 +1616,11 @@ export interface ReportSubjectResult {
   /** @nullable */
   ca: number | null;
   /** @nullable */
+  ca2: number | null;
+  /** @nullable */
   exam: number | null;
+  /** The subject teacher's comment */
+  comment: string;
   total: number;
   percent: number;
   grade: string;
@@ -1594,7 +1633,11 @@ export type ReportStudentResultSubjectsItem = {
   /** @nullable */
   ca: number | null;
   /** @nullable */
+  ca2: number | null;
+  /** @nullable */
   exam: number | null;
+  /** The subject teacher's comment */
+  comment: string;
   total: number;
   percent: number;
   grade: string;
@@ -1685,7 +1728,10 @@ export type ReportWorkspaceTermsItem = {
   id: number;
   session: string;
   term: string;
+  /** CA 1 maximum (the only CA when ca2Max is 0) */
   caMax: number;
+  /** CA 2 maximum; 0 means a single CA column */
+  ca2Max: number;
   examMax: number;
   /** @nullable */
   nextTermBegins: string | null;
@@ -1706,6 +1752,11 @@ export type ReportWorkspaceSubjectsItem = {
      * @nullable
      */
   teacherId: number | null;
+  /**
+     * The subject teacher's name, for the report card
+     * @nullable
+     */
+  teacherName?: string | null;
 };
 
 export type ReportWorkspaceStudentsItem = {
@@ -1717,14 +1768,28 @@ export type ReportWorkspaceStudentsItem = {
 export type ReportWorkspaceScoresItem = {
   studentId: number;
   subjectId: number;
-  /** @nullable */
+  /**
+     * CA 1
+     * @nullable
+     */
   ca: number | null;
+  /**
+     * CA 2. Leave out to keep what is saved.
+     * @nullable
+     */
+  ca2?: number | null;
   /** @nullable */
   exam: number | null;
   /**
+     * The subject teacher's comment on this result. Leave out to keep what is saved.
+     * @maxLength 300
+     * @nullable
+     */
+  comment?: string | null;
+  /**
      * Manual results: a typed total used instead of CA + exam
      * @minimum 0
-     * @maximum 200
+     * @maximum 300
      * @nullable
      */
   total?: number | null;
@@ -1735,6 +1800,11 @@ export type ReportWorkspaceScoresItem = {
      */
   grade?: string | null;
 };
+
+/**
+ * Behaviour ratings from 1 to 5, keyed by trait name. Leave out to keep what is saved.
+ */
+export type ReportWorkspaceCardsItemTraits = {[key: string]: number};
 
 export type ReportWorkspaceCardsItem = {
   studentId: number;
@@ -1754,6 +1824,8 @@ export type ReportWorkspaceCardsItem = {
      * @nullable
      */
   daysOpen: number | null;
+  /** Behaviour ratings from 1 to 5, keyed by trait name. Leave out to keep what is saved. */
+  traits?: ReportWorkspaceCardsItemTraits;
 };
 
 export type ReportWorkspaceResultsItemSubjectsItem = {
@@ -1761,7 +1833,11 @@ export type ReportWorkspaceResultsItemSubjectsItem = {
   /** @nullable */
   ca: number | null;
   /** @nullable */
+  ca2: number | null;
+  /** @nullable */
   exam: number | null;
+  /** The subject teacher's comment */
+  comment: string;
   total: number;
   percent: number;
   grade: string;
@@ -1934,6 +2010,12 @@ export type ReportCommandTerm = {
      */
   caMax: number;
   /**
+     * Leave out to keep the term's current CA 2 maximum (0 for a new term)
+     * @minimum 0
+     * @maximum 100
+     */
+  ca2Max?: number;
+  /**
      * @minimum 0
      * @maximum 100
      */
@@ -1969,14 +2051,28 @@ export type ReportCommandTarget = {
 export type ReportCommandScoresEntriesItem = {
   studentId: number;
   subjectId: number;
-  /** @nullable */
+  /**
+     * CA 1
+     * @nullable
+     */
   ca: number | null;
+  /**
+     * CA 2. Leave out to keep what is saved.
+     * @nullable
+     */
+  ca2?: number | null;
   /** @nullable */
   exam: number | null;
   /**
+     * The subject teacher's comment on this result. Leave out to keep what is saved.
+     * @maxLength 300
+     * @nullable
+     */
+  comment?: string | null;
+  /**
      * Manual results: a typed total used instead of CA + exam
      * @minimum 0
-     * @maximum 200
+     * @maximum 300
      * @nullable
      */
   total?: number | null;
@@ -1993,6 +2089,11 @@ export type ReportCommandScores = {
   /** @maxItems 5000 */
   entries: ReportCommandScoresEntriesItem[];
 };
+
+/**
+ * Behaviour ratings from 1 to 5, keyed by trait name. Leave out to keep what is saved.
+ */
+export type ReportCommandCardsEntriesItemTraits = {[key: string]: number};
 
 export type ReportCommandCardsEntriesItem = {
   studentId: number;
@@ -2012,6 +2113,8 @@ export type ReportCommandCardsEntriesItem = {
      * @nullable
      */
   daysOpen: number | null;
+  /** Behaviour ratings from 1 to 5, keyed by trait name. Leave out to keep what is saved. */
+  traits?: ReportCommandCardsEntriesItemTraits;
 };
 
 export type ReportCommandCards = {
@@ -2059,7 +2162,10 @@ export type StudentTermReportTerm = {
   id: number;
   session: string;
   term: string;
+  /** CA 1 maximum (the only CA when ca2Max is 0) */
   caMax: number;
+  /** CA 2 maximum; 0 means a single CA column */
+  ca2Max: number;
   examMax: number;
   /** @nullable */
   nextTermBegins: string | null;
@@ -2075,6 +2181,11 @@ export type StudentTermReportSubjectsItem = {
      * @nullable
      */
   teacherId: number | null;
+  /**
+     * The subject teacher's name, for the report card
+     * @nullable
+     */
+  teacherName?: string | null;
 };
 
 export type StudentTermReportResultSubjectsItem = {
@@ -2082,7 +2193,11 @@ export type StudentTermReportResultSubjectsItem = {
   /** @nullable */
   ca: number | null;
   /** @nullable */
+  ca2: number | null;
+  /** @nullable */
   exam: number | null;
+  /** The subject teacher's comment */
+  comment: string;
   total: number;
   percent: number;
   grade: string;
@@ -2111,6 +2226,11 @@ export type StudentTermReportSubjectStatsItem = {
   entries: number;
 };
 
+/**
+ * Behaviour ratings from 1 to 5, keyed by trait name. Leave out to keep what is saved.
+ */
+export type StudentTermReportCardTraits = {[key: string]: number};
+
 export type StudentTermReportCard = {
   studentId: number;
   /** @maxLength 600 */
@@ -2129,6 +2249,8 @@ export type StudentTermReportCard = {
      * @nullable
      */
   daysOpen: number | null;
+  /** Behaviour ratings from 1 to 5, keyed by trait name. Leave out to keep what is saved. */
+  traits?: StudentTermReportCardTraits;
 } | null;
 
 export interface StudentTermReport {
@@ -2169,7 +2291,10 @@ export type StudentReportsReportsItemTerm = {
   id: number;
   session: string;
   term: string;
+  /** CA 1 maximum (the only CA when ca2Max is 0) */
   caMax: number;
+  /** CA 2 maximum; 0 means a single CA column */
+  ca2Max: number;
   examMax: number;
   /** @nullable */
   nextTermBegins: string | null;
@@ -2185,6 +2310,11 @@ export type StudentReportsReportsItemSubjectsItem = {
      * @nullable
      */
   teacherId: number | null;
+  /**
+     * The subject teacher's name, for the report card
+     * @nullable
+     */
+  teacherName?: string | null;
 };
 
 export type StudentReportsReportsItemResultSubjectsItem = {
@@ -2192,7 +2322,11 @@ export type StudentReportsReportsItemResultSubjectsItem = {
   /** @nullable */
   ca: number | null;
   /** @nullable */
+  ca2: number | null;
+  /** @nullable */
   exam: number | null;
+  /** The subject teacher's comment */
+  comment: string;
   total: number;
   percent: number;
   grade: string;
@@ -2221,6 +2355,11 @@ export type StudentReportsReportsItemSubjectStatsItem = {
   entries: number;
 };
 
+/**
+ * Behaviour ratings from 1 to 5, keyed by trait name. Leave out to keep what is saved.
+ */
+export type StudentReportsReportsItemCardTraits = {[key: string]: number};
+
 export type StudentReportsReportsItemCard = {
   studentId: number;
   /** @maxLength 600 */
@@ -2239,6 +2378,8 @@ export type StudentReportsReportsItemCard = {
      * @nullable
      */
   daysOpen: number | null;
+  /** Behaviour ratings from 1 to 5, keyed by trait name. Leave out to keep what is saved. */
+  traits?: StudentReportsReportsItemCardTraits;
 } | null;
 
 export type StudentReportsReportsItem = {

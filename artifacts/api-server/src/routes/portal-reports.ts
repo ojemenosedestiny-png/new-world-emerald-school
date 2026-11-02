@@ -1,18 +1,18 @@
 import { Router } from "express";
-import { and, asc, desc, eq, inArray, or } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, isNull, or } from "drizzle-orm";
 import {
   db, portalClasses, portalStudents, portalTerms, portalSubjects, portalScores, portalReportCards, portalReportReleases,
   portalReportSettings, portalReportWorkflow, portalTeachers, type PortalTermRecord, type PortalReportWorkflowRecord,
 } from "@workspace/db";
 import { GetReportWorkspaceQueryParams, ManageReportsBody } from "@workspace/api-zod";
 import { check, classAllowed, portalActor, staffOnly, studentOnly, type PortalActor } from "../lib/portal-auth";
-import { GRADE_SCALE, buildClassReport, nextStatus, scaleProblem, signatureProblem, validScorePart, type GradeBand, type ResultStatus } from "../lib/report-cards";
+import { GRADE_SCALE, traitsProblem, buildClassReport, nextStatus, scaleProblem, signatureProblem, validScorePart, type GradeBand, type ResultStatus } from "../lib/report-cards";
 
 export const portalReportsRouter = Router();
 
 const approver = (req: { identity?: { email?: string | null } }, actor: PortalActor) => actor.name || req.identity?.email || "School office";
 
-const termView = (t: PortalTermRecord) => ({ id: t.id, session: t.session, term: t.term, caMax: t.caMax, examMax: t.examMax, nextTermBegins: t.nextTermBegins });
+const termView = (t: PortalTermRecord) => ({ id: t.id, session: t.session, term: t.term, caMax: t.caMax, ca2Max: t.ca2Max, examMax: t.examMax, nextTermBegins: t.nextTermBegins });
 
 async function reportSettings() {
   const [row] = await db.select().from(portalReportSettings).where(eq(portalReportSettings.id, 1));
@@ -37,7 +37,10 @@ async function upsertWorkflow(termId: number, classId: number, values: Partial<t
 async function classData(termId: number, classId: number) {
   const [term] = await db.select().from(portalTerms).where(eq(portalTerms.id, termId));
   check(term, "Term not found.", 404);
-  const subjects = await db.select().from(portalSubjects).where(eq(portalSubjects.classId, classId)).orderBy(asc(portalSubjects.sortOrder), asc(portalSubjects.name));
+  const subjectRows = await db.select().from(portalSubjects).where(eq(portalSubjects.classId, classId)).orderBy(asc(portalSubjects.sortOrder), asc(portalSubjects.name));
+  const teacherIds = [...new Set(subjectRows.map((s) => s.teacherId).filter((id): id is number => id !== null))];
+  const teacherNames = new Map(teacherIds.length ? (await db.select({ id: portalTeachers.id, name: portalTeachers.name }).from(portalTeachers).where(inArray(portalTeachers.id, teacherIds))).map((t) => [t.id, t.name]) : []);
+  const subjects = subjectRows.map((s) => ({ ...s, teacherName: s.teacherId === null ? null : teacherNames.get(s.teacherId) ?? null }));
   // The class for a term is its current pupils plus anyone with scores in its subjects that term,
   // so past (or imported) results keep the pupils who have since moved to another class.
   const subjectIds = subjects.map((s) => s.id);
@@ -55,7 +58,7 @@ async function classData(termId: number, classId: number) {
   return { term, subjects, students, scores, cards, release, report, workflow, settings };
 }
 
-const cardView = (c: typeof portalReportCards.$inferSelect) => ({ studentId: c.studentId, teacherRemark: c.teacherRemark, principalRemark: c.principalRemark, daysPresent: c.daysPresent, daysOpen: c.daysOpen });
+const cardView = (c: typeof portalReportCards.$inferSelect) => ({ studentId: c.studentId, teacherRemark: c.teacherRemark, principalRemark: c.principalRemark, daysPresent: c.daysPresent, daysOpen: c.daysOpen, traits: c.traits ?? {} });
 
 portalReportsRouter.get("/reports/manage", async (req, res) => {
   const actor = await portalActor(req);
@@ -81,7 +84,7 @@ portalReportsRouter.get("/reports/manage", async (req, res) => {
   res.json({
     ...base, isClassTeacher, editableSubjectIds: isClassTeacher ? null : mine,
     subjects: d.subjects, students: d.students,
-    scores: d.scores.map((s) => ({ studentId: s.studentId, subjectId: s.subjectId, ca: s.ca, exam: s.exam, total: s.total, grade: s.grade })),
+    scores: d.scores.map((s) => ({ studentId: s.studentId, subjectId: s.subjectId, ca: s.ca, ca2: s.ca2, exam: s.exam, comment: s.comment, total: s.total, grade: s.grade })),
     cards: d.cards.map(cardView), results: d.report.students, subjectStats: d.report.subjectStats, ranked: d.report.ranked, released: !!d.release,
     workflow: workflowView(d.workflow, !!d.release),
   });
@@ -133,13 +136,16 @@ portalReportsRouter.post("/reports/manage", async (req, res) => {
       const session = t.session.trim(), term = t.term.trim();
       check(/^\d{4}\/\d{4}$/.test(session) && Number(session.slice(5)) === Number(session.slice(0, 4)) + 1, "Use a session like 2026/2027.");
       check(term, "Term name required.");
-      check(t.caMax + t.examMax > 0, "Continuous assessment and exam cannot both be zero.");
-      const values = { session, term, caMax: t.caMax, examMax: t.examMax, nextTermBegins: t.nextTermBegins?.trim() || null };
+      const [current] = t.id ? await db.select().from(portalTerms).where(eq(portalTerms.id, t.id)) : [];
+      const ca2Max = t.ca2Max ?? current?.ca2Max ?? 0;
+      check(t.caMax + ca2Max + t.examMax > 0, "Continuous assessment and exam cannot both be zero.");
+      check(t.caMax + ca2Max + t.examMax <= 300, "The marks for CA and exam add up to too much.");
+      const values = { session, term, caMax: t.caMax, ca2Max, examMax: t.examMax, nextTermBegins: t.nextTermBegins?.trim() || null };
       const [clash] = await db.select({ id: portalTerms.id }).from(portalTerms).where(and(eq(portalTerms.session, session), eq(portalTerms.term, term)));
       check(!clash || clash.id === t.id, "That term already exists for this session.", 409);
       if (t.id) {
-        const scores = await db.select({ ca: portalScores.ca, exam: portalScores.exam }).from(portalScores).where(eq(portalScores.termId, t.id));
-        check(scores.every((s) => (s.ca ?? 0) <= t.caMax && (s.exam ?? 0) <= t.examMax), "Some entered scores are higher than the new maximum. Correct them first.", 409);
+        const scores = await db.select({ ca: portalScores.ca, ca2: portalScores.ca2, exam: portalScores.exam }).from(portalScores).where(eq(portalScores.termId, t.id));
+        check(scores.every((s) => (s.ca ?? 0) <= t.caMax && (s.ca2 ?? 0) <= ca2Max && (s.exam ?? 0) <= t.examMax), "Some entered scores are higher than the new maximum. Correct them first.", 409);
         const rows = await db.update(portalTerms).set(values).where(eq(portalTerms.id, t.id)).returning();
         check(rows.length, "Term not found.", 404);
       } else await db.insert(portalTerms).values(values);
@@ -203,9 +209,14 @@ portalReportsRouter.post("/reports/manage", async (req, res) => {
       const scale = (await reportSettings()).gradingScale;
       for (const e of data.entries) {
         check(subjectClass.get(e.subjectId) === studentClass.get(e.studentId), "A subject does not belong to the student's class.");
-        check(validScorePart(e.ca, term.caMax) && validScorePart(e.exam, term.examMax), `Scores must be between 0 and ${term.caMax} (CA) and 0 and ${term.examMax} (exam), in half marks.`);
+        check(validScorePart(e.ca, term.caMax) && validScorePart(e.exam, term.examMax), term.ca2Max
+          ? `Scores must be between 0 and ${term.caMax} (CA 1) and 0 and ${term.examMax} (exam), in half marks.`
+          : `Scores must be between 0 and ${term.caMax} (CA) and 0 and ${term.examMax} (exam), in half marks.`);
+        check(validScorePart(e.ca2, term.ca2Max), term.ca2Max ? `CA 2 must be between 0 and ${term.ca2Max}, in half marks.` : "This term has no CA 2. Set a CA 2 maximum for the term first.");
+        if (e.comment !== undefined && e.comment !== null) { e.comment = e.comment.trim(); check(e.comment.length <= 300, "Keep each comment under 300 characters."); }
         if (modes.get(studentClass.get(e.studentId)!) !== "manual") { e.total = null; e.grade = null; }
-        check(validScorePart(e.total, term.caMax + term.examMax), `A typed total must be between 0 and ${term.caMax + term.examMax}, in half marks.`);
+        const possible = term.caMax + term.ca2Max + term.examMax;
+        check(validScorePart(e.total, possible), `A typed total must be between 0 and ${possible}, in half marks.`);
         e.grade = e.grade?.trim().toUpperCase() || null;
         check(!e.grade || scale.some((b) => b.grade.toUpperCase() === e.grade), "Use a grade from the school's grading scale.");
         const key = e.studentId + ":" + e.subjectId;
@@ -217,9 +228,12 @@ portalReportsRouter.post("/reports/manage", async (req, res) => {
         for (const e of data.entries) {
           const where = and(eq(portalScores.termId, term.id), eq(portalScores.studentId, e.studentId), eq(portalScores.subjectId, e.subjectId));
           const total = e.total ?? null, grade = e.grade ?? null;
-          if (e.ca === null && e.exam === null && total === null) { await tx.delete(portalScores).where(where); continue; }
-          await tx.insert(portalScores).values({ termId: term.id, studentId: e.studentId, subjectId: e.subjectId, ca: e.ca, exam: e.exam, total, grade })
-            .onConflictDoUpdate({ target: [portalScores.termId, portalScores.studentId, portalScores.subjectId], set: { ca: e.ca, exam: e.exam, total, grade, updatedAt: new Date() } });
+          // CA 2 and the comment are only changed when sent, so a CBT import or pasted CA 1 keeps them.
+          const extra = { ...(e.ca2 !== undefined ? { ca2: e.ca2 } : {}), ...(e.comment !== undefined ? { comment: e.comment ?? "" } : {}) };
+          await tx.insert(portalScores).values({ termId: term.id, studentId: e.studentId, subjectId: e.subjectId, ca: e.ca, exam: e.exam, total, grade, ...extra })
+            .onConflictDoUpdate({ target: [portalScores.termId, portalScores.studentId, portalScores.subjectId], set: { ca: e.ca, exam: e.exam, total, grade, ...extra, updatedAt: new Date() } });
+          // A row with no marks and no comment left is removed.
+          await tx.delete(portalScores).where(and(where, isNull(portalScores.ca), isNull(portalScores.ca2), isNull(portalScores.exam), isNull(portalScores.total), eq(portalScores.comment, "")));
         }
       });
       break;
@@ -232,6 +246,7 @@ portalReportsRouter.post("/reports/manage", async (req, res) => {
       const studentClass = await editableStudents(actor, data.entries.map((e) => e.studentId));
       check(new Set(data.entries.map((e) => e.studentId)).size === data.entries.length, "Each student may appear only once.");
       for (const e of data.entries) check(e.daysPresent === null || e.daysOpen === null || e.daysPresent <= e.daysOpen, "Days present cannot exceed days the school opened.");
+      for (const e of data.entries) { const problem = e.traits ? traitsProblem(e.traits) : null; check(!problem, problem ?? ""); }
       await assertEditable(actor, term.id, [...studentClass.values()]);
       const existing = await db.select().from(portalReportCards).where(and(eq(portalReportCards.termId, term.id), inArray(portalReportCards.studentId, data.entries.map((e) => e.studentId))));
       const previous = new Map(existing.map((c) => [c.studentId, c]));
@@ -239,7 +254,7 @@ portalReportsRouter.post("/reports/manage", async (req, res) => {
         for (const e of data.entries) {
           // Only administrators write the principal's remark; a teacher's save keeps it unchanged.
           const principalRemark = actor.role === "admin" ? e.principalRemark.trim() : previous.get(e.studentId)?.principalRemark ?? "";
-          const values = { teacherRemark: e.teacherRemark.trim(), principalRemark, daysPresent: e.daysPresent, daysOpen: e.daysOpen };
+          const values = { teacherRemark: e.teacherRemark.trim(), principalRemark, daysPresent: e.daysPresent, daysOpen: e.daysOpen, ...(e.traits ? { traits: e.traits } : {}) };
           await tx.insert(portalReportCards).values({ termId: term.id, studentId: e.studentId, ...values })
             .onConflictDoUpdate({ target: [portalReportCards.termId, portalReportCards.studentId], set: values });
         }

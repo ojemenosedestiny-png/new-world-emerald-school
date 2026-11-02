@@ -16,4 +16,9 @@ export interface ReportSubject {
      * @nullable
      */
   teacherId: number | null;
+  /**
+     * The subject teacher's name, for the report card
+     * @nullable
+     */
+  teacherName?: string | null;
 }

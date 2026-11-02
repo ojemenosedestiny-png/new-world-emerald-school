@@ -10,7 +10,10 @@ export type StudentReportsReportsItemTerm = {
   id: number;
   session: string;
   term: string;
+  /** CA 1 maximum (the only CA when ca2Max is 0) */
   caMax: number;
+  /** CA 2 maximum; 0 means a single CA column */
+  ca2Max: number;
   examMax: number;
   /** @nullable */
   nextTermBegins: string | null;

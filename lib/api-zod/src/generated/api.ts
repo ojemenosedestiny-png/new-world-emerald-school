@@ -949,8 +949,10 @@ export const getReportWorkspaceResponseGradingScaleItemGradeMax = 4;
 
 export const getReportWorkspaceResponseGradingScaleItemRemarkMax = 40;
 
+export const getReportWorkspaceResponseScoresItemCommentMax = 300;
+
 export const getReportWorkspaceResponseScoresItemTotalMin = 0;
-export const getReportWorkspaceResponseScoresItemTotalMax = 200;
+export const getReportWorkspaceResponseScoresItemTotalMax = 300;
 
 export const getReportWorkspaceResponseScoresItemGradeMax = 4;
 
@@ -963,6 +965,8 @@ export const getReportWorkspaceResponseCardsItemDaysPresentMax = 366;
 
 export const getReportWorkspaceResponseCardsItemDaysOpenMin = 0;
 export const getReportWorkspaceResponseCardsItemDaysOpenMax = 366;
+
+export const getReportWorkspaceResponseCardsItemTraitsMaxOne = 5;
 
 
 
@@ -995,7 +999,8 @@ export const GetReportWorkspaceResponse = zod.object({
   "id": zod.number(),
   "session": zod.string(),
   "term": zod.string(),
-  "caMax": zod.number(),
+  "caMax": zod.number().describe('CA 1 maximum (the only CA when ca2Max is 0)'),
+  "ca2Max": zod.number().describe('CA 2 maximum; 0 means a single CA column'),
   "examMax": zod.number(),
   "nextTermBegins": zod.string().nullable()
 })),
@@ -1011,7 +1016,8 @@ export const GetReportWorkspaceResponse = zod.object({
   "classId": zod.number(),
   "name": zod.string(),
   "sortOrder": zod.number(),
-  "teacherId": zod.number().nullable().describe('The subject teacher')
+  "teacherId": zod.number().nullable().describe('The subject teacher'),
+  "teacherName": zod.string().nullish().describe('The subject teacher\'s name, for the report card')
 })),
   "students": zod.array(zod.object({
   "id": zod.number(),
@@ -1021,8 +1027,10 @@ export const GetReportWorkspaceResponse = zod.object({
   "scores": zod.array(zod.object({
   "studentId": zod.number(),
   "subjectId": zod.number(),
-  "ca": zod.number().nullable(),
+  "ca": zod.number().nullable().describe('CA 1'),
+  "ca2": zod.number().nullish().describe('CA 2. Leave out to keep what is saved.'),
   "exam": zod.number().nullable(),
+  "comment": zod.string().max(getReportWorkspaceResponseScoresItemCommentMax).nullish().describe('The subject teacher\'s comment on this result. Leave out to keep what is saved.'),
   "total": zod.number().min(getReportWorkspaceResponseScoresItemTotalMin).max(getReportWorkspaceResponseScoresItemTotalMax).nullish().describe('Manual results: a typed total used instead of CA + exam'),
   "grade": zod.string().max(getReportWorkspaceResponseScoresItemGradeMax).nullish().describe('Manual results: a typed grade used instead of the scale\'s')
 })),
@@ -1031,14 +1039,17 @@ export const GetReportWorkspaceResponse = zod.object({
   "teacherRemark": zod.string().max(getReportWorkspaceResponseCardsItemTeacherRemarkMax),
   "principalRemark": zod.string().max(getReportWorkspaceResponseCardsItemPrincipalRemarkMax),
   "daysPresent": zod.number().min(getReportWorkspaceResponseCardsItemDaysPresentMin).max(getReportWorkspaceResponseCardsItemDaysPresentMax).nullable(),
-  "daysOpen": zod.number().min(getReportWorkspaceResponseCardsItemDaysOpenMin).max(getReportWorkspaceResponseCardsItemDaysOpenMax).nullable()
+  "daysOpen": zod.number().min(getReportWorkspaceResponseCardsItemDaysOpenMin).max(getReportWorkspaceResponseCardsItemDaysOpenMax).nullable(),
+  "traits": zod.record(zod.string(), zod.number().min(1).max(getReportWorkspaceResponseCardsItemTraitsMaxOne)).optional().describe('Behaviour ratings from 1 to 5, keyed by trait name. Leave out to keep what is saved.')
 })),
   "results": zod.array(zod.object({
   "studentId": zod.number(),
   "subjects": zod.array(zod.object({
   "subjectId": zod.number(),
   "ca": zod.number().nullable(),
+  "ca2": zod.number().nullable(),
   "exam": zod.number().nullable(),
+  "comment": zod.string().describe('The subject teacher\'s comment'),
   "total": zod.number(),
   "percent": zod.number(),
   "grade": zod.string(),
@@ -1088,6 +1099,9 @@ export const manageReportsBodyTermTermMax = 40;
 export const manageReportsBodyTermCaMaxMin = 0;
 export const manageReportsBodyTermCaMaxMax = 100;
 
+export const manageReportsBodyTermCa2MaxMin = 0;
+export const manageReportsBodyTermCa2MaxMax = 100;
+
 export const manageReportsBodyTermExamMaxMin = 0;
 export const manageReportsBodyTermExamMaxMax = 100;
 
@@ -1098,8 +1112,10 @@ export const manageReportsBodySubjectNameMax = 80;
 export const manageReportsBodySubjectSortOrderMin = 0;
 export const manageReportsBodySubjectSortOrderMax = 1000;
 
+export const manageReportsBodyScoresEntriesItemCommentMax = 300;
+
 export const manageReportsBodyScoresEntriesItemTotalMin = 0;
-export const manageReportsBodyScoresEntriesItemTotalMax = 200;
+export const manageReportsBodyScoresEntriesItemTotalMax = 300;
 
 export const manageReportsBodyScoresEntriesItemGradeMax = 4;
 
@@ -1114,6 +1130,8 @@ export const manageReportsBodyCardsEntriesItemDaysPresentMax = 366;
 
 export const manageReportsBodyCardsEntriesItemDaysOpenMin = 0;
 export const manageReportsBodyCardsEntriesItemDaysOpenMax = 366;
+
+export const manageReportsBodyCardsEntriesItemTraitsMaxOne = 5;
 
 export const manageReportsBodyCardsEntriesMax = 1000;
 
@@ -1149,6 +1167,7 @@ export const ManageReportsBody = zod.object({
   "session": zod.string().min(1).max(manageReportsBodyTermSessionMax),
   "term": zod.string().min(1).max(manageReportsBodyTermTermMax),
   "caMax": zod.number().min(manageReportsBodyTermCaMaxMin).max(manageReportsBodyTermCaMaxMax),
+  "ca2Max": zod.number().min(manageReportsBodyTermCa2MaxMin).max(manageReportsBodyTermCa2MaxMax).optional().describe('Leave out to keep the term\'s current CA 2 maximum (0 for a new term)'),
   "examMax": zod.number().min(manageReportsBodyTermExamMaxMin).max(manageReportsBodyTermExamMaxMax),
   "nextTermBegins": zod.string().max(manageReportsBodyTermNextTermBeginsMax).nullish()
 }).optional(),
@@ -1167,8 +1186,10 @@ export const ManageReportsBody = zod.object({
   "entries": zod.array(zod.object({
   "studentId": zod.number(),
   "subjectId": zod.number(),
-  "ca": zod.number().nullable(),
+  "ca": zod.number().nullable().describe('CA 1'),
+  "ca2": zod.number().nullish().describe('CA 2. Leave out to keep what is saved.'),
   "exam": zod.number().nullable(),
+  "comment": zod.string().max(manageReportsBodyScoresEntriesItemCommentMax).nullish().describe('The subject teacher\'s comment on this result. Leave out to keep what is saved.'),
   "total": zod.number().min(manageReportsBodyScoresEntriesItemTotalMin).max(manageReportsBodyScoresEntriesItemTotalMax).nullish().describe('Manual results: a typed total used instead of CA + exam'),
   "grade": zod.string().max(manageReportsBodyScoresEntriesItemGradeMax).nullish().describe('Manual results: a typed grade used instead of the scale\'s')
 })).max(manageReportsBodyScoresEntriesMax)
@@ -1180,7 +1201,8 @@ export const ManageReportsBody = zod.object({
   "teacherRemark": zod.string().max(manageReportsBodyCardsEntriesItemTeacherRemarkMax),
   "principalRemark": zod.string().max(manageReportsBodyCardsEntriesItemPrincipalRemarkMax),
   "daysPresent": zod.number().min(manageReportsBodyCardsEntriesItemDaysPresentMin).max(manageReportsBodyCardsEntriesItemDaysPresentMax).nullable(),
-  "daysOpen": zod.number().min(manageReportsBodyCardsEntriesItemDaysOpenMin).max(manageReportsBodyCardsEntriesItemDaysOpenMax).nullable()
+  "daysOpen": zod.number().min(manageReportsBodyCardsEntriesItemDaysOpenMin).max(manageReportsBodyCardsEntriesItemDaysOpenMax).nullable(),
+  "traits": zod.record(zod.string(), zod.number().min(1).max(manageReportsBodyCardsEntriesItemTraitsMaxOne)).optional().describe('Behaviour ratings from 1 to 5, keyed by trait name. Leave out to keep what is saved.')
 })).max(manageReportsBodyCardsEntriesMax)
 }).optional(),
   "release": zod.object({
@@ -1213,6 +1235,8 @@ export const getStudentReportsResponseReportsItemCardOneDaysPresentMax = 366;
 export const getStudentReportsResponseReportsItemCardOneDaysOpenMin = 0;
 export const getStudentReportsResponseReportsItemCardOneDaysOpenMax = 366;
 
+export const getStudentReportsResponseReportsItemCardOneTraitsMaxOne = 5;
+
 
 
 export const GetStudentReportsResponse = zod.object({
@@ -1234,7 +1258,8 @@ export const GetStudentReportsResponse = zod.object({
   "id": zod.number(),
   "session": zod.string(),
   "term": zod.string(),
-  "caMax": zod.number(),
+  "caMax": zod.number().describe('CA 1 maximum (the only CA when ca2Max is 0)'),
+  "ca2Max": zod.number().describe('CA 2 maximum; 0 means a single CA column'),
   "examMax": zod.number(),
   "nextTermBegins": zod.string().nullable()
 }),
@@ -1243,14 +1268,17 @@ export const GetStudentReportsResponse = zod.object({
   "classId": zod.number(),
   "name": zod.string(),
   "sortOrder": zod.number(),
-  "teacherId": zod.number().nullable().describe('The subject teacher')
+  "teacherId": zod.number().nullable().describe('The subject teacher'),
+  "teacherName": zod.string().nullish().describe('The subject teacher\'s name, for the report card')
 })),
   "result": zod.object({
   "studentId": zod.number(),
   "subjects": zod.array(zod.object({
   "subjectId": zod.number(),
   "ca": zod.number().nullable(),
+  "ca2": zod.number().nullable(),
   "exam": zod.number().nullable(),
+  "comment": zod.string().describe('The subject teacher\'s comment'),
   "total": zod.number(),
   "percent": zod.number(),
   "grade": zod.string(),
@@ -1276,7 +1304,8 @@ export const GetStudentReportsResponse = zod.object({
   "teacherRemark": zod.string().max(getStudentReportsResponseReportsItemCardOneTeacherRemarkMax),
   "principalRemark": zod.string().max(getStudentReportsResponseReportsItemCardOnePrincipalRemarkMax),
   "daysPresent": zod.number().min(getStudentReportsResponseReportsItemCardOneDaysPresentMin).max(getStudentReportsResponseReportsItemCardOneDaysPresentMax).nullable(),
-  "daysOpen": zod.number().min(getStudentReportsResponseReportsItemCardOneDaysOpenMin).max(getStudentReportsResponseReportsItemCardOneDaysOpenMax).nullable()
+  "daysOpen": zod.number().min(getStudentReportsResponseReportsItemCardOneDaysOpenMin).max(getStudentReportsResponseReportsItemCardOneDaysOpenMax).nullable(),
+  "traits": zod.record(zod.string(), zod.number().min(1).max(getStudentReportsResponseReportsItemCardOneTraitsMaxOne)).optional().describe('Behaviour ratings from 1 to 5, keyed by trait name. Leave out to keep what is saved.')
 }),zod.null()]),
   "releasedAt": zod.string()
 }))

@@ -24,6 +24,12 @@ export type ReportCommandTerm = {
      */
   caMax: number;
   /**
+     * Leave out to keep the term's current CA 2 maximum (0 for a new term)
+     * @minimum 0
+     * @maximum 100
+     */
+  ca2Max?: number;
+  /**
      * @minimum 0
      * @maximum 100
      */

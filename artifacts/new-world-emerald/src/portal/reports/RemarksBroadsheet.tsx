@@ -4,13 +4,16 @@ import { Eye, Printer, Save, Sparkles } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { EmptyState } from "../ui";
 import { errorMessage } from "../lib";
-import { ordinal, printReportCards, type BroadsheetData, type PrintableReport } from "./reportCard";
+import { AFFECTIVE_TRAITS, ordinal, printReportCards, termPossible, type BroadsheetData, type PrintableReport } from "./reportCard";
 import { suggestedRemarks } from "./scoreSheet";
 import { useReportCommand } from "./useReportCommand";
 import { Users } from "lucide-react";
 
-type CardDraft = { teacherRemark: string; principalRemark: string; daysPresent: string; daysOpen: string };
+type CardDraft = { teacherRemark: string; principalRemark: string; daysPresent: string; daysOpen: string; traits: Record<string, number> };
 const n = (s: string) => (s.trim() === "" ? null : Number(s));
+/** Compares drafts regardless of the order behaviour ratings were set in. */
+const same = (a: CardDraft, b: CardDraft) => JSON.stringify({ ...a, traits: Object.entries(a.traits).sort() }) === JSON.stringify({ ...b, traits: Object.entries(b.traits).sort() });
+const RATING = ["", "1 Needs attention", "2 Poor", "3 Good", "4 Very good", "5 Distinction"];
 
 export function RemarksEditor({ ws, term, locked }: { ws: ReportWorkspace; term: ReportTerm; locked: boolean }) {
   const cmd = useReportCommand();
@@ -18,7 +21,7 @@ export function RemarksEditor({ ws, term, locked }: { ws: ReportWorkspace; term:
     const map: Record<number, CardDraft> = {};
     for (const st of ws.students) {
       const c = ws.cards.find((x) => x.studentId === st.id);
-      map[st.id] = { teacherRemark: c?.teacherRemark ?? "", principalRemark: c?.principalRemark ?? "", daysPresent: c?.daysPresent?.toString() ?? "", daysOpen: c?.daysOpen?.toString() ?? "" };
+      map[st.id] = { teacherRemark: c?.teacherRemark ?? "", principalRemark: c?.principalRemark ?? "", daysPresent: c?.daysPresent?.toString() ?? "", daysOpen: c?.daysOpen?.toString() ?? "", traits: { ...(c?.traits ?? {}) } };
     }
     return map;
   }, [ws.students, ws.cards]);
@@ -47,12 +50,17 @@ export function RemarksEditor({ ws, term, locked }: { ws: ReportWorkspace; term:
   if (!ws.students.length) return <EmptyState icon={<Users size={22} />} title="No active students" body="Enrol students in this class to write their remarks." />;
 
   const set = (id: number, patch: Partial<CardDraft>) => setDraft((p) => ({ ...p, [id]: { ...p[id], ...patch } }));
-  const changed = ws.students.filter((st) => JSON.stringify(draft[st.id]) !== JSON.stringify(saved[st.id]));
+  const changed = ws.students.filter((st) => !same(draft[st.id], saved[st.id]));
+  const rate = (id: number, trait: string, value: string) => setDraft((p) => {
+    const traits = { ...p[id].traits };
+    if (value) traits[trait] = Number(value); else delete traits[trait];
+    return { ...p, [id]: { ...p[id], traits } };
+  });
   const invalid = ws.students.some((st) => {
     const d = draft[st.id]; const p = n(d.daysPresent), o = n(d.daysOpen);
     return [p, o].some((v) => v !== null && (!Number.isInteger(v) || v < 0 || v > 366)) || (p !== null && o !== null && p > o);
   });
-  const save = () => cmd.run({ action: "saveCards", cards: { termId: term.id, entries: changed.map((st) => { const d = draft[st.id]; return { studentId: st.id, teacherRemark: d.teacherRemark, principalRemark: d.principalRemark, daysPresent: n(d.daysPresent), daysOpen: n(d.daysOpen) }; }) } }, "Remarks saved");
+  const save = () => cmd.run({ action: "saveCards", cards: { termId: term.id, entries: changed.map((st) => { const d = draft[st.id]; return { studentId: st.id, teacherRemark: d.teacherRemark, principalRemark: d.principalRemark, daysPresent: n(d.daysPresent), daysOpen: n(d.daysOpen), traits: d.traits }; }) } }, "Remarks saved");
 
   return (
     <div className="space-y-4">
@@ -91,6 +99,19 @@ export function RemarksEditor({ ws, term, locked }: { ws: ReportWorkspace; term:
                   <textarea id={"pr-" + st.id} className="portal-input mt-1 min-h-[64px] text-sm" maxLength={600} value={d.principalRemark} disabled={locked || !ws.canAdmin} onChange={(e) => set(st.id, { principalRemark: e.target.value })} />
                 </div>
               </div>
+              <details className="mt-3 rounded-xl border border-[hsl(var(--p-line))] px-3 py-2" data-testid={"traits-" + st.id}>
+                <summary className="cursor-pointer text-sm font-semibold">Behaviour ratings (Part 2) <span className="font-normal text-[hsl(var(--p-ink)/0.6)]">{Object.keys(d.traits).length} of {AFFECTIVE_TRAITS.length} rated</span></summary>
+                <div className="mt-2 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+                  {AFFECTIVE_TRAITS.map((trait) => (
+                    <label key={trait} className="flex items-center justify-between gap-2 text-xs">
+                      <span>{trait}</span>
+                      <select className="portal-input !w-32 !py-1 text-xs" value={d.traits[trait] ?? ""} disabled={locked} onChange={(e) => rate(st.id, trait, e.target.value)} aria-label={`${trait} rating for ${st.name}`} data-testid={`select-trait-${st.id}-${trait.replace(/\s+/g, "-").toLowerCase()}`}>
+                        {RATING.map((label, v) => <option key={v} value={v || ""}>{label || "Not rated"}</option>)}
+                      </select>
+                    </label>
+                  ))}
+                </div>
+              </details>
             </div>
           );
         })}
@@ -142,7 +163,7 @@ export function Broadsheet({ ws, term, className }: { ws: ReportWorkspace; term:
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-sm text-[hsl(var(--p-ink)/0.65)]">{ws.ranked} of {ws.students.length} students ranked. Totals out of {term.caMax + term.examMax}.</p>
+        <p className="text-sm text-[hsl(var(--p-ink)/0.65)]">{ws.ranked} of {ws.students.length} students ranked. Totals out of {termPossible(term)}.</p>
         <ClassPrintButtons ws={ws} term={term} className={className} />
       </div>
       <div className="portal-card overflow-x-auto">

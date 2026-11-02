@@ -18,8 +18,9 @@ export function CbtScoresDialog({ ws, term, onClose, subjectId: initialSubject }
   const [examId, setExamId] = useState<number>(0);
   const exam = exams.find((e) => e.id === examId) ?? exams[0];
   const [subjectId, setSubjectId] = useState<number | "new">(initialSubject ?? ws.subjects[0]?.id ?? "new");
-  const [column, setColumn] = useState<"exam" | "ca">("exam");
-  const max = column === "ca" ? term.caMax : term.examMax;
+  const [column, setColumn] = useState<"exam" | "ca" | "ca2">("exam");
+  const twoCa = (term.ca2Max ?? 0) > 0;
+  const max = column === "ca" ? term.caMax : column === "ca2" ? term.ca2Max : term.examMax;
 
   const rows = useMemo(() => {
     if (!exam) return [];
@@ -28,7 +29,7 @@ export function CbtScoresDialog({ ws, term, onClose, subjectId: initialSubject }
       const a = attempts.find((x) => x.studentId.toUpperCase() === st.studentId.toUpperCase());
       const value = a ? convertScore(a.score!, a.totalMarks, max) : null;
       const saved = typeof subjectId === "number" ? ws.scores.find((s) => s.studentId === st.id && s.subjectId === subjectId) : undefined;
-      return { st, a, value, before: saved ? (column === "ca" ? saved.ca : saved.exam) : null, saved };
+      return { st, a, value, before: saved ? (column === "ca" ? saved.ca : column === "ca2" ? saved.ca2 ?? null : saved.exam) : null, saved };
     });
   }, [exam, mgmt.data, ws.students, ws.scores, subjectId, column, max]);
   const ready = rows.filter((r) => r.value !== null);
@@ -46,6 +47,7 @@ export function CbtScoresDialog({ ws, term, onClose, subjectId: initialSubject }
     const entries = ready.map((r) => ({
       studentId: r.st.id, subjectId: target as number,
       ca: column === "ca" ? r.value : r.saved?.ca ?? null, exam: column === "exam" ? r.value : r.saved?.exam ?? null,
+      ...(column === "ca2" ? { ca2: r.value } : {}),
       total: r.saved?.total ?? null, grade: r.saved?.grade ?? null,
     }));
     if (await cmd.run({ action: "saveScores", scores: { termId: term.id, entries } }, `Saved ${entries.length} scores from ${exam.title}`)) onClose();
@@ -71,8 +73,9 @@ export function CbtScoresDialog({ ws, term, onClose, subjectId: initialSubject }
                   {ws.canAdmin && exam && !ws.subjects.some((s) => s.name.toLowerCase() === exam.subject.trim().toLowerCase()) && <option value="new">Add subject "{exam.subject}"</option>}
                 </select></label>
               <label className="text-sm font-semibold">Counts as
-                <select className="portal-input mt-1" value={column} onChange={(e) => setColumn(e.target.value as "exam" | "ca")} data-testid="select-cbt-column">
-                  <option value="exam">Exam (out of {term.examMax})</option><option value="ca">CA (out of {term.caMax})</option>
+                <select className="portal-input mt-1" value={column} onChange={(e) => setColumn(e.target.value as "exam" | "ca" | "ca2")} data-testid="select-cbt-column">
+                  <option value="exam">Exam (out of {term.examMax})</option><option value="ca">{twoCa ? "CA 1" : "CA"} (out of {term.caMax})</option>
+                  {twoCa && <option value="ca2">CA 2 (out of {term.ca2Max})</option>}
                 </select></label>
             </div>
             {subjectId === "new" ? (
@@ -81,7 +84,7 @@ export function CbtScoresDialog({ ws, term, onClose, subjectId: initialSubject }
               <p className="text-sm text-[hsl(var(--p-ink)/0.7)]" data-testid="text-cbt-summary">{ready.length} of {ws.students.length} students have a marked score.{notSat.length ? ` ${notSat.length} did not sit or are not marked yet.` : ""}</p>
               <div className="max-h-72 overflow-y-auto rounded-xl border border-[hsl(var(--p-line))]">
                 <table className="w-full text-sm" data-testid="table-cbt-preview">
-                  <thead className="sticky top-0 bg-[hsl(var(--p-surface))] text-left text-xs uppercase tracking-wide text-[hsl(var(--p-ink)/0.6)]"><tr><th className="px-3 py-2">Student</th><th className="px-2 py-2 text-right">CBT</th><th className="px-2 py-2 text-right">{column === "ca" ? "CA" : "Exam"} /{max}</th><th className="px-3 py-2 text-right">Now</th></tr></thead>
+                  <thead className="sticky top-0 bg-[hsl(var(--p-surface))] text-left text-xs uppercase tracking-wide text-[hsl(var(--p-ink)/0.6)]"><tr><th className="px-3 py-2">Student</th><th className="px-2 py-2 text-right">CBT</th><th className="px-2 py-2 text-right">{column === "ca" ? (twoCa ? "CA 1" : "CA") : column === "ca2" ? "CA 2" : "Exam"} /{max}</th><th className="px-3 py-2 text-right">Now</th></tr></thead>
                   <tbody>
                     {rows.map((r) => (
                       <tr key={r.st.id} className="border-t border-[hsl(var(--p-line))]">

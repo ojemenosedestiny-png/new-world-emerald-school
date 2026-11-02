@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { buildClassReport, gradeFor, rank, validScorePart, nextStatus, scaleProblem, signatureProblem } from "./report-cards";
+import { AFFECTIVE_TRAITS, buildClassReport, gradeFor, rank, traitsProblem, validScorePart, nextStatus, scaleProblem, signatureProblem } from "./report-cards";
 
 test("grades follow the school scale at every boundary", () => {
   const cases: [number, string, string][] = [
@@ -95,4 +95,26 @@ test("report cards: signatures are small image data URLs", () => {
   assert.match(signatureProblem("data:text/html;base64,PHNjcmlwdD4=")!, /PNG, JPEG or WebP/);
   assert.match(signatureProblem("javascript:alert(1)")!, /PNG/);
   assert.match(signatureProblem("data:image/png;base64," + "A".repeat(200_001))!, /too large/);
+});
+
+test("CA 1, CA 2 and exam add up, and each result carries its subject teacher's comment", () => {
+  const report = buildClassReport([1, 2], [10], [
+    { studentId: 1, subjectId: 10, ca: 18, ca2: 17, exam: 50, comment: "Excellent work" },
+    { studentId: 2, subjectId: 10, ca: 10, ca2: null, exam: 30 },
+  ], { caMax: 20, ca2Max: 20, examMax: 60 });
+  const [a, b] = report.students.map((s) => s.subjects[0]);
+  assert.deepEqual([a.ca, a.ca2, a.exam, a.total, a.percent, a.grade, a.comment], [18, 17, 50, 85, 85, "A", "Excellent work"]);
+  assert.deepEqual([b.ca2, b.total, b.grade, b.comment], [null, 40, "U", ""]);
+  assert.deepEqual([report.subjectStats[0].highest, report.subjectStats[0].lowest, report.subjectStats[0].average], [85, 40, 62.5]);
+  // A CA 2 mark alone counts as taking the subject.
+  assert.equal(buildClassReport([3], [10], [{ studentId: 3, subjectId: 10, ca: null, ca2: 12, exam: null }], { caMax: 20, ca2Max: 20, examMax: 60 }).students[0].subjects[0].total, 12);
+});
+
+test("behaviour ratings: the school's 16 traits, each rated 1 to 5", () => {
+  assert.equal(AFFECTIVE_TRAITS.length, 16);
+  assert.equal(traitsProblem({ Punctuality: 4, Honesty: 5 }), null);
+  assert.equal(traitsProblem({}), null);
+  assert.match(traitsProblem({ Punctuality: 6 })!, /1 to 5/);
+  assert.match(traitsProblem({ Punctuality: 2.5 })!, /1 to 5/);
+  assert.match(traitsProblem({ Singing: 3 })!, /Unknown/);
 });

@@ -22,6 +22,16 @@ export function ordinal(n: number) {
 
 export const termLabel = (t: Pick<ReportTerm, "session" | "term">) => `${t.term}, ${t.session} session`;
 
+/** Behaviour (affective) traits rated 1 to 5 on report cards; the server keeps the same list. */
+export const AFFECTIVE_TRAITS = [
+  "Punctuality", "Neatness", "Honesty", "Leadership", "Helping others", "Verbal fluency", "Sports", "Musical",
+  "Friendliness", "Emotional stability", "Reliability", "Obedience", "Handwriting", "Politeness", "Attendance", "Cooperation",
+] as const;
+export const AFFECTIVE_KEY = [[5, "Distinction"], [4, "Very good"], [3, "Good"], [2, "Poor"], [1, "Needs attention"]] as const;
+
+/** Marks a subject is out of this term: CA 1 + CA 2 + exam. */
+export const termPossible = (t: Pick<ReportTerm, "caMax" | "examMax"> & { ca2Max?: number }) => t.caMax + (t.ca2Max ?? 0) + t.examMax;
+
 export type PrintableReport = {
   studentName: string; studentId: string; className: string; term: ReportTerm; subjects: ReportSubject[];
   result: ReportStudentResult; subjectStats: ReportSubjectStats[]; classSize: number; card: ReportCardInfo | null;
@@ -34,44 +44,73 @@ const esc = (value: string | number | null | undefined) => String(value ?? "").r
 const num = (v: number | null | undefined) => (v === null || v === undefined ? "-" : String(v));
 
 function reportSection(r: PrintableReport) {
-  const names = new Map(r.subjects.map((s) => [s.id, s.name]));
+  const subjectById = new Map(r.subjects.map((s) => [s.id, s]));
   const stats = new Map(r.subjectStats.map((s) => [s.subjectId, s]));
+  const twoCa = (r.term.ca2Max ?? 0) > 0;
+  const possible = termPossible(r.term);
   const rows = r.result.subjects.map((s) => {
     const st = stats.get(s.subjectId);
-    return `<tr><td class="l">${esc(names.get(s.subjectId) ?? "Subject")}</td><td>${num(s.ca)}</td><td>${num(s.exam)}</td><td class="b">${s.total}</td><td class="b">${esc(s.grade)}</td><td>${ordinal(s.position)}</td><td>${num(st?.average)}</td><td>${num(st?.highest)}</td><td>${num(st?.lowest)}</td><td class="l">${esc(s.remark)}</td></tr>`;
-  }).join("") || `<tr><td colspan="10">No scores recorded for this term.</td></tr>`;
-  const att = r.card && r.card.daysOpen !== null ? `${num(r.card.daysPresent)} of ${r.card.daysOpen} days` : "-";
-  const pos = r.result.position ? `${ordinal(r.result.position)} of ${r.classSize}` : "-";
+    return `<tr><td class="l">${esc(subjectById.get(s.subjectId)?.name ?? "Subject")}</td><td>${num(s.ca)}</td>${twoCa ? `<td>${num(s.ca2)}</td>` : ""}<td>${num(s.exam)}</td><td class="b">${s.total}</td><td>${num(st?.highest)}</td><td>${num(st?.lowest)}</td><td>${num(st?.average)}</td><td class="b">${esc(s.grade)}</td><td>${esc(s.remark)}</td></tr>`;
+  }).join("") || `<tr><td colspan="${twoCa ? 10 : 9}">No scores recorded for this term.</td></tr>`;
+  const open = r.card?.daysOpen ?? null, present = r.card?.daysPresent ?? null;
+  const absent = open !== null && present !== null ? open - present : null;
+  const attendance = open && present !== null ? `${Math.round((present / open) * 10000) / 100}%` : "-";
+  // Class average: the mean of each subject's class average, as a percentage of the marks it is out of.
+  const subjectAverages = r.subjectStats.filter((x) => r.subjects.some((s) => s.id === x.subjectId)).map((x) => (x.average / possible) * 100);
+  const classAverage = subjectAverages.length && possible ? Math.round((subjectAverages.reduce((a, b) => a + b, 0) / subjectAverages.length) * 100) / 100 : null;
+  const traits = r.card?.traits ?? {};
+  const traitCells = AFFECTIVE_TRAITS.map((t) => `<td class="l">${esc(t)}</td><td class="b">${num(traits[t])}</td>`);
+  const traitRows = [0, 1, 2, 3].map((i) => `<tr>${traitCells.slice(i * 4, i * 4 + 4).join("")}</tr>`).join("");
+  const comments = r.result.subjects.map((s) => {
+    const subject = subjectById.get(s.subjectId);
+    return `<tr><td class="l">${esc(subject?.name ?? "Subject")}</td><td class="l">${esc(s.comment || "")}</td><td class="l">${esc(subject?.teacherName ?? "")}</td></tr>`;
+  }).join("") || `<tr><td colspan="3">No subjects recorded.</td></tr>`;
+  const scaleRows = (r.gradingScale?.length ? scaleKey(r.gradingScale) : GRADE_KEY).map((g) => `<tr><td class="l">${esc(g.range)}</td><td class="b">${esc(g.grade)}</td><td class="l">${esc(g.remark)}</td></tr>`).join("");
+  const affectiveRows = AFFECTIVE_KEY.map(([n, label]) => `<tr><td class="b">${n}</td><td class="l">${label}</td></tr>`).join("");
+  const today = new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "2-digit", year: "numeric" }).replace(/\//g, "-");
   return `
   <section class="card">
-    <header>
+    <header class="crest">
       <img src="${esc(window.location.origin + import.meta.env.BASE_URL.replace(/\/$/, "") + "/logo.jpg")}" alt="">
-      <div><h1>New World Emerald Private School</h1><p class="sub">Student Report Card</p><p class="term">${esc(termLabel(r.term))}</p></div>
+      <div>
+        <h1>NEW WORLD EMERALD PRIVATE SCHOOL</h1>
+        <p class="levels">CRECHE, NURSERY, PRIMARY &amp; SECONDARY</p>
+        <p class="addr">Emerald Building, New World Crescent, Oyigene Audu Avenue, F01 Kubwa, Abuja, Nigeria</p>
+        <p class="motto">BELIEVE BIGGER AND AIM HIGHER</p>
+      </div>
     </header>
-    <dl class="info">
-      <div><dt>Name</dt><dd>${esc(r.studentName)}</dd></div>
-      <div><dt>Student ID</dt><dd>${esc(r.studentId)}</dd></div>
-      <div><dt>Class</dt><dd>${esc(r.className)}</dd></div>
-      <div><dt>Attendance</dt><dd>${esc(att)}</dd></div>
-    </dl>
-    <table>
-      <thead><tr><th class="l">Subject</th><th>CA<br><small>/${r.term.caMax}</small></th><th>Exam<br><small>/${r.term.examMax}</small></th><th>Total<br><small>/${r.term.caMax + r.term.examMax}</small></th><th>Grade</th><th>Position</th><th>Class avg</th><th>Highest</th><th>Lowest</th><th class="l">Remark</th></tr></thead>
+    <p class="session">${esc(r.term.term)} ${esc(r.term.session)} Academic Session</p>
+    <div class="part1">
+      <table class="kv"><thead><tr><th colspan="2" class="l">PART 1: PROFILE</th></tr></thead><tbody>
+        <tr><td class="l k">Student name</td><td class="l b">${esc(r.studentName.toUpperCase())}</td></tr>
+        <tr><td class="l k">Class</td><td class="l">${esc(r.className.toUpperCase())}</td></tr>
+        <tr><td class="l k">Roll no.</td><td class="l">${esc(r.studentId)}</td></tr>
+      </tbody></table>
+      <table class="kv"><thead><tr><th colspan="2" class="l">ATTENDANCE</th></tr></thead><tbody>
+        <tr><td class="l k">School open</td><td>${num(open)}</td></tr>
+        <tr><td class="l k">Time(s) present</td><td>${num(present)}</td></tr>
+        <tr><td class="l k">Time(s) absent</td><td>${num(absent)}</td></tr>
+        <tr><td class="l k">Attendance percentage</td><td>${attendance}</td></tr>
+      </tbody></table>
+    </div>
+    <table class="scores">
+      <thead><tr><th class="l">Subject</th><th>${twoCa ? "CA 1" : "CA"}<br><small>(${r.term.caMax})</small></th>${twoCa ? `<th>CA 2<br><small>(${r.term.ca2Max})</small></th>` : ""}<th>EXAM<br><small>(${r.term.examMax})</small></th><th>TOTAL<br><small>(${possible})</small></th><th>HC</th><th>LC</th><th>SUB.AVE</th><th>GRADE</th><th>REMARK</th></tr></thead>
       <tbody>${rows}</tbody>
     </table>
-    <div class="summary">
-      <div><span>Total score</span><b>${r.result.total}</b></div>
-      <div><span>Average</span><b>${r.result.average === null ? "-" : r.result.average + "%"}</b></div>
-      <div><span>Overall grade</span><b>${esc(r.result.grade ?? "-")}</b></div>
-      <div><span>Position in class</span><b>${esc(pos)}</b></div>
+    <table class="totals"><tbody>
+      <tr><td>Subjects offered</td><td class="b">${r.result.subjectsTaken}</td><td>Marks obtainable</td><td class="b">${r.result.subjectsTaken * possible}</td><td>Marks obtained</td><td class="b">${r.result.total}</td></tr>
+      <tr><td>Class ave.</td><td class="b">${classAverage === null ? "-" : classAverage + "%"}</td><td>Student ave.</td><td class="b">${r.result.average === null ? "-" : r.result.average + "%"}</td><td>Overall grade</td><td class="b">${esc(r.result.grade ?? "-")}</td></tr>
+    </tbody></table>
+    <table class="traits"><thead><tr><th colspan="8" class="l">PART 2: AFFECTIVE (5 point scale)</th></tr></thead><tbody>${traitRows}</tbody></table>
+    <table class="signoff"><colgroup><col style="width:12%"><col style="width:26%"><col style="width:12%"><col style="width:22%"><col style="width:12%"><col style="width:16%"></colgroup><tbody>
+      <tr><td class="l k">Teacher's remark</td><td class="l">${esc(r.card?.teacherRemark || "-")}</td><td class="l k">Head teacher remark</td><td class="l">${esc(r.card?.principalRemark || "-")}</td><td class="l k">Date</td><td>${today}</td></tr>
+      <tr><td class="l k">Next term begins</td><td class="l">${esc(r.term.nextTermBegins || "-")}</td><td class="l k">Signature</td><td class="sigcell">${sigImg(r.principalSignature)}<span>${esc(r.principalName || "")}</span><em>Principal</em></td><td class="l k">Class teacher name</td><td class="sigcell">${sigImg(r.teacherSignature)}<span>${esc(r.teacherName || "")}</span></td></tr>
+    </tbody></table>
+    <div class="keys">
+      <table><thead><tr><th colspan="3" class="l">GRADING: COGNITIVE</th></tr><tr><th class="l">Score range</th><th>Grade</th><th class="l">Remarks</th></tr></thead><tbody>${scaleRows}</tbody></table>
+      <table><thead><tr><th colspan="2" class="l">GRADING: AFFECTIVE</th></tr><tr><th colspan="2" class="l">Key to rating</th></tr></thead><tbody>${affectiveRows}</tbody></table>
     </div>
-    <div class="remarks">
-      <div><h3>Class teacher's remark</h3><p>${esc(r.card?.teacherRemark || "-")}</p><span class="sig">${sigImg(r.teacherSignature)}${esc(r.teacherName || "Class teacher")}</span></div>
-      <div><h3>Principal's remark</h3><p>${esc(r.card?.principalRemark || "-")}</p><span class="sig">${sigImg(r.principalSignature)}${esc(r.principalName || "Principal")}</span></div>
-    </div>
-    <footer>
-      <p class="key">Grading: ${(r.gradingScale?.length ? scaleKey(r.gradingScale) : GRADE_KEY).map((g) => `<b>${g.grade}</b> ${g.range} ${esc(g.remark)}`).join(" &middot; ")}</p>
-      ${r.term.nextTermBegins ? `<p class="next">Next term begins: <b>${esc(r.term.nextTermBegins)}</b></p>` : ""}
-    </footer>
+    <table class="part3"><thead><tr><th colspan="3" class="l">PART 3: SUBJECT PERFORMANCE</th></tr><tr><th class="l">Subject</th><th class="l">Teacher's comment</th><th class="l">Teacher name</th></tr></thead><tbody>${comments}</tbody></table>
   </section>`;
 }
 
@@ -106,7 +145,7 @@ function broadsheetSection(b: BroadsheetData) {
   <section class="sheet">
     <header>
       <img src="${esc(window.location.origin + import.meta.env.BASE_URL.replace(/\/$/, "") + "/logo.jpg")}" alt="">
-      <div><h1>New World Emerald Private School</h1><p class="sub">Broadsheet</p><p class="term">${esc(b.className)} &middot; ${esc(termLabel(b.term))} &middot; totals out of ${b.term.caMax + b.term.examMax}</p></div>
+      <div><h1>New World Emerald Private School</h1><p class="sub">Broadsheet</p><p class="term">${esc(b.className)} &middot; ${esc(termLabel(b.term))} &middot; totals out of ${termPossible(b.term)}</p></div>
     </header>
     <div class="facts">
       <span>Students ranked <b>${ranked.length}</b> of ${b.students.length}</span>
@@ -138,7 +177,20 @@ export function reportCardsHtml(reports: PrintableReport[], broadsheet?: Broadsh
   return `<!doctype html><html><head><meta charset="utf-8"><title>${broadsheet ? `${esc(broadsheet.className)} results, ${esc(termLabel(broadsheet.term))}` : `Report card${reports.length > 1 ? "s" : ""}`}</title><style>
   @page{size:A4;margin:12mm}
   body{font-family:Georgia,"Times New Roman",serif;color:#10232c;margin:0}
-  .card{padding:6mm 2mm;break-after:page}.card:last-child{break-after:auto}
+  .card{padding:2mm;break-after:page;font:10.5px system-ui,sans-serif}.card:last-child{break-after:auto}
+  .card table{margin-top:6px;font-size:10px}.card th,.card td{padding:3px 5px}
+  .crest{border:2px solid #10232c;padding:8px 12px;gap:16px}.crest img{width:78px;height:86px;border-radius:0}
+  .crest h1{font:800 21px Arial,sans-serif;color:#0e6b3a;letter-spacing:.01em}.crest .levels{margin:4px 0 0;font:700 12px Arial,sans-serif;text-align:center}
+  .crest .addr{margin:2px 0 0;font:600 10.5px Arial,sans-serif;text-align:center}.crest .motto{margin:4px 0 0;font:700 13px Arial,sans-serif;color:#0e6b3a;text-align:center}
+  .session{margin:8px 0 0;font:15px Georgia,serif}
+  .part1{display:grid;grid-template-columns:1fr 1fr;gap:10px}.part1 table{margin-top:4px}
+  .card td.k{color:#3d4b50;text-transform:uppercase;font-size:9px;letter-spacing:.04em}.card table.kv td.k{width:45%}
+  .card th{background:#0e6b3a}.card table.kv th,.card table.traits th,.card table.part3 th,.card .keys th{background:#eef5f0;color:#10232c}
+  table.totals td{text-align:left}table.totals td.b{text-align:center}
+  table.signoff td{vertical-align:top}table.signoff tr:nth-child(even){background:none}.sigcell{text-align:center;font-size:9.5px}.sigcell span{display:block}.sigcell em{display:block;font-size:9px;color:#5a6a6f}
+  .sigcell .sigimg{margin:0 auto 2px;max-height:30px}
+  .keys{display:grid;grid-template-columns:3fr 2fr;gap:10px}.keys table{margin-top:6px}
+  table.part3 td{text-align:left}
   header{display:flex;align-items:center;gap:14px;border-bottom:3px double #1d6b4f;padding-bottom:10px}
   header img{width:64px;height:64px;border-radius:50%;object-fit:contain}
   h1{margin:0;font-size:22px;color:#14533c}.sub{margin:2px 0 0;font:600 11px system-ui,sans-serif;letter-spacing:.2em;text-transform:uppercase;color:#a07a1c}

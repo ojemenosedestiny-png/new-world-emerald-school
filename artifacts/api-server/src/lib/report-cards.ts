@@ -42,10 +42,10 @@ export function rank<T>(items: T[], value: (item: T) => number): Map<T, number> 
 
 const round1 = (n: number) => Math.round(n * 10) / 10;
 
-export type ScoreInput = { studentId: number; subjectId: number; ca: number | null; exam: number | null; total?: number | null; grade?: string | null };
+export type ScoreInput = { studentId: number; subjectId: number; ca: number | null; ca2?: number | null; exam: number | null; total?: number | null; grade?: string | null; comment?: string };
 export type SubjectResult = {
-  subjectId: number; ca: number | null; exam: number | null; total: number;
-  percent: number; grade: string; remark: string; position: number;
+  subjectId: number; ca: number | null; ca2: number | null; exam: number | null; total: number;
+  percent: number; grade: string; remark: string; position: number; comment: string;
 };
 export type StudentReport = {
   studentId: number; subjects: SubjectResult[]; total: number; average: number | null;
@@ -60,23 +60,24 @@ export type ClassReport = { students: StudentReport[]; subjectStats: SubjectStat
  * offering different subjects are compared fairly; students with no scores are not ranked.
  */
 export function buildClassReport(
-  studentIds: number[], subjectIds: number[], scores: ScoreInput[], maxima: { caMax: number; examMax: number },
+  studentIds: number[], subjectIds: number[], scores: ScoreInput[], maxima: { caMax: number; ca2Max?: number; examMax: number },
   scale: readonly GradeBand[] = GRADE_SCALE,
 ): ClassReport {
-  const possible = maxima.caMax + maxima.examMax;
+  const possible = maxima.caMax + (maxima.ca2Max ?? 0) + maxima.examMax;
   const subjectSet = new Set(subjectIds);
   const byStudent = new Map<number, SubjectResult[]>(studentIds.map((id) => [id, []]));
   const bySubject = new Map<number, { studentId: number; result: SubjectResult }[]>(subjectIds.map((id) => [id, []]));
   for (const s of scores) {
     const typedTotal = s.total ?? null;
-    if (!byStudent.has(s.studentId) || !subjectSet.has(s.subjectId) || (s.ca === null && s.exam === null && typedTotal === null)) continue;
+    const ca2 = s.ca2 ?? null;
+    if (!byStudent.has(s.studentId) || !subjectSet.has(s.subjectId) || (s.ca === null && ca2 === null && s.exam === null && typedTotal === null)) continue;
     // A typed (manual or imported) total and grade take the place of the calculated ones.
-    const total = round1(typedTotal ?? (s.ca ?? 0) + (s.exam ?? 0));
+    const total = round1(typedTotal ?? (s.ca ?? 0) + (ca2 ?? 0) + (s.exam ?? 0));
     const percent = possible > 0 ? round1((total / possible) * 100) : 0;
     const calculated = gradeFor(percent, scale);
     const typedGrade = s.grade?.trim();
     const grade = typedGrade ? { grade: typedGrade, remark: scale.find((b) => b.grade.toUpperCase() === typedGrade.toUpperCase())?.remark ?? "" } : calculated;
-    const result: SubjectResult = { subjectId: s.subjectId, ca: s.ca, exam: s.exam, total, percent, ...grade, position: 0 };
+    const result: SubjectResult = { subjectId: s.subjectId, ca: s.ca, ca2, exam: s.exam, total, percent, ...grade, position: 0, comment: s.comment ?? "" };
     byStudent.get(s.studentId)!.push(result);
     bySubject.get(s.subjectId)!.push({ studentId: s.studentId, result });
   }
@@ -101,6 +102,21 @@ export function buildClassReport(
   const positions = rank(rankable, (s) => s.average!);
   for (const s of rankable) s.position = positions.get(s)!;
   return { students, subjectStats, ranked: rankable.length };
+}
+
+/** Behaviour (affective) traits rated on report cards, each from 1 (needs attention) to 5 (distinction). */
+export const AFFECTIVE_TRAITS = [
+  "Punctuality", "Neatness", "Honesty", "Leadership", "Helping others", "Verbal fluency", "Sports", "Musical",
+  "Friendliness", "Emotional stability", "Reliability", "Obedience", "Handwriting", "Politeness", "Attendance", "Cooperation",
+] as const;
+
+/** Why a set of behaviour ratings cannot be saved, or null. Unrated traits are simply left out. */
+export function traitsProblem(traits: Record<string, number>): string | null {
+  for (const [name, rating] of Object.entries(traits)) {
+    if (!(AFFECTIVE_TRAITS as readonly string[]).includes(name)) return `Unknown behaviour rating: ${name}.`;
+    if (!Number.isInteger(rating) || rating < 1 || rating > 5) return "Behaviour ratings are whole numbers from 1 to 5.";
+  }
+  return null;
 }
 
 /** Validates one score part against its maximum: empty, or 0..max in steps of 0.5. */

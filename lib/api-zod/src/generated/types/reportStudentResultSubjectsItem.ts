@@ -11,7 +11,11 @@ export type ReportStudentResultSubjectsItem = {
   /** @nullable */
   ca: number | null;
   /** @nullable */
+  ca2: number | null;
+  /** @nullable */
   exam: number | null;
+  /** The subject teacher's comment */
+  comment: string;
   total: number;
   percent: number;
   grade: string;

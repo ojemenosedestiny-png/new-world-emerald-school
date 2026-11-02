@@ -36,10 +36,10 @@ it("reviews a class's totals, ranking and grades, and previews each student's re
   expect(rows[0]).toContain("1st"); expect(rows[0]).toContain("Ada Obi"); expect(rows[0]).toContain("85");
   expect(rows[2]).toContain("Chi Eze");
   expect(screen.getByTestId("list-review-grades").textContent).toMatch(/A.*1.*C.*1.*F.*1/);
-  expect((screen.getByTestId("frame-result-preview") as HTMLIFrameElement).srcdoc).toContain("Ada Obi");
+  expect((screen.getByTestId("frame-result-preview") as HTMLIFrameElement).srcdoc).toContain("ADA OBI");
   expect(screen.getByTestId("frame-result-preview").getAttribute("sandbox")).toBe("");
   fireEvent.click(screen.getByTestId("review-row-3"));
-  expect((screen.getByTestId("frame-result-preview") as HTMLIFrameElement).srcdoc).toContain("Chi Eze");
+  expect((screen.getByTestId("frame-result-preview") as HTMLIFrameElement).srcdoc).toContain("CHI EZE");
 });
 
 it("new exams show each student's result as soon as it is marked unless the teacher unticks it", () => {
@@ -59,8 +59,8 @@ it("compiles the whole class onto a printable broadsheet, alone or before every 
   expect(html.indexOf("Bayo Ade")).toBeLessThan(html.indexOf("Chi Eze"));
   expect(html).toContain("Subject average");
   expect(html).not.toContain("<tfoot>");
-  expect(html).not.toContain("Student Report Card");
+  expect(html).not.toContain("PART 1: PROFILE");
   const pack = resultPackHtml(broadsheetFor(ws, term, "SS 3"), printableFor(ws, term, "SS 3"));
-  expect((pack.match(/Student Report Card/g) ?? []).length).toBe(3);
-  expect(pack.indexOf("Broadsheet")).toBeLessThan(pack.indexOf("Student Report Card"));
+  expect((pack.match(/PART 1: PROFILE/g) ?? []).length).toBe(3);
+  expect(pack.indexOf("Broadsheet")).toBeLessThan(pack.indexOf("PART 1: PROFILE"));
 });

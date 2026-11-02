@@ -3,7 +3,7 @@ import { test } from "node:test";
 import { randomUUID } from "node:crypto";
 import express from "express";
 import type { AddressInfo } from "node:net";
-import { eq, inArray } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import {
   db, pool, portalClasses, portalStudents, portalSessions, portalTerms, portalSubjects, portalScores, portalReportCards, portalReportReleases, portalReportSettings, portalReportWorkflow, portalTeachers,
 } from "@workspace/db";
@@ -101,11 +101,18 @@ test("report cards: setup, validation, scoring, remarks, release and student vis
     // Re-saving updates in place; clearing both parts removes the entry.
     assert.equal((await scores([{ studentId: bayo.id, subjectId: english.id, ca: 38, exam: 56 }])).status, 200);
     assert.equal((await db.select().from(portalScores).where(eq(portalScores.studentId, bayo.id))).length, 2);
+    // CA 2 is refused while the term has none; the subject teacher's comment is saved, and kept when a later save leaves it out.
+    assert.equal((await scores([{ studentId: ada.id, subjectId: maths.id, ca: 35, ca2: 5, exam: 50 }])).status, 400);
+    assert.equal((await scores([{ studentId: ada.id, subjectId: maths.id, ca: 35, exam: 50, comment: "  Excellent, keep it up.  " }])).status, 200);
+    assert.equal((await scores([{ studentId: ada.id, subjectId: maths.id, ca: 35, exam: 50 }])).status, 200);
+    const [adaMaths] = await db.select().from(portalScores).where(and(eq(portalScores.studentId, ada.id), eq(portalScores.subjectId, maths.id)));
+    assert.equal(adaMaths.comment, "Excellent, keep it up.");
 
     // Remarks and attendance, with validation.
     const cards = (entries: unknown[]) => command({ action: "saveCards", cards: { termId: term.id, entries } });
     assert.equal((await cards([{ studentId: ada.id, teacherRemark: "x", principalRemark: "", daysPresent: 70, daysOpen: 60 }])).status, 400);
-    assert.equal((await cards([{ studentId: ada.id, teacherRemark: "A focused and diligent pupil.", principalRemark: "Excellent result. Keep it up.", daysPresent: 58, daysOpen: 60 }])).status, 200);
+    assert.equal((await cards([{ studentId: ada.id, teacherRemark: "x", principalRemark: "", daysPresent: 58, daysOpen: 60, traits: { Punctuality: 9 } }])).status, 400);
+    assert.equal((await cards([{ studentId: ada.id, teacherRemark: "A focused and diligent pupil.", principalRemark: "Excellent result. Keep it up.", daysPresent: 58, daysOpen: 60, traits: { Punctuality: 4, Honesty: 5 } }])).status, 200);
 
     // Staff workspace shows computed results and statistics.
     const ws = await call(`/reports/manage?termId=${term.id}&classId=${cls.id}`, "GET", undefined, "", true);
@@ -130,7 +137,8 @@ test("report cards: setup, validation, scoring, remarks, release and student vis
     assert.equal(report.result.studentId, ada.id);
     assert.deepEqual(report.result.subjects.map((s: { total: number; grade: string; position: number }) => [s.total, s.grade, s.position]), [[85, "A", 1], [70, "B", 2]]);
     assert.equal(report.classSize, 2);
-    assert.deepEqual(report.card, { studentId: ada.id, teacherRemark: "A focused and diligent pupil.", principalRemark: "Excellent result. Keep it up.", daysPresent: 58, daysOpen: 60 });
+    assert.deepEqual(report.card, { studentId: ada.id, teacherRemark: "A focused and diligent pupil.", principalRemark: "Excellent result. Keep it up.", daysPresent: 58, daysOpen: 60, traits: { Punctuality: 4, Honesty: 5 } });
+    assert.equal(report.result.subjects.find((r: { subjectId: number }) => r.subjectId === maths.id).comment, "Excellent, keep it up.");
     assert.equal(JSON.stringify(mine.data).includes(bayo.name), false, "another student's identity must not leak");
 
     // Released results are locked; structure with scores cannot be deleted.
@@ -147,7 +155,10 @@ test("report cards: setup, validation, scoring, remarks, release and student vis
     // Withholding hides it again and unlocks edits.
     assert.equal((await command({ action: "releaseReports", release: { termId: term.id, classId: cls.id, released: false } })).status, 200);
     assert.deepEqual((await call("/reports", "GET", undefined, login.cookie)).data.reports, []);
+    // Clearing the marks keeps the teacher's comment; clearing the comment too removes the entry.
     assert.equal((await scores([{ studentId: ada.id, subjectId: maths.id, ca: null, exam: null }])).status, 200);
+    assert.equal((await db.select().from(portalScores).where(eq(portalScores.studentId, ada.id))).length, 2);
+    assert.equal((await scores([{ studentId: ada.id, subjectId: maths.id, ca: null, exam: null, comment: "" }])).status, 200);
     assert.equal((await db.select().from(portalScores).where(eq(portalScores.studentId, ada.id))).length, 1);
 
     // The office sets the grading scale and the principal's signature.

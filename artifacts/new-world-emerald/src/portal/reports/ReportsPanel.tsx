@@ -17,7 +17,7 @@ type Section = "scores" | "remarks" | "review" | "broadsheet" | "subjects" | "se
 function TermDialog({ initial, onClose }: { initial: ReportTermInput; onClose: () => void }) {
   const cmd = useReportCommand();
   const [t, setT] = useState(initial);
-  const valid = /^\d{4}\/\d{4}$/.test(t.session.trim()) && t.term.trim() && t.caMax + t.examMax > 0;
+  const valid = /^\d{4}\/\d{4}$/.test(t.session.trim()) && t.term.trim() && t.caMax + (t.ca2Max ?? 0) + t.examMax > 0;
   const save = async () => { if (await cmd.run({ action: "saveTerm", term: { ...t, nextTermBegins: t.nextTermBegins?.trim() || null } }, t.id ? "Term updated" : "Term created")) onClose(); };
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
@@ -28,10 +28,12 @@ function TermDialog({ initial, onClose }: { initial: ReportTermInput; onClose: (
             <Field label="Session" htmlFor="term-session" hint="e.g. 2026/2027"><input id="term-session" className="portal-input" value={t.session} onChange={(e) => setT({ ...t, session: e.target.value })} data-testid="input-term-session" /></Field>
             <Field label="Term" htmlFor="term-name"><select id="term-name" className="portal-input" value={t.term} onChange={(e) => setT({ ...t, term: e.target.value })} data-testid="select-term-name">{["First Term", "Second Term", "Third Term"].map((x) => <option key={x}>{x}</option>)}</select></Field>
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <Field label="CA maximum" htmlFor="term-ca"><input id="term-ca" type="number" min={0} max={100} className="portal-input" value={t.caMax} onChange={(e) => setT({ ...t, caMax: Number(e.target.value) })} /></Field>
+          <div className="grid grid-cols-3 gap-3">
+            <Field label="CA 1 maximum" htmlFor="term-ca"><input id="term-ca" type="number" min={0} max={100} className="portal-input" value={t.caMax} onChange={(e) => setT({ ...t, caMax: Number(e.target.value) })} data-testid="input-term-ca1" /></Field>
+            <Field label="CA 2 maximum" htmlFor="term-ca2" hint="0 for one CA"><input id="term-ca2" type="number" min={0} max={100} className="portal-input" value={t.ca2Max ?? 0} onChange={(e) => setT({ ...t, ca2Max: Number(e.target.value) })} data-testid="input-term-ca2" /></Field>
             <Field label="Exam maximum" htmlFor="term-exam"><input id="term-exam" type="number" min={0} max={100} className="portal-input" value={t.examMax} onChange={(e) => setT({ ...t, examMax: Number(e.target.value) })} /></Field>
           </div>
+          <p className="text-xs text-[hsl(var(--p-ink)/0.6)]">Total marks: {t.caMax + (t.ca2Max ?? 0) + t.examMax}. The school uses CA 1 (20) + CA 2 (20) + Exam (60) = 100.</p>
           <Field label="Next term begins" htmlFor="term-next" hint="Shown on report cards, e.g. Monday 12 January 2027"><input id="term-next" className="portal-input" maxLength={40} value={t.nextTermBegins ?? ""} onChange={(e) => setT({ ...t, nextTermBegins: e.target.value })} /></Field>
         </div>
         <DialogFooter><button className="portal-btn" disabled={!valid || cmd.pending} onClick={() => void save()} data-testid="button-save-term">{cmd.pending ? "Saving..." : "Save term"}</button></DialogFooter>
@@ -94,7 +96,7 @@ export function ReportsPanel() {
   const term = ws.terms.find((t) => t.id === termId);
   const cls = ws.classes.find((c) => c.id === classId);
   const ready = term && cls && ws.termId === term.id && ws.classId === cls.id;
-  const blankTerm: ReportTermInput = { session: `${new Date().getFullYear()}/${new Date().getFullYear() + 1}`, term: "First Term", caMax: 40, examMax: 60, nextTermBegins: "" };
+  const blankTerm: ReportTermInput = { session: `${new Date().getFullYear()}/${new Date().getFullYear() + 1}`, term: "First Term", caMax: 20, ca2Max: 20, examMax: 60, nextTermBegins: "" };
   const missing = ready ? ws.students.filter((s) => (ws.results.find((r) => r.studentId === s.id)?.subjectsTaken ?? 0) < ws.subjects.length).length : 0;
   const sections: [Section, string][] = ws.isClassTeacher || !ready
     ? [["scores", "Scores"], ["remarks", "Remarks & attendance"], ["review", "Review & preview"], ["broadsheet", "Broadsheet & print"], ...(ws.canAdmin ? [["subjects", "Subjects"] as [Section, string]] : []), ["settings", ws.canAdmin ? "Settings" : "My signature"]]
@@ -122,7 +124,7 @@ export function ReportsPanel() {
         </Field>
         {ws.canAdmin && (
           <div className="flex gap-2 md:ml-auto">
-            {term && <button className="portal-btn-ghost" onClick={() => setTermForm({ id: term.id, session: term.session, term: term.term, caMax: term.caMax, examMax: term.examMax, nextTermBegins: term.nextTermBegins ?? "" })} data-testid="button-edit-term"><Pencil size={13} /> Edit term</button>}
+            {term && <button className="portal-btn-ghost" onClick={() => setTermForm({ id: term.id, session: term.session, term: term.term, caMax: term.caMax, ca2Max: term.ca2Max, examMax: term.examMax, nextTermBegins: term.nextTermBegins ?? "" })} data-testid="button-edit-term"><Pencil size={13} /> Edit term</button>}
             <button className="portal-btn-ghost" onClick={() => setTermForm(blankTerm)} data-testid="button-new-term"><CalendarPlus size={13} /> New term</button>
           </div>
         )}

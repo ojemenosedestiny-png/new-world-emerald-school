@@ -61,19 +61,31 @@ describe("report card helpers", () => {
     expect(suggestedRemarks(82)[0]).toMatch(/excellent/i);
     expect(suggestedRemarks(30)[0]).toMatch(/below expectation/i);
   });
-  it("builds an escaped, complete printable report card", () => {
+  it("builds an escaped, complete printable report card in the school's layout", () => {
     const html = reportCardsHtml([{
-      studentName: "<b>Ada</b>", studentId: "NWE-1", className: "JSS 1", term, subjects: workspace.subjects,
-      result: { studentId: 1, subjects: [{ subjectId: 10, ca: 35, exam: 50, total: 85, percent: 85, grade: "A", remark: "Excellent", position: 1 }], total: 85, average: 85, grade: "A", position: 2, subjectsTaken: 1 },
+      studentName: "<b>Ada</b>", studentId: "NWE-1", className: "JSS 1", term: { ...term, caMax: 20, ca2Max: 20, examMax: 60 },
+      subjects: workspace.subjects.map((s) => ({ ...s, teacherName: "Mr <Musa>" })),
+      result: { studentId: 1, subjects: [{ subjectId: 10, ca: 18, ca2: 17, exam: 50, total: 85, percent: 85, grade: "A", remark: "Excellent", position: 1, comment: "Keep it up & aim higher" }], total: 85, average: 85, grade: "A", position: 2, subjectsTaken: 1 },
       subjectStats: [{ subjectId: 10, average: 70, highest: 85, lowest: 55, entries: 3 }], classSize: 30,
-      card: { studentId: 1, teacherRemark: "Brilliant & focused", principalRemark: "<script>x</script>", daysPresent: 58, daysOpen: 60 },
+      card: { studentId: 1, teacherRemark: "Brilliant & focused", principalRemark: "<script>x</script>", daysPresent: 58, daysOpen: 60, traits: { Punctuality: 4, Honesty: 5 } },
     }]);
-    expect(html).toContain("&lt;b&gt;Ada&lt;/b&gt;");
+    expect(html).toContain("&lt;B&gt;ADA&lt;/B&gt;");
     expect(html).not.toContain("<script>x</script>");
     expect(html).toContain("Brilliant &amp; focused");
-    expect(html).toContain("2nd of 30");
-    expect(html).toContain("58 of 60 days");
-    expect(html).toContain("Next term begins: <b>12 January 2027</b>");
+    expect(html).toContain("BELIEVE BIGGER AND AIM HIGHER");
+    expect(html).toContain("PART 1: PROFILE");
+    // Attendance: open, present, absent and the percentage.
+    expect(html).toContain("<td>60</td>"); expect(html).toContain("<td>58</td>"); expect(html).toContain("<td>2</td>"); expect(html).toContain("96.67%");
+    // CA 1, CA 2, exam, total, HC, LC, SUB.AVE, grade, remark.
+    expect(html).toContain("CA 2<br><small>(20)</small>");
+    expect(html).toContain(`<td>18</td><td>17</td><td>50</td><td class="b">85</td><td>85</td><td>55</td><td>70</td>`);
+    expect(html).toContain(`Marks obtainable</td><td class="b">100</td>`);
+    expect(html).toContain(`<td class="l">Punctuality</td><td class="b">4</td>`);
+    expect(html).toContain(`<td class="l">Leadership</td><td class="b">-</td>`);
+    // Part 3: the subject teacher's comment and name, escaped.
+    expect(html).toContain("Keep it up &amp; aim higher");
+    expect(html).toContain("Mr &lt;Musa&gt;");
+    expect(html).toContain("12 January 2027");
     expect(html).toContain("Mathematics");
   });
   it("forgets cached report cards when a different student signs in", async () => {
@@ -96,7 +108,7 @@ describe("staff score entry", () => {
     fireEvent.change(screen.getByTestId("input-exam-2"), { target: { value: "30.5" } });
     expect(screen.getByTestId("score-row-2").textContent).toContain("50.5");
     fireEvent.click(save);
-    await waitFor(() => expect(mocks.manage).toHaveBeenCalledWith({ data: { action: "saveScores", scores: { termId: 3, entries: [{ studentId: 2, subjectId: 10, ca: 20, exam: 30.5, total: null, grade: null }] } } }));
+    await waitFor(() => expect(mocks.manage).toHaveBeenCalledWith({ data: { action: "saveScores", scores: { termId: 3, entries: [{ studentId: 2, subjectId: 10, ca: 20, exam: 30.5, comment: "", total: null, grade: null }] } } }));
   });
   it("locks inputs once results are released", () => {
     render(wrap(<ScoresEditor ws={workspace} term={term} locked />));

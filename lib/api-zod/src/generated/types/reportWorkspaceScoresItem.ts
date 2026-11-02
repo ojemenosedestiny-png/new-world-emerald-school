@@ -9,14 +9,28 @@
 export type ReportWorkspaceScoresItem = {
   studentId: number;
   subjectId: number;
-  /** @nullable */
+  /**
+     * CA 1
+     * @nullable
+     */
   ca: number | null;
+  /**
+     * CA 2. Leave out to keep what is saved.
+     * @nullable
+     */
+  ca2?: number | null;
   /** @nullable */
   exam: number | null;
   /**
+     * The subject teacher's comment on this result. Leave out to keep what is saved.
+     * @maxLength 300
+     * @nullable
+     */
+  comment?: string | null;
+  /**
      * Manual results: a typed total used instead of CA + exam
      * @minimum 0
-     * @maximum 200
+     * @maximum 300
      * @nullable
      */
   total?: number | null;
