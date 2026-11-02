@@ -126,7 +126,7 @@ export function printableFor(ws: ReportWorkspace, term: ReportTerm, className: s
     result: ws.results.find((r) => r.studentId === st.id) ?? { studentId: st.id, subjects: [], total: 0, average: null, grade: null, position: null, subjectsTaken: 0 },
     subjectStats: ws.subjectStats, classSize: ws.ranked, card: ws.cards.find((c) => c.studentId === st.id) ?? null,
     gradingScale: ws.gradingScale, teacherName: ws.workflow?.teacherName, teacherSignature: ws.workflow?.teacherSignature,
-    principalName: ws.principalName, principalSignature: ws.workflow?.status === "approved" || ws.workflow?.status === "published" ? ws.principalSignature : null,
+    principalName: ws.cardPrincipalName, principalSignature: ws.workflow?.status === "approved" || ws.workflow?.status === "published" ? ws.cardPrincipalSignature : null,
   }));
 }
 
@@ -135,7 +135,7 @@ export function broadsheetFor(ws: ReportWorkspace, term: ReportTerm, className: 
   const signed = ws.workflow?.status === "approved" || ws.workflow?.status === "published";
   return {
     className, term, subjects: ws.subjects, students: ws.students, results: ws.results, subjectStats: ws.subjectStats, gradingScale: ws.gradingScale,
-    teacherName: ws.workflow?.teacherName, teacherSignature: ws.workflow?.teacherSignature, principalName: ws.principalName, principalSignature: signed ? ws.principalSignature : null,
+    teacherName: ws.workflow?.teacherName, teacherSignature: ws.workflow?.teacherSignature, principalName: ws.cardPrincipalName, principalSignature: signed ? ws.cardPrincipalSignature : null,
   };
 }
 

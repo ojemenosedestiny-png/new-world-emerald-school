@@ -2,10 +2,11 @@ import { Router } from "express";
 import { and, asc, desc, eq, inArray, isNull, or } from "drizzle-orm";
 import {
   db, portalClasses, portalStudents, portalTerms, portalSubjects, portalScores, portalReportCards, portalReportReleases,
-  portalReportSettings, portalReportWorkflow, portalTeachers, type PortalTermRecord, type PortalReportWorkflowRecord,
+  portalPrincipals, portalReportSettings, portalReportWorkflow, portalTeachers, type PortalTermRecord, type PortalReportWorkflowRecord,
 } from "@workspace/db";
 import { GetReportWorkspaceQueryParams, ManageReportsBody } from "@workspace/api-zod";
 import { check, classAllowed, portalActor, staffOnly, studentOnly, type PortalActor } from "../lib/portal-auth";
+import { classSection } from "../lib/principal";
 import { GRADE_SCALE, traitsProblem, buildClassReport, nextStatus, scaleProblem, signatureProblem, validScorePart, type GradeBand, type ResultStatus } from "../lib/report-cards";
 
 export const portalReportsRouter = Router();
@@ -18,18 +19,30 @@ async function reportSettings() {
   const [row] = await db.select().from(portalReportSettings).where(eq(portalReportSettings.id, 1));
   return { gradingScale: (row?.gradingScale ?? GRADE_SCALE.map((b) => ({ ...b }))) as GradeBand[], principalName: row?.principalName ?? "", principalSignature: row?.principalSignature ?? null };
 }
-async function workflowRow(termId: number, classId: number) {
+/**
+ * The principal printed on a class's report cards: whoever signed them in the principal's portal, else that
+ * school's principal (primary or secondary), else the school-wide principal in Result settings.
+ */
+async function cardPrincipal(classId: number, workflow: PortalReportWorkflowRecord | undefined, settings: { principalName: string; principalSignature: string | null }) {
+  if (workflow?.principalSignature) return { name: workflow.principalName, signature: workflow.principalSignature };
+  const [cls] = await db.select({ name: portalClasses.name }).from(portalClasses).where(eq(portalClasses.id, classId));
+  const section = cls ? classSection(cls.name) : null;
+  const [own] = section ? await db.select().from(portalPrincipals).where(eq(portalPrincipals.section, section)) : [];
+  if (own?.signature) return { name: own.name, signature: own.signature };
+  return { name: settings.principalName, signature: settings.principalSignature };
+}
+export async function workflowRow(termId: number, classId: number) {
   const [row] = await db.select().from(portalReportWorkflow).where(and(eq(portalReportWorkflow.termId, termId), eq(portalReportWorkflow.classId, classId)));
   return row;
 }
 /** Published is a release row; otherwise the workflow row's status (draft when there is none). */
-const statusOf = (row: PortalReportWorkflowRecord | undefined, released: boolean): ResultStatus => (released ? "published" : (row?.status as ResultStatus) ?? "draft");
+export const statusOf = (row: PortalReportWorkflowRecord | undefined, released: boolean): ResultStatus => (released ? "published" : (row?.status as ResultStatus) ?? "draft");
 const workflowView = (row: PortalReportWorkflowRecord | undefined, released: boolean) => ({
   status: statusOf(row, released), mode: (row?.mode ?? "automatic") as "automatic" | "manual",
   teacherName: row?.teacherName ?? "", teacherSignature: row?.teacherSignature ?? null, submittedAt: row?.submittedAt?.toISOString() ?? null,
   approvedBy: row?.approvedBy ?? "", approvedAt: row?.approvedAt?.toISOString() ?? null, returnNote: row?.returnNote ?? "",
 });
-async function upsertWorkflow(termId: number, classId: number, values: Partial<typeof portalReportWorkflow.$inferInsert>) {
+export async function upsertWorkflow(termId: number, classId: number, values: Partial<typeof portalReportWorkflow.$inferInsert>) {
   await db.insert(portalReportWorkflow).values({ termId, classId, ...values, updatedAt: new Date() })
     .onConflictDoUpdate({ target: [portalReportWorkflow.termId, portalReportWorkflow.classId], set: { ...values, updatedAt: new Date() } });
 }
@@ -55,7 +68,8 @@ async function classData(termId: number, classId: number) {
   // Typed totals and grades count only when the class's results are in manual mode.
   const manual = workflow?.mode === "manual";
   const report = buildClassReport(ids, subjects.map((s) => s.id), scores.map((s) => (manual ? s : { ...s, total: null, grade: null })), term, settings.gradingScale);
-  return { term, subjects, students, scores, cards, release, report, workflow, settings };
+  const principal = await cardPrincipal(classId, workflow, settings);
+  return { term, subjects, students, scores, cards, release, report, workflow, settings, principal };
 }
 
 const cardView = (c: typeof portalReportCards.$inferSelect) => ({ studentId: c.studentId, teacherRemark: c.teacherRemark, principalRemark: c.principalRemark, daysPresent: c.daysPresent, daysOpen: c.daysOpen, traits: c.traits ?? {} });
@@ -69,8 +83,8 @@ portalReportsRouter.get("/reports/manage", async (req, res) => {
   const taught = await subjectsTaught(me?.id);
   const visible = [...new Set([...actor.classIds, ...taught.map((t) => t.classId)])];
   const classes = await db.select().from(portalClasses).where(actor.role === "admin" ? undefined : inArray(portalClasses.id, visible.length ? visible : [-1])).orderBy(asc(portalClasses.name));
-  const empty = { subjects: [], students: [], scores: [], cards: [], results: [], subjectStats: [], ranked: 0, released: false, workflow: workflowView(undefined, false), isClassTeacher: false, editableSubjectIds: [] as number[] };
   const settings = await reportSettings();
+  const empty = { subjects: [], students: [], scores: [], cards: [], results: [], subjectStats: [], ranked: 0, released: false, workflow: workflowView(undefined, false), isClassTeacher: false, editableSubjectIds: [] as number[], cardPrincipalName: settings.principalName, cardPrincipalSignature: settings.principalSignature };
   const teachers = actor.role === "admin" ? (await db.select({ id: portalTeachers.id, name: portalTeachers.name }).from(portalTeachers).where(eq(portalTeachers.active, true)).orderBy(asc(portalTeachers.name))) : [];
   const base = {
     terms: terms.map(termView), classes: classes.map((c) => ({ id: c.id, name: c.name })), canAdmin: actor.role === "admin", termId: query.termId ?? null, classId: query.classId ?? null,
@@ -86,7 +100,7 @@ portalReportsRouter.get("/reports/manage", async (req, res) => {
     subjects: d.subjects, students: d.students,
     scores: d.scores.map((s) => ({ studentId: s.studentId, subjectId: s.subjectId, ca: s.ca, ca2: s.ca2, exam: s.exam, comment: s.comment, total: s.total, grade: s.grade })),
     cards: d.cards.map(cardView), results: d.report.students, subjectStats: d.report.subjectStats, ranked: d.report.ranked, released: !!d.release,
-    workflow: workflowView(d.workflow, !!d.release),
+    workflow: workflowView(d.workflow, !!d.release), cardPrincipalName: d.principal.name, cardPrincipalSignature: d.principal.signature,
   });
 });
 
@@ -269,12 +283,12 @@ portalReportsRouter.post("/reports/manage", async (req, res) => {
       check(term && cls, "Term or class not found.", 404);
       // The office publishing directly counts as its approval.
       if (r.released) {
-        if (statusOf(await workflowRow(r.termId, r.classId), false) !== "approved") await upsertWorkflow(r.termId, r.classId, { status: "approved", approvedBy: approver(req, actor), approvedAt: new Date() });
+        if (statusOf(await workflowRow(r.termId, r.classId), false) !== "approved") await upsertWorkflow(r.termId, r.classId, { status: "approved", approvedBy: approver(req, actor), approvedAt: new Date(), principalName: "", principalSignature: null });
         await db.insert(portalReportReleases).values({ termId: r.termId, classId: r.classId }).onConflictDoNothing();
       } else {
         // Withholding sends the results back to draft so they can be corrected.
         await db.delete(portalReportReleases).where(and(eq(portalReportReleases.termId, r.termId), eq(portalReportReleases.classId, r.classId)));
-        await upsertWorkflow(r.termId, r.classId, { status: "draft" });
+        await upsertWorkflow(r.termId, r.classId, { status: "draft", principalName: "", principalSignature: null });
       }
       break;
     }
@@ -328,8 +342,8 @@ portalReportsRouter.post("/reports/manage", async (req, res) => {
         }
         await upsertWorkflow(w.termId, w.classId, { status: "review", teacherName: actor.name, teacherSignature: signature, submittedAt: new Date(), returnNote: "" });
       } else if (w.action === "withdraw") await upsertWorkflow(w.termId, w.classId, { status: "draft" });
-      else if (w.action === "approve") await upsertWorkflow(w.termId, w.classId, { status: "approved", approvedBy: approver(req, actor), approvedAt: new Date() });
-      else if (w.action === "return") await upsertWorkflow(w.termId, w.classId, { status: "draft", returnNote: (w.note ?? "").trim(), approvedAt: null, approvedBy: "" });
+      else if (w.action === "approve") await upsertWorkflow(w.termId, w.classId, { status: "approved", approvedBy: approver(req, actor), approvedAt: new Date(), principalName: "", principalSignature: null });
+      else if (w.action === "return") await upsertWorkflow(w.termId, w.classId, { status: "draft", returnNote: (w.note ?? "").trim(), approvedAt: null, approvedBy: "", principalName: "", principalSignature: null });
       else if (w.action === "publish") await db.insert(portalReportReleases).values({ termId: w.termId, classId: w.classId }).onConflictDoNothing();
       else await db.delete(portalReportReleases).where(and(eq(portalReportReleases.termId, w.termId), eq(portalReportReleases.classId, w.classId)));
       break;
@@ -358,7 +372,7 @@ portalReportsRouter.get("/reports", async (req, res) => {
       classSize: d.report.ranked, card: card ? cardView(card) : null, releasedAt: release.releasedAt.toISOString(),
       className: classNames.get(release.classId) ?? "", gradingScale: d.settings.gradingScale,
       teacherName: d.workflow?.teacherName ?? "", teacherSignature: d.workflow?.teacherSignature ?? null,
-      principalName: d.settings.principalName, principalSignature: d.settings.principalSignature,
+      principalName: d.principal.name, principalSignature: d.principal.signature,
       sortKey: d.term.createdAt.getTime(),
     });
   }

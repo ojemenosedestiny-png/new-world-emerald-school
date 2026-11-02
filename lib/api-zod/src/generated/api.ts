@@ -988,6 +988,8 @@ export const GetReportWorkspaceResponse = zod.object({
 })),
   "principalName": zod.string(),
   "principalSignature": zod.string().nullable(),
+  "cardPrincipalName": zod.string().describe('The principal printed on this class\'s report cards: who signed them in the principal\'s portal, else that school\'s principal, else principalName'),
+  "cardPrincipalSignature": zod.string().nullable(),
   "mySignature": zod.string().nullable().describe('The signed-in teacher\'s saved signature'),
   "isClassTeacher": zod.boolean().describe('The office or the class teacher: may write remarks, sign and send results'),
   "editableSubjectIds": zod.array(zod.number()).nullable().describe('Subjects whose scores the signed-in teacher may enter (null: all)'),
@@ -2982,6 +2984,205 @@ export const GetPrincipalActivityResponse = zod.object({
   "label": zod.string()
 }))
 }))
+})
+
+
+/**
+ * The section at a glance, for its principal - each teacher's last seven days, each class's register, exams and results
+ */
+export const GetPrincipalDashboardQueryParams = zod.object({
+  "section": zod.enum(['primary', 'secondary']).optional().describe('primary (Year 1 to Year 6) or secondary (JSS 1 to SS 3, the default)')
+})
+
+export const GetPrincipalDashboardResponse = zod.object({
+  "today": zod.string(),
+  "days": zod.array(zod.string()).describe('The last seven days, oldest first, ending today'),
+  "examTerm": zod.string().describe('The term the exam counts are for, such as First Term, 2026\/2027'),
+  "resultTerm": zod.string().nullable().describe('The latest report card term, if any'),
+  "figures": zod.object({
+  "teachers": zod.number(),
+  "activeToday": zod.number(),
+  "classes": zod.number(),
+  "registersToday": zod.number(),
+  "examsThisTerm": zod.number(),
+  "awaitingSignature": zod.number()
+}),
+  "teachers": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "email": zod.string(),
+  "photoFileId": zod.string().nullable(),
+  "classes": zod.array(zod.string()),
+  "activeDays": zod.array(zod.boolean()).describe('One per day in PrincipalDashboard.days'),
+  "activeToday": zod.boolean(),
+  "lastSeen": zod.coerce.date().nullable(),
+  "counts": zod.object({
+  "register": zod.number(),
+  "scores": zod.number(),
+  "exams": zod.number(),
+  "marking": zod.number(),
+  "messages": zod.number(),
+  "assignments": zod.number(),
+  "notes": zod.number(),
+  "announcements": zod.number(),
+  "other": zod.number()
+}),
+  "examsSet": zod.number().describe('Exams they set this term')
+})),
+  "classes": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "students": zod.number(),
+  "classTeachers": zod.array(zod.string()),
+  "registerToday": zod.boolean(),
+  "resultStatus": zod.enum(['draft', 'review', 'approved', 'published']),
+  "scoresEntered": zod.number(),
+  "scoresExpected": zod.number(),
+  "examsThisTerm": zod.number()
+}))
+})
+
+
+/**
+ * Exams set in the section's classes, one term at a time (terms follow the exam dates)
+ */
+export const getPrincipalExamsQueryTermRegExp = new RegExp('^\\d{4}-[1-3]$');
+
+
+export const GetPrincipalExamsQueryParams = zod.object({
+  "section": zod.enum(['primary', 'secondary']).optional().describe('primary (Year 1 to Year 6) or secondary (JSS 1 to SS 3, the default)'),
+  "term": zod.coerce.string().regex(getPrincipalExamsQueryTermRegExp).optional().describe('A term key from the list, such as 2026-1; defaults to the latest')
+})
+
+export const GetPrincipalExamsResponse = zod.object({
+  "terms": zod.array(zod.object({
+  "key": zod.string(),
+  "label": zod.string(),
+  "count": zod.number()
+})),
+  "term": zod.string().nullable(),
+  "exams": zod.array(zod.object({
+  "id": zod.number(),
+  "title": zod.string(),
+  "subject": zod.string(),
+  "classId": zod.number(),
+  "className": zod.string(),
+  "setBy": zod.string().describe('Who saved the exam, or the subject\'s teacher for older exams; empty when unknown'),
+  "startsAt": zod.coerce.date(),
+  "endsAt": zod.coerce.date(),
+  "durationMinutes": zod.number(),
+  "mode": zod.string(),
+  "questionCount": zod.number(),
+  "totalMarks": zod.number(),
+  "status": zod.enum(['draft', 'scheduled', 'open', 'closed', 'released']),
+  "students": zod.number(),
+  "sat": zod.number(),
+  "marked": zod.number(),
+  "averagePercent": zod.number().nullable()
+}))
+})
+
+
+/**
+ * One exam paper with its questions and answers (the section's principal only)
+ */
+export const GetPrincipalExamParams = zod.object({
+  "examId": zod.coerce.number()
+})
+
+export const GetPrincipalExamResponse = zod.object({
+  "exam": zod.object({
+  "id": zod.number(),
+  "title": zod.string(),
+  "subject": zod.string(),
+  "classId": zod.number(),
+  "className": zod.string(),
+  "setBy": zod.string().describe('Who saved the exam, or the subject\'s teacher for older exams; empty when unknown'),
+  "startsAt": zod.coerce.date(),
+  "endsAt": zod.coerce.date(),
+  "durationMinutes": zod.number(),
+  "mode": zod.string(),
+  "questionCount": zod.number(),
+  "totalMarks": zod.number(),
+  "status": zod.enum(['draft', 'scheduled', 'open', 'closed', 'released']),
+  "students": zod.number(),
+  "sat": zod.number(),
+  "marked": zod.number(),
+  "averagePercent": zod.number().nullable()
+}),
+  "instructions": zod.string(),
+  "questions": zod.array(zod.object({
+  "id": zod.string(),
+  "type": zod.string(),
+  "text": zod.string(),
+  "options": zod.array(zod.string()),
+  "correctAnswer": zod.number().nullable(),
+  "marks": zod.number(),
+  "passage": zod.string(),
+  "hasDiagram": zod.boolean()
+}))
+})
+
+
+/**
+ * Each class's results for a term and where they are (draft, waiting for the principal, signed, published), with the principal's saved signature
+ */
+export const GetPrincipalResultsQueryParams = zod.object({
+  "section": zod.enum(['primary', 'secondary']).optional().describe('primary (Year 1 to Year 6) or secondary (JSS 1 to SS 3, the default)'),
+  "termId": zod.coerce.number().optional()
+})
+
+export const GetPrincipalResultsResponse = zod.object({
+  "terms": zod.array(zod.object({
+  "id": zod.number(),
+  "label": zod.string()
+})),
+  "termId": zod.number().nullable(),
+  "signature": zod.object({
+  "name": zod.string(),
+  "image": zod.string().nullable()
+}),
+  "classes": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "status": zod.enum(['draft', 'review', 'approved', 'published']),
+  "teacherName": zod.string(),
+  "submittedAt": zod.coerce.date().nullable(),
+  "approvedBy": zod.string(),
+  "approvedAt": zod.coerce.date().nullable(),
+  "signedByPrincipal": zod.boolean().describe('Approved with this principal\'s signature in the principal\'s portal'),
+  "students": zod.number(),
+  "scoresEntered": zod.number(),
+  "scoresExpected": zod.number(),
+  "returnNote": zod.string()
+}))
+})
+
+
+/**
+ * Save the principal's name and signature, or approve and sign, return, publish or withhold a class's results
+ */
+export const managePrincipalResultsBodyNoteMax = 1000;
+
+export const managePrincipalResultsBodyNameMax = 120;
+
+export const managePrincipalResultsBodySignatureMax = 200000;
+
+
+
+export const ManagePrincipalResultsBody = zod.object({
+  "action": zod.enum(['saveSignature', 'approve', 'return', 'publish', 'unpublish']),
+  "section": zod.enum(['primary', 'secondary']),
+  "termId": zod.number().optional(),
+  "classId": zod.number().optional(),
+  "note": zod.string().max(managePrincipalResultsBodyNoteMax).optional().describe('For return: what the class teacher should fix'),
+  "name": zod.string().max(managePrincipalResultsBodyNameMax).optional().describe('For saveSignature'),
+  "signature": zod.string().max(managePrincipalResultsBodySignatureMax).nullish().describe('For saveSignature: a PNG, JPEG or WebP data URL')
+})
+
+export const ManagePrincipalResultsResponse = zod.object({
+  "message": zod.string(),
+  "studentId": zod.string().optional().describe('The Student ID of a student just enrolled')
 })
 
 

@@ -29,7 +29,8 @@
     "test:portal-result-import": "node ./test-portal.mjs portal-result-import",
     "test:portal-facilities": "node ./test-portal.mjs portal-facilities",
     "test:portal-parent": "node ./test-portal.mjs portal-parent",
-    "test:portal-principal": "node ./test-portal.mjs portal-principal"
+    "test:portal-principal": "node ./test-portal.mjs portal-principal",
+    "test:portal-principal-oversight": "node ./test-portal.mjs portal-principal-oversight"
   },
   "dependencies": {
     "@clerk/express": "^2.1.75",

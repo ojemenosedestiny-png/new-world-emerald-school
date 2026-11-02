@@ -195,7 +195,7 @@ portalManagementRouter.post("/manage", async (req, res) => {
           const [attempt] = await tx.select({ id: portalAttempts.id }).from(portalAttempts).where(eq(portalAttempts.examId, id)).limit(1);
           check(!attempt, "Students have started this exam. Its content is locked; use publish and result controls instead.", 409);
           await tx.update(portalExams).set(values).where(eq(portalExams.id, id));
-        } else await tx.insert(portalExams).values(values);
+        } else await tx.insert(portalExams).values({ ...values, createdBy: actor.name || req.identity?.email || "" });
       });
       break;
     }

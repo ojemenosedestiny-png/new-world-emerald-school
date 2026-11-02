@@ -37,6 +37,8 @@ export const portalExams = pgTable("portal_exams", {
   lockdown: boolean("lockdown").notNull().default(false),
   // After submitting, each student sees the right answer to every multiple-choice question. Scores still wait for release.
   instantResults: boolean("instant_results").notNull().default(true),
+  // Who first saved the exam (name, or email): shown to the principals. Empty for exams set before this was recorded.
+  createdBy: text("created_by").notNull().default(""),
 });
 export const insertPortalExamSchema = createInsertSchema(portalExams).omit({ id: true });
 export type PortalExamRecord = typeof portalExams.$inferSelect;

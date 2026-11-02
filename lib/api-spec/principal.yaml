@@ -38,6 +38,70 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/PrincipalActivity" }
+  dashboard:
+    get:
+      operationId: getPrincipalDashboard
+      description: The section at a glance, for its principal - each teacher's last seven days, each class's register, exams and results
+      parameters:
+        - { name: section, in: query, required: false, description: "primary (Year 1 to Year 6) or secondary (JSS 1 to SS 3, the default)", schema: { type: string, enum: [primary, secondary] } }
+      responses:
+        "200":
+          description: Overview
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PrincipalDashboard" }
+  exams:
+    get:
+      operationId: getPrincipalExams
+      description: Exams set in the section's classes, one term at a time (terms follow the exam dates)
+      parameters:
+        - { name: section, in: query, required: false, description: "primary (Year 1 to Year 6) or secondary (JSS 1 to SS 3, the default)", schema: { type: string, enum: [primary, secondary] } }
+        - { name: term, in: query, required: false, description: "A term key from the list, such as 2026-1; defaults to the latest", schema: { type: string, pattern: "^\\d{4}-[1-3]$" } }
+      responses:
+        "200":
+          description: Exams for the term
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PrincipalExamList" }
+  exam:
+    get:
+      operationId: getPrincipalExam
+      description: One exam paper with its questions and answers (the section's principal only)
+      parameters:
+        - { name: examId, in: path, required: true, schema: { type: integer } }
+      responses:
+        "200":
+          description: The exam paper
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PrincipalExamPaper" }
+  results:
+    get:
+      operationId: getPrincipalResults
+      description: Each class's results for a term and where they are (draft, waiting for the principal, signed, published), with the principal's saved signature
+      parameters:
+        - { name: section, in: query, required: false, description: "primary (Year 1 to Year 6) or secondary (JSS 1 to SS 3, the default)", schema: { type: string, enum: [primary, secondary] } }
+        - { name: termId, in: query, required: false, schema: { type: integer } }
+      responses:
+        "200":
+          description: Results for the term
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PrincipalResults" }
+    post:
+      operationId: managePrincipalResults
+      description: Save the principal's name and signature, or approve and sign, return, publish or withhold a class's results
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PrincipalResultsCommand" }
+      responses:
+        "200":
+          description: Saved
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PortalMessage" }
 schemas:
   PrincipalPerson:
     type: object
@@ -127,3 +191,165 @@ schemas:
       date: { type: string }
       today: { type: string }
       teachers: { type: array, items: { $ref: "#/components/schemas/PrincipalTeacherDay" } }
+  PrincipalActivityCounts:
+    type: object
+    required: [register, scores, exams, marking, messages, assignments, notes, announcements, other]
+    properties:
+      register: { type: integer }
+      scores: { type: integer }
+      exams: { type: integer }
+      marking: { type: integer }
+      messages: { type: integer }
+      assignments: { type: integer }
+      notes: { type: integer }
+      announcements: { type: integer }
+      other: { type: integer }
+  PrincipalTeacherWeek:
+    type: object
+    required: [id, name, email, photoFileId, classes, activeDays, activeToday, lastSeen, counts, examsSet]
+    properties:
+      id: { type: integer }
+      name: { type: string }
+      email: { type: string }
+      photoFileId: { type: [string, "null"] }
+      classes: { type: array, items: { type: string } }
+      activeDays: { type: array, items: { type: boolean }, description: "One per day in PrincipalDashboard.days" }
+      activeToday: { type: boolean }
+      lastSeen: { type: ["string", "null"], format: date-time }
+      counts: { $ref: "#/components/schemas/PrincipalActivityCounts" }
+      examsSet: { type: integer, description: "Exams they set this term" }
+  PrincipalClassStatus:
+    type: object
+    required: [id, name, students, classTeachers, registerToday, resultStatus, scoresEntered, scoresExpected, examsThisTerm]
+    properties:
+      id: { type: integer }
+      name: { type: string }
+      students: { type: integer }
+      classTeachers: { type: array, items: { type: string } }
+      registerToday: { type: boolean }
+      resultStatus: { type: string, enum: [draft, review, approved, published] }
+      scoresEntered: { type: integer }
+      scoresExpected: { type: integer }
+      examsThisTerm: { type: integer }
+  PrincipalDashboardFigures:
+    type: object
+    required: [teachers, activeToday, classes, registersToday, examsThisTerm, awaitingSignature]
+    properties:
+      teachers: { type: integer }
+      activeToday: { type: integer }
+      classes: { type: integer }
+      registersToday: { type: integer }
+      examsThisTerm: { type: integer }
+      awaitingSignature: { type: integer }
+  PrincipalDashboard:
+    type: object
+    required: [today, days, examTerm, resultTerm, figures, teachers, classes]
+    properties:
+      today: { type: string }
+      days: { type: array, items: { type: string }, description: "The last seven days, oldest first, ending today" }
+      examTerm: { type: string, description: "The term the exam counts are for, such as First Term, 2026/2027" }
+      resultTerm: { type: ["string", "null"], description: "The latest report card term, if any" }
+      figures: { $ref: "#/components/schemas/PrincipalDashboardFigures" }
+      teachers: { type: array, items: { $ref: "#/components/schemas/PrincipalTeacherWeek" } }
+      classes: { type: array, items: { $ref: "#/components/schemas/PrincipalClassStatus" } }
+  PrincipalExamTerm:
+    type: object
+    required: [key, label, count]
+    properties:
+      key: { type: string }
+      label: { type: string }
+      count: { type: integer }
+  PrincipalExamSummary:
+    type: object
+    required: [id, title, subject, classId, className, setBy, startsAt, endsAt, durationMinutes, mode, questionCount, totalMarks, status, students, sat, marked, averagePercent]
+    properties:
+      id: { type: integer }
+      title: { type: string }
+      subject: { type: string }
+      classId: { type: integer }
+      className: { type: string }
+      setBy: { type: string, description: "Who saved the exam, or the subject's teacher for older exams; empty when unknown" }
+      startsAt: { type: string, format: date-time }
+      endsAt: { type: string, format: date-time }
+      durationMinutes: { type: integer }
+      mode: { type: string }
+      questionCount: { type: integer }
+      totalMarks: { type: number }
+      status: { type: string, enum: [draft, scheduled, open, closed, released] }
+      students: { type: integer }
+      sat: { type: integer }
+      marked: { type: integer }
+      averagePercent: { type: ["number", "null"] }
+  PrincipalExamList:
+    type: object
+    required: [terms, term, exams]
+    properties:
+      terms: { type: array, items: { $ref: "#/components/schemas/PrincipalExamTerm" } }
+      term: { type: ["string", "null"] }
+      exams: { type: array, items: { $ref: "#/components/schemas/PrincipalExamSummary" } }
+  PrincipalExamQuestion:
+    type: object
+    required: [id, type, text, options, correctAnswer, marks, passage, hasDiagram]
+    properties:
+      id: { type: string }
+      type: { type: string }
+      text: { type: string }
+      options: { type: array, items: { type: string } }
+      correctAnswer: { type: [integer, "null"] }
+      marks: { type: number }
+      passage: { type: string }
+      hasDiagram: { type: boolean }
+  PrincipalExamPaper:
+    type: object
+    required: [exam, instructions, questions]
+    properties:
+      exam: { $ref: "#/components/schemas/PrincipalExamSummary" }
+      instructions: { type: string }
+      questions: { type: array, items: { $ref: "#/components/schemas/PrincipalExamQuestion" } }
+  PrincipalResultClass:
+    type: object
+    required: [id, name, status, teacherName, submittedAt, approvedBy, approvedAt, signedByPrincipal, students, scoresEntered, scoresExpected, returnNote]
+    properties:
+      id: { type: integer }
+      name: { type: string }
+      status: { type: string, enum: [draft, review, approved, published] }
+      teacherName: { type: string }
+      submittedAt: { type: ["string", "null"], format: date-time }
+      approvedBy: { type: string }
+      approvedAt: { type: ["string", "null"], format: date-time }
+      signedByPrincipal: { type: boolean, description: "Approved with this principal's signature in the principal's portal" }
+      students: { type: integer }
+      scoresEntered: { type: integer }
+      scoresExpected: { type: integer }
+      returnNote: { type: string }
+  PrincipalResultTerm:
+    type: object
+    required: [id, label]
+    properties:
+      id: { type: integer }
+      label: { type: string }
+  PrincipalSignature:
+    type: object
+    required: [name, image]
+    properties:
+      name: { type: string }
+      image: { type: [string, "null"] }
+  PrincipalResults:
+    type: object
+    required: [terms, termId, signature, classes]
+    properties:
+      terms: { type: array, items: { $ref: "#/components/schemas/PrincipalResultTerm" } }
+      termId: { type: [integer, "null"] }
+      signature: { $ref: "#/components/schemas/PrincipalSignature" }
+      classes: { type: array, items: { $ref: "#/components/schemas/PrincipalResultClass" } }
+  PrincipalResultsCommand:
+    type: object
+    required: [action, section]
+    properties:
+      action: { type: string, enum: [saveSignature, approve, return, publish, unpublish] }
+      section: { type: string, enum: [primary, secondary] }
+      termId: { type: integer }
+      classId: { type: integer }
+      note: { type: string, maxLength: 1000, description: "For return: what the class teacher should fix" }
+      name: { type: string, maxLength: 120, description: "For saveSignature" }
+      signature: { type: [string, "null"], maxLength: 200000, description: "For saveSignature: a PNG, JPEG or WebP data URL" }

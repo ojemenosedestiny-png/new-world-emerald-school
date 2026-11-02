@@ -90,3 +90,23 @@ export function classSection(name: string): SchoolSection | null {
   if (y >= 7 && y <= 12 && year[1] !== "primary" && year[1] !== "pry") return "secondary";
   return null;
 }
+
+const TERM_NAMES = ["First Term", "Second Term", "Third Term"];
+
+/**
+ * The school term an exam falls in, from its date in Lagos: September to December is the first term,
+ * January to March the second, April to August the third. Key "2026-1" is the 2026/2027 first term.
+ */
+export function examTerm(date: Date): { key: string; label: string } {
+  const lagos = new Date(date.getTime() + 3_600_000);
+  const month = lagos.getUTCMonth() + 1, year = lagos.getUTCFullYear();
+  const start = month >= 9 ? year : year - 1;
+  const n = month >= 9 ? 1 : month <= 3 ? 2 : 3;
+  return { key: `${start}-${n}`, label: `${TERM_NAMES[n - 1]}, ${start}/${start + 1}` };
+}
+
+/** The last `count` days in Lagos as "YYYY-MM-DD", oldest first, ending on `today`. */
+export function lastDays(today: string, count = 7): string[] {
+  const end = Date.parse(today + "T12:00:00Z");
+  return Array.from({ length: count }, (_, i) => new Date(end - (count - 1 - i) * 86_400_000).toISOString().slice(0, 10));
+}

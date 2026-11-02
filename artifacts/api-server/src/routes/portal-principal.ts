@@ -9,7 +9,7 @@ import { classSection, describeActivity, lagosDay, lagosToday, type ActivityKind
 export const portalPrincipalRouter = Router();
 
 // Two principals share these routes: secondary (JSS 1 to SS 3, the default) and primary (Year 1 to Year 6).
-function principalOnly(req: Request, section: SchoolSection) {
+export function principalOnly(req: Request, section: SchoolSection) {
   check(req.dbUser, "Sign in with the principal's email.", 401);
   check(isPrincipal(req, section), `This page is for the ${section} school principal only.`, 403);
 }
@@ -18,7 +18,7 @@ function principalOnly(req: Request, section: SchoolSection) {
  * A section's classes, and its teachers: anyone who is a class or subject teacher there, or not yet
  * assigned anywhere (so either principal can take them on).
  */
-async function sectionStaff(section: SchoolSection) {
+export async function sectionStaff(section: SchoolSection) {
   const [allClasses, teachers, allSubjects] = await Promise.all([
     db.select().from(portalClasses).orderBy(asc(portalClasses.name)),
     db.select().from(portalTeachers).where(eq(portalTeachers.active, true)).orderBy(asc(portalTeachers.name)),
@@ -117,7 +117,7 @@ portalPrincipalRouter.post("/principal", async (req, res) => {
   res.json({ message });
 });
 
-const KINDS: ActivityKind[] = ["register", "scores", "exams", "marking", "messages", "assignments", "notes", "announcements", "other"];
+export const KINDS: ActivityKind[] = ["register", "scores", "exams", "marking", "messages", "assignments", "notes", "announcements", "other"];
 
 /** What each teacher did on one day (Lagos time): when they were in the portal and every change they made. */
 portalPrincipalRouter.get("/principal/activity", async (req, res) => {

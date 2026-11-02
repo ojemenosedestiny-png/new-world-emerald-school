@@ -23,7 +23,7 @@ export async function signatureFromFile(file: File): Promise<string> {
   return url;
 }
 
-function SignatureField({ label, value, onChange, testId }: { label: string; value: string | null; onChange: (v: string | null) => void; testId: string }) {
+export function SignatureField({ label, value, onChange, testId }: { label: string; value: string | null; onChange: (v: string | null) => void; testId: string }) {
   const { toast } = useToast();
   return (
     <div>

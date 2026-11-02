@@ -828,6 +828,235 @@ export interface PrincipalActivity {
   teachers: PrincipalTeacherDay[];
 }
 
+export interface PrincipalActivityCounts {
+  register: number;
+  scores: number;
+  exams: number;
+  marking: number;
+  messages: number;
+  assignments: number;
+  notes: number;
+  announcements: number;
+  other: number;
+}
+
+export interface PrincipalTeacherWeek {
+  id: number;
+  name: string;
+  email: string;
+  /** @nullable */
+  photoFileId: string | null;
+  classes: string[];
+  /** One per day in PrincipalDashboard.days */
+  activeDays: boolean[];
+  activeToday: boolean;
+  /** @nullable */
+  lastSeen: string | null;
+  counts: PrincipalActivityCounts;
+  /** Exams they set this term */
+  examsSet: number;
+}
+
+export type PrincipalClassStatusResultStatus = typeof PrincipalClassStatusResultStatus[keyof typeof PrincipalClassStatusResultStatus];
+
+
+export const PrincipalClassStatusResultStatus = {
+  draft: 'draft',
+  review: 'review',
+  approved: 'approved',
+  published: 'published',
+} as const;
+
+export interface PrincipalClassStatus {
+  id: number;
+  name: string;
+  students: number;
+  classTeachers: string[];
+  registerToday: boolean;
+  resultStatus: PrincipalClassStatusResultStatus;
+  scoresEntered: number;
+  scoresExpected: number;
+  examsThisTerm: number;
+}
+
+export interface PrincipalDashboardFigures {
+  teachers: number;
+  activeToday: number;
+  classes: number;
+  registersToday: number;
+  examsThisTerm: number;
+  awaitingSignature: number;
+}
+
+export interface PrincipalDashboard {
+  today: string;
+  /** The last seven days, oldest first, ending today */
+  days: string[];
+  /** The term the exam counts are for, such as First Term, 2026/2027 */
+  examTerm: string;
+  /**
+     * The latest report card term, if any
+     * @nullable
+     */
+  resultTerm: string | null;
+  figures: PrincipalDashboardFigures;
+  teachers: PrincipalTeacherWeek[];
+  classes: PrincipalClassStatus[];
+}
+
+export interface PrincipalExamTerm {
+  key: string;
+  label: string;
+  count: number;
+}
+
+export type PrincipalExamSummaryStatus = typeof PrincipalExamSummaryStatus[keyof typeof PrincipalExamSummaryStatus];
+
+
+export const PrincipalExamSummaryStatus = {
+  draft: 'draft',
+  scheduled: 'scheduled',
+  open: 'open',
+  closed: 'closed',
+  released: 'released',
+} as const;
+
+export interface PrincipalExamSummary {
+  id: number;
+  title: string;
+  subject: string;
+  classId: number;
+  className: string;
+  /** Who saved the exam, or the subject's teacher for older exams; empty when unknown */
+  setBy: string;
+  startsAt: string;
+  endsAt: string;
+  durationMinutes: number;
+  mode: string;
+  questionCount: number;
+  totalMarks: number;
+  status: PrincipalExamSummaryStatus;
+  students: number;
+  sat: number;
+  marked: number;
+  /** @nullable */
+  averagePercent: number | null;
+}
+
+export interface PrincipalExamList {
+  terms: PrincipalExamTerm[];
+  /** @nullable */
+  term: string | null;
+  exams: PrincipalExamSummary[];
+}
+
+export interface PrincipalExamQuestion {
+  id: string;
+  type: string;
+  text: string;
+  options: string[];
+  /** @nullable */
+  correctAnswer: number | null;
+  marks: number;
+  passage: string;
+  hasDiagram: boolean;
+}
+
+export interface PrincipalExamPaper {
+  exam: PrincipalExamSummary;
+  instructions: string;
+  questions: PrincipalExamQuestion[];
+}
+
+export type PrincipalResultClassStatus = typeof PrincipalResultClassStatus[keyof typeof PrincipalResultClassStatus];
+
+
+export const PrincipalResultClassStatus = {
+  draft: 'draft',
+  review: 'review',
+  approved: 'approved',
+  published: 'published',
+} as const;
+
+export interface PrincipalResultClass {
+  id: number;
+  name: string;
+  status: PrincipalResultClassStatus;
+  teacherName: string;
+  /** @nullable */
+  submittedAt: string | null;
+  approvedBy: string;
+  /** @nullable */
+  approvedAt: string | null;
+  /** Approved with this principal's signature in the principal's portal */
+  signedByPrincipal: boolean;
+  students: number;
+  scoresEntered: number;
+  scoresExpected: number;
+  returnNote: string;
+}
+
+export interface PrincipalResultTerm {
+  id: number;
+  label: string;
+}
+
+export interface PrincipalSignature {
+  name: string;
+  /** @nullable */
+  image: string | null;
+}
+
+export interface PrincipalResults {
+  terms: PrincipalResultTerm[];
+  /** @nullable */
+  termId: number | null;
+  signature: PrincipalSignature;
+  classes: PrincipalResultClass[];
+}
+
+export type PrincipalResultsCommandAction = typeof PrincipalResultsCommandAction[keyof typeof PrincipalResultsCommandAction];
+
+
+export const PrincipalResultsCommandAction = {
+  saveSignature: 'saveSignature',
+  approve: 'approve',
+  return: 'return',
+  publish: 'publish',
+  unpublish: 'unpublish',
+} as const;
+
+export type PrincipalResultsCommandSection = typeof PrincipalResultsCommandSection[keyof typeof PrincipalResultsCommandSection];
+
+
+export const PrincipalResultsCommandSection = {
+  primary: 'primary',
+  secondary: 'secondary',
+} as const;
+
+export interface PrincipalResultsCommand {
+  action: PrincipalResultsCommandAction;
+  section: PrincipalResultsCommandSection;
+  termId?: number;
+  classId?: number;
+  /**
+     * For return: what the class teacher should fix
+     * @maxLength 1000
+     */
+  note?: string;
+  /**
+     * For saveSignature
+     * @maxLength 120
+     */
+  name?: string;
+  /**
+     * For saveSignature: a PNG, JPEG or WebP data URL
+     * @maxLength 200000
+     * @nullable
+     */
+  signature?: string | null;
+}
+
 export type MessageChannel = typeof MessageChannel[keyof typeof MessageChannel];
 
 
@@ -1988,6 +2217,10 @@ export interface ReportWorkspace {
   principalName: string;
   /** @nullable */
   principalSignature: string | null;
+  /** The principal printed on this class's report cards: who signed them in the principal's portal, else that school's principal, else principalName */
+  cardPrincipalName: string;
+  /** @nullable */
+  cardPrincipalSignature: string | null;
   /**
      * The signed-in teacher's saved signature
      * @nullable
@@ -4819,6 +5052,57 @@ export type GetPrincipalActivitySection = typeof GetPrincipalActivitySection[key
 
 
 export const GetPrincipalActivitySection = {
+  primary: 'primary',
+  secondary: 'secondary',
+} as const;
+
+export type GetPrincipalDashboardParams = {
+/**
+ * primary (Year 1 to Year 6) or secondary (JSS 1 to SS 3, the default)
+ */
+section?: GetPrincipalDashboardSection;
+};
+
+export type GetPrincipalDashboardSection = typeof GetPrincipalDashboardSection[keyof typeof GetPrincipalDashboardSection];
+
+
+export const GetPrincipalDashboardSection = {
+  primary: 'primary',
+  secondary: 'secondary',
+} as const;
+
+export type GetPrincipalExamsParams = {
+/**
+ * primary (Year 1 to Year 6) or secondary (JSS 1 to SS 3, the default)
+ */
+section?: GetPrincipalExamsSection;
+/**
+ * A term key from the list, such as 2026-1; defaults to the latest
+ * @pattern ^\d{4}-[1-3]$
+ */
+term?: string;
+};
+
+export type GetPrincipalExamsSection = typeof GetPrincipalExamsSection[keyof typeof GetPrincipalExamsSection];
+
+
+export const GetPrincipalExamsSection = {
+  primary: 'primary',
+  secondary: 'secondary',
+} as const;
+
+export type GetPrincipalResultsParams = {
+/**
+ * primary (Year 1 to Year 6) or secondary (JSS 1 to SS 3, the default)
+ */
+section?: GetPrincipalResultsSection;
+termId?: number;
+};
+
+export type GetPrincipalResultsSection = typeof GetPrincipalResultsSection[keyof typeof GetPrincipalResultsSection];
+
+
+export const GetPrincipalResultsSection = {
   primary: 'primary',
   secondary: 'secondary',
 } as const;

@@ -23,6 +23,10 @@ export interface ReportWorkspace {
   principalName: string;
   /** @nullable */
   principalSignature: string | null;
+  /** The principal printed on this class's report cards: who signed them in the principal's portal, else that school's principal, else principalName */
+  cardPrincipalName: string;
+  /** @nullable */
+  cardPrincipalSignature: string | null;
   /**
      * The signed-in teacher's saved signature
      * @nullable

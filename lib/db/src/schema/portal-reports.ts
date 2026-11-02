@@ -82,6 +82,18 @@ export const portalReportSettings = pgTable("portal_report_settings", {
 export type PortalReportSettingsRecord = typeof portalReportSettings.$inferSelect;
 
 /**
+ * Each principal's name and signature, set in their own portal: "secondary" (JSS 1 to SS 3) and "primary"
+ * (Year 1 to Year 6). Printed on their classes' report cards in place of the school-wide principal.
+ */
+export const portalPrincipals = pgTable("portal_principals", {
+  section: text("section").primaryKey(),
+  name: text("name").notNull().default(""),
+  signature: text("signature"),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+export type PortalPrincipalRecord = typeof portalPrincipals.$inferSelect;
+
+/**
  * Where a class's results are for a term: draft (scores being entered), review (the class teacher has
  * checked and signed), approved (the principal or office approved). Published is a row in portal_report_releases.
  */
@@ -96,6 +108,10 @@ export const portalReportWorkflow = pgTable("portal_report_workflow", {
   submittedAt: timestamp("submitted_at", { withTimezone: true }),
   approvedBy: text("approved_by").notNull().default(""),
   approvedAt: timestamp("approved_at", { withTimezone: true }),
+  // The principal who signed these results in the principal's portal: kept with the results, so a later change
+  // of signature does not alter report cards already signed.
+  principalName: text("principal_name").notNull().default(""),
+  principalSignature: text("principal_signature"),
   returnNote: text("return_note").notNull().default(""),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 }, (t) => [primaryKey({ columns: [t.termId, t.classId] })]);

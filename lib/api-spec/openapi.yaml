@@ -131,6 +131,14 @@ paths:
     $ref: "./principal.yaml#/paths/overview"
   /portal/principal/activity:
     $ref: "./principal.yaml#/paths/activity"
+  /portal/principal/dashboard:
+    $ref: "./principal.yaml#/paths/dashboard"
+  /portal/principal/exams:
+    $ref: "./principal.yaml#/paths/exams"
+  /portal/principal/exams/{examId}:
+    $ref: "./principal.yaml#/paths/exam"
+  /portal/principal/results:
+    $ref: "./principal.yaml#/paths/results"
   /portal/my-messages:
     $ref: "./messages.yaml#/paths/myMessages"
   /portal/my-messages/read:
@@ -1141,6 +1149,36 @@ components:
       $ref: "./principal.yaml#/schemas/PrincipalTeacherDay"
     PrincipalActivity:
       $ref: "./principal.yaml#/schemas/PrincipalActivity"
+    PrincipalActivityCounts:
+      $ref: "./principal.yaml#/schemas/PrincipalActivityCounts"
+    PrincipalTeacherWeek:
+      $ref: "./principal.yaml#/schemas/PrincipalTeacherWeek"
+    PrincipalClassStatus:
+      $ref: "./principal.yaml#/schemas/PrincipalClassStatus"
+    PrincipalDashboardFigures:
+      $ref: "./principal.yaml#/schemas/PrincipalDashboardFigures"
+    PrincipalDashboard:
+      $ref: "./principal.yaml#/schemas/PrincipalDashboard"
+    PrincipalExamTerm:
+      $ref: "./principal.yaml#/schemas/PrincipalExamTerm"
+    PrincipalExamSummary:
+      $ref: "./principal.yaml#/schemas/PrincipalExamSummary"
+    PrincipalExamList:
+      $ref: "./principal.yaml#/schemas/PrincipalExamList"
+    PrincipalExamQuestion:
+      $ref: "./principal.yaml#/schemas/PrincipalExamQuestion"
+    PrincipalExamPaper:
+      $ref: "./principal.yaml#/schemas/PrincipalExamPaper"
+    PrincipalResultClass:
+      $ref: "./principal.yaml#/schemas/PrincipalResultClass"
+    PrincipalResultTerm:
+      $ref: "./principal.yaml#/schemas/PrincipalResultTerm"
+    PrincipalSignature:
+      $ref: "./principal.yaml#/schemas/PrincipalSignature"
+    PrincipalResults:
+      $ref: "./principal.yaml#/schemas/PrincipalResults"
+    PrincipalResultsCommand:
+      $ref: "./principal.yaml#/schemas/PrincipalResultsCommand"
     MessageChannel:
       $ref: "./messages.yaml#/schemas/MessageChannel"
     PortalChatMessage:
