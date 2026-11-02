@@ -5,7 +5,7 @@ import { asset } from "@/lib/asset";
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 const RETURN_KEY = "nwe-signin-return";
 // Allow-list only: maps a returnTo token to an internal path. Anything else falls back to /admin.
-const RETURN_TARGETS: Record<string, string> = { portal: "/portal/manage", director: "/director", parents: "/parents" };
+const RETURN_TARGETS: Record<string, string> = { portal: "/portal/manage", director: "/director", parents: "/parents", principal: "/principal" };
 
 function resolveReturnTo(): string | null {
   try {
@@ -36,13 +36,14 @@ export function SchoolSignIn({ signup = false }: { signup?: boolean }) {
   const isPortal = token === "portal";
   const isDirector = token === "director";
   const isParent = token === "parents";
+  const isPrincipal = token === "principal";
   return (
     <main className="min-h-screen bg-secondary px-4 py-12 text-white">
       <div className="mx-auto max-w-lg text-center">
         <img src={asset("/logo.jpg")} alt="New World Emerald Private School" className="mx-auto h-20 w-20 object-contain" />
-        <p className="mt-5 text-xs font-bold uppercase tracking-[0.25em] text-accent">{isParent ? "Parent portal" : isDirector ? "Director" : isPortal ? "Learning portal staff" : "School office"}</p>
+        <p className="mt-5 text-xs font-bold uppercase tracking-[0.25em] text-accent">{isPrincipal ? "Principal" : isParent ? "Parent portal" : isDirector ? "Director" : isPortal ? "Learning portal staff" : "School office"}</p>
         <h1 className="mt-2 font-serif text-3xl font-bold">New World Emerald</h1>
-        <p className="mb-8 mt-3 text-sm text-white/75">{isParent ? "Sign in with the email address the school has for you to see your children and pay school fees." : isDirector ? "Sign in with the Director's email to open the school dashboard and weekly report." : isPortal ? "Teachers and administrators sign in with their school-approved email to manage exams, revision and marking." : "Sign in with your email to access the school admin panel. Website management is restricted to school-approved administrators."}</p>
+        <p className="mb-8 mt-3 text-sm text-white/75">{isPrincipal ? "Sign in with the principal's email to assign teachers to classes and see each teacher's day." : isParent ? "Sign in with the email address the school has for you to see your children and pay school fees." : isDirector ? "Sign in with the Director's email to open the school dashboard and weekly report." : isPortal ? "Teachers and administrators sign in with their school-approved email to manage exams, revision and marking." : "Sign in with your email to access the school admin panel. Website management is restricted to school-approved administrators."}</p>
         {(isPortal || isParent) && (
           <div className="mx-auto mb-6 max-w-sm rounded-xl bg-white/10 p-4 text-left text-sm leading-relaxed text-white/90" data-testid="text-first-time-staff">
             <p className="font-semibold text-accent">First time here?</p>

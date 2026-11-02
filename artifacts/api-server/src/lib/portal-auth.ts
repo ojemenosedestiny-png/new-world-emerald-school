@@ -42,6 +42,8 @@ export interface PortalActor {
   classIds: number[];
   mustChangePassword: boolean;
   student?: PortalStudentRecord;
+  /** The teacher record, for teachers. */
+  teacherId?: number;
 }
 const verifiedStaff = new Map<string, { email: string; until: number }>();
 /**
@@ -71,7 +73,7 @@ export async function portalActor(req: Request): Promise<PortalActor> {
   const email = await verifiedClerkEmail(req);
   if (email) {
     const [teacher] = await db.select().from(portalTeachers).where(and(eq(portalTeachers.email, email), eq(portalTeachers.active, true)));
-    if (teacher) return { role: "teacher", name: teacher.name, classIds: teacher.classIds, mustChangePassword: false };
+    if (teacher) return { role: "teacher", name: teacher.name, classIds: teacher.classIds, mustChangePassword: false, teacherId: teacher.id };
   }
   const token = sessionToken(req);
   if (/^[a-f0-9]{64}$/.test(token)) {

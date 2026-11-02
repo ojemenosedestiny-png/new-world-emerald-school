@@ -1,0 +1,73 @@
+/**
+ * The principal's view of teachers' work: plain-English labels for what the staff audit log recorded,
+ * grouped into a few kinds, and the boundaries of a school day in Nigeria (Africa/Lagos, UTC+1, no DST).
+ */
+
+export type ActivityKind = "register" | "scores" | "exams" | "marking" | "messages" | "assignments" | "notes" | "announcements" | "other";
+
+// Portal commands, recorded as "portal.<action>".
+const COMMANDS: Record<string, [ActivityKind, string]> = {
+  saveExam: ["exams", "Created or edited an exam"],
+  examStatus: ["exams", "Published an exam or released its results"],
+  deleteExam: ["exams", "Deleted an exam"],
+  addPracticeExams: ["exams", "Added practice exams"],
+  grade: ["marking", "Marked an exam script"],
+  extendAttempt: ["exams", "Gave a student extra exam time"],
+  resetAttempt: ["exams", "Reset a student's exam attempt"],
+  saveMaterial: ["notes", "Shared revision notes"],
+  deleteMaterial: ["notes", "Removed revision notes"],
+  saveNotice: ["announcements", "Posted an announcement"],
+  deleteNotice: ["announcements", "Removed an announcement"],
+  saveScores: ["scores", "Entered report card scores and comments"],
+  saveCards: ["scores", "Wrote report card remarks and ratings"],
+  workflow: ["scores", "Sent or took back results for approval"],
+  setMode: ["scores", "Changed how results are graded"],
+  saveSignature: ["scores", "Updated their signature"],
+  saveStudent: ["other", "Updated a student's details"],
+};
+
+// Other changes, recorded as "<METHOD> <path>" (without /api).
+const PATHS: [RegExp, ActivityKind, string][] = [
+  [/^PUT \/portal\/attendance$/, "register", "Took the class register"],
+  [/^POST \/portal\/assignments$/, "assignments", "Set an assignment"],
+  [/^PUT \/portal\/assignments\/\d+$/, "assignments", "Edited an assignment"],
+  [/^DELETE \/portal\/assignments\/\d+$/, "assignments", "Deleted an assignment"],
+  [/^POST \/portal\/submissions\/\d+\/mark$/, "marking", "Marked a homework submission"],
+  [/^POST \/portal\/message-threads\//, "messages", "Replied to a student's message"],
+  [/^POST \/portal\/import$/, "exams", "Imported an exam from a PDF"],
+  [/^POST \/portal\/diagrams$/, "exams", "Added a diagram to an exam"],
+  [/^(POST|PUT|DELETE) \/portal\/(albums|album-photos)/, "other", "Updated the photo gallery"],
+  [/^POST \/portal\/photo-reviews\//, "other", "Reviewed a student's photo"],
+  [/^(POST|DELETE) \/portal\/inventory/, "other", "Updated the inventory"],
+  [/^(POST|PUT|DELETE) \/portal\/events/, "other", "Updated the events calendar"],
+  [/^POST \/portal\/accounts\//, "other", "Managed a student's account"],
+  [/^(POST|DELETE) \/portal\/(me|students\/\d+|teachers\/\d+)\/photo$/, "other", "Changed a profile photo"],
+];
+
+/** What an audit log action means to the principal, or null for entries that are not teaching work. */
+export function describeActivity(action: string): { kind: ActivityKind; label: string } | null {
+  if (action.startsWith("portal.")) {
+    const hit = COMMANDS[action.slice(7)];
+    return hit ? { kind: hit[0], label: hit[1] } : { kind: "other", label: "Worked in the portal" };
+  }
+  for (const [pattern, kind, label] of PATHS) if (pattern.test(action)) return { kind, label };
+  // Reading or marking messages read, and student-only actions, are not shown.
+  return null;
+}
+
+/** "2026-11-04" as the start and end of that day in Lagos, in UTC. */
+export function lagosDay(date: string): { start: Date; end: Date } | null {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(date);
+  if (!m) return null;
+  const startMs = Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3])) - 3_600_000;
+  const start = new Date(startMs);
+  if (Number.isNaN(startMs) || start.toISOString().slice(0, 10) === "Invalid") return null;
+  // Reject dates like 2026-02-31 that roll over.
+  if (new Date(startMs + 3_600_000).toISOString().slice(0, 10) !== date) return null;
+  return { start, end: new Date(startMs + 86_400_000) };
+}
+
+/** Today's date in Lagos as "YYYY-MM-DD". */
+export function lagosToday(now = new Date()) {
+  return new Date(now.getTime() + 3_600_000).toISOString().slice(0, 10);
+}

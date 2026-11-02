@@ -1,0 +1,125 @@
+paths:
+  overview:
+    get:
+      operationId: getPrincipalOverview
+      description: Every class with its class teachers and subject teachers, and every active teacher (principal only)
+      responses:
+        "200":
+          description: Classes and teachers
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PrincipalOverview" }
+    post:
+      operationId: managePrincipal
+      description: Assign, replace or remove a class teacher, or set a subject's teacher (principal only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PrincipalCommand" }
+      responses:
+        "200":
+          description: Saved
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PortalMessage" }
+  activity:
+    get:
+      operationId: getPrincipalActivity
+      description: What each teacher did on one day, Lagos time (principal only)
+      parameters:
+        - { name: date, in: query, required: false, schema: { type: string, pattern: "^\\d{4}-\\d{2}-\\d{2}$" } }
+      responses:
+        "200":
+          description: Each teacher's day
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PrincipalActivity" }
+schemas:
+  PrincipalPerson:
+    type: object
+    required: [id, name]
+    properties:
+      id: { type: integer }
+      name: { type: string }
+  PrincipalSubject:
+    type: object
+    required: [id, name, teacherId, teacherName]
+    properties:
+      id: { type: integer }
+      name: { type: string }
+      teacherId: { type: [integer, "null"] }
+      teacherName: { type: [string, "null"] }
+  PrincipalClass:
+    type: object
+    required: [id, name, students, teachers, subjects]
+    properties:
+      id: { type: integer }
+      name: { type: string }
+      students: { type: integer }
+      teachers: { type: array, items: { $ref: "#/components/schemas/PrincipalPerson" } }
+      subjects: { type: array, items: { $ref: "#/components/schemas/PrincipalSubject" } }
+  PrincipalTeacher:
+    type: object
+    required: [id, name, email, classIds, photoFileId, subjectCount]
+    properties:
+      id: { type: integer }
+      name: { type: string }
+      email: { type: string }
+      classIds: { type: array, items: { type: integer } }
+      photoFileId: { type: [string, "null"] }
+      subjectCount: { type: integer }
+  PrincipalOverview:
+    type: object
+    required: [today, classes, teachers]
+    properties:
+      today: { type: string }
+      classes: { type: array, items: { $ref: "#/components/schemas/PrincipalClass" } }
+      teachers: { type: array, items: { $ref: "#/components/schemas/PrincipalTeacher" } }
+  PrincipalCommand:
+    type: object
+    required: [action, classId]
+    properties:
+      action: { type: string, enum: [assign, remove, replace, setSubjectTeacher] }
+      classId: { type: integer }
+      teacherId: { type: [integer, "null"], description: "The teacher to assign or remove; for replace, the outgoing teacher; for a subject, its new teacher (null for none)" }
+      newTeacherId: { type: integer, description: "For replace: the incoming teacher" }
+      subjectId: { type: integer, description: "For setSubjectTeacher" }
+  PrincipalAction:
+    type: object
+    required: [at, kind, label]
+    properties:
+      at: { type: string, format: date-time }
+      kind: { type: string, enum: [register, scores, exams, marking, messages, assignments, notes, announcements, other] }
+      label: { type: string }
+  PrincipalTeacherDay:
+    type: object
+    required: [id, name, email, classes, firstSeen, lastSeen, counts, actions]
+    properties:
+      id: { type: integer }
+      name: { type: string }
+      email: { type: string }
+      classes: { type: array, items: { type: string } }
+      firstSeen: { type: ["string", "null"], format: date-time }
+      lastSeen: { type: ["string", "null"], format: date-time }
+      counts:
+        type: object
+        required: [register, scores, exams, marking, messages, assignments, notes, announcements, other]
+        properties:
+          register: { type: integer }
+          scores: { type: integer }
+          exams: { type: integer }
+          marking: { type: integer }
+          messages: { type: integer }
+          assignments: { type: integer }
+          notes: { type: integer }
+          announcements: { type: integer }
+          other: { type: integer }
+      actions: { type: array, items: { $ref: "#/components/schemas/PrincipalAction" } }
+  PrincipalActivity:
+    type: object
+    required: [date, today, teachers]
+    properties:
+      date: { type: string }
+      today: { type: string }
+      teachers: { type: array, items: { $ref: "#/components/schemas/PrincipalTeacherDay" } }

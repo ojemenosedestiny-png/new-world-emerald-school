@@ -65,6 +65,7 @@ import type {
   GetAuditLogParams,
   GetDirectorOverviewParams,
   GetLocalAccount200,
+  GetPrincipalActivityParams,
   GetReportWorkspaceParams,
   HealthStatus,
   ImportPortalPdfParams,
@@ -118,6 +119,9 @@ import type {
   PortalPdfImport,
   PortalSession,
   PreviewResultImportParams,
+  PrincipalActivity,
+  PrincipalCommand,
+  PrincipalOverview,
   PublicIndividualFeeCharge,
   ReportCommand,
   ReportPortalFocusLoss200,
@@ -4921,6 +4925,229 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       > => {
       return useMutation(getAdjustParentWalletMutationOptions(options));
     }
+
+export const getGetPrincipalOverviewUrl = () => {
+
+
+
+
+  return `/api/portal/principal`
+}
+
+/**
+ * Every class with its class teachers and subject teachers, and every active teacher (principal only)
+ */
+export const getPrincipalOverview = async ( options?: RequestInit): Promise<PrincipalOverview> => {
+
+  return customFetch<PrincipalOverview>(getGetPrincipalOverviewUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetPrincipalOverviewQueryKey = () => {
+    return [
+    `/api/portal/principal`
+    ] as const;
+    }
+
+
+export const getGetPrincipalOverviewQueryOptions = <TData = Awaited<ReturnType<typeof getPrincipalOverview>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPrincipalOverview>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetPrincipalOverviewQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getPrincipalOverview>>> = ({ signal }) => getPrincipalOverview({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getPrincipalOverview>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetPrincipalOverviewQueryResult = NonNullable<Awaited<ReturnType<typeof getPrincipalOverview>>>
+export type GetPrincipalOverviewQueryError = ErrorType<unknown>
+
+
+
+export function useGetPrincipalOverview<TData = Awaited<ReturnType<typeof getPrincipalOverview>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPrincipalOverview>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetPrincipalOverviewQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getManagePrincipalUrl = () => {
+
+
+
+
+  return `/api/portal/principal`
+}
+
+/**
+ * Assign, replace or remove a class teacher, or set a subject's teacher (principal only)
+ */
+export const managePrincipal = async (principalCommand: PrincipalCommand, options?: RequestInit): Promise<PortalMessage> => {
+
+  return customFetch<PortalMessage>(getManagePrincipalUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(principalCommand)
+  }
+);}
+
+
+
+
+
+export const getManagePrincipalMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof managePrincipal>>, TError,{data: BodyType<PrincipalCommand>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof managePrincipal>>, TError,{data: BodyType<PrincipalCommand>}, TContext> => {
+
+const mutationKey = ['managePrincipal'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof managePrincipal>>, {data: BodyType<PrincipalCommand>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  managePrincipal(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ManagePrincipalMutationResult = NonNullable<Awaited<ReturnType<typeof managePrincipal>>>
+    export type ManagePrincipalMutationBody = BodyType<PrincipalCommand>
+    export type ManagePrincipalMutationError = ErrorType<unknown>
+
+    export const useManagePrincipal = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof managePrincipal>>, TError,{data: BodyType<PrincipalCommand>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof managePrincipal>>,
+        TError,
+        {data: BodyType<PrincipalCommand>},
+        TContext
+      > => {
+      return useMutation(getManagePrincipalMutationOptions(options));
+    }
+
+export const getGetPrincipalActivityUrl = (params?: GetPrincipalActivityParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/portal/principal/activity?${stringifiedParams}` : `/api/portal/principal/activity`
+}
+
+/**
+ * What each teacher did on one day, Lagos time (principal only)
+ */
+export const getPrincipalActivity = async (params?: GetPrincipalActivityParams, options?: RequestInit): Promise<PrincipalActivity> => {
+
+  return customFetch<PrincipalActivity>(getGetPrincipalActivityUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetPrincipalActivityQueryKey = (params?: GetPrincipalActivityParams,) => {
+    return [
+    `/api/portal/principal/activity`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetPrincipalActivityQueryOptions = <TData = Awaited<ReturnType<typeof getPrincipalActivity>>, TError = ErrorType<unknown>>(params?: GetPrincipalActivityParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPrincipalActivity>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetPrincipalActivityQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getPrincipalActivity>>> = ({ signal }) => getPrincipalActivity(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getPrincipalActivity>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetPrincipalActivityQueryResult = NonNullable<Awaited<ReturnType<typeof getPrincipalActivity>>>
+export type GetPrincipalActivityQueryError = ErrorType<unknown>
+
+
+
+export function useGetPrincipalActivity<TData = Awaited<ReturnType<typeof getPrincipalActivity>>, TError = ErrorType<unknown>>(
+ params?: GetPrincipalActivityParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPrincipalActivity>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetPrincipalActivityQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 
 export const getGetMyMessagesUrl = () => {
 

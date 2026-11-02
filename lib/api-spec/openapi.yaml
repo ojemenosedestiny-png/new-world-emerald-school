@@ -127,6 +127,10 @@ paths:
     $ref: "./parents.yaml#/paths/office"
   /portal/parent-wallets/adjust:
     $ref: "./parents.yaml#/paths/adjust"
+  /portal/principal:
+    $ref: "./principal.yaml#/paths/overview"
+  /portal/principal/activity:
+    $ref: "./principal.yaml#/paths/activity"
   /portal/my-messages:
     $ref: "./messages.yaml#/paths/myMessages"
   /portal/my-messages/read:
@@ -1119,6 +1123,24 @@ components:
       $ref: "./parents.yaml#/schemas/ParentPaymentsOffice"
     ParentWalletAdjustment:
       $ref: "./parents.yaml#/schemas/ParentWalletAdjustment"
+    PrincipalPerson:
+      $ref: "./principal.yaml#/schemas/PrincipalPerson"
+    PrincipalSubject:
+      $ref: "./principal.yaml#/schemas/PrincipalSubject"
+    PrincipalClass:
+      $ref: "./principal.yaml#/schemas/PrincipalClass"
+    PrincipalTeacher:
+      $ref: "./principal.yaml#/schemas/PrincipalTeacher"
+    PrincipalOverview:
+      $ref: "./principal.yaml#/schemas/PrincipalOverview"
+    PrincipalCommand:
+      $ref: "./principal.yaml#/schemas/PrincipalCommand"
+    PrincipalAction:
+      $ref: "./principal.yaml#/schemas/PrincipalAction"
+    PrincipalTeacherDay:
+      $ref: "./principal.yaml#/schemas/PrincipalTeacherDay"
+    PrincipalActivity:
+      $ref: "./principal.yaml#/schemas/PrincipalActivity"
     MessageChannel:
       $ref: "./messages.yaml#/schemas/MessageChannel"
     PortalChatMessage:

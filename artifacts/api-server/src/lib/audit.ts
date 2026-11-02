@@ -80,7 +80,8 @@ export function auditStaffChanges() {
       const status = res.statusCode;
       void recordAudit({
         actorKind: "staff", actorId: req.dbUser?.id ?? null, actorLabel: req.identity?.email ?? "",
-        action: command ? `portal.${body.action}` : `${req.method} ${path.replace(/^\/api/, "")}`,
+        // Every portal command is named by its action, even ones with no single record to snapshot (approvals, modes).
+        action: COMMAND_PATHS.has(path) && typeof body.action === "string" ? `portal.${body.action.slice(0, 60)}` : `${req.method} ${path.replace(/^\/api/, "")}`,
         targetType: command?.type ?? null, targetId: command?.id ?? null,
         outcome: status < 400 ? "success" : status === 401 || status === 403 ? "denied" : "failed", status,
         before, after: Buffer.isBuffer(req.body) ? { bytes: req.body.length } : body,

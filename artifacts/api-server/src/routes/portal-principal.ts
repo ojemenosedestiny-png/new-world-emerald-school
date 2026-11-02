@@ -1,0 +1,133 @@
+import { Router, type Request } from "express";
+import { and, asc, eq, gte, inArray, lt, sql } from "drizzle-orm";
+import { db, portalAuditLog, portalClasses, portalStudents, portalSubjects, portalTeacherPresence, portalTeachers } from "@workspace/db";
+import { ManagePrincipalBody, GetPrincipalActivityQueryParams } from "@workspace/api-zod";
+import { check } from "../lib/portal-auth";
+import { isPrincipal } from "../lib/website-admin";
+import { describeActivity, lagosDay, lagosToday, type ActivityKind } from "../lib/principal";
+
+export const portalPrincipalRouter = Router();
+
+function principalOnly(req: Request) {
+  check(req.dbUser, "Sign in with the principal's email.", 401);
+  check(isPrincipal(req), "This page is for the principal only.", 403);
+}
+
+/** Every class with its class teachers and subject teachers, and every active teacher with their classes. */
+portalPrincipalRouter.get("/principal", async (req, res) => {
+  principalOnly(req);
+  const [classes, teachers, subjects, counts] = await Promise.all([
+    db.select().from(portalClasses).orderBy(asc(portalClasses.name)),
+    db.select().from(portalTeachers).where(eq(portalTeachers.active, true)).orderBy(asc(portalTeachers.name)),
+    db.select().from(portalSubjects).orderBy(asc(portalSubjects.sortOrder), asc(portalSubjects.name)),
+    db.select({ classId: portalStudents.classId, n: sql<number>`count(*)::int` }).from(portalStudents).where(eq(portalStudents.active, true)).groupBy(portalStudents.classId),
+  ]);
+  const studentCount = new Map(counts.map((c) => [c.classId, c.n]));
+  const teacherName = new Map(teachers.map((t) => [t.id, t.name]));
+  res.json({
+    today: lagosToday(),
+    classes: classes.map((c) => ({
+      id: c.id, name: c.name, students: studentCount.get(c.id) ?? 0,
+      teachers: teachers.filter((t) => t.classIds.includes(c.id)).map((t) => ({ id: t.id, name: t.name })),
+      subjects: subjects.filter((s) => s.classId === c.id).map((s) => ({ id: s.id, name: s.name, teacherId: s.teacherId, teacherName: s.teacherId === null ? null : teacherName.get(s.teacherId) ?? null })),
+    })),
+    teachers: teachers.map((t) => ({ id: t.id, name: t.name, email: t.email, classIds: t.classIds, photoFileId: t.photoFileId ?? null, subjectCount: subjects.filter((s) => s.teacherId === t.id).length })),
+  });
+});
+
+async function activeTeacher(id: number | null | undefined) {
+  check(id, "Choose a teacher.");
+  const [t] = await db.select().from(portalTeachers).where(eq(portalTeachers.id, id));
+  check(t && t.active, "That teacher is not active.", 404);
+  return t;
+}
+
+/** Assign, replace or remove a class teacher, or set a subject's teacher. Each change is in the audit log. */
+portalPrincipalRouter.post("/principal", async (req, res) => {
+  principalOnly(req);
+  const body = ManagePrincipalBody.parse(req.body);
+  const [cls] = await db.select().from(portalClasses).where(eq(portalClasses.id, body.classId));
+  check(cls, "Class not found.", 404);
+  let message = "Saved.";
+  switch (body.action) {
+    case "assign": {
+      const t = await activeTeacher(body.teacherId);
+      check(!t.classIds.includes(cls.id), `${t.name} already teaches ${cls.name}.`, 409);
+      await db.update(portalTeachers).set({ classIds: [...t.classIds, cls.id] }).where(eq(portalTeachers.id, t.id));
+      message = `${t.name} is now a class teacher for ${cls.name}.`;
+      break;
+    }
+    case "remove": {
+      const t = await activeTeacher(body.teacherId);
+      check(t.classIds.includes(cls.id), `${t.name} does not teach ${cls.name}.`, 404);
+      await db.update(portalTeachers).set({ classIds: t.classIds.filter((id) => id !== cls.id) }).where(eq(portalTeachers.id, t.id));
+      message = `${t.name} no longer teaches ${cls.name}.`;
+      break;
+    }
+    case "replace": {
+      const out = await activeTeacher(body.teacherId);
+      const into = await activeTeacher(body.newTeacherId);
+      check(out.id !== into.id, "Choose a different teacher.");
+      check(out.classIds.includes(cls.id), `${out.name} does not teach ${cls.name}.`, 404);
+      // The class's subjects taught by the outgoing teacher move to the new one too.
+      const moved = await db.transaction(async (tx) => {
+        await tx.update(portalTeachers).set({ classIds: out.classIds.filter((id) => id !== cls.id) }).where(eq(portalTeachers.id, out.id));
+        if (!into.classIds.includes(cls.id)) await tx.update(portalTeachers).set({ classIds: [...into.classIds, cls.id] }).where(eq(portalTeachers.id, into.id));
+        return tx.update(portalSubjects).set({ teacherId: into.id }).where(and(eq(portalSubjects.classId, cls.id), eq(portalSubjects.teacherId, out.id))).returning({ id: portalSubjects.id });
+      });
+      message = `${into.name} has replaced ${out.name} in ${cls.name}${moved.length ? `, including ${moved.length} ${moved.length === 1 ? "subject" : "subjects"}` : ""}.`;
+      break;
+    }
+    case "setSubjectTeacher": {
+      check(body.subjectId, "Choose a subject.");
+      const [subject] = await db.select().from(portalSubjects).where(eq(portalSubjects.id, body.subjectId));
+      check(subject && subject.classId === cls.id, "That subject is not in this class.", 404);
+      if (body.teacherId === null || body.teacherId === undefined) {
+        await db.update(portalSubjects).set({ teacherId: null }).where(eq(portalSubjects.id, subject.id));
+        message = `${subject.name} in ${cls.name} has no subject teacher now.`;
+      } else {
+        const t = await activeTeacher(body.teacherId);
+        await db.update(portalSubjects).set({ teacherId: t.id }).where(eq(portalSubjects.id, subject.id));
+        message = `${t.name} now teaches ${subject.name} in ${cls.name}.`;
+      }
+      break;
+    }
+  }
+  res.json({ message });
+});
+
+const KINDS: ActivityKind[] = ["register", "scores", "exams", "marking", "messages", "assignments", "notes", "announcements", "other"];
+
+/** What each teacher did on one day (Lagos time): when they were in the portal and every change they made. */
+portalPrincipalRouter.get("/principal/activity", async (req, res) => {
+  principalOnly(req);
+  const query = GetPrincipalActivityQueryParams.parse(req.query);
+  const date = query.date ?? lagosToday();
+  const day = lagosDay(date);
+  check(day, "Choose a valid date.");
+  const teachers = await db.select({ id: portalTeachers.id, name: portalTeachers.name, email: portalTeachers.email, classIds: portalTeachers.classIds }).from(portalTeachers).where(eq(portalTeachers.active, true)).orderBy(asc(portalTeachers.name));
+  const emails = teachers.map((t) => t.email.toLowerCase());
+  const rows = emails.length
+    ? await db.select({ at: portalAuditLog.at, actorLabel: portalAuditLog.actorLabel, action: portalAuditLog.action }).from(portalAuditLog)
+      .where(and(gte(portalAuditLog.at, day.start), lt(portalAuditLog.at, day.end), eq(portalAuditLog.outcome, "success"), inArray(sql`lower(${portalAuditLog.actorLabel})`, emails)))
+      .orderBy(asc(portalAuditLog.at)).limit(5000)
+    : [];
+  const presence = teachers.length
+    ? await db.select().from(portalTeacherPresence).where(and(eq(portalTeacherPresence.day, date), inArray(portalTeacherPresence.teacherId, teachers.map((t) => t.id))))
+    : [];
+  const classNames = new Map((await db.select({ id: portalClasses.id, name: portalClasses.name }).from(portalClasses)).map((c) => [c.id, c.name]));
+  const result = teachers.map((t) => {
+    const actions = rows.filter((r) => r.actorLabel.toLowerCase() === t.email.toLowerCase())
+      .map((r) => ({ at: r.at.toISOString(), ...describeActivity(r.action) }))
+      .filter((a): a is { at: string; kind: ActivityKind; label: string } => !!a.label);
+    const seen = presence.find((p) => p.teacherId === t.id);
+    const times = [...actions.map((a) => a.at), ...(seen ? [seen.firstAt.toISOString(), seen.lastAt.toISOString()] : [])].sort();
+    return {
+      id: t.id, name: t.name, email: t.email, classes: t.classIds.map((id) => classNames.get(id)).filter((n): n is string => !!n),
+      firstSeen: times[0] ?? null, lastSeen: times[times.length - 1] ?? null,
+      counts: Object.fromEntries(KINDS.map((k) => [k, actions.filter((a) => a.kind === k).length])) as Record<ActivityKind, number>,
+      actions,
+    };
+  });
+  res.json({ date, today: lagosToday(), teachers: result });
+});

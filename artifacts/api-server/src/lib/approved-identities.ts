@@ -30,6 +30,15 @@ export function directorEmails(): string[] {
   return listed.filter((e) => approvedEmails().includes(e));
 }
 
+/**
+ * The principal (SCHOOL_PRINCIPAL_EMAILS): opens the principal portal to assign teachers to classes and see
+ * teachers' daily activity. Must also be an approved administrator. No default: unset means nobody.
+ */
+export function principalEmails(): string[] {
+  const listed = (process.env.SCHOOL_PRINCIPAL_EMAILS ?? "").split(/[,;\s]+/).map((v) => v.trim().toLowerCase()).filter(Boolean);
+  return listed.filter((e) => approvedEmails().includes(e));
+}
+
 /** When true, administrators must have Clerk two-factor authentication turned on. */
 export const adminMfaRequired = () => process.env.REQUIRE_ADMIN_MFA === "true";
 

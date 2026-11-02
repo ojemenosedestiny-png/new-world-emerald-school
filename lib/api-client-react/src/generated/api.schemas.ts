@@ -712,6 +712,120 @@ export interface ParentWalletAdjustment {
   note: string;
 }
 
+export interface PrincipalPerson {
+  id: number;
+  name: string;
+}
+
+export interface PrincipalSubject {
+  id: number;
+  name: string;
+  /** @nullable */
+  teacherId: number | null;
+  /** @nullable */
+  teacherName: string | null;
+}
+
+export interface PrincipalClass {
+  id: number;
+  name: string;
+  students: number;
+  teachers: PrincipalPerson[];
+  subjects: PrincipalSubject[];
+}
+
+export interface PrincipalTeacher {
+  id: number;
+  name: string;
+  email: string;
+  classIds: number[];
+  /** @nullable */
+  photoFileId: string | null;
+  subjectCount: number;
+}
+
+export interface PrincipalOverview {
+  today: string;
+  classes: PrincipalClass[];
+  teachers: PrincipalTeacher[];
+}
+
+export type PrincipalCommandAction = typeof PrincipalCommandAction[keyof typeof PrincipalCommandAction];
+
+
+export const PrincipalCommandAction = {
+  assign: 'assign',
+  remove: 'remove',
+  replace: 'replace',
+  setSubjectTeacher: 'setSubjectTeacher',
+} as const;
+
+export interface PrincipalCommand {
+  action: PrincipalCommandAction;
+  classId: number;
+  /**
+     * The teacher to assign or remove; for replace, the outgoing teacher; for a subject, its new teacher (null for none)
+     * @nullable
+     */
+  teacherId?: number | null;
+  /** For replace: the incoming teacher */
+  newTeacherId?: number;
+  /** For setSubjectTeacher */
+  subjectId?: number;
+}
+
+export type PrincipalActionKind = typeof PrincipalActionKind[keyof typeof PrincipalActionKind];
+
+
+export const PrincipalActionKind = {
+  register: 'register',
+  scores: 'scores',
+  exams: 'exams',
+  marking: 'marking',
+  messages: 'messages',
+  assignments: 'assignments',
+  notes: 'notes',
+  announcements: 'announcements',
+  other: 'other',
+} as const;
+
+export interface PrincipalAction {
+  at: string;
+  kind: PrincipalActionKind;
+  label: string;
+}
+
+export type PrincipalTeacherDayCounts = {
+  register: number;
+  scores: number;
+  exams: number;
+  marking: number;
+  messages: number;
+  assignments: number;
+  notes: number;
+  announcements: number;
+  other: number;
+};
+
+export interface PrincipalTeacherDay {
+  id: number;
+  name: string;
+  email: string;
+  classes: string[];
+  /** @nullable */
+  firstSeen: string | null;
+  /** @nullable */
+  lastSeen: string | null;
+  counts: PrincipalTeacherDayCounts;
+  actions: PrincipalAction[];
+}
+
+export interface PrincipalActivity {
+  date: string;
+  today: string;
+  teachers: PrincipalTeacherDay[];
+}
+
 export type MessageChannel = typeof MessageChannel[keyof typeof MessageChannel];
 
 
@@ -4671,6 +4785,13 @@ export const GetDirectorOverviewDays = {
 
 export type SendDirectorReport200 = {
   message: string;
+};
+
+export type GetPrincipalActivityParams = {
+/**
+ * @pattern ^\d{4}-\d{2}-\d{2}$
+ */
+date?: string;
 };
 
 export type GetLocalAccount200 = {

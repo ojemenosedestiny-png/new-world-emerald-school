@@ -2891,6 +2891,94 @@ export const AdjustParentWalletResponse = zod.object({
 })
 
 
+/**
+ * Every class with its class teachers and subject teachers, and every active teacher (principal only)
+ */
+export const GetPrincipalOverviewResponse = zod.object({
+  "today": zod.string(),
+  "classes": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "students": zod.number(),
+  "teachers": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string()
+})),
+  "subjects": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "teacherId": zod.number().nullable(),
+  "teacherName": zod.string().nullable()
+}))
+})),
+  "teachers": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "email": zod.string(),
+  "classIds": zod.array(zod.number()),
+  "photoFileId": zod.string().nullable(),
+  "subjectCount": zod.number()
+}))
+})
+
+
+/**
+ * Assign, replace or remove a class teacher, or set a subject's teacher (principal only)
+ */
+export const ManagePrincipalBody = zod.object({
+  "action": zod.enum(['assign', 'remove', 'replace', 'setSubjectTeacher']),
+  "classId": zod.number(),
+  "teacherId": zod.number().nullish().describe('The teacher to assign or remove; for replace, the outgoing teacher; for a subject, its new teacher (null for none)'),
+  "newTeacherId": zod.number().optional().describe('For replace: the incoming teacher'),
+  "subjectId": zod.number().optional().describe('For setSubjectTeacher')
+})
+
+export const ManagePrincipalResponse = zod.object({
+  "message": zod.string(),
+  "studentId": zod.string().optional().describe('The Student ID of a student just enrolled')
+})
+
+
+/**
+ * What each teacher did on one day, Lagos time (principal only)
+ */
+export const getPrincipalActivityQueryDateRegExp = new RegExp('^\\d{4}-\\d{2}-\\d{2}$');
+
+
+export const GetPrincipalActivityQueryParams = zod.object({
+  "date": zod.coerce.string().regex(getPrincipalActivityQueryDateRegExp).optional()
+})
+
+export const GetPrincipalActivityResponse = zod.object({
+  "date": zod.string(),
+  "today": zod.string(),
+  "teachers": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "email": zod.string(),
+  "classes": zod.array(zod.string()),
+  "firstSeen": zod.coerce.date().nullable(),
+  "lastSeen": zod.coerce.date().nullable(),
+  "counts": zod.object({
+  "register": zod.number(),
+  "scores": zod.number(),
+  "exams": zod.number(),
+  "marking": zod.number(),
+  "messages": zod.number(),
+  "assignments": zod.number(),
+  "notes": zod.number(),
+  "announcements": zod.number(),
+  "other": zod.number()
+}),
+  "actions": zod.array(zod.object({
+  "at": zod.coerce.date(),
+  "kind": zod.enum(['register', 'scores', 'exams', 'marking', 'messages', 'assignments', 'notes', 'announcements', 'other']),
+  "label": zod.string()
+}))
+}))
+})
+
+
 export const GetMyMessagesResponse = zod.object({
   "threads": zod.array(zod.object({
   "channel": zod.enum(['class', 'office']),

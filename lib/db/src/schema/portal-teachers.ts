@@ -1,4 +1,4 @@
-import { pgTable, serial, text, boolean, integer } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, boolean, integer, timestamp, primaryKey } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 export const portalTeachers = pgTable("portal_teachers", {
   id: serial("id").primaryKey(),
@@ -16,3 +16,11 @@ export const portalTeachers = pgTable("portal_teachers", {
 });
 export const insertPortalTeacherSchema = createInsertSchema(portalTeachers).omit({ id: true });
 export type PortalTeacherRecord = typeof portalTeachers.$inferSelect;
+
+/** When a teacher had the staff portal open on a day (Lagos date), for the principal's daily activity view. */
+export const portalTeacherPresence = pgTable("portal_teacher_presence", {
+  teacherId: integer("teacher_id").notNull().references(() => portalTeachers.id, { onDelete: "cascade" }),
+  day: text("day").notNull(),
+  firstAt: timestamp("first_at", { withTimezone: true }).notNull().defaultNow(),
+  lastAt: timestamp("last_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [primaryKey({ columns: [t.teacherId, t.day] })]);

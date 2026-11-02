@@ -2,7 +2,7 @@ import { Router } from "express";
 import { and, eq, inArray, sql } from "drizzle-orm";
 import {
   db, portalClasses, portalStudents, portalTeachers, portalSessions, portalExams, portalAttempts,
-  portalMaterials, portalNotices, portalFiles,
+  portalMaterials, portalNotices, portalFiles, portalTeacherPresence,
 } from "@workspace/db";
 import { ManagePortalBody } from "@workspace/api-zod";
 import { check, portalActor, staffOnly, classAllowed, hashPassword, type PortalActor } from "../lib/portal-auth";
@@ -14,6 +14,7 @@ import { emailConfigured, sendEmail, teacherInviteEmail } from "../lib/email";
 import { cleanSubjects } from "../lib/community";
 import { paperSettingsProblem } from "../lib/cbt";
 import { PRACTICE_TITLE, practiceExam } from "../lib/practice-exam";
+import { lagosToday } from "../lib/principal";
 
 /** The short address teachers use: it opens staff sign-in and returns to the teacher workspace. */
 export const TEACHER_PATH = "/teacher";
@@ -56,9 +57,21 @@ async function validDiagrams(questions: { diagramFileId?: string | null }[], cla
   const files = await db.select().from(portalFiles).where(and(inArray(portalFiles.id, ids), eq(portalFiles.classId, classId)));
   check(files.length === ids.length && files.every((f) => diagramContentType(f.objectName)), "Each diagram must be a picture uploaded for this class.");
 }
+// When each teacher last had the portal open, written at most every five minutes per teacher.
+const presenceWritten = new Map<number, number>();
+async function notePresence(teacherId: number) {
+  const now = Date.now();
+  if (now - (presenceWritten.get(teacherId) ?? 0) < 5 * 60_000) return;
+  if (presenceWritten.size > 2000) presenceWritten.clear();
+  presenceWritten.set(teacherId, now);
+  await db.insert(portalTeacherPresence).values({ teacherId, day: lagosToday() })
+    .onConflictDoUpdate({ target: [portalTeacherPresence.teacherId, portalTeacherPresence.day], set: { lastAt: new Date() } });
+}
+
 portalManagementRouter.get("/manage", async (req, res) => {
   const actor = await portalActor(req);
   staffOnly(actor);
+  if (actor.teacherId) void notePresence(actor.teacherId).catch((error) => req.log.warn({ err: error }, "Teacher presence not recorded"));
   const classes = await db.select().from(portalClasses).where(scoped(actor, portalClasses.id));
   const students = await db.select({ id: portalStudents.id, studentId: portalStudents.studentId, name: portalStudents.name, classId: portalStudents.classId, active: portalStudents.active, guardianEmail: portalStudents.guardianEmail, accountStatus: portalStudents.accountStatus, photoImageId: portalStudents.photoImageId }).from(portalStudents).where(scoped(actor, portalStudents.classId));
   // Signatures are only sent with the report workspace, not with every staff list.

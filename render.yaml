@@ -28,6 +28,9 @@ services:
       # The Director's email: sole access to /director and the Monday report. Must also be in SCHOOL_ADMIN_EMAILS.
       - key: SCHOOL_DIRECTOR_EMAILS
         sync: false
+      # The principal's email: opens /principal to assign teachers and see their daily activity. Must also be in SCHOOL_ADMIN_EMAILS.
+      - key: SCHOOL_PRINCIPAL_EMAILS
+        sync: false
       - key: REQUIRE_ADMIN_MFA
         value: "false"
       - key: RESEND_API_KEY
