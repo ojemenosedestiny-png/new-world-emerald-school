@@ -760,10 +760,12 @@ export const PrincipalCommandAction = {
   remove: 'remove',
   replace: 'replace',
   setSubjectTeacher: 'setSubjectTeacher',
+  setGroupSubjectTeacher: 'setGroupSubjectTeacher',
 } as const;
 
 export interface PrincipalCommand {
   action: PrincipalCommandAction;
+  /** The class; for setGroupSubjectTeacher, any one of classIds */
   classId: number;
   /**
      * The teacher to assign or remove; for replace, the outgoing teacher; for a subject, its new teacher (null for none)
@@ -774,6 +776,16 @@ export interface PrincipalCommand {
   newTeacherId?: number;
   /** For setSubjectTeacher */
   subjectId?: number;
+  /**
+     * For setGroupSubjectTeacher: every arm of a year group, e.g. Year 11 Amber, Jade and Chrysolite
+     * @maxItems 20
+     */
+  classIds?: number[];
+  /**
+     * For setGroupSubjectTeacher: the subject, matched by name in each class
+     * @maxLength 120
+     */
+  subjectName?: string;
 }
 
 export type PrincipalActionKind = typeof PrincipalActionKind[keyof typeof PrincipalActionKind];
@@ -3901,6 +3913,26 @@ export type PortalManagementNoticesItem = {
   published: boolean;
 };
 
+export type PortalManagementTeachingClassTeacherOfItem = {
+  id: number;
+  name: string;
+};
+
+export type PortalManagementTeachingSubjectsItem = {
+  subjectId: number;
+  subject: string;
+  classId: number;
+  className: string;
+};
+
+/**
+ * For a teacher, what the principal or office assigned them. Absent for administrators.
+ */
+export type PortalManagementTeaching = {
+  classTeacherOf: PortalManagementTeachingClassTeacherOfItem[];
+  subjects: PortalManagementTeachingSubjectsItem[];
+};
+
 export interface PortalManagement {
   classes: PortalManagementClassesItem[];
   students: PortalManagementStudentsItem[];
@@ -3909,6 +3941,40 @@ export interface PortalManagement {
   attempts: PortalManagementAttemptsItem[];
   materials: PortalManagementMaterialsItem[];
   notices: PortalManagementNoticesItem[];
+  /** For a teacher, what the principal or office assigned them. Absent for administrators. */
+  teaching?: PortalManagementTeaching;
+}
+
+export type PortalTeachingClassTeacherOfItem = {
+  id: number;
+  name: string;
+};
+
+export type PortalTeachingSubjectsItem = {
+  subjectId: number;
+  subject: string;
+  classId: number;
+  className: string;
+};
+
+/**
+ * For a teacher, what the principal or office assigned them. Absent for administrators.
+ */
+export interface PortalTeaching {
+  classTeacherOf: PortalTeachingClassTeacherOfItem[];
+  subjects: PortalTeachingSubjectsItem[];
+}
+
+export interface PortalTeachingClass {
+  id: number;
+  name: string;
+}
+
+export interface PortalTeachingSubject {
+  subjectId: number;
+  subject: string;
+  classId: number;
+  className: string;
 }
 
 export type PortalGradeMarksItem = {

@@ -162,11 +162,13 @@ schemas:
     type: object
     required: [action, classId]
     properties:
-      action: { type: string, enum: [assign, remove, replace, setSubjectTeacher] }
-      classId: { type: integer }
+      action: { type: string, enum: [assign, remove, replace, setSubjectTeacher, setGroupSubjectTeacher] }
+      classId: { type: integer, description: "The class; for setGroupSubjectTeacher, any one of classIds" }
       teacherId: { type: [integer, "null"], description: "The teacher to assign or remove; for replace, the outgoing teacher; for a subject, its new teacher (null for none)" }
       newTeacherId: { type: integer, description: "For replace: the incoming teacher" }
       subjectId: { type: integer, description: "For setSubjectTeacher" }
+      classIds: { type: array, items: { type: integer }, maxItems: 20, description: "For setGroupSubjectTeacher: every arm of a year group, e.g. Year 11 Amber, Jade and Chrysolite" }
+      subjectName: { type: string, maxLength: 120, description: "For setGroupSubjectTeacher: the subject, matched by name in each class" }
   PrincipalAction:
     type: object
     required: [at, kind, label]

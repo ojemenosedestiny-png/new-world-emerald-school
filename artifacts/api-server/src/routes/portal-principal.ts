@@ -113,6 +113,23 @@ portalPrincipalRouter.post("/principal", async (req, res) => {
       }
       break;
     }
+    case "setGroupSubjectTeacher": {
+      // One subject's teacher across every arm of a year group (Year 11 Amber, Jade, Chrysolite...).
+      const ids = [...new Set([cls.id, ...(body.classIds ?? [])])];
+      check(ids.length <= 20, "Choose at most 20 classes.");
+      const name = (body.subjectName ?? "").trim();
+      check(name, "Choose a subject.");
+      const rows = await db.select({ id: portalClasses.id, name: portalClasses.name }).from(portalClasses).where(inArray(portalClasses.id, ids));
+      check(rows.length === ids.length, "Class not found.", 404);
+      check(rows.every((r) => classSection(r.name) === section), "Every class must be in your school.", 403);
+      const t = body.teacherId === null || body.teacherId === undefined ? null : await activeTeacher(body.teacherId);
+      const updated = await db.update(portalSubjects).set({ teacherId: t?.id ?? null })
+        .where(and(inArray(portalSubjects.classId, ids), sql`lower(trim(${portalSubjects.name})) = ${name.toLowerCase()}`)).returning({ classId: portalSubjects.classId });
+      check(updated.length, `None of these classes has ${name}.`, 404);
+      const n = new Set(updated.map((u) => u.classId)).size;
+      message = t ? `${t.name} now teaches ${name} in ${n} ${n === 1 ? "class" : "classes"}.` : `${name} has no subject teacher now in ${n} ${n === 1 ? "class" : "classes"}.`;
+      break;
+    }
   }
   res.json({ message });
 });

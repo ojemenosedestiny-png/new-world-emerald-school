@@ -1,8 +1,8 @@
 import { Router } from "express";
-import { and, eq, inArray, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, sql } from "drizzle-orm";
 import {
   db, portalClasses, portalStudents, portalTeachers, portalSessions, portalExams, portalAttempts,
-  portalMaterials, portalNotices, portalFiles, portalTeacherPresence,
+  portalMaterials, portalNotices, portalFiles, portalSubjects, portalTeacherPresence,
 } from "@workspace/db";
 import { ManagePortalBody } from "@workspace/api-zod";
 import { check, portalActor, staffOnly, classAllowed, hashPassword, type PortalActor } from "../lib/portal-auth";
@@ -86,7 +86,15 @@ portalManagementRouter.get("/manage", async (req, res) => {
   }));
   const materials = await db.select().from(portalMaterials).where(scoped(actor, portalMaterials.classId));
   const notices = await db.select().from(portalNotices).where(scoped(actor, portalNotices.classId));
-  res.json({ classes, students, teachers, exams, attempts, materials, notices });
+  // A teacher sees what they were assigned: their classes, and every subject they teach (in any class).
+  let teaching;
+  if (actor.teacherId) {
+    const subjects = await db.select({ subjectId: portalSubjects.id, subject: portalSubjects.name, classId: portalClasses.id, className: portalClasses.name })
+      .from(portalSubjects).innerJoin(portalClasses, eq(portalClasses.id, portalSubjects.classId)).where(eq(portalSubjects.teacherId, actor.teacherId))
+      .orderBy(asc(portalClasses.name), asc(portalSubjects.sortOrder), asc(portalSubjects.name));
+    teaching = { classTeacherOf: classes.filter((c) => actor.classIds.includes(c.id)).map((c) => ({ id: c.id, name: c.name })), subjects };
+  }
+  res.json({ classes, students, teachers, exams, attempts, materials, notices, ...(teaching ? { teaching } : {}) });
 });
 portalManagementRouter.post("/manage", async (req, res) => {
   const actor = await portalActor(req);

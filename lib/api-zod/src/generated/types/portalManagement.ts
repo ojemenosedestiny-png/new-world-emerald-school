@@ -12,6 +12,7 @@ import type { PortalManagementMaterialsItem } from './portalManagementMaterialsI
 import type { PortalManagementNoticesItem } from './portalManagementNoticesItem';
 import type { PortalManagementStudentsItem } from './portalManagementStudentsItem';
 import type { PortalManagementTeachersItem } from './portalManagementTeachersItem';
+import type { PortalManagementTeaching } from './portalManagementTeaching';
 
 export interface PortalManagement {
   classes: PortalManagementClassesItem[];
@@ -21,4 +22,6 @@ export interface PortalManagement {
   attempts: PortalManagementAttemptsItem[];
   materials: PortalManagementMaterialsItem[];
   notices: PortalManagementNoticesItem[];
+  /** For a teacher, what the principal or office assigned them. Absent for administrators. */
+  teaching?: PortalManagementTeaching;
 }

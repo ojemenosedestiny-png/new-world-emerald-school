@@ -5,13 +5,13 @@ import {
   useListMessageThreads, useListStaffAssignments, type PortalManagement,
 } from "@workspace/api-client-react";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { ArrowRight, BarChart3, CalendarCheck, Table2 } from "lucide-react";
+import { ArrowRight, BarChart3, BookOpen, CalendarCheck, Table2 } from "lucide-react";
 import { formatDateTime } from "../lib";
 import { overviewCounts } from "./Overview";
 import { dashboardData, type LiveExam } from "./dashboardData";
 import { localDate } from "./AttendancePanel";
 
-type Section = "exams" | "marking" | "students" | "attendance" | "assignments" | "messages";
+type Section = "exams" | "marking" | "students" | "attendance" | "assignments" | "messages" | "reports";
 type ChartTheme = { mark: string; grid: string; tick: string };
 const THEMES: Record<"light" | "dark", ChartTheme> = {
   // Mark colours validated (lightness, chroma, >= 3:1 contrast) against each card surface.
@@ -80,6 +80,38 @@ function LiveRow({ e, onGo }: { e: LiveExam; onGo: (s: Section) => void }) {
   );
 }
 
+/** A teacher's own assignments from the principal or office: class teacher of, and each subject in each class. */
+export function MyTeaching({ teaching, onGo }: { teaching: NonNullable<PortalManagement["teaching"]>; onGo: (section: Section) => void }) {
+  const byClass = new Map<string, string[]>();
+  for (const s of teaching.subjects) byClass.set(s.className, [...(byClass.get(s.className) ?? []), s.subject]);
+  return (
+    <section className="portal-card p-5" aria-labelledby="my-teaching-title" data-testid="panel-my-teaching">
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <div><h2 id="my-teaching-title" className="flex items-center gap-2 font-serif text-xl font-semibold"><BookOpen size={18} aria-hidden="true" /> My teaching</h2>
+          <p className={"text-sm " + MUTED}>What the principal or school office assigned you.</p></div>
+        {teaching.subjects.length > 0 && <button type="button" className="portal-btn-ghost !min-h-[36px] text-sm" onClick={() => onGo("reports")} data-testid="button-my-teaching-scores">Enter scores <ArrowRight size={14} aria-hidden="true" /></button>}
+      </div>
+      <div className="mt-4 grid gap-4 md:grid-cols-[minmax(0,14rem)_1fr]">
+        <div>
+          <p className={"text-xs font-semibold uppercase tracking-wider " + MUTED}>Class teacher of</p>
+          <p className="mt-1 font-semibold">{teaching.classTeacherOf.length ? teaching.classTeacherOf.map((c) => c.name).join(", ") : "No class yet"}</p>
+        </div>
+        <div>
+          <p className={"text-xs font-semibold uppercase tracking-wider " + MUTED}>Subjects I teach</p>
+          {byClass.size ? (
+            <ul className="mt-1 space-y-1.5">
+              {[...byClass.entries()].map(([cls, subjects]) => (
+                <li key={cls} className="flex flex-wrap items-center gap-1.5 text-sm"><span className="w-28 shrink-0 font-semibold">{cls}</span>
+                  {subjects.map((name) => <span key={name} className="rounded-full bg-[hsl(var(--p-emerald-soft))] px-2.5 py-0.5 text-xs font-semibold text-[hsl(var(--p-emerald))]">{name}</span>)}</li>
+              ))}
+            </ul>
+          ) : <p className={"mt-1 text-sm " + MUTED}>No subjects yet. The principal assigns subject teachers in the principal's portal.</p>}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 type Todo = { key: string; text: string; detail: string; action: string; go: Section; urgent?: boolean };
 
 export function Dashboard({ data, dark, onGo }: { data: PortalManagement; dark: boolean; onGo: (section: Section) => void }) {
@@ -136,6 +168,8 @@ export function Dashboard({ data, dark, onGo }: { data: PortalManagement; dark: 
         </div>
         <button type="button" className="portal-btn" onClick={() => onGo("attendance")} data-testid="button-dashboard-register"><CalendarCheck size={15} /> Take register</button>
       </div>
+
+      {data.teaching && <MyTeaching teaching={data.teaching} onGo={onGo} />}
 
       <section className="portal-card grid grid-cols-2 divide-[hsl(var(--p-line))] md:grid-cols-4 md:divide-x" aria-label="Portal overview">
         {[

@@ -9,6 +9,7 @@ import type { PrincipalCommandAction } from './principalCommandAction';
 
 export interface PrincipalCommand {
   action: PrincipalCommandAction;
+  /** The class; for setGroupSubjectTeacher, any one of classIds */
   classId: number;
   /**
      * The teacher to assign or remove; for replace, the outgoing teacher; for a subject, its new teacher (null for none)
@@ -19,4 +20,14 @@ export interface PrincipalCommand {
   newTeacherId?: number;
   /** For setSubjectTeacher */
   subjectId?: number;
+  /**
+     * For setGroupSubjectTeacher: every arm of a year group, e.g. Year 11 Amber, Jade and Chrysolite
+     * @maxItems 20
+     */
+  classIds?: number[];
+  /**
+     * For setGroupSubjectTeacher: the subject, matched by name in each class
+     * @maxLength 120
+     */
+  subjectName?: string;
 }

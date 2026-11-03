@@ -682,7 +682,19 @@ export const GetPortalManagementResponse = zod.object({
   "body": zod.string().min(1).max(getPortalManagementResponseNoticesItemBodyMax),
   "classId": zod.number(),
   "published": zod.boolean()
+})),
+  "teaching": zod.object({
+  "classTeacherOf": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string()
+})),
+  "subjects": zod.array(zod.object({
+  "subjectId": zod.number(),
+  "subject": zod.string(),
+  "classId": zod.number(),
+  "className": zod.string()
 }))
+}).optional().describe('For a teacher, what the principal or office assigned them. Absent for administrators.')
 })
 
 
@@ -2934,12 +2946,20 @@ export const GetPrincipalOverviewResponse = zod.object({
 /**
  * Assign, replace or remove a class teacher, or set a subject's teacher (the section's principal only)
  */
+export const managePrincipalBodyClassIdsMax = 20;
+
+export const managePrincipalBodySubjectNameMax = 120;
+
+
+
 export const ManagePrincipalBody = zod.object({
-  "action": zod.enum(['assign', 'remove', 'replace', 'setSubjectTeacher']),
-  "classId": zod.number(),
+  "action": zod.enum(['assign', 'remove', 'replace', 'setSubjectTeacher', 'setGroupSubjectTeacher']),
+  "classId": zod.number().describe('The class; for setGroupSubjectTeacher, any one of classIds'),
   "teacherId": zod.number().nullish().describe('The teacher to assign or remove; for replace, the outgoing teacher; for a subject, its new teacher (null for none)'),
   "newTeacherId": zod.number().optional().describe('For replace: the incoming teacher'),
-  "subjectId": zod.number().optional().describe('For setSubjectTeacher')
+  "subjectId": zod.number().optional().describe('For setSubjectTeacher'),
+  "classIds": zod.array(zod.number()).max(managePrincipalBodyClassIdsMax).optional().describe('For setGroupSubjectTeacher: every arm of a year group, e.g. Year 11 Amber, Jade and Chrysolite'),
+  "subjectName": zod.string().max(managePrincipalBodySubjectNameMax).optional().describe('For setGroupSubjectTeacher: the subject, matched by name in each class')
 })
 
 export const ManagePrincipalResponse = zod.object({

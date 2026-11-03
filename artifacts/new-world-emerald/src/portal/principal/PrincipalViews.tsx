@@ -4,11 +4,12 @@ import {
   useManagePrincipal, getGetPrincipalOverviewQueryKey, getGetPrincipalActivityQueryKey, useGetPrincipalActivity,
   type PrincipalOverview, type PrincipalClass, type PrincipalCommand, type PrincipalTeacher, type PrincipalTeacherDay, type GetPrincipalActivitySection,
 } from "@workspace/api-client-react";
-import { ArrowLeftRight, CalendarDays, ChevronLeft, ChevronRight, Clock, Search, UserMinus, UserPlus, Users } from "lucide-react";
+import { ArrowLeftRight, CalendarDays, ChevronLeft, ChevronRight, Clock, Layers, Search, UserMinus, UserPlus, Users } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { EmptyState, ErrorPanel, Skeleton, StatusPill } from "../ui";
 import { errorMessage } from "../lib";
+import { armName, groupClasses } from "./groups";
 
 const MUTED = "text-[hsl(var(--p-ink)/0.62)]";
 const time = (iso: string | null | undefined) => iso ? new Intl.DateTimeFormat("en-GB", { timeZone: "Africa/Lagos", hour: "2-digit", minute: "2-digit" }).format(new Date(iso)) : "";
@@ -58,23 +59,99 @@ export function ClassesView({ data, classes = "JSS 1 to SS 3" }: { data: Princip
   const cmd = usePrincipalCommand();
   const [search, setSearch] = useState("");
   const [replacing, setReplacing] = useState<{ cls: PrincipalClass; teacherId: number } | null>(null);
+  const [sort, setSort] = useState<ClassSort>("school");
   const shown = data.classes.filter((c) => !search.trim() || c.name.toLowerCase().includes(search.trim().toLowerCase()) || c.teachers.some((t) => t.name.toLowerCase().includes(search.trim().toLowerCase())));
+  const groups = sortGroups(groupClasses(shown), sort);
   const noTeacher = data.classes.filter((c) => !c.teachers.length).length;
   const noSubjectTeacher = data.classes.reduce((n, c) => n + c.subjects.filter((s) => !s.teacherId).length, 0);
   if (!data.classes.length) return <EmptyState icon={<Users size={22} />} title="No classes yet" body={`Classes ${classes} appear here once the school office adds them in the staff portal (named like ${classes.split(" to ")[0]}).`} />;
   return (
     <div className="space-y-5">
       <Figures items={[["Classes", data.classes.length], ["Teachers", data.teachers.filter((t) => t.inSection).length], ["Classes without a class teacher", noTeacher, noTeacher > 0], ["Subjects without a teacher", noSubjectTeacher, noSubjectTeacher > 0]]} />
-      <label className="relative block max-w-sm">
-        <span className="sr-only">Search classes or teachers</span>
-        <Search size={15} className={"absolute left-3 top-1/2 -translate-y-1/2 " + MUTED} aria-hidden="true" />
-        <input className="portal-input !pl-9" placeholder="Search a class or teacher" value={search} onChange={(e) => setSearch(e.target.value)} data-testid="input-search-classes" />
-      </label>
-      <div className="grid gap-4 xl:grid-cols-2">
-        {shown.map((c) => <ClassCard key={c.id} cls={c} data={data} cmd={cmd} onReplace={(teacherId) => setReplacing({ cls: c, teacherId })} />)}
+      <div className="flex flex-wrap items-center gap-2">
+        <label className="relative min-w-[14rem] max-w-sm flex-1">
+          <span className="sr-only">Search classes or teachers</span>
+          <Search size={15} className={"absolute left-3 top-1/2 -translate-y-1/2 " + MUTED} aria-hidden="true" />
+          <input className="portal-input !pl-9" placeholder="Search a class or teacher" value={search} onChange={(e) => setSearch(e.target.value)} data-testid="input-search-classes" />
+        </label>
+        <label className="flex items-center gap-2 text-sm font-semibold">Sort
+          <select className="portal-input !w-auto" value={sort} onChange={(e) => setSort(e.target.value as ClassSort)} data-testid="select-sort-classes">
+            {(Object.keys(SORTS) as ClassSort[]).map((k) => <option key={k} value={k}>{SORTS[k]}</option>)}
+          </select>
+        </label>
       </div>
+      {groups.map(({ group, classes: arms }) => (
+        <section key={group.key} className="space-y-3" aria-labelledby={arms.length > 1 ? `group-${group.key}` : undefined} data-testid={`year-group-${group.key.replace(/\s+/g, "-")}`}>
+          {arms.length > 1 && (
+            <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-[hsl(var(--p-line))] pb-2">
+              <h2 id={`group-${group.key}`} className="flex items-center gap-2 font-serif text-2xl font-semibold"><Layers size={18} aria-hidden="true" className="text-[hsl(var(--p-emerald))]" />{group.label}</h2>
+              <p className={"text-sm " + MUTED}>{arms.length} arms: {arms.map((a) => armName(a.name) || a.name).join(", ")} · {arms.reduce((n, a) => n + a.students, 0)} students</p>
+            </div>
+          )}
+          {arms.length > 1 && <GroupSubjects label={group.label} arms={arms} data={data} cmd={cmd} />}
+          <div className="grid gap-4 xl:grid-cols-2">
+            {arms.map((c) => <ClassCard key={c.id} cls={c} data={data} cmd={cmd} onReplace={(teacherId) => setReplacing({ cls: c, teacherId })} />)}
+          </div>
+        </section>
+      ))}
       {replacing && <ReplaceDialog data={data} cls={replacing.cls} teacherId={replacing.teacherId} cmd={cmd} onClose={() => setReplacing(null)} />}
     </div>
+  );
+}
+
+type ClassSort = "school" | "name" | "attention" | "students";
+const SORTS: Record<ClassSort, string> = { school: "School order (Year 1 to SS 3)", name: "Name A to Z", attention: "Needs teachers first", students: "Most students first" };
+const gaps = (arms: PrincipalClass[]) => arms.reduce((n, c) => n + (c.teachers.length ? 0 : 1) + c.subjects.filter((s) => !s.teacherId).length, 0);
+
+/** Year groups in the chosen order. */
+function sortGroups(groups: ReturnType<typeof groupClasses<PrincipalClass>>, sort: ClassSort) {
+  const by: Record<ClassSort, (a: typeof groups[number], b: typeof groups[number]) => number> = {
+    school: (a, b) => a.group.order - b.group.order || a.group.label.localeCompare(b.group.label, undefined, { numeric: true }),
+    name: (a, b) => a.group.label.localeCompare(b.group.label, undefined, { numeric: true }),
+    attention: (a, b) => gaps(b.classes) - gaps(a.classes) || a.group.order - b.group.order,
+    students: (a, b) => b.classes.reduce((n, c) => n + c.students, 0) - a.classes.reduce((n, c) => n + c.students, 0),
+  };
+  return [...groups].sort(by[sort]);
+}
+
+/**
+ * One subject's teacher for every arm of a year group at once. A subject offered in some arms only is set there;
+ * when the arms have different teachers it reads "Different in each arm" until one is chosen for all.
+ */
+function GroupSubjects({ label, arms, data, cmd }: { label: string; arms: PrincipalClass[]; data: PrincipalOverview; cmd: ReturnType<typeof usePrincipalCommand> }) {
+  const subjects = new Map<string, { name: string; rows: { classId: number; teacherId: number | null }[] }>();
+  for (const c of arms) for (const s of c.subjects) {
+    const key = s.name.trim().toLowerCase();
+    const entry = subjects.get(key) ?? { name: s.name.trim(), rows: [] };
+    entry.rows.push({ classId: c.id, teacherId: s.teacherId });
+    subjects.set(key, entry);
+  }
+  if (!subjects.size) return null;
+  return (
+    <details className="portal-card p-4" data-testid={`group-subjects-${label.toLowerCase().replace(/\s+/g, "-")}`}>
+      <summary className="cursor-pointer font-semibold">Subject teachers for all {label} arms <span className={"font-normal " + MUTED}>({subjects.size} subjects)</span></summary>
+      <p className={"mt-2 text-sm " + MUTED}>Choose a teacher once to set it in every arm that offers the subject. Change a single arm in its own card below.</p>
+      <ul className="mt-3 divide-y divide-[hsl(var(--p-line))]">
+        {[...subjects.values()].sort((a, b) => a.name.localeCompare(b.name)).map((sub) => {
+          const ids = new Set(sub.rows.map((r) => r.teacherId));
+          const same = ids.size === 1 ? [...ids][0] : undefined;
+          return (
+            <li key={sub.name} className="flex flex-wrap items-center gap-3 py-2">
+              <span className="min-w-0 flex-1 text-sm font-medium">{sub.name} <span className={"text-xs " + MUTED}>{sub.rows.length} of {arms.length} arms</span></span>
+              <label className="w-60 shrink-0"><span className="sr-only">Teacher for {sub.name} in all {label} arms</span>
+                <select className={"portal-input !py-1.5 text-sm " + (same === null ? "!border-[hsl(var(--p-gold))]" : "")} value={same === undefined ? "mixed" : same ?? ""} disabled={cmd.pending}
+                  onChange={(e) => { if (e.target.value === "mixed") return; void cmd.run({ action: "setGroupSubjectTeacher", classId: sub.rows[0].classId, classIds: sub.rows.map((r) => r.classId), subjectName: sub.name, teacherId: e.target.value ? Number(e.target.value) : null }); }}
+                  data-testid={`select-group-subject-${sub.name.toLowerCase().replace(/\s+/g, "-")}`}>
+                  {same === undefined && <option value="mixed">Different in each arm</option>}
+                  <option value="">No teacher</option>
+                  <TeacherOptions teachers={data.teachers} />
+                </select>
+              </label>
+            </li>
+          );
+        })}
+      </ul>
+    </details>
   );
 }
 

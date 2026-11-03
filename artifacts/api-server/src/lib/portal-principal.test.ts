@@ -79,6 +79,23 @@ test("principal: assigns and replaces teachers, and sees each teacher's day", as
     assert.equal((await call("/principal", principal, { action: "assign", classId: year3.id, teacherId: ngozi.id })).status, 403);
     assert.equal((await call("/principal", primaryHead, { action: "assign", classId: year3.id, teacherId: ngozi.id })).status, 200);
     assert.equal((await call("/principal", primaryHead, { action: "remove", classId: year3.id, teacherId: ngozi.id })).status, 200);
+
+    // A subject's teacher for every arm of a year group at once (Year 11 Amber, Jade, Chrysolite).
+    const arms = await db.insert(portalClasses).values(["Amber", "Jade", "Chrysolite"].map((arm) => ({ name: `${marker} Year 11 ${arm}` }))).returning();
+    classIds.push(...arms.map((c) => c.id));
+    await db.insert(portalSubjects).values([...arms.map((c) => ({ classId: c.id, name: "Physics" })), { classId: arms[0].id, name: "Further Mathematics" }]);
+    const group = (who: string, ids: number[], extra: object = {}) => call("/principal", who, { action: "setGroupSubjectTeacher", classId: ids[0], classIds: ids, subjectName: " physics ", teacherId: musa.id, ...extra });
+    const setAll = await group(principal, arms.map((c) => c.id));
+    assert.equal(setAll.status, 200, JSON.stringify(setAll.data));
+    assert.match(setAll.data.message, /now teaches physics in 3 classes/);
+    const physics = await db.select().from(portalSubjects).where(inArray(portalSubjects.classId, arms.map((c) => c.id)));
+    assert.deepEqual(physics.filter((x) => x.name === "Physics").map((x) => x.teacherId), [musa.id, musa.id, musa.id]);
+    assert.equal(physics.find((x) => x.name === "Further Mathematics")!.teacherId, null, "other subjects are untouched");
+    assert.equal((await group(principal, [arms[0].id, year3.id])).status, 403, "a primary class cannot be mixed in");
+    assert.equal((await group(primaryHead, arms.map((c) => c.id))).status, 403);
+    assert.equal((await group(principal, arms.map((c) => c.id), { subjectName: "Latin" })).status, 404);
+    assert.equal((await group(principal, arms.map((c) => c.id), { teacherId: null })).status, 200);
+    assert.deepEqual((await db.select().from(portalSubjects).where(inArray(portalSubjects.classId, arms.map((c) => c.id)))).filter((x) => x.name === "Physics").map((x) => x.teacherId), [null, null, null]);
     assert.equal((await call("/principal?section=primary", boss)).status, 200);
 
     // Assign, refuse a repeat, set a subject teacher, and remove.

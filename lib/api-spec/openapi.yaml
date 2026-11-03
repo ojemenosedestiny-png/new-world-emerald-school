@@ -1435,6 +1435,12 @@ components:
       $ref: "./portal.yaml#/schemas/PortalStaffAttempt"
     PortalManagement:
       $ref: "./portal.yaml#/schemas/PortalManagement"
+    PortalTeaching:
+      $ref: "./portal.yaml#/schemas/PortalTeaching"
+    PortalTeachingClass:
+      $ref: "./portal.yaml#/schemas/PortalTeachingClass"
+    PortalTeachingSubject:
+      $ref: "./portal.yaml#/schemas/PortalTeachingSubject"
     PortalGrade:
       $ref: "./portal.yaml#/schemas/PortalGrade"
     PortalStatus:

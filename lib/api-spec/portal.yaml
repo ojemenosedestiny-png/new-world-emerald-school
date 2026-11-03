@@ -401,6 +401,28 @@ schemas:
       attempts: { type: array, items: { $ref: "#/schemas/PortalStaffAttempt" } }
       materials: { type: array, items: { $ref: "#/schemas/PortalMaterial" } }
       notices: { type: array, items: { $ref: "#/schemas/PortalNotice" } }
+      teaching: { $ref: "#/schemas/PortalTeaching" }
+  PortalTeaching:
+    type: object
+    description: For a teacher, what the principal or office assigned them. Absent for administrators.
+    required: [classTeacherOf, subjects]
+    properties:
+      classTeacherOf: { type: array, items: { $ref: "#/schemas/PortalTeachingClass" } }
+      subjects: { type: array, items: { $ref: "#/schemas/PortalTeachingSubject" } }
+  PortalTeachingClass:
+    type: object
+    required: [id, name]
+    properties:
+      id: { type: integer }
+      name: { type: string }
+  PortalTeachingSubject:
+    type: object
+    required: [subjectId, subject, classId, className]
+    properties:
+      subjectId: { type: integer }
+      subject: { type: string }
+      classId: { type: integer }
+      className: { type: string }
   PortalGrade:
     type: object
     required: [attemptId, marks]
