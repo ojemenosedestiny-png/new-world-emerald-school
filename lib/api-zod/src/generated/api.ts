@@ -2959,7 +2959,8 @@ export const ManagePrincipalBody = zod.object({
   "newTeacherId": zod.number().optional().describe('For replace: the incoming teacher'),
   "subjectId": zod.number().optional().describe('For setSubjectTeacher'),
   "classIds": zod.array(zod.number()).max(managePrincipalBodyClassIdsMax).optional().describe('For setGroupSubjectTeacher: every arm of a year group, e.g. Year 11 Amber, Jade and Chrysolite'),
-  "subjectName": zod.string().max(managePrincipalBodySubjectNameMax).optional().describe('For setGroupSubjectTeacher: the subject, matched by name in each class')
+  "subjectName": zod.string().max(managePrincipalBodySubjectNameMax).optional().describe('For setGroupSubjectTeacher: the subject, matched by name in each class'),
+  "addMissing": zod.boolean().optional().describe('For setGroupSubjectTeacher: also add the subject to any of the classes that do not offer it yet, so every arm matches')
 })
 
 export const ManagePrincipalResponse = zod.object({

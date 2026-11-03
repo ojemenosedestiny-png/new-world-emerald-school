@@ -96,6 +96,15 @@ test("principal: assigns and replaces teachers, and sees each teacher's day", as
     assert.equal((await group(principal, arms.map((c) => c.id), { subjectName: "Latin" })).status, 404);
     assert.equal((await group(principal, arms.map((c) => c.id), { teacherId: null })).status, 200);
     assert.deepEqual((await db.select().from(portalSubjects).where(inArray(portalSubjects.classId, arms.map((c) => c.id)))).filter((x) => x.name === "Physics").map((x) => x.teacherId), [null, null, null]);
+
+    // Assigning a teacher a subject for the whole year adds it to arms that do not offer it yet, so all arms match.
+    const further = await group(principal, arms.map((c) => c.id), { subjectName: "further mathematics", teacherId: ngozi.id, addMissing: true });
+    assert.equal(further.status, 200, JSON.stringify(further.data));
+    assert.match(further.data.message, /now teaches further mathematics in 3 classes\. further mathematics was added to .*Year 11 Jade, .*Year 11 Chrysolite\./);
+    const fm = (await db.select().from(portalSubjects).where(inArray(portalSubjects.classId, arms.map((c) => c.id)))).filter((x) => x.name === "Further Mathematics");
+    assert.deepEqual(fm.map((x) => x.teacherId), [ngozi.id, ngozi.id, ngozi.id], "added under the name the other arms use");
+    // Without addMissing nothing is created; a subject no arm offers is refused either way.
+    assert.equal((await group(principal, arms.map((c) => c.id), { subjectName: "Latin", addMissing: true })).status, 404);
     assert.equal((await call("/principal?section=primary", boss)).status, 200);
 
     // Assign, refuse a repeat, set a subject teacher, and remove.

@@ -3,7 +3,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { PortalManagement, PrincipalOverview } from "@workspace/api-client-react";
-import { ClassesView } from "../src/portal/principal/PrincipalViews";
+import { ClassesView, TeachersView } from "../src/portal/principal/PrincipalViews";
 import { armName, groupClasses, yearGroup } from "../src/portal/principal/groups";
 import { MyTeaching } from "../src/portal/manage/Dashboard";
 
@@ -65,6 +65,46 @@ describe("principal: classes by year group", () => {
     expect(order()).toEqual(["year-group-year-11", "year-group-year-7"]);
     fireEvent.change(screen.getByTestId("select-sort-classes"), { target: { value: "students" } });
     expect(order()).toEqual(["year-group-year-11", "year-group-year-7"]);
+  });
+});
+
+describe("principal: a subject for the whole year", () => {
+  it("sets a subject teacher chosen in one arm in every arm of the year, unless that is switched off", async () => {
+    render(wrap(<ClassesView data={data} />));
+    fireEvent.change(screen.getByTestId("select-subject-12"), { target: { value: "8" } });
+    await waitFor(() => expect(api.manage).toHaveBeenCalledWith({ data: { action: "setGroupSubjectTeacher", classId: 1, classIds: [1, 2, 3], subjectName: "Chemistry", teacherId: 8, addMissing: true } }));
+    api.manage.mockClear();
+    fireEvent.click(screen.getByTestId("toggle-link-arms"));
+    fireEvent.change(screen.getByTestId("select-subject-12"), { target: { value: "7" } });
+    await waitFor(() => expect(api.manage).toHaveBeenCalledWith({ data: { action: "setSubjectTeacher", classId: 1, subjectId: 12, teacherId: 7 } }));
+  });
+
+  it("assigns a teacher a subject for every arm of a class's year, adding it where an arm lacks it", async () => {
+    render(wrap(<TeachersView data={data} />));
+    fireEvent.click(screen.getByTestId("button-assign-subject-7"));
+    fireEvent.change(screen.getByTestId("select-assign-subject-class"), { target: { value: "2" } });
+    fireEvent.change(screen.getByTestId("select-assign-subject-name"), { target: { value: "Chemistry" } });
+    const preview = screen.getByTestId("text-assign-subject-preview").textContent;
+    expect(preview).toContain("Mr Musa will teach Chemistry in Year 11 Amber, Year 11 Jade, Year 11 Chrysolite.");
+    expect(preview).toContain("Chemistry will be added to Year 11 Chrysolite, which does not offer it yet.");
+    fireEvent.click(screen.getByTestId("button-confirm-assign-subject"));
+    await waitFor(() => expect(api.manage).toHaveBeenCalledWith({ data: { action: "setGroupSubjectTeacher", classId: 2, classIds: [1, 2, 3], subjectName: "Chemistry", teacherId: 7, addMissing: true } }));
+  });
+
+  it("can give a subject to one arm only", async () => {
+    render(wrap(<TeachersView data={data} />));
+    fireEvent.click(screen.getByTestId("button-assign-subject-8"));
+    fireEvent.change(screen.getByTestId("select-assign-subject-class"), { target: { value: "3" } });
+    fireEvent.click(screen.getByTestId("toggle-assign-whole-year"));
+    fireEvent.change(screen.getByTestId("select-assign-subject-name"), { target: { value: "Physics" } });
+    fireEvent.click(screen.getByTestId("button-confirm-assign-subject"));
+    await waitFor(() => expect(api.manage).toHaveBeenCalledWith({ data: { action: "setGroupSubjectTeacher", classId: 3, classIds: [3], subjectName: "Physics", teacherId: 8, addMissing: false } }));
+  });
+
+  it("summarises a teacher who has a subject in every arm", () => {
+    const all = { ...data, classes: data.classes.map((c) => ({ ...c, subjects: c.subjects.map((x) => (x.name === "Physics" ? { ...x, teacherId: 7 } : x)) })) };
+    render(wrap(<TeachersView data={all} />));
+    expect(within(screen.getByTestId("principal-teacher-7")).getByText("Physics: Year 11 (all 3 arms)")).toBeTruthy();
   });
 });
 

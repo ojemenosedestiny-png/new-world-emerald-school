@@ -123,11 +123,27 @@ portalPrincipalRouter.post("/principal", async (req, res) => {
       check(rows.length === ids.length, "Class not found.", 404);
       check(rows.every((r) => classSection(r.name) === section), "Every class must be in your school.", 403);
       const t = body.teacherId === null || body.teacherId === undefined ? null : await activeTeacher(body.teacherId);
-      const updated = await db.update(portalSubjects).set({ teacherId: t?.id ?? null })
-        .where(and(inArray(portalSubjects.classId, ids), sql`lower(trim(${portalSubjects.name})) = ${name.toLowerCase()}`)).returning({ classId: portalSubjects.classId });
-      check(updated.length, `None of these classes has ${name}.`, 404);
-      const n = new Set(updated.map((u) => u.classId)).size;
-      message = t ? `${t.name} now teaches ${name} in ${n} ${n === 1 ? "class" : "classes"}.` : `${name} has no subject teacher now in ${n} ${n === 1 ? "class" : "classes"}.`;
+      const same = sql`lower(trim(${portalSubjects.name})) = ${name.toLowerCase()}`;
+      const added = await db.transaction(async (tx) => {
+        let added: string[] = [];
+        if (body.addMissing) {
+          // Every arm should match: arms without the subject get it, named as the other arms have it.
+          const existing = await tx.select({ classId: portalSubjects.classId, name: portalSubjects.name }).from(portalSubjects).where(and(inArray(portalSubjects.classId, ids), same));
+          check(existing.length, `None of these classes has ${name}.`, 404);
+          const missing = rows.filter((r) => !existing.some((e) => e.classId === r.id));
+          for (const r of missing) {
+            const [{ next }] = await tx.select({ next: sql<number>`coalesce(max(${portalSubjects.sortOrder}), -1)::int + 1` }).from(portalSubjects).where(eq(portalSubjects.classId, r.id));
+            await tx.insert(portalSubjects).values({ classId: r.id, name: existing[0].name.trim(), sortOrder: next });
+          }
+          added = missing.map((r) => r.name);
+        }
+        const updated = await tx.update(portalSubjects).set({ teacherId: t?.id ?? null }).where(and(inArray(portalSubjects.classId, ids), same)).returning({ classId: portalSubjects.classId });
+        check(updated.length, `None of these classes has ${name}.`, 404);
+        return { added, classes: new Set(updated.map((u) => u.classId)).size };
+      });
+      const n = added.classes;
+      message = (t ? `${t.name} now teaches ${name} in ${n} ${n === 1 ? "class" : "classes"}.` : `${name} has no subject teacher now in ${n} ${n === 1 ? "class" : "classes"}.`)
+        + (added.added.length ? ` ${name} was added to ${added.added.join(", ")}.` : "");
       break;
     }
   }

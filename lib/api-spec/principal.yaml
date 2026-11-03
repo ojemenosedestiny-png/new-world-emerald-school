@@ -169,6 +169,7 @@ schemas:
       subjectId: { type: integer, description: "For setSubjectTeacher" }
       classIds: { type: array, items: { type: integer }, maxItems: 20, description: "For setGroupSubjectTeacher: every arm of a year group, e.g. Year 11 Amber, Jade and Chrysolite" }
       subjectName: { type: string, maxLength: 120, description: "For setGroupSubjectTeacher: the subject, matched by name in each class" }
+      addMissing: { type: boolean, description: "For setGroupSubjectTeacher: also add the subject to any of the classes that do not offer it yet, so every arm matches" }
   PrincipalAction:
     type: object
     required: [at, kind, label]

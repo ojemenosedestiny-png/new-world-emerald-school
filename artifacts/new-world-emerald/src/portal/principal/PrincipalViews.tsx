@@ -4,12 +4,15 @@ import {
   useManagePrincipal, getGetPrincipalOverviewQueryKey, getGetPrincipalActivityQueryKey, useGetPrincipalActivity,
   type PrincipalOverview, type PrincipalClass, type PrincipalCommand, type PrincipalTeacher, type PrincipalTeacherDay, type GetPrincipalActivitySection,
 } from "@workspace/api-client-react";
-import { ArrowLeftRight, CalendarDays, ChevronLeft, ChevronRight, Clock, Layers, Search, UserMinus, UserPlus, Users } from "lucide-react";
+import { ArrowLeftRight, BookPlus, CalendarDays, ChevronLeft, ChevronRight, Clock, Layers, Search, UserMinus, UserPlus, Users } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { EmptyState, ErrorPanel, Skeleton, StatusPill } from "../ui";
 import { errorMessage } from "../lib";
-import { armName, groupClasses } from "./groups";
+import { armName, groupClasses, yearGroup } from "./groups";
+
+/** The arms of a class's year group (Year 7 Amber -> every Year 7 arm), the class itself when it has none. */
+const armsOf = (data: PrincipalOverview, cls: { name: string }) => data.classes.filter((c) => yearGroup(c.name).key === yearGroup(cls.name).key);
 
 const MUTED = "text-[hsl(var(--p-ink)/0.62)]";
 const time = (iso: string | null | undefined) => iso ? new Intl.DateTimeFormat("en-GB", { timeZone: "Africa/Lagos", hour: "2-digit", minute: "2-digit" }).format(new Date(iso)) : "";
@@ -60,6 +63,8 @@ export function ClassesView({ data, classes = "JSS 1 to SS 3" }: { data: Princip
   const [search, setSearch] = useState("");
   const [replacing, setReplacing] = useState<{ cls: PrincipalClass; teacherId: number } | null>(null);
   const [sort, setSort] = useState<ClassSort>("school");
+  // On: a subject teacher chosen in one arm is set in every arm of that year (added where an arm lacks the subject).
+  const [linked, setLinked] = useState(true);
   const shown = data.classes.filter((c) => !search.trim() || c.name.toLowerCase().includes(search.trim().toLowerCase()) || c.teachers.some((t) => t.name.toLowerCase().includes(search.trim().toLowerCase())));
   const groups = sortGroups(groupClasses(shown), sort);
   const noTeacher = data.classes.filter((c) => !c.teachers.length).length;
@@ -79,6 +84,10 @@ export function ClassesView({ data, classes = "JSS 1 to SS 3" }: { data: Princip
             {(Object.keys(SORTS) as ClassSort[]).map((k) => <option key={k} value={k}>{SORTS[k]}</option>)}
           </select>
         </label>
+        <label className="flex cursor-pointer items-center gap-2 rounded-full border border-[hsl(var(--p-line))] bg-[hsl(var(--p-surface)/0.8)] px-3 py-2 text-sm font-semibold" title="Choosing a subject teacher in one arm sets it in every arm of that year">
+          <input type="checkbox" className="h-4 w-4 accent-[hsl(var(--p-emerald))]" checked={linked} onChange={(e) => setLinked(e.target.checked)} data-testid="toggle-link-arms" />
+          Same subject teacher in every arm of a year
+        </label>
       </div>
       {groups.map(({ group, classes: arms }) => (
         <section key={group.key} className="space-y-3" aria-labelledby={arms.length > 1 ? `group-${group.key}` : undefined} data-testid={`year-group-${group.key.replace(/\s+/g, "-")}`}>
@@ -90,7 +99,7 @@ export function ClassesView({ data, classes = "JSS 1 to SS 3" }: { data: Princip
           )}
           {arms.length > 1 && <GroupSubjects label={group.label} arms={arms} data={data} cmd={cmd} />}
           <div className="grid gap-4 xl:grid-cols-2">
-            {arms.map((c) => <ClassCard key={c.id} cls={c} data={data} cmd={cmd} onReplace={(teacherId) => setReplacing({ cls: c, teacherId })} />)}
+            {arms.map((c) => <ClassCard key={c.id} cls={c} data={data} cmd={cmd} linked={linked} onReplace={(teacherId) => setReplacing({ cls: c, teacherId })} />)}
           </div>
         </section>
       ))}
@@ -155,7 +164,11 @@ function GroupSubjects({ label, arms, data, cmd }: { label: string; arms: Princi
   );
 }
 
-function ClassCard({ cls, data, cmd, onReplace }: { cls: PrincipalClass; data: PrincipalOverview; cmd: ReturnType<typeof usePrincipalCommand>; onReplace: (teacherId: number) => void }) {
+function ClassCard({ cls, data, cmd, linked = false, onReplace }: { cls: PrincipalClass; data: PrincipalOverview; cmd: ReturnType<typeof usePrincipalCommand>; linked?: boolean; onReplace: (teacherId: number) => void }) {
+  const arms = armsOf(data, cls);
+  const setSubject = (subjectId: number, subjectName: string, teacherId: number | null) => linked && arms.length > 1
+    ? cmd.run({ action: "setGroupSubjectTeacher", classId: cls.id, classIds: arms.map((a) => a.id), subjectName, teacherId, addMissing: true })
+    : cmd.run({ action: "setSubjectTeacher", classId: cls.id, subjectId, teacherId });
   const [pick, setPick] = useState("");
   const available = data.teachers.filter((t) => !cls.teachers.some((x) => x.id === t.id));
   return (
@@ -193,7 +206,7 @@ function ClassCard({ cls, data, cmd, onReplace }: { cls: PrincipalClass; data: P
               <span className="min-w-0 flex-1 text-sm font-medium">{s.name}</span>
               <label className="w-52 shrink-0"><span className="sr-only">Teacher for {s.name} in {cls.name}</span>
                 <select className={"portal-input !py-1.5 text-sm " + (s.teacherId ? "" : "!border-[hsl(var(--p-gold))]")} value={s.teacherId ?? ""} disabled={cmd.pending}
-                  onChange={(e) => void cmd.run({ action: "setSubjectTeacher", classId: cls.id, subjectId: s.id, teacherId: e.target.value ? Number(e.target.value) : null })} data-testid={`select-subject-${s.id}`}>
+                  onChange={(e) => void setSubject(s.id, s.name, e.target.value ? Number(e.target.value) : null)} data-testid={`select-subject-${s.id}`}>
                   <option value="">No teacher</option>
                   <TeacherOptions teachers={data.teachers} />
                 </select>
@@ -234,14 +247,23 @@ function ReplaceDialog({ data, cls, teacherId, cmd, onClose }: { data: Principal
 
 /** Each of the section's teachers with their classes and subjects here. */
 export function TeachersView({ data }: { data: PrincipalOverview }) {
+  const cmd = usePrincipalCommand();
+  const [assigning, setAssigning] = useState<PrincipalTeacher | null>(null);
   const teachers = data.teachers.filter((t) => t.inSection);
   const className = new Map(data.classes.map((c) => [c.id, c.name]));
-  const subjectsOf = (id: number) => data.classes.flatMap((c) => c.subjects.filter((s) => s.teacherId === id).map((s) => `${s.name} (${c.name})`));
+  // "Physics: Year 7 (all 3 arms)" when a teacher has every arm, otherwise the arms by name.
+  const subjectsOf = (id: number) => groupClasses(data.classes).flatMap(({ group, classes: arms }) => {
+    const names = [...new Set(arms.flatMap((c) => c.subjects.filter((s) => s.teacherId === id).map((s) => s.name.trim())))];
+    return names.map((name) => {
+      const mine = arms.filter((c) => c.subjects.some((s) => s.teacherId === id && s.name.trim() === name));
+      return arms.length > 1 && mine.length === arms.length ? `${name}: ${group.label} (all ${arms.length} arms)` : `${name}: ${mine.map((c) => c.name).join(", ")}`;
+    });
+  });
   if (!teachers.length) return <EmptyState icon={<Users size={22} />} title="No teachers yet" body="The school office adds teachers in the staff portal under Teachers." />;
   return (
     <div className="portal-card overflow-x-auto !p-0">
       <table className="w-full min-w-[640px] text-sm">
-        <thead className={"text-left text-xs uppercase tracking-wider " + MUTED}><tr><th className="px-4 py-3">Teacher</th><th className="px-3 py-3">Class teacher of</th><th className="px-3 py-3">Subjects</th></tr></thead>
+        <thead className={"text-left text-xs uppercase tracking-wider " + MUTED}><tr><th className="px-4 py-3">Teacher</th><th className="px-3 py-3">Class teacher of</th><th className="px-3 py-3">Subjects</th><th className="px-3 py-3"><span className="sr-only">Actions</span></th></tr></thead>
         <tbody>
           {teachers.map((t) => {
             const classes = t.classIds.map((id) => className.get(id)).filter(Boolean);
@@ -250,13 +272,76 @@ export function TeachersView({ data }: { data: PrincipalOverview }) {
               <tr key={t.id} className="border-t border-[hsl(var(--p-line))] align-top" data-testid={`principal-teacher-${t.id}`}>
                 <td className="px-4 py-3"><p className="font-semibold">{t.name}</p><p className={"break-all text-xs " + MUTED}>{t.email}</p></td>
                 <td className="px-3 py-3">{classes.length ? classes.join(", ") : <StatusPill tone="gold">No class</StatusPill>}</td>
-                <td className="px-3 py-3">{subjects.length ? subjects.join(", ") : <span className={MUTED}>None</span>}</td>
+                <td className="px-3 py-3">{subjects.length ? <ul className="space-y-0.5">{subjects.map((x) => <li key={x}>{x}</li>)}</ul> : <span className={MUTED}>None</span>}</td>
+                <td className="px-3 py-3 text-right"><button type="button" className="portal-btn-ghost !min-h-[34px] whitespace-nowrap !px-3 text-xs" disabled={!data.classes.length} onClick={() => setAssigning(t)} data-testid={`button-assign-subject-${t.id}`}><BookPlus size={13} aria-hidden="true" /> Assign a subject</button></td>
               </tr>
             );
           })}
         </tbody>
       </table>
+      {assigning && <AssignSubjectDialog teacher={assigning} data={data} cmd={cmd} onClose={() => setAssigning(null)} />}
     </div>
+  );
+}
+
+/**
+ * Give a teacher a subject in a class. By default it goes to every arm of that class's year group (Year 7 Amber,
+ * Jade, ...), and the subject is added to any arm that does not offer it yet, so the year's arms stay aligned.
+ */
+function AssignSubjectDialog({ teacher, data, cmd, onClose }: { teacher: PrincipalTeacher; data: PrincipalOverview; cmd: ReturnType<typeof usePrincipalCommand>; onClose: () => void }) {
+  const [classId, setClassId] = useState(data.classes[0]?.id ?? 0);
+  const cls = data.classes.find((c) => c.id === classId);
+  const arms = cls ? armsOf(data, cls) : [];
+  const [wholeYear, setWholeYear] = useState(true);
+  const pool = wholeYear ? arms : cls ? [cls] : [];
+  const subjects = [...new Map(pool.flatMap((c) => c.subjects.map((s) => [s.name.trim().toLowerCase(), s.name.trim()] as const))).values()].sort();
+  const [subject, setSubject] = useState("");
+  const chosen = subjects.includes(subject) ? subject : "";
+  const targets = wholeYear ? arms : cls ? [cls] : [];
+  const lacking = targets.filter((c) => !c.subjects.some((s) => s.name.trim().toLowerCase() === chosen.toLowerCase()));
+  const save = async () => {
+    if (!cls || !chosen) return;
+    const ok = await cmd.run({ action: "setGroupSubjectTeacher", classId: cls.id, classIds: targets.map((c) => c.id), subjectName: chosen, teacherId: teacher.id, addMissing: wholeYear });
+    if (ok) onClose();
+  };
+  return (
+    <Dialog open onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="portal !min-h-0 max-w-md rounded-2xl">
+        <DialogHeader>
+          <DialogTitle className="font-serif text-2xl">Assign a subject</DialogTitle>
+          <DialogDescription>Choose a class and a subject for {teacher.name}.</DialogDescription>
+        </DialogHeader>
+        <label className="block text-sm font-semibold">Class
+          <select className="portal-input mt-1" value={classId} onChange={(e) => { setClassId(Number(e.target.value)); setSubject(""); }} data-testid="select-assign-subject-class">
+            {groupClasses(data.classes).sort((a, b) => a.group.order - b.group.order).map(({ group, classes: g }) => (
+              <optgroup key={group.key} label={group.label}>{g.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</optgroup>
+            ))}
+          </select>
+        </label>
+        {arms.length > 1 && (
+          <label className="flex cursor-pointer items-start gap-2 rounded-xl bg-[hsl(var(--p-emerald-soft)/0.6)] p-3 text-sm">
+            <input type="checkbox" className="mt-0.5 h-4 w-4 accent-[hsl(var(--p-emerald))]" checked={wholeYear} onChange={(e) => setWholeYear(e.target.checked)} data-testid="toggle-assign-whole-year" />
+            <span><b>Every arm of {yearGroup(cls!.name).label}</b> ({arms.map((a) => armName(a.name) || a.name).join(", ")})</span>
+          </label>
+        )}
+        <label className="block text-sm font-semibold">Subject
+          <select className="portal-input mt-1" value={chosen} onChange={(e) => setSubject(e.target.value)} disabled={!subjects.length} data-testid="select-assign-subject-name">
+            <option value="">{subjects.length ? "Choose a subject" : "No subjects in this class yet"}</option>
+            {subjects.map((n) => <option key={n} value={n}>{n}</option>)}
+          </select>
+        </label>
+        {chosen && (
+          <p className="rounded-xl bg-[hsl(var(--p-paper-2)/0.7)] p-3 text-sm" data-testid="text-assign-subject-preview">
+            {teacher.name} will teach <b>{chosen}</b> in {targets.map((c) => c.name).join(", ")}.
+            {wholeYear && lacking.length > 0 && <> {chosen} will be added to {lacking.map((c) => c.name).join(", ")}, which {lacking.length === 1 ? "does" : "do"} not offer it yet.</>}
+          </p>
+        )}
+        <DialogFooter className="gap-2">
+          <button type="button" className="portal-btn-ghost" onClick={onClose}>Cancel</button>
+          <button type="button" className="portal-btn" disabled={!chosen || cmd.pending} onClick={() => void save()} data-testid="button-confirm-assign-subject">{cmd.pending ? "Saving..." : "Assign subject"}</button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
