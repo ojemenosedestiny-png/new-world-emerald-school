@@ -5107,6 +5107,23 @@ export const GetPrincipalResultsSection = {
   secondary: 'secondary',
 } as const;
 
+export type GetPrincipalReportCardsParams = {
+/**
+ * primary (Year 1 to Year 6) or secondary (JSS 1 to SS 3, the default)
+ */
+section?: GetPrincipalReportCardsSection;
+termId: number;
+classId: number;
+};
+
+export type GetPrincipalReportCardsSection = typeof GetPrincipalReportCardsSection[keyof typeof GetPrincipalReportCardsSection];
+
+
+export const GetPrincipalReportCardsSection = {
+  primary: 'primary',
+  secondary: 'secondary',
+} as const;
+
 export type GetLocalAccount200 = {
   id: string;
   isAdmin: boolean;

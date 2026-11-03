@@ -28,10 +28,10 @@ services:
       # The Director's email: sole access to /director and the Monday report. Must also be in SCHOOL_ADMIN_EMAILS.
       - key: SCHOOL_DIRECTOR_EMAILS
         sync: false
-      # The secondary school principal's email (JSS 1 to SS 3): opens /principal to assign teachers and see their daily activity. Must also be in SCHOOL_ADMIN_EMAILS.
+      # The secondary school principal's email (JSS 1 to SS 3): opens /principal only. Leave it out of SCHOOL_ADMIN_EMAILS unless they also need full office access.
       - key: SCHOOL_PRINCIPAL_EMAILS
         sync: false
-      # The primary school principal's email (Year 1 to Year 6): opens /principal/primary. Must also be in SCHOOL_ADMIN_EMAILS.
+      # The primary school principal's email (Year 1 to Year 6): opens /principal/primary only. Leave it out of SCHOOL_ADMIN_EMAILS unless they also need full office access.
       - key: SCHOOL_PRIMARY_PRINCIPAL_EMAILS
         sync: false
       - key: REQUIRE_ADMIN_MFA

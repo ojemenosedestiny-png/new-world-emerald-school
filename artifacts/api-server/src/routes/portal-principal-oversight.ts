@@ -5,13 +5,13 @@ import {
   portalReportWorkflow, portalScores, portalStudents, portalSubjects, portalTeacherPresence, portalTerms,
   type PortalExamRecord, type PortalReportWorkflowRecord,
 } from "@workspace/db";
-import { GetPrincipalDashboardQueryParams, GetPrincipalExamParams, GetPrincipalExamsQueryParams, GetPrincipalResultsQueryParams, ManagePrincipalResultsBody } from "@workspace/api-zod";
+import { GetPrincipalDashboardQueryParams, GetPrincipalExamParams, GetPrincipalExamsQueryParams, GetPrincipalReportCardsQueryParams, GetPrincipalResultsQueryParams, ManagePrincipalResultsBody } from "@workspace/api-zod";
 import { check } from "../lib/portal-auth";
-import { isPrincipal } from "../lib/website-admin";
+import { isPrincipal, isSectionPrincipal } from "../lib/website-admin";
 import { nextStatus, signatureProblem } from "../lib/report-cards";
 import { classSection, describeActivity, examTerm, lagosDay, lagosToday, lastDays, type ActivityKind } from "../lib/principal";
 import { KINDS, principalOnly, sectionStaff } from "./portal-principal";
-import { statusOf, upsertWorkflow, workflowRow } from "./portal-reports";
+import { readOnlyWorkspace, statusOf, upsertWorkflow, workflowRow } from "./portal-reports";
 
 /** The principals' oversight: an overview of the week, the exams teachers set each term, and signing results. */
 export const portalPrincipalOversightRouter = Router();
@@ -211,12 +211,24 @@ portalPrincipalOversightRouter.get("/principal/results", async (req, res) => {
   });
 });
 
+/** One class's report cards for a term, read-only, for the principal of that class's section. */
+portalPrincipalOversightRouter.get("/principal/report-cards", async (req, res) => {
+  const query = GetPrincipalReportCardsQueryParams.parse(req.query);
+  const section = query.section ?? "secondary";
+  principalOnly(req, section);
+  const [cls] = await db.select({ name: portalClasses.name }).from(portalClasses).where(eq(portalClasses.id, query.classId));
+  check(cls && classSection(cls.name) === section, "This class is not one of yours.", 403);
+  res.json(await readOnlyWorkspace(query.termId, query.classId));
+});
+
 /** The principal's signature, and approving (signing), returning, publishing or withholding a class's results. */
 portalPrincipalOversightRouter.post("/principal/results", async (req, res) => {
   check(req.dbUser, "Sign in with the principal's email.", 401);
   const body = ManagePrincipalResultsBody.parse(req.body);
   if (body.action === "saveSignature") {
     principalOnly(req, body.section);
+    // Only the principal themself sets the signature printed in their name, not the super administrator.
+    check(isSectionPrincipal(req, body.section), "Only the principal can set their own signature.", 403);
     const name = (body.name ?? "").trim();
     check(name, "Type your name as it should appear on report cards.");
     const image = body.signature ?? null;
@@ -240,6 +252,7 @@ portalPrincipalOversightRouter.post("/principal/results", async (req, res) => {
   check(!("problem" in next), "problem" in next ? next.problem : "");
   let message = "Saved.";
   if (body.action === "approve") {
+    check(isSectionPrincipal(req, section), "Only the principal can sign results with their signature.", 403);
     const [own] = await db.select().from(portalPrincipals).where(eq(portalPrincipals.section, section));
     check(own?.name && own.signature, "Add your name and signature first (Results, My signature).", 409);
     await upsertWorkflow(body.termId, cls.id, { status: "approved", approvedBy: own.name, approvedAt: new Date(), principalName: own.name, principalSignature: own.signature });

@@ -89,4 +89,16 @@ jobs:
           pnpm --filter @workspace/api-server run test:portal-principal
           pnpm --filter @workspace/api-server run test:portal-principal-oversight
 
+      - name: Backup and restore round trip (disposable Postgres)
+        env:
+          DATABASE_URL: postgresql://school:ci-only@localhost:5432/school_test
+          BACKUP_PASSPHRASE: ci-only-passphrase-not-a-secret
+          RESTORE_CONFIRM: "yes"
+        run: |
+          psql "$DATABASE_URL" -X -q -c "insert into portal_classes (name) values ('CI backup check JSS 1')"
+          file=$(bash scripts/backup-db.sh "$RUNNER_TEMP/backups")
+          psql "$DATABASE_URL" -X -q -c "create database restore_check"
+          TARGET_DATABASE_URL=postgresql://school:ci-only@localhost:5432/restore_check bash scripts/restore-backup.sh "$file"
+          test "$(psql postgresql://school:ci-only@localhost:5432/restore_check -X -At -c "select count(*) from portal_classes where name = 'CI backup check JSS 1'")" = 1
+
       # test:portal also needs Replit object storage, so it is run on Replit.

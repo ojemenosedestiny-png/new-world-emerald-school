@@ -72,6 +72,30 @@ async function classData(termId: number, classId: number) {
   return { term, subjects, students, scores, cards, release, report, workflow, settings, principal };
 }
 
+/** A class's results for a term as the workspace shows them. */
+const classPayload = (d: Awaited<ReturnType<typeof classData>>) => ({
+  subjects: d.subjects, students: d.students,
+  scores: d.scores.map((s) => ({ studentId: s.studentId, subjectId: s.subjectId, ca: s.ca, ca2: s.ca2, exam: s.exam, comment: s.comment, total: s.total, grade: s.grade })),
+  cards: d.cards.map(cardView), results: d.report.students, subjectStats: d.report.subjectStats, ranked: d.report.ranked, released: !!d.release,
+  workflow: workflowView(d.workflow, !!d.release), cardPrincipalName: d.principal.name, cardPrincipalSignature: d.principal.signature,
+});
+
+/** One class's report workspace, read-only (no editing rights, no teacher list): for a principal's report card preview. */
+export async function readOnlyWorkspace(termId: number, classId: number) {
+  const [terms, [cls], settings] = await Promise.all([
+    db.select().from(portalTerms).orderBy(desc(portalTerms.createdAt), desc(portalTerms.id)),
+    db.select({ id: portalClasses.id, name: portalClasses.name }).from(portalClasses).where(eq(portalClasses.id, classId)),
+    reportSettings(),
+  ]);
+  check(cls, "Class not found.", 404);
+  const d = await classData(termId, classId);
+  return {
+    terms: terms.map(termView), classes: [cls], canAdmin: false, termId, classId, gradingScale: settings.gradingScale,
+    principalName: settings.principalName, principalSignature: settings.principalSignature, mySignature: null, teachers: [],
+    isClassTeacher: false, editableSubjectIds: [] as number[], ...classPayload(d),
+  };
+}
+
 const cardView = (c: typeof portalReportCards.$inferSelect) => ({ studentId: c.studentId, teacherRemark: c.teacherRemark, principalRemark: c.principalRemark, daysPresent: c.daysPresent, daysOpen: c.daysOpen, traits: c.traits ?? {} });
 
 portalReportsRouter.get("/reports/manage", async (req, res) => {
@@ -96,11 +120,7 @@ portalReportsRouter.get("/reports/manage", async (req, res) => {
   check(isClassTeacher || mine.length, "You do not teach this class.", 403);
   const d = await classData(query.termId, query.classId);
   res.json({
-    ...base, isClassTeacher, editableSubjectIds: isClassTeacher ? null : mine,
-    subjects: d.subjects, students: d.students,
-    scores: d.scores.map((s) => ({ studentId: s.studentId, subjectId: s.subjectId, ca: s.ca, ca2: s.ca2, exam: s.exam, comment: s.comment, total: s.total, grade: s.grade })),
-    cards: d.cards.map(cardView), results: d.report.students, subjectStats: d.report.subjectStats, ranked: d.report.ranked, released: !!d.release,
-    workflow: workflowView(d.workflow, !!d.release), cardPrincipalName: d.principal.name, cardPrincipalSignature: d.principal.signature,
+    ...base, isClassTeacher, editableSubjectIds: isClassTeacher ? null : mine, ...classPayload(d),
   });
 });
 

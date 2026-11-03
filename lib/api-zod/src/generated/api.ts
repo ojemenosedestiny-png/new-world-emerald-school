@@ -3186,6 +3186,149 @@ export const ManagePrincipalResultsResponse = zod.object({
 })
 
 
+/**
+ * One class's report cards for a term, read-only, for the principal of that class's section to preview and print
+ */
+export const GetPrincipalReportCardsQueryParams = zod.object({
+  "section": zod.enum(['primary', 'secondary']).optional().describe('primary (Year 1 to Year 6) or secondary (JSS 1 to SS 3, the default)'),
+  "termId": zod.coerce.number(),
+  "classId": zod.coerce.number()
+})
+
+export const getPrincipalReportCardsResponseGradingScaleItemMinMin = 0;
+export const getPrincipalReportCardsResponseGradingScaleItemMinMax = 100;
+
+export const getPrincipalReportCardsResponseGradingScaleItemGradeMax = 4;
+
+export const getPrincipalReportCardsResponseGradingScaleItemRemarkMax = 40;
+
+export const getPrincipalReportCardsResponseScoresItemCommentMax = 300;
+
+export const getPrincipalReportCardsResponseScoresItemTotalMin = 0;
+export const getPrincipalReportCardsResponseScoresItemTotalMax = 300;
+
+export const getPrincipalReportCardsResponseScoresItemGradeMax = 4;
+
+export const getPrincipalReportCardsResponseCardsItemTeacherRemarkMax = 600;
+
+export const getPrincipalReportCardsResponseCardsItemPrincipalRemarkMax = 600;
+
+export const getPrincipalReportCardsResponseCardsItemDaysPresentMin = 0;
+export const getPrincipalReportCardsResponseCardsItemDaysPresentMax = 366;
+
+export const getPrincipalReportCardsResponseCardsItemDaysOpenMin = 0;
+export const getPrincipalReportCardsResponseCardsItemDaysOpenMax = 366;
+
+export const getPrincipalReportCardsResponseCardsItemTraitsMaxOne = 5;
+
+
+
+export const GetPrincipalReportCardsResponse = zod.object({
+  "workflow": zod.object({
+  "status": zod.enum(['draft', 'review', 'approved', 'published']),
+  "mode": zod.enum(['automatic', 'manual']),
+  "teacherName": zod.string(),
+  "teacherSignature": zod.string().nullable(),
+  "submittedAt": zod.string().nullable(),
+  "approvedBy": zod.string(),
+  "approvedAt": zod.string().nullable(),
+  "returnNote": zod.string()
+}),
+  "gradingScale": zod.array(zod.object({
+  "min": zod.number().min(getPrincipalReportCardsResponseGradingScaleItemMinMin).max(getPrincipalReportCardsResponseGradingScaleItemMinMax),
+  "grade": zod.string().min(1).max(getPrincipalReportCardsResponseGradingScaleItemGradeMax),
+  "remark": zod.string().max(getPrincipalReportCardsResponseGradingScaleItemRemarkMax)
+})),
+  "principalName": zod.string(),
+  "principalSignature": zod.string().nullable(),
+  "cardPrincipalName": zod.string().describe('The principal printed on this class\'s report cards: who signed them in the principal\'s portal, else that school\'s principal, else principalName'),
+  "cardPrincipalSignature": zod.string().nullable(),
+  "mySignature": zod.string().nullable().describe('The signed-in teacher\'s saved signature'),
+  "isClassTeacher": zod.boolean().describe('The office or the class teacher: may write remarks, sign and send results'),
+  "editableSubjectIds": zod.array(zod.number()).nullable().describe('Subjects whose scores the signed-in teacher may enter (null: all)'),
+  "teachers": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string()
+})).describe('Active teachers, for the office to choose subject teachers'),
+  "terms": zod.array(zod.object({
+  "id": zod.number(),
+  "session": zod.string(),
+  "term": zod.string(),
+  "caMax": zod.number().describe('CA 1 maximum (the only CA when ca2Max is 0)'),
+  "ca2Max": zod.number().describe('CA 2 maximum; 0 means a single CA column'),
+  "examMax": zod.number(),
+  "nextTermBegins": zod.string().nullable()
+})),
+  "classes": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string()
+})),
+  "canAdmin": zod.boolean(),
+  "termId": zod.number().nullable(),
+  "classId": zod.number().nullable(),
+  "subjects": zod.array(zod.object({
+  "id": zod.number(),
+  "classId": zod.number(),
+  "name": zod.string(),
+  "sortOrder": zod.number(),
+  "teacherId": zod.number().nullable().describe('The subject teacher'),
+  "teacherName": zod.string().nullish().describe('The subject teacher\'s name, for the report card')
+})),
+  "students": zod.array(zod.object({
+  "id": zod.number(),
+  "studentId": zod.string(),
+  "name": zod.string()
+})),
+  "scores": zod.array(zod.object({
+  "studentId": zod.number(),
+  "subjectId": zod.number(),
+  "ca": zod.number().nullable().describe('CA 1'),
+  "ca2": zod.number().nullish().describe('CA 2. Leave out to keep what is saved.'),
+  "exam": zod.number().nullable(),
+  "comment": zod.string().max(getPrincipalReportCardsResponseScoresItemCommentMax).nullish().describe('The subject teacher\'s comment on this result. Leave out to keep what is saved.'),
+  "total": zod.number().min(getPrincipalReportCardsResponseScoresItemTotalMin).max(getPrincipalReportCardsResponseScoresItemTotalMax).nullish().describe('Manual results: a typed total used instead of CA + exam'),
+  "grade": zod.string().max(getPrincipalReportCardsResponseScoresItemGradeMax).nullish().describe('Manual results: a typed grade used instead of the scale\'s')
+})),
+  "cards": zod.array(zod.object({
+  "studentId": zod.number(),
+  "teacherRemark": zod.string().max(getPrincipalReportCardsResponseCardsItemTeacherRemarkMax),
+  "principalRemark": zod.string().max(getPrincipalReportCardsResponseCardsItemPrincipalRemarkMax),
+  "daysPresent": zod.number().min(getPrincipalReportCardsResponseCardsItemDaysPresentMin).max(getPrincipalReportCardsResponseCardsItemDaysPresentMax).nullable(),
+  "daysOpen": zod.number().min(getPrincipalReportCardsResponseCardsItemDaysOpenMin).max(getPrincipalReportCardsResponseCardsItemDaysOpenMax).nullable(),
+  "traits": zod.record(zod.string(), zod.number().min(1).max(getPrincipalReportCardsResponseCardsItemTraitsMaxOne)).optional().describe('Behaviour ratings from 1 to 5, keyed by trait name. Leave out to keep what is saved.')
+})),
+  "results": zod.array(zod.object({
+  "studentId": zod.number(),
+  "subjects": zod.array(zod.object({
+  "subjectId": zod.number(),
+  "ca": zod.number().nullable(),
+  "ca2": zod.number().nullable(),
+  "exam": zod.number().nullable(),
+  "comment": zod.string().describe('The subject teacher\'s comment'),
+  "total": zod.number(),
+  "percent": zod.number(),
+  "grade": zod.string(),
+  "remark": zod.string(),
+  "position": zod.number()
+})),
+  "total": zod.number(),
+  "average": zod.number().nullable(),
+  "grade": zod.string().nullable(),
+  "position": zod.number().nullable(),
+  "subjectsTaken": zod.number()
+})),
+  "subjectStats": zod.array(zod.object({
+  "subjectId": zod.number(),
+  "average": zod.number(),
+  "highest": zod.number(),
+  "lowest": zod.number(),
+  "entries": zod.number()
+})),
+  "ranked": zod.number(),
+  "released": zod.boolean()
+})
+
+
 export const GetMyMessagesResponse = zod.object({
   "threads": zod.array(zod.object({
   "channel": zod.enum(['class', 'office']),

@@ -69,6 +69,7 @@ import type {
   GetPrincipalDashboardParams,
   GetPrincipalExamsParams,
   GetPrincipalOverviewParams,
+  GetPrincipalReportCardsParams,
   GetPrincipalResultsParams,
   GetReportWorkspaceParams,
   HealthStatus,
@@ -5549,6 +5550,87 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       > => {
       return useMutation(getManagePrincipalResultsMutationOptions(options));
     }
+
+export const getGetPrincipalReportCardsUrl = (params: GetPrincipalReportCardsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/portal/principal/report-cards?${stringifiedParams}` : `/api/portal/principal/report-cards`
+}
+
+/**
+ * One class's report cards for a term, read-only, for the principal of that class's section to preview and print
+ */
+export const getPrincipalReportCards = async (params: GetPrincipalReportCardsParams, options?: RequestInit): Promise<ReportWorkspace> => {
+
+  return customFetch<ReportWorkspace>(getGetPrincipalReportCardsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetPrincipalReportCardsQueryKey = (params?: GetPrincipalReportCardsParams,) => {
+    return [
+    `/api/portal/principal/report-cards`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetPrincipalReportCardsQueryOptions = <TData = Awaited<ReturnType<typeof getPrincipalReportCards>>, TError = ErrorType<unknown>>(params: GetPrincipalReportCardsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPrincipalReportCards>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetPrincipalReportCardsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getPrincipalReportCards>>> = ({ signal }) => getPrincipalReportCards(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getPrincipalReportCards>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetPrincipalReportCardsQueryResult = NonNullable<Awaited<ReturnType<typeof getPrincipalReportCards>>>
+export type GetPrincipalReportCardsQueryError = ErrorType<unknown>
+
+
+
+export function useGetPrincipalReportCards<TData = Awaited<ReturnType<typeof getPrincipalReportCards>>, TError = ErrorType<unknown>>(
+ params: GetPrincipalReportCardsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPrincipalReportCards>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetPrincipalReportCardsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 
 export const getGetMyMessagesUrl = () => {
 

@@ -102,6 +102,11 @@ The free Render plan sleeps when idle, so the first visit after a quiet period i
 
 ## 6. Backups and restore
 
+The full plan, by situation (bad deploy, service down, lost or damaged data, rebuild from scratch), is in
+[DISASTER-RECOVERY.md](DISASTER-RECOVERY.md). In short:
+
+- **Encrypted copies by hand:** `scripts/backup-db.sh` makes one, `scripts/restore-backup.sh` puts one back. Every CI
+  run proves the pair works on a throwaway database. Keep copies off GitHub.
 - **Automatic:** Render Postgres paid plans take daily backups with point-in-time recovery (*Database → Recovery*). The free plan has no backups.
 - **Manual copy before risky changes:** `pg_dump --no-owner --format=custom "$RENDER_EXTERNAL_DATABASE_URL" > nwe-$(date +%F).dump`
 - **Restore a manual copy into an empty database:** `pg_restore --no-owner --clean --if-exists -d "$TARGET_DATABASE_URL" nwe-YYYY-MM-DD.dump`, then point `DATABASE_URL` at it and redeploy.

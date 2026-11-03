@@ -22,11 +22,12 @@ test("principal oversight: overview, exams by term, and signing results", async 
   const principal = `principal-${lower}@example.test`, primaryHead = `primary-${lower}@example.test`;
   const saved = { admins: process.env.SCHOOL_ADMIN_EMAILS, principals: process.env.SCHOOL_PRINCIPAL_EMAILS, primary: process.env.SCHOOL_PRIMARY_PRINCIPAL_EMAILS, supers: process.env.SCHOOL_SUPER_ADMIN_EMAILS };
   const boss = `boss-${lower}@example.test`;
-  process.env.SCHOOL_ADMIN_EMAILS = [boss, principal, primaryHead].join(",");
+  // The principals are not administrators: their own portal is all they get.
+  process.env.SCHOOL_ADMIN_EMAILS = boss;
   process.env.SCHOOL_SUPER_ADMIN_EMAILS = boss;
   process.env.SCHOOL_PRINCIPAL_EMAILS = principal;
   process.env.SCHOOL_PRIMARY_PRINCIPAL_EMAILS = primaryHead;
-  setApprovedIdentitiesForTest([[`id-${principal}`, { email: principal, mfa: true }], [`id-${primaryHead}`, { email: primaryHead, mfa: true }]]);
+  setApprovedIdentitiesForTest([[`id-${principal}`, { email: principal, mfa: true }], [`id-${primaryHead}`, { email: primaryHead, mfa: true }], [`id-${boss}`, { email: boss, mfa: true }]]);
   const app = express();
   app.use(express.json({ limit: "1mb" }));
   app.use((req, _res, next) => {
@@ -110,17 +111,26 @@ test("principal oversight: overview, exams by term, and signing results", async 
     assert.deepEqual([jssResult.status, jssResult.scoresEntered, jssResult.scoresExpected, jssResult.signedByPrincipal], ["review", 1, 2, false]);
     const sign = (action: string, extra: object = {}, who = principal) => call("/principal/results", who, { action, section: "secondary", termId, classId: jss1.id, ...extra });
     assert.equal((await sign("approve")).status, 409, "a signature is needed first");
+    // The super administrator can look, but cannot set or sign with the principal's signature.
+    assert.equal((await call(`/principal/results?termId=${termId}`, boss)).status, 200);
+    assert.equal((await call("/principal/results", boss, { action: "saveSignature", section: "secondary", name: "Boss", signature: SIGNATURE })).status, 403);
     assert.equal((await call("/principal/results", principal, { action: "saveSignature", section: "secondary", name: "Mrs Principal", signature: "data:text/html;base64,AAAA" })).status, 400);
     assert.equal((await call("/principal/results", principal, { action: "saveSignature", section: "primary", name: "X", signature: SIGNATURE })).status, 403);
     assert.equal((await call("/principal/results", principal, { action: "saveSignature", section: "secondary", name: "Mrs Principal", signature: SIGNATURE })).status, 200);
     assert.equal((await call("/principal/results", primaryHead, { action: "approve", section: "primary", termId, classId: jss1.id })).status, 403);
     assert.equal((await sign("publish")).status, 400, "only approved results are published");
+    assert.equal((await sign("approve", {}, boss)).status, 403);
     const approved = await sign("approve");
     assert.equal(approved.status, 200, JSON.stringify(approved.data));
     const [row] = await db.select().from(portalReportWorkflow).where(and(eq(portalReportWorkflow.termId, termId), eq(portalReportWorkflow.classId, jss1.id)));
     assert.deepEqual([row.status, row.approvedBy, row.principalName, row.principalSignature], ["approved", "Mrs Principal", "Mrs Principal", SIGNATURE]);
-    // The report cards print the principal who signed them.
-    const ws = await call(`/reports/manage?termId=${termId}&classId=${jss1.id}`, principal);
+    // The report cards print the principal who signed them; the principal previews them in their own portal only.
+    assert.equal((await call(`/principal/report-cards?section=primary&termId=${termId}&classId=${jss1.id}`, primaryHead)).status, 403);
+    // A principal is not a staff portal administrator: refused (401 in production; this test has no Clerk, so the staff lookup fails closed).
+    assert.notEqual((await call(`/reports/manage?termId=${termId}&classId=${jss1.id}`, principal)).status, 200);
+    const ws = await call(`/principal/report-cards?termId=${termId}&classId=${jss1.id}`, principal);
+    assert.equal(ws.status, 200, JSON.stringify(ws.data));
+    assert.deepEqual([ws.data.canAdmin, ws.data.students.length, ws.data.teachers], [false, 2, []]);
     assert.deepEqual([ws.data.cardPrincipalName, ws.data.cardPrincipalSignature], ["Mrs Principal", SIGNATURE]);
     assert.equal((await sign("publish")).status, 200);
     assert.equal((await call(`/principal/results?termId=${termId}`, principal)).data.classes.find((c: { id: number }) => c.id === jss1.id).status, "published");

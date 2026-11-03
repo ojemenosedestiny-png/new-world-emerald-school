@@ -109,6 +109,8 @@ export * from './getPrincipalExamsParams';
 export * from './getPrincipalExamsSection';
 export * from './getPrincipalOverviewParams';
 export * from './getPrincipalOverviewSection';
+export * from './getPrincipalReportCardsParams';
+export * from './getPrincipalReportCardsSection';
 export * from './getPrincipalResultsParams';
 export * from './getPrincipalResultsSection';
 export * from './getReportWorkspaceParams';

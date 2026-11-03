@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import type { Request, Response } from "express";
-import { isPublicWebsiteRequest, isWebsiteAdmin, protectWebsiteManagement } from "./website-admin";
+import { isPrincipal, isPublicWebsiteRequest, isSectionPrincipal, isWebsiteAdmin, protectWebsiteManagement } from "./website-admin";
 
 // Synthetic settings are local to this isolated test process.
 process.env.SCHOOL_ADMIN_EMAILS = "approved@example.com";
@@ -117,4 +117,25 @@ test("an unresolved Clerk identity keeps public pages open and explains the admi
   protectWebsiteManagement({ ...req, method: "PUT" } as unknown as Request, res, () => { throw new Error("must not pass"); });
   assert.equal(status, 401);
   assert.deepEqual(body, { error: "Account identity could not be resolved." });
+});
+
+test("a principal opens only their own school's portal and gets no administrator rights", () => {
+  process.env.SCHOOL_PRINCIPAL_EMAILS = "head-sec@example.com";
+  process.env.SCHOOL_PRIMARY_PRINCIPAL_EMAILS = "head-pri@example.com";
+  const who = (email: string, verified = true, mfa = false) => ({ dbUser: { id: email }, identity: { email, emailVerified: verified, mfa } }) as unknown as Request;
+  try {
+    assert.equal(isSectionPrincipal(who("HEAD-SEC@example.com")), true);
+    assert.equal(isSectionPrincipal(who("head-sec@example.com"), "primary"), false);
+    assert.equal(isSectionPrincipal(who("head-pri@example.com"), "primary"), true);
+    assert.equal(isSectionPrincipal(who("head-sec@example.com", false)), false, "an unverified email is refused");
+    assert.equal(isWebsiteAdmin(who("head-sec@example.com")), false, "a principal is not a website administrator");
+    // The super administrator may look at both portals, but is not the principal (cannot sign).
+    assert.equal(isPrincipal(who("approved@example.com"), "primary"), true);
+    assert.equal(isSectionPrincipal(who("approved@example.com"), "primary"), false);
+    process.env.REQUIRE_ADMIN_MFA = "true";
+    assert.equal(isSectionPrincipal(who("head-sec@example.com")), false, "two-factor applies to principals when required");
+    assert.equal(isSectionPrincipal(who("head-sec@example.com", true, true)), true);
+  } finally {
+    delete process.env.REQUIRE_ADMIN_MFA; delete process.env.SCHOOL_PRINCIPAL_EMAILS; delete process.env.SCHOOL_PRIMARY_PRINCIPAL_EMAILS;
+  }
 });

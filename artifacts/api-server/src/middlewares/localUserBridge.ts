@@ -2,7 +2,7 @@ import { getAuth } from "@clerk/express";
 import { db, usersTable, type User } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import type { NextFunction, Request, Response } from "express";
-import { approvedEmails, hasAdminMfa, hasVerifiedApproval, refreshApprovedIdentitiesSoon } from "../lib/approved-identities";
+import { hasAdminMfa, hasVerifiedApproval, refreshApprovedIdentitiesSoon, verifiedRoleEmails } from "../lib/approved-identities";
 import { schoolUserId } from "../lib/school-identity";
 
 declare global {
@@ -40,7 +40,7 @@ export async function localUserBridge(req: Request, res: Response, next: NextFun
     req.identity = { email, emailVerified: hasVerifiedApproval(userId, email), mfa: hasAdminMfa(userId, email) };
     // A newly created account for an approved email is not in the once-a-minute verification list yet:
     // refresh it now, so a new administrator or Director gets in within seconds of signing up.
-    if (email && !req.identity.emailVerified && approvedEmails().includes(email.trim().toLowerCase())) refreshApprovedIdentitiesSoon();
+    if (email && !req.identity.emailVerified && verifiedRoleEmails().includes(email.trim().toLowerCase())) refreshApprovedIdentitiesSoon();
     next();
   } catch (error) {
     next(error);

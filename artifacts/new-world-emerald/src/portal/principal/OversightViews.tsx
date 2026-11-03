@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
-  getGetPrincipalDashboardQueryKey, getGetPrincipalExamQueryKey, getGetPrincipalExamsQueryKey, getGetPrincipalResultsQueryKey, getReportWorkspace,
+  getGetPrincipalDashboardQueryKey, getGetPrincipalExamQueryKey, getGetPrincipalExamsQueryKey, getGetPrincipalResultsQueryKey, getPrincipalReportCards,
   useGetPrincipalDashboard, useGetPrincipalExam, useGetPrincipalExams, useGetPrincipalResults, useManagePrincipalResults,
   type GetPrincipalDashboardSection, type PrincipalDashboard, type PrincipalExamSummary, type PrincipalResultClass, type PrincipalResultsCommand,
   type PrincipalTeacherWeek,
@@ -427,7 +427,7 @@ export function ResultsView({ section }: { section: SchoolSection }) {
     if (!d.termId) return;
     setPreviewing(c.id);
     try {
-      const ws = await getReportWorkspace({ termId: d.termId, classId: c.id });
+      const ws = await getPrincipalReportCards({ section, termId: d.termId, classId: c.id });
       const term = ws.terms.find((t) => t.id === d.termId);
       if (!term || !ws.students.length) { toast({ title: "Nothing to print yet", description: `${c.name} has no students with results this term.` }); return; }
       if (!printReportCards(printableFor(ws, term, c.name))) toast({ variant: "destructive", title: "Pop-up blocked", description: "Allow pop-ups for this site to see the report cards." });

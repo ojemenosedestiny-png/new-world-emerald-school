@@ -102,6 +102,20 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/PortalMessage" }
+  reportCards:
+    get:
+      operationId: getPrincipalReportCards
+      description: One class's report cards for a term, read-only, for the principal of that class's section to preview and print
+      parameters:
+        - { name: section, in: query, required: false, description: "primary (Year 1 to Year 6) or secondary (JSS 1 to SS 3, the default)", schema: { type: string, enum: [primary, secondary] } }
+        - { name: termId, in: query, required: true, schema: { type: integer } }
+        - { name: classId, in: query, required: true, schema: { type: integer } }
+      responses:
+        "200":
+          description: The class's report card data
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ReportWorkspace" }
 schemas:
   PrincipalPerson:
     type: object

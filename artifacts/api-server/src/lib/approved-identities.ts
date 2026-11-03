@@ -33,11 +33,16 @@ export function directorEmails(): string[] {
 /**
  * The secondary principal (SCHOOL_PRINCIPAL_EMAILS, JSS 1 to SS 3) and the primary principal
  * (SCHOOL_PRIMARY_PRINCIPAL_EMAILS, Year 1 to Year 6): each opens their own principal portal to assign teachers
- * to classes and see teachers' daily activity. Must also be approved administrators. No default: unset means nobody.
+ * to classes and see teachers' daily activity. They need not be administrators: a principal listed only here gets
+ * their own portal and nothing else (least privilege). No default: unset means nobody.
  */
 export function principalEmails(section: "primary" | "secondary" = "secondary"): string[] {
-  const listed = (process.env[section === "primary" ? "SCHOOL_PRIMARY_PRINCIPAL_EMAILS" : "SCHOOL_PRINCIPAL_EMAILS"] ?? "").split(/[,;\s]+/).map((v) => v.trim().toLowerCase()).filter(Boolean);
-  return listed.filter((e) => approvedEmails().includes(e));
+  return (process.env[section === "primary" ? "SCHOOL_PRIMARY_PRINCIPAL_EMAILS" : "SCHOOL_PRINCIPAL_EMAILS"] ?? "").split(/[,;\s]+/).map((v) => v.trim().toLowerCase()).filter(Boolean);
+}
+
+/** Every email whose Clerk verification is tracked: administrators and both principals. */
+export function verifiedRoleEmails(): string[] {
+  return [...new Set([...approvedEmails(), ...principalEmails("secondary"), ...principalEmails("primary")])];
 }
 
 /** When true, administrators must have Clerk two-factor authentication turned on. */
@@ -63,7 +68,7 @@ async function refresh() {
   try {
     const next = new Map<string, Identity>();
     // Paginate per address so no approved identity is silently omitted.
-    for (const email of approvedEmails()) {
+    for (const email of verifiedRoleEmails()) {
       for (let offset = 0; ; offset += 100) {
         const result = await clerkClient.users.getUserList({ emailAddress: [email], limit: 100, offset });
         for (const user of result.data) {

@@ -139,6 +139,8 @@ paths:
     $ref: "./principal.yaml#/paths/exam"
   /portal/principal/results:
     $ref: "./principal.yaml#/paths/results"
+  /portal/principal/report-cards:
+    $ref: "./principal.yaml#/paths/reportCards"
   /portal/my-messages:
     $ref: "./messages.yaml#/paths/myMessages"
   /portal/my-messages/read:

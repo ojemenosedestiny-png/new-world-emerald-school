@@ -26,11 +26,20 @@ export function isDirector(req: Request): boolean {
 }
 
 /**
- * The principal of a section (secondary: SCHOOL_PRINCIPAL_EMAILS; primary: SCHOOL_PRIMARY_PRINCIPAL_EMAILS),
- * or the super administrator, may open that section's principal portal.
+ * The principal's own account for a section (secondary: SCHOOL_PRINCIPAL_EMAILS; primary:
+ * SCHOOL_PRIMARY_PRINCIPAL_EMAILS): a verified email listed there, with two-factor when the school requires it
+ * of administrators. Being a principal grants no administrator rights. Only this account may sign results.
  */
+export function isSectionPrincipal(req: Request, section: "primary" | "secondary" = "secondary"): boolean {
+  const email = req.identity?.email?.trim().toLowerCase();
+  if (!req.dbUser || !email || !req.identity?.emailVerified) return false;
+  if (adminMfaRequired() && req.identity.mfa !== true) return false;
+  return principalEmails(section).includes(email);
+}
+
+/** May open a section's principal portal: that section's principal, or the super administrator (who cannot sign). */
 export function isPrincipal(req: Request, section: "primary" | "secondary" = "secondary"): boolean {
-  return isWebsiteAdmin(req) && (principalEmails(section).includes(req.identity!.email!.trim().toLowerCase()) || isSuperAdmin(req));
+  return isSectionPrincipal(req, section) || isSuperAdmin(req);
 }
 
 export function requireWebsiteAdmin(req: Request, res: Response): boolean {
