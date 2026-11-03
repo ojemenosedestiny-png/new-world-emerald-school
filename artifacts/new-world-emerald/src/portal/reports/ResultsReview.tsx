@@ -15,7 +15,12 @@ const round1 = (n: number) => Math.round(n * 10) / 10;
 /** A class's results for one term: the figures, the ranking, subject performance, and each student's result as it will print. */
 export function ResultsReviewBody({ ws, term, className }: { ws: ReportWorkspace; term: ReportTerm; className: string }) {
   const { toast } = useToast();
-  const ranked = useMemo(() => ws.results.filter((r) => r.average !== null).sort((a, b) => (a.position ?? 999) - (b.position ?? 999)), [ws.results]);
+  // Primary results have no positions: the class is listed by name.
+  const primary = ws.scheme === "primary";
+  const nameOf = (id: number) => ws.students.find((s) => s.id === id)?.name ?? "";
+  const ranked = useMemo(() => ws.results.filter((r) => r.average !== null).sort((a, b) => primary ? nameOf(a.studentId).localeCompare(nameOf(b.studentId)) : (a.position ?? 999) - (b.position ?? 999)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [ws.results, ws.students, primary]);
   const [selected, setSelected] = useState<number | null>(null);
   useEffect(() => { if (!ranked.some((r) => r.studentId === selected)) setSelected(ranked[0]?.studentId ?? null); }, [ranked, selected]);
   const name = (id: number) => ws.students.find((s) => s.id === id)?.name ?? "Student";
@@ -38,9 +43,9 @@ export function ResultsReviewBody({ ws, term, className }: { ws: ReportWorkspace
     <div className="space-y-4" data-testid="panel-results-review">
       <section className="portal-card grid grid-cols-2 divide-[hsl(var(--p-line))] overflow-hidden md:grid-cols-5 md:divide-x" aria-label="Class figures">
         {[
-          ["Students ranked", `${ranked.length}`, `of ${ws.students.length}`, "review-students"],
+          [primary ? "Students with results" : "Students ranked", `${ranked.length}`, `of ${ws.students.length}`, "review-students"],
           ["Class average", `${classAverage}%`, "", "review-average"],
-          ["Highest", `${Math.max(...averages)}%`, name(ranked[0].studentId), "review-highest"],
+          ["Highest", `${Math.max(...averages)}%`, name(ranked.reduce((best, r) => (r.average! > best.average! ? r : best)).studentId), "review-highest"],
           ["Lowest", `${Math.min(...averages)}%`, "", "review-lowest"],
           ["Passed", `${Math.round((passed / ranked.length) * 100)}%`, `${passed} of ${ranked.length}, ${passMark}% and above`, "review-passed"],
         ].map(([label, value, note, id]) => (
@@ -56,20 +61,20 @@ export function ResultsReviewBody({ ws, term, className }: { ws: ReportWorkspace
         <div className="min-w-0 space-y-4">
           <section className="portal-card overflow-hidden">
             <div className="flex items-center justify-between gap-2 border-b border-[hsl(var(--p-line))] px-4 py-3">
-              <h3 className="font-serif text-lg font-semibold">Class ranking</h3>
+              <h3 className="font-serif text-lg font-semibold">{primary ? "Class results" : "Class ranking"}</h3>
               <ClassPrintButtons ws={ws} term={term} className={className} compact />
             </div>
             <div className="max-h-[520px] overflow-auto">
               <table className="w-full text-sm" data-testid="table-review-ranking">
                 <thead className="sticky top-0 bg-[hsl(var(--p-surface))] text-left text-xs uppercase tracking-wide text-[hsl(var(--p-ink)/0.6)]">
-                  <tr><th className="px-4 py-2">Pos.</th><th className="px-2 py-2">Student</th><th className="px-2 py-2 text-right">Total</th><th className="px-2 py-2 text-right">Average</th><th className="px-4 py-2 text-right">Grade</th></tr>
+                  <tr>{!primary && <th className="px-4 py-2">Pos.</th>}<th className={primary ? "px-4 py-2" : "px-2 py-2"}>Student</th><th className="px-2 py-2 text-right">Total</th><th className="px-2 py-2 text-right">{primary ? "Percentage" : "Average"}</th><th className="px-4 py-2 text-right">Grade</th></tr>
                 </thead>
                 <tbody>
                   {ranked.map((r) => (
                     <tr key={r.studentId} onClick={() => setSelected(r.studentId)} aria-selected={selected === r.studentId}
                       className={"cursor-pointer border-t border-[hsl(var(--p-line))] " + (selected === r.studentId ? "bg-[hsl(var(--p-emerald-soft)/0.6)]" : "hover:bg-[hsl(var(--p-paper-2)/0.6)]")} data-testid={"review-row-" + r.studentId}>
-                      <td className="px-4 py-2 font-semibold tabular-nums">{r.position ? ordinal(r.position) : "-"}</td>
-                      <td className="px-2 py-2"><span className="block font-semibold">{name(r.studentId)}</span><span className="font-mono text-xs text-[hsl(var(--p-ink)/0.5)]">{code(r.studentId)} · {r.subjectsTaken} subjects</span></td>
+                      {!primary && <td className="px-4 py-2 font-semibold tabular-nums">{r.position ? ordinal(r.position) : "-"}</td>}
+                      <td className={primary ? "px-4 py-2" : "px-2 py-2"}><span className="block font-semibold">{name(r.studentId)}</span><span className="font-mono text-xs text-[hsl(var(--p-ink)/0.5)]">{code(r.studentId)} · {r.subjectsTaken} subjects</span></td>
                       <td className="px-2 py-2 text-right font-serif text-base font-semibold tabular-nums">{r.total}</td>
                       <td className="px-2 py-2 text-right tabular-nums">{r.average}%</td>
                       <td className="px-4 py-2 text-right font-bold">{r.grade ?? "-"}</td>

@@ -3,6 +3,7 @@ import { useGetPortalManagement, getGetPortalManagementQueryKey, type ReportTerm
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Skeleton } from "../ui";
 import { useReportCommand } from "./useReportCommand";
+import { partLabels } from "./scheme";
 
 /** A CBT score out of the exam's total, as a mark out of the report card column's maximum, in half marks. */
 export function convertScore(score: number, total: number, max: number) {
@@ -19,7 +20,8 @@ export function CbtScoresDialog({ ws, term, onClose, subjectId: initialSubject }
   const exam = exams.find((e) => e.id === examId) ?? exams[0];
   const [subjectId, setSubjectId] = useState<number | "new">(initialSubject ?? ws.subjects[0]?.id ?? "new");
   const [column, setColumn] = useState<"exam" | "ca" | "ca2">("exam");
-  const twoCa = (term.ca2Max ?? 0) > 0;
+  const twoCa = ws.scheme !== "primary" && (term.ca2Max ?? 0) > 0;
+  const L = partLabels(ws.scheme, twoCa);
   const max = column === "ca" ? term.caMax : column === "ca2" ? term.ca2Max : term.examMax;
 
   const rows = useMemo(() => {
@@ -74,7 +76,7 @@ export function CbtScoresDialog({ ws, term, onClose, subjectId: initialSubject }
                 </select></label>
               <label className="text-sm font-semibold">Counts as
                 <select className="portal-input mt-1" value={column} onChange={(e) => setColumn(e.target.value as "exam" | "ca" | "ca2")} data-testid="select-cbt-column">
-                  <option value="exam">Exam (out of {term.examMax})</option><option value="ca">{twoCa ? "CA 1" : "CA"} (out of {term.caMax})</option>
+                  <option value="exam">{L.exam} (out of {term.examMax})</option><option value="ca">{L.ca} (out of {term.caMax})</option>
                   {twoCa && <option value="ca2">CA 2 (out of {term.ca2Max})</option>}
                 </select></label>
             </div>
@@ -84,7 +86,7 @@ export function CbtScoresDialog({ ws, term, onClose, subjectId: initialSubject }
               <p className="text-sm text-[hsl(var(--p-ink)/0.7)]" data-testid="text-cbt-summary">{ready.length} of {ws.students.length} students have a marked score.{notSat.length ? ` ${notSat.length} did not sit or are not marked yet.` : ""}</p>
               <div className="max-h-72 overflow-y-auto rounded-xl border border-[hsl(var(--p-line))]">
                 <table className="w-full text-sm" data-testid="table-cbt-preview">
-                  <thead className="sticky top-0 bg-[hsl(var(--p-surface))] text-left text-xs uppercase tracking-wide text-[hsl(var(--p-ink)/0.6)]"><tr><th className="px-3 py-2">Student</th><th className="px-2 py-2 text-right">CBT</th><th className="px-2 py-2 text-right">{column === "ca" ? (twoCa ? "CA 1" : "CA") : column === "ca2" ? "CA 2" : "Exam"} /{max}</th><th className="px-3 py-2 text-right">Now</th></tr></thead>
+                  <thead className="sticky top-0 bg-[hsl(var(--p-surface))] text-left text-xs uppercase tracking-wide text-[hsl(var(--p-ink)/0.6)]"><tr><th className="px-3 py-2">Student</th><th className="px-2 py-2 text-right">CBT</th><th className="px-2 py-2 text-right">{L[column]} /{max}</th><th className="px-3 py-2 text-right">Now</th></tr></thead>
                   <tbody>
                     {rows.map((r) => (
                       <tr key={r.st.id} className="border-t border-[hsl(var(--p-line))]">

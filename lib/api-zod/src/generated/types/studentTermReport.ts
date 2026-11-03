@@ -8,11 +8,14 @@
 import type { StudentTermReportCard } from './studentTermReportCard';
 import type { StudentTermReportGradingScaleItem } from './studentTermReportGradingScaleItem';
 import type { StudentTermReportResult } from './studentTermReportResult';
+import type { StudentTermReportScheme } from './studentTermReportScheme';
 import type { StudentTermReportSubjectsItem } from './studentTermReportSubjectsItem';
 import type { StudentTermReportSubjectStatsItem } from './studentTermReportSubjectStatsItem';
 import type { StudentTermReportTerm } from './studentTermReportTerm';
 
 export interface StudentTermReport {
+  /** primary (Year 1 to 6): Mid-term (ca) and End-term (exam) out of 100, final = their average, no positions; secondary: CA + exam with positions */
+  scheme: StudentTermReportScheme;
   /** The class the student was in for this term */
   className: string;
   gradingScale: StudentTermReportGradingScaleItem[];

@@ -1,5 +1,5 @@
 import { AnimatedHeading } from "@/components/AnimatedHeading";
-import { ArrowUpRight, Shirt } from 'lucide-react';
+import { ArrowUpRight, Shirt, Wallet } from 'lucide-react';
 import { Link } from 'wouter';
 
 export function ParentServices() {
@@ -19,9 +19,18 @@ export function ParentServices() {
             </AnimatedHeading>
           </div>
         <p className="mt-4 max-w-2xl text-sm leading-6 text-muted-foreground sm:text-base">
-          Find uniform information and school fee guidance on our dedicated Uniforms &amp; School Payments page.
+          Pay school fees online for all your children in one place, with Paystack, and get a receipt straight away. Uniforms and fee guidance are on the Uniforms &amp; School Payments page.
         </p>
           <div className="mt-5 flex flex-wrap gap-3">
+            <Link
+              href="/parents"
+              data-testid="link-home-parent-portal"
+              className="group inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/20 transition-colors hover:bg-primary/90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary motion-reduce:transition-none"
+            >
+              <Wallet aria-hidden="true" size={16} strokeWidth={1.8} />
+              <span>Parent portal: pay school fees</span>
+              <ArrowUpRight aria-hidden="true" size={14} />
+            </Link>
             <Link
               href="/commerce?section=fees"
               data-testid="link-home-parent-services"

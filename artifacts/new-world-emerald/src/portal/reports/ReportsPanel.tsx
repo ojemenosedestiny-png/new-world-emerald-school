@@ -11,6 +11,7 @@ import { Broadsheet, RemarksEditor } from "./RemarksBroadsheet";
 import { WorkflowBar, resultsLocked } from "./ResultWorkflow";
 import { ResultSettings } from "./ResultSettings";
 import { ResultsReviewBody } from "./ResultsReview";
+import { schemeTerm } from "./scheme";
 
 type Section = "scores" | "remarks" | "review" | "broadsheet" | "subjects" | "settings";
 
@@ -96,6 +97,8 @@ export function ReportsPanel() {
   const term = ws.terms.find((t) => t.id === termId);
   const cls = ws.classes.find((c) => c.id === classId);
   const ready = term && cls && ws.termId === term.id && ws.classId === cls.id;
+  // Primary classes (Year 1 to 6) use Mid-term and End-term out of 100; the term's own maxima are for secondary.
+  const classTerm = term && schemeTerm(term, ws.scheme);
   const blankTerm: ReportTermInput = { session: `${new Date().getFullYear()}/${new Date().getFullYear() + 1}`, term: "First Term", caMax: 20, ca2Max: 20, examMax: 60, nextTermBegins: "" };
   const missing = ready ? ws.students.filter((s) => (ws.results.find((r) => r.studentId === s.id)?.subjectsTaken ?? 0) < ws.subjects.length).length : 0;
   const sections: [Section, string][] = ws.isClassTeacher || !ready
@@ -132,17 +135,21 @@ export function ReportsPanel() {
 
       {!ws.classes.length ? <EmptyState icon={<FileBarChart size={22} />} title="No classes" body="Create a class first in the Classes tab." /> : !ready ? <Skeleton className="h-40" /> : (
         <>
-          {ws.isClassTeacher ? <WorkflowBar ws={ws} term={term} className={cls.name} missing={missing} onOpenSettings={() => setSection("settings")} />
+          <p className="flex flex-wrap items-center gap-2 text-sm" data-testid="text-result-scheme">
+            <span className={"rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wider " + (ws.scheme === "primary" ? "bg-[hsl(var(--p-gold-soft))] text-[hsl(var(--p-gold-ink))]" : "bg-[hsl(var(--p-emerald-soft))] text-[hsl(var(--p-emerald))]")}>{ws.scheme === "primary" ? "Primary result" : "Secondary result"}</span>
+            <span className="text-[hsl(var(--p-ink)/0.65)]">{ws.scheme === "primary" ? "Mid-term /100 and End-term /100 per subject; final = (Mid-term + End-term) ÷ 2. Percentage and average, no positions." : `${classTerm!.ca2Max ? `CA 1 /${classTerm!.caMax} + CA 2 /${classTerm!.ca2Max}` : `CA /${classTerm!.caMax}`} + Exam /${classTerm!.examMax}, with positions.`}</span>
+          </p>
+          {ws.isClassTeacher ? <WorkflowBar ws={ws} term={classTerm!} className={cls.name} missing={missing} onOpenSettings={() => setSection("settings")} />
             : <p className="portal-card p-4 text-sm" data-testid="text-subject-teacher">You are the subject teacher for {ws.subjects.filter((x) => ws.editableSubjectIds?.includes(x.id)).map((x) => x.name).join(", ")} in {cls.name}. Enter those scores here; the class teacher adds remarks and sends the results for approval.</p>}
 
           <div className="flex gap-1 overflow-x-auto rounded-full border border-[hsl(var(--p-line))] bg-[hsl(var(--p-surface)/0.7)] p-1" role="tablist">
             {sections.map(([key, label]) => <button key={key} role="tab" aria-selected={section === key} className={"portal-tab " + (section === key ? "!bg-[hsl(var(--p-ink))] !text-[hsl(var(--p-paper))]" : "")} onClick={() => setSection(key)} data-testid={"report-section-" + key}>{label}</button>)}
           </div>
 
-          {(section === "scores" || !ws.isClassTeacher) && <ScoresEditor ws={ws} term={term} locked={locked} />}
-          {section === "remarks" && <RemarksEditor ws={ws} term={term} locked={locked} />}
-          {section === "review" && <ResultsReviewBody ws={ws} term={term} className={cls.name} />}
-          {section === "broadsheet" && <Broadsheet ws={ws} term={term} className={cls.name} />}
+          {(section === "scores" || !ws.isClassTeacher) && <ScoresEditor ws={ws} term={classTerm!} locked={locked} />}
+          {section === "remarks" && <RemarksEditor ws={ws} term={classTerm!} locked={locked} />}
+          {section === "review" && <ResultsReviewBody ws={ws} term={classTerm!} className={cls.name} />}
+          {section === "broadsheet" && <Broadsheet ws={ws} term={classTerm!} className={cls.name} />}
           {section === "subjects" && ws.canAdmin && <SubjectsEditor ws={ws} classId={cls.id} />}
           {section === "settings" && <ResultSettings ws={ws} />}
         </>

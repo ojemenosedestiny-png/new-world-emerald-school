@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { AFFECTIVE_TRAITS, buildClassReport, gradeFor, rank, traitsProblem, validScorePart, nextStatus, scaleProblem, signatureProblem } from "./report-cards";
+import { AFFECTIVE_TRAITS, GRADE_SCALE, buildClassReport, gradeFor, rank, schemeFor, schemeMaxima, schemePossible, traitsProblem, validScorePart, nextStatus, scaleProblem, signatureProblem } from "./report-cards";
 
 test("grades follow the school scale at every boundary", () => {
   const cases: [number, string, string][] = [
@@ -117,4 +117,26 @@ test("behaviour ratings: the school's 16 traits, each rated 1 to 5", () => {
   assert.match(traitsProblem({ Punctuality: 6 })!, /1 to 5/);
   assert.match(traitsProblem({ Punctuality: 2.5 })!, /1 to 5/);
   assert.match(traitsProblem({ Singing: 3 })!, /Unknown/);
+});
+
+test("primary (Year 1 to 6): Mid-term and End-term out of 100, final is their average, no positions", () => {
+  assert.equal(schemeFor("Year 3"), "primary");
+  assert.equal(schemeFor("Primary 5B"), "primary");
+  assert.equal(schemeFor("JSS 2"), "secondary");
+  assert.equal(schemeFor("Nursery 1"), "secondary");
+  const term = { caMax: 20, ca2Max: 20, examMax: 60 };
+  assert.deepEqual(schemeMaxima(term, "primary"), { caMax: 100, ca2Max: 0, examMax: 100 });
+  assert.equal(schemePossible(term, "primary"), 100);
+  const report = buildClassReport([1, 2], [10, 11], [
+    { studentId: 1, subjectId: 10, ca: 80, ca2: 15, exam: 90, total: null, grade: null },
+    { studentId: 1, subjectId: 11, ca: 60, exam: 71, total: null, grade: null },
+    { studentId: 2, subjectId: 10, ca: 90, exam: 95, total: null, grade: null },
+  ], schemeMaxima(term, "primary"), GRADE_SCALE, "primary");
+  const ada = report.students.find((s) => s.studentId === 1)!;
+  // (80 + 90) / 2 = 85; CA 2 is ignored. (60 + 71) / 2 = 65.5.
+  assert.deepEqual(ada.subjects.map((s) => [s.total, s.percent, s.grade, s.position, s.ca2]), [[85, 85, "A", 0, null], [65.5, 65.5, "B", 0, null]]);
+  assert.deepEqual([ada.total, ada.average, ada.grade, ada.position], [150.5, 75.3, "B", null]);
+  assert.equal(report.students.find((s) => s.studentId === 2)!.position, null);
+  assert.equal(report.ranked, 2);
+  assert.deepEqual(report.subjectStats.find((s) => s.subjectId === 10), { subjectId: 10, average: 88.8, highest: 92.5, lowest: 85, entries: 2 });
 });

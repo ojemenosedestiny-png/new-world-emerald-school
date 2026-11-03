@@ -7,7 +7,7 @@ import {
 import { GetReportWorkspaceQueryParams, ManageReportsBody } from "@workspace/api-zod";
 import { check, classAllowed, portalActor, staffOnly, studentOnly, type PortalActor } from "../lib/portal-auth";
 import { classSection } from "../lib/principal";
-import { GRADE_SCALE, traitsProblem, buildClassReport, nextStatus, scaleProblem, signatureProblem, validScorePart, type GradeBand, type ResultStatus } from "../lib/report-cards";
+import { GRADE_SCALE, traitsProblem, buildClassReport, nextStatus, scaleProblem, schemeFor, schemeMaxima, schemePossible, signatureProblem, validScorePart, type GradeBand, type ResultScheme, type ResultStatus } from "../lib/report-cards";
 
 export const portalReportsRouter = Router();
 
@@ -47,9 +47,18 @@ export async function upsertWorkflow(termId: number, classId: number, values: Pa
     .onConflictDoUpdate({ target: [portalReportWorkflow.termId, portalReportWorkflow.classId], set: { ...values, updatedAt: new Date() } });
 }
 
+/** Primary (Year 1 to 6) or secondary, from the class's name. */
+async function classScheme(classId: number): Promise<ResultScheme> {
+  const [cls] = await db.select({ name: portalClasses.name }).from(portalClasses).where(eq(portalClasses.id, classId));
+  return schemeFor(cls?.name ?? "");
+}
+
 async function classData(termId: number, classId: number) {
-  const [term] = await db.select().from(portalTerms).where(eq(portalTerms.id, termId));
-  check(term, "Term not found.", 404);
+  const [termRow] = await db.select().from(portalTerms).where(eq(portalTerms.id, termId));
+  check(termRow, "Term not found.", 404);
+  // Primary classes use Mid-term and End-term marks out of 100 whatever the term's CA and exam maxima are.
+  const scheme = await classScheme(classId);
+  const term = schemeMaxima(termRow, scheme);
   const subjectRows = await db.select().from(portalSubjects).where(eq(portalSubjects.classId, classId)).orderBy(asc(portalSubjects.sortOrder), asc(portalSubjects.name));
   const teacherIds = [...new Set(subjectRows.map((s) => s.teacherId).filter((id): id is number => id !== null))];
   const teacherNames = new Map(teacherIds.length ? (await db.select({ id: portalTeachers.id, name: portalTeachers.name }).from(portalTeachers).where(inArray(portalTeachers.id, teacherIds))).map((t) => [t.id, t.name]) : []);
@@ -67,14 +76,14 @@ async function classData(termId: number, classId: number) {
   const [workflow, settings] = await Promise.all([workflowRow(termId, classId), reportSettings()]);
   // Typed totals and grades count only when the class's results are in manual mode.
   const manual = workflow?.mode === "manual";
-  const report = buildClassReport(ids, subjects.map((s) => s.id), scores.map((s) => (manual ? s : { ...s, total: null, grade: null })), term, settings.gradingScale);
+  const report = buildClassReport(ids, subjects.map((s) => s.id), scores.map((s) => (manual ? s : { ...s, total: null, grade: null })), term, settings.gradingScale, scheme);
   const principal = await cardPrincipal(classId, workflow, settings);
-  return { term, subjects, students, scores, cards, release, report, workflow, settings, principal };
+  return { term, scheme, subjects, students, scores, cards, release, report, workflow, settings, principal };
 }
 
 /** A class's results for a term as the workspace shows them. */
 const classPayload = (d: Awaited<ReturnType<typeof classData>>) => ({
-  subjects: d.subjects, students: d.students,
+  scheme: d.scheme, subjects: d.subjects, students: d.students,
   scores: d.scores.map((s) => ({ studentId: s.studentId, subjectId: s.subjectId, ca: s.ca, ca2: s.ca2, exam: s.exam, comment: s.comment, total: s.total, grade: s.grade })),
   cards: d.cards.map(cardView), results: d.report.students, subjectStats: d.report.subjectStats, ranked: d.report.ranked, released: !!d.release,
   workflow: workflowView(d.workflow, !!d.release), cardPrincipalName: d.principal.name, cardPrincipalSignature: d.principal.signature,
@@ -108,7 +117,7 @@ portalReportsRouter.get("/reports/manage", async (req, res) => {
   const visible = [...new Set([...actor.classIds, ...taught.map((t) => t.classId)])];
   const classes = await db.select().from(portalClasses).where(actor.role === "admin" ? undefined : inArray(portalClasses.id, visible.length ? visible : [-1])).orderBy(asc(portalClasses.name));
   const settings = await reportSettings();
-  const empty = { subjects: [], students: [], scores: [], cards: [], results: [], subjectStats: [], ranked: 0, released: false, workflow: workflowView(undefined, false), isClassTeacher: false, editableSubjectIds: [] as number[], cardPrincipalName: settings.principalName, cardPrincipalSignature: settings.principalSignature };
+  const empty = { subjects: [], students: [], scores: [], cards: [], results: [], subjectStats: [], ranked: 0, released: false, workflow: workflowView(undefined, false), isClassTeacher: false, editableSubjectIds: [] as number[], scheme: "secondary" as ResultScheme, cardPrincipalName: settings.principalName, cardPrincipalSignature: settings.principalSignature };
   const teachers = actor.role === "admin" ? (await db.select({ id: portalTeachers.id, name: portalTeachers.name }).from(portalTeachers).where(eq(portalTeachers.active, true)).orderBy(asc(portalTeachers.name))) : [];
   const base = {
     terms: terms.map(termView), classes: classes.map((c) => ({ id: c.id, name: c.name })), canAdmin: actor.role === "admin", termId: query.termId ?? null, classId: query.classId ?? null,
@@ -178,7 +187,10 @@ portalReportsRouter.post("/reports/manage", async (req, res) => {
       const [clash] = await db.select({ id: portalTerms.id }).from(portalTerms).where(and(eq(portalTerms.session, session), eq(portalTerms.term, term)));
       check(!clash || clash.id === t.id, "That term already exists for this session.", 409);
       if (t.id) {
-        const scores = await db.select({ ca: portalScores.ca, ca2: portalScores.ca2, exam: portalScores.exam }).from(portalScores).where(eq(portalScores.termId, t.id));
+        // Primary classes' marks are out of 100 whatever the term says, so only secondary marks are checked here.
+        const scores = (await db.select({ ca: portalScores.ca, ca2: portalScores.ca2, exam: portalScores.exam, className: portalClasses.name }).from(portalScores)
+          .innerJoin(portalSubjects, eq(portalSubjects.id, portalScores.subjectId)).innerJoin(portalClasses, eq(portalClasses.id, portalSubjects.classId))
+          .where(eq(portalScores.termId, t.id))).filter((r) => schemeFor(r.className) === "secondary");
         check(scores.every((s) => (s.ca ?? 0) <= t.caMax && (s.ca2 ?? 0) <= ca2Max && (s.exam ?? 0) <= t.examMax), "Some entered scores are higher than the new maximum. Correct them first.", 409);
         const rows = await db.update(portalTerms).set(values).where(eq(portalTerms.id, t.id)).returning();
         check(rows.length, "Term not found.", 404);
@@ -241,15 +253,24 @@ portalReportsRouter.post("/reports/manage", async (req, res) => {
       const modes = new Map<number, string>();
       for (const classId of new Set(studentClass.values())) modes.set(classId, (await workflowRow(term.id, classId))?.mode ?? "automatic");
       const scale = (await reportSettings()).gradingScale;
+      const schemes = new Map<number, ResultScheme>();
+      for (const classId of new Set(studentClass.values())) schemes.set(classId, await classScheme(classId));
       for (const e of data.entries) {
         check(subjectClass.get(e.subjectId) === studentClass.get(e.studentId), "A subject does not belong to the student's class.");
-        check(validScorePart(e.ca, term.caMax) && validScorePart(e.exam, term.examMax), term.ca2Max
-          ? `Scores must be between 0 and ${term.caMax} (CA 1) and 0 and ${term.examMax} (exam), in half marks.`
-          : `Scores must be between 0 and ${term.caMax} (CA) and 0 and ${term.examMax} (exam), in half marks.`);
-        check(validScorePart(e.ca2, term.ca2Max), term.ca2Max ? `CA 2 must be between 0 and ${term.ca2Max}, in half marks.` : "This term has no CA 2. Set a CA 2 maximum for the term first.");
+        const scheme = schemes.get(studentClass.get(e.studentId)!)!;
+        const m = schemeMaxima(term, scheme);
+        if (scheme === "primary") {
+          check(validScorePart(e.ca, 100) && validScorePart(e.exam, 100), "Mid-term and End-term marks must be between 0 and 100, in half marks.");
+          check(e.ca2 === undefined || e.ca2 === null, "Primary classes have no CA 2: enter a Mid-term and an End-term mark.");
+        } else {
+          check(validScorePart(e.ca, m.caMax) && validScorePart(e.exam, m.examMax), m.ca2Max
+            ? `Scores must be between 0 and ${m.caMax} (CA 1) and 0 and ${m.examMax} (exam), in half marks.`
+            : `Scores must be between 0 and ${m.caMax} (CA) and 0 and ${m.examMax} (exam), in half marks.`);
+          check(validScorePart(e.ca2, m.ca2Max), m.ca2Max ? `CA 2 must be between 0 and ${m.ca2Max}, in half marks.` : "This term has no CA 2. Set a CA 2 maximum for the term first.");
+        }
         if (e.comment !== undefined && e.comment !== null) { e.comment = e.comment.trim(); check(e.comment.length <= 300, "Keep each comment under 300 characters."); }
         if (modes.get(studentClass.get(e.studentId)!) !== "manual") { e.total = null; e.grade = null; }
-        const possible = term.caMax + term.ca2Max + term.examMax;
+        const possible = schemePossible(m, scheme);
         check(validScorePart(e.total, possible), `A typed total must be between 0 and ${possible}, in half marks.`);
         e.grade = e.grade?.trim().toUpperCase() || null;
         check(!e.grade || scale.some((b) => b.grade.toUpperCase() === e.grade), "Use a grade from the school's grading scale.");
@@ -388,7 +409,7 @@ portalReportsRouter.get("/reports", async (req, res) => {
     if (!result) continue;
     const card = d.cards.find((c) => c.studentId === student.id);
     reports.push({
-      term: termView(d.term), subjects: d.subjects, result, subjectStats: d.report.subjectStats,
+      term: termView(d.term), scheme: d.scheme, subjects: d.subjects, result, subjectStats: d.report.subjectStats,
       classSize: d.report.ranked, card: card ? cardView(card) : null, releasedAt: release.releasedAt.toISOString(),
       className: classNames.get(release.classId) ?? "", gradingScale: d.settings.gradingScale,
       teacherName: d.workflow?.teacherName ?? "", teacherSignature: d.workflow?.teacherSignature ?? null,

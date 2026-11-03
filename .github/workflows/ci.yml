@@ -88,6 +88,7 @@ jobs:
           pnpm --filter @workspace/api-server run test:portal-parent
           pnpm --filter @workspace/api-server run test:portal-principal
           pnpm --filter @workspace/api-server run test:portal-principal-oversight
+          pnpm --filter @workspace/api-server run test:portal-primary-results
 
       - name: Backup and restore round trip (disposable Postgres)
         env:

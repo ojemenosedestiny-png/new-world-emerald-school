@@ -11,10 +11,12 @@ function TermReport({ data, report, open, onToggle }: { data: StudentReportsData
   const names = new Map(report.subjects.map((s) => [s.id, s.name]));
   const stats = new Map(report.subjectStats.map((s) => [s.subjectId, s]));
   const r = report.result;
+  // Primary (Year 1 to 6): Mid-term and End-term, final = their average; percentage and average, no positions.
+  const primary = report.scheme === "primary";
   const print = () => {
     const ok = printReportCards([{
       studentName: data.studentName, studentId: data.studentId, className: report.className || data.className, term: report.term, subjects: report.subjects, result: r, subjectStats: report.subjectStats, classSize: report.classSize, card: report.card,
-      gradingScale: report.gradingScale, teacherName: report.teacherName, teacherSignature: report.teacherSignature, principalName: report.principalName, principalSignature: report.principalSignature,
+      gradingScale: report.gradingScale, teacherName: report.teacherName, teacherSignature: report.teacherSignature, principalName: report.principalName, principalSignature: report.principalSignature, scheme: report.scheme,
     }]);
     if (!ok) toast({ variant: "destructive", title: "Pop-up blocked", description: "Allow pop-ups for this site to print your report card." });
   };
@@ -28,21 +30,21 @@ function TermReport({ data, report, open, onToggle }: { data: StudentReportsData
         </div>
         <div className="text-right">
           <p className="font-serif text-3xl font-bold text-[hsl(var(--p-emerald))]">{r.average ?? "-"}<span className="text-base text-[hsl(var(--p-ink)/0.45)]">%</span></p>
-          <p className="text-xs text-[hsl(var(--p-ink)/0.6)]">{r.position ? `${ordinal(r.position)} of ${report.classSize}` : "Not ranked"}</p>
+          <p className="text-xs text-[hsl(var(--p-ink)/0.6)]">{primary ? `Average of ${r.subjectsTaken} ${r.subjectsTaken === 1 ? "subject" : "subjects"}` : r.position ? `${ordinal(r.position)} of ${report.classSize}` : "Not ranked"}</p>
         </div>
         <ChevronDown size={18} className={"shrink-0 transition-transform " + (open ? "rotate-180" : "")} />
       </button>
       {open && (
         <div className="border-t border-[hsl(var(--p-line))] p-5">
           <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
-            {[["Total score", String(r.total)], ["Average", r.average === null ? "-" : r.average + "%"], ["Overall grade", r.grade ?? "-"], ["Attendance", report.card?.daysOpen != null ? `${report.card.daysPresent ?? "-"} / ${report.card.daysOpen}` : "-"]].map(([label, value]) => (
+            {[["Total score", primary ? `${r.total} / ${r.subjectsTaken * 100}` : String(r.total)], [primary ? "Percentage" : "Average", r.average === null ? "-" : r.average + "%"], ["Overall grade", r.grade ?? "-"], ["Attendance", report.card?.daysOpen != null ? `${report.card.daysPresent ?? "-"} / ${report.card.daysOpen}` : "-"]].map(([label, value]) => (
               <div key={label} className="rounded-2xl bg-[hsl(var(--p-paper-2)/0.6)] p-3"><p className="text-xs text-[hsl(var(--p-ink)/0.6)]">{label}</p><p className="font-serif text-xl font-semibold">{value}</p></div>
             ))}
           </div>
           <div className="overflow-x-auto rounded-2xl border border-[hsl(var(--p-line))]">
             <table className="w-full min-w-[560px] text-sm">
               <thead className="bg-[hsl(var(--p-ink))] text-left text-xs text-[hsl(var(--p-paper))]">
-                <tr><th className="px-3 py-2">Subject</th><th className="px-2 py-2 text-center">CA</th><th className="px-2 py-2 text-center">Exam</th><th className="px-2 py-2 text-center">Total</th><th className="px-2 py-2 text-center">Grade</th><th className="px-2 py-2 text-center">Position</th><th className="px-2 py-2 text-center">Class avg</th><th className="px-3 py-2">Remark</th></tr>
+                <tr><th className="px-3 py-2">Subject</th><th className="px-2 py-2 text-center">{primary ? "Mid-term" : "CA"}</th><th className="px-2 py-2 text-center">{primary ? "End-term" : "Exam"}</th><th className="px-2 py-2 text-center">{primary ? "Final" : "Total"}</th><th className="px-2 py-2 text-center">Grade</th>{!primary && <th className="px-2 py-2 text-center">Position</th>}<th className="px-2 py-2 text-center">Class avg</th><th className="px-3 py-2">Remark</th></tr>
               </thead>
               <tbody className="divide-y divide-[hsl(var(--p-line))] bg-[hsl(var(--p-surface)/0.7)]">
                 {r.subjects.map((s) => (
@@ -52,7 +54,7 @@ function TermReport({ data, report, open, onToggle }: { data: StudentReportsData
                     <td className="px-2 py-2 text-center tabular-nums">{s.exam ?? "-"}</td>
                     <td className="px-2 py-2 text-center font-semibold tabular-nums">{s.total}</td>
                     <td className="px-2 py-2 text-center font-bold">{s.grade}</td>
-                    <td className="px-2 py-2 text-center">{ordinal(s.position)}</td>
+                    {!primary && <td className="px-2 py-2 text-center">{ordinal(s.position)}</td>}
                     <td className="px-2 py-2 text-center tabular-nums">{stats.get(s.subjectId)?.average ?? "-"}</td>
                     <td className="px-3 py-2 text-[hsl(var(--p-ink)/0.75)]">{s.remark}</td>
                   </tr>

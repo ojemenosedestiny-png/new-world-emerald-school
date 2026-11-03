@@ -3,7 +3,7 @@ import { asset } from "@/lib/asset";
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link, useLocation } from 'wouter';
-import { Menu, X, MapPin, Phone, Mail, ArrowRight, GraduationCap, ShieldCheck } from 'lucide-react';
+import { Menu, X, MapPin, Phone, Mail, ArrowRight, GraduationCap, ShieldCheck, Wallet } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export function Navbar({ solid = false }: { solid?: boolean }) {
@@ -50,6 +50,9 @@ export function Navbar({ solid = false }: { solid?: boolean }) {
           <a href="mailto:info@newworldemeraldprivateschool.com" className="flex items-center gap-2 hover:text-primary transition-colors"><Mail size={14} /> info@newworldemeraldprivateschool.com</a>
         </div>
         <div className="flex items-center gap-2">
+          <Link href="/parents" className="inline-flex items-center gap-1.5 rounded-full bg-accent px-3.5 py-1 font-semibold text-secondary transition-colors hover:bg-accent/85" data-testid="link-parent-portal-desktop">
+            <Wallet size={14} aria-hidden="true" /> Parents: Pay Fees
+          </Link>
           <Link href="/portal" className="inline-flex items-center gap-1.5 rounded-full border border-white/15 px-3.5 py-1 font-semibold transition-colors hover:border-primary hover:text-primary" data-testid="link-student-portal-desktop">
             <GraduationCap size={14} aria-hidden="true" /> Student Portal
           </Link>
@@ -151,6 +154,14 @@ export function Navbar({ solid = false }: { solid?: boolean }) {
               </ul>
               <div className="mt-8 flex flex-col gap-4">
                 <Link
+                  href="/parents"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="flex items-center justify-between gap-4 rounded-xl bg-accent px-4 py-3 font-semibold leading-5 text-secondary"
+                  data-testid="link-mobile-parent-portal"
+                >
+                  <span className="flex items-center gap-2"><Wallet size={18} aria-hidden="true" /> Parents: Pay School Fees</span> <ArrowRight className="shrink-0" size={18} aria-hidden="true" />
+                </Link>
+                <Link
                   href="/portal"
                   onClick={() => setIsMobileMenuOpen(false)}
                   className="flex items-center justify-between gap-4 rounded-xl border border-primary/15 bg-primary/5 px-4 py-3 font-semibold leading-5 text-primary"
@@ -204,6 +215,7 @@ export function Footer() {
               <li><a href={asset("/#academics")} className="hover:text-primary transition-colors flex items-center gap-2"><ArrowRight size={14} /> Academic Programs</a></li>
               <li><a href={asset("/#admissions")} className="hover:text-primary transition-colors flex items-center gap-2"><ArrowRight size={14} /> Admissions</a></li>
               <li><a href={asset("/commerce?section=fees")} className="hover:text-primary transition-colors flex items-center gap-2"><ArrowRight size={14} /> Uniforms &amp; School Payments</a></li>
+              <li><a href={asset("/parents")} className="hover:text-primary transition-colors flex items-center gap-2"><ArrowRight size={14} /> Parent Portal: Pay School Fees</a></li>
               <li><a href={asset("/portal")} className="hover:text-primary transition-colors flex items-center gap-2"><ArrowRight size={14} /> Student Portal</a></li>
               <li><a href={asset("/admin")} className="hover:text-primary transition-colors flex items-center gap-2"><ArrowRight size={14} /> Admin Portal</a></li>
               <li><a href={asset("/#school-life")} className="hover:text-primary transition-colors flex items-center gap-2"><ArrowRight size={14} /> School Life</a></li>

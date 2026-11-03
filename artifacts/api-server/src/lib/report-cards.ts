@@ -1,4 +1,21 @@
 // Report card calculations. Pure functions so every rule is unit tested.
+import { classSection } from "./principal";
+
+/**
+ * How a class is assessed. Secondary (JSS 1 to SS 3): CA (1 and 2) + exam, out of the term's maxima, with positions.
+ * Primary (Year 1 to Year 6): a Mid-term and an End-of-term mark per subject, each out of 100; the final mark is
+ * their average ((Mid-term + End-term) / 2), shown as a percentage and average with no positions.
+ */
+export type ResultScheme = "primary" | "secondary";
+export const schemeFor = (className: string): ResultScheme => (classSection(className) === "primary" ? "primary" : "secondary");
+/** Primary: Mid-term is stored as CA and End-term as exam, each out of 100. */
+export const PRIMARY_MAXIMA = { caMax: 100, ca2Max: 0, examMax: 100 } as const;
+export function schemeMaxima<T extends { caMax: number; ca2Max?: number; examMax: number }>(term: T, scheme: ResultScheme): T {
+  return scheme === "primary" ? { ...term, ...PRIMARY_MAXIMA } : term;
+}
+/** What one subject is out of: 100 for primary (an average of two marks out of 100); otherwise CA + exam. */
+export const schemePossible = (m: { caMax: number; ca2Max?: number; examMax: number }, scheme: ResultScheme) =>
+  scheme === "primary" ? 100 : m.caMax + (m.ca2Max ?? 0) + m.examMax;
 
 /** The school's grading system: A 80+, B 65-79, C 55-64, D 50-54, U (ungraded) below 50. The office can change it in Settings. */
 export const GRADE_SCALE = [
@@ -61,18 +78,19 @@ export type ClassReport = { students: StudentReport[]; subjectStats: SubjectStat
  */
 export function buildClassReport(
   studentIds: number[], subjectIds: number[], scores: ScoreInput[], maxima: { caMax: number; ca2Max?: number; examMax: number },
-  scale: readonly GradeBand[] = GRADE_SCALE,
+  scale: readonly GradeBand[] = GRADE_SCALE, scheme: ResultScheme = "secondary",
 ): ClassReport {
-  const possible = maxima.caMax + (maxima.ca2Max ?? 0) + maxima.examMax;
+  const primary = scheme === "primary";
+  const possible = schemePossible(maxima, scheme);
   const subjectSet = new Set(subjectIds);
   const byStudent = new Map<number, SubjectResult[]>(studentIds.map((id) => [id, []]));
   const bySubject = new Map<number, { studentId: number; result: SubjectResult }[]>(subjectIds.map((id) => [id, []]));
   for (const s of scores) {
     const typedTotal = s.total ?? null;
-    const ca2 = s.ca2 ?? null;
+    const ca2 = primary ? null : s.ca2 ?? null;
     if (!byStudent.has(s.studentId) || !subjectSet.has(s.subjectId) || (s.ca === null && ca2 === null && s.exam === null && typedTotal === null)) continue;
     // A typed (manual or imported) total and grade take the place of the calculated ones.
-    const total = round1(typedTotal ?? (s.ca ?? 0) + (ca2 ?? 0) + (s.exam ?? 0));
+    const total = round1(typedTotal ?? (primary ? ((s.ca ?? 0) + (s.exam ?? 0)) / 2 : (s.ca ?? 0) + (ca2 ?? 0) + (s.exam ?? 0)));
     const percent = possible > 0 ? round1((total / possible) * 100) : 0;
     const calculated = gradeFor(percent, scale);
     const typedGrade = s.grade?.trim();
@@ -84,8 +102,11 @@ export function buildClassReport(
   const subjectStats: SubjectStats[] = [];
   for (const subjectId of subjectIds) {
     const entries = bySubject.get(subjectId)!;
-    const positions = rank(entries, (e) => e.result.total);
-    for (const e of entries) e.result.position = positions.get(e)!;
+    // Primary results have no positions.
+    if (!primary) {
+      const positions = rank(entries, (e) => e.result.total);
+      for (const e of entries) e.result.position = positions.get(e)!;
+    }
     if (entries.length) {
       const totals = entries.map((e) => e.result.total);
       subjectStats.push({ subjectId, average: round1(totals.reduce((a, b) => a + b, 0) / totals.length), highest: Math.max(...totals), lowest: Math.min(...totals), entries: totals.length });
@@ -99,8 +120,10 @@ export function buildClassReport(
     return { studentId, subjects, total, average, grade: average === null ? null : gradeFor(average, scale).grade, position: null, subjectsTaken: subjects.length };
   });
   const rankable = students.filter((s) => s.average !== null);
-  const positions = rank(rankable, (s) => s.average!);
-  for (const s of rankable) s.position = positions.get(s)!;
+  if (!primary) {
+    const positions = rank(rankable, (s) => s.average!);
+    for (const s of rankable) s.position = positions.get(s)!;
+  }
   return { students, subjectStats, ranked: rankable.length };
 }
 

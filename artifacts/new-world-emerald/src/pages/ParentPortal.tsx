@@ -3,7 +3,7 @@ import { Link } from "wouter";
 import { useAuth, useClerk, useUser } from "@clerk/react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useGetParentOverview, getGetParentOverviewQueryKey, useVerifyParentPayment, type ParentPayment } from "@workspace/api-client-react";
-import { CreditCard, Loader2, Receipt, Users, Wallet } from "lucide-react";
+import { CreditCard, Loader2, LockKeyhole, Mail, Receipt, ShieldCheck, Users, Wallet } from "lucide-react";
 import "@/portal/portal.css";
 import { AppShell, type NavGroup, type NavItem } from "@/portal/shell/AppShell";
 import { usePortalTheme } from "@/portal/shell/theme";
@@ -27,6 +27,55 @@ function Gate({ title, body, children }: { title: string; body: string; children
         <div className="mt-7 space-y-3">{children}</div>
         <div className="mt-8"><BackToWebsite /></div>
       </div>
+    </main>
+  );
+}
+
+/** The signed-out welcome: what parents can do here and how to sign in, in three steps. */
+export function ParentWelcome() {
+  const steps: [string, string][] = [
+    ["Sign in with your email", "Use the email address the school has on your child's record."],
+    ["See all your children", "Every child registered with that email, with their name, student ID and class."],
+    ["Pay securely", "Choose the fees to pay and pay by card, bank transfer or USSD through Paystack."],
+  ];
+  const perks: [typeof Receipt, string][] = [[Receipt, "A receipt for every payment, emailed and kept here"], [Wallet, "Overpayments are kept in your school wallet for next time"], [ShieldCheck, "Card details go straight to Paystack, never to the school"]];
+  return (
+    <main className="portal min-h-screen lg:grid lg:grid-cols-[1.05fr_1fr]">
+      <section className="portal-hero flex flex-col justify-between gap-10 px-6 py-10 sm:px-10 lg:min-h-screen lg:px-14 lg:py-14" aria-labelledby="parent-welcome-title">
+        <div className="flex items-center gap-3">
+          <img src={asset("/logo.jpg")} alt="" className="h-12 w-12 rounded-full bg-white object-contain p-0.5" />
+          <div><p className="font-serif text-lg font-semibold leading-tight">New World Emerald</p><p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[hsl(var(--p-gold))]">Parent portal</p></div>
+        </div>
+        <div>
+          <h1 id="parent-welcome-title" className="max-w-lg font-serif text-4xl font-semibold leading-[1.1] sm:text-5xl">School fees for all your children, in one place.</h1>
+          <p className="mt-4 max-w-md text-base text-white/80">See what is owed for each child, pay online in a few taps, and keep every receipt.</p>
+          <ul className="mt-8 grid max-w-lg gap-3">
+            {perks.map(([Icon, text]) => <li key={text} className="flex items-center gap-3 text-sm text-white/90"><span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-white/10"><Icon size={15} aria-hidden="true" /></span>{text}</li>)}
+          </ul>
+        </div>
+        <p className="text-xs text-white/60">Questions about fees? Call the school office on <a className="underline" href="tel:+2348136037074">+234 813 603 7074</a>.</p>
+      </section>
+      <section className="flex items-center justify-center px-6 py-12 sm:px-10" aria-labelledby="parent-signin-title">
+        <div className="w-full max-w-md">
+          <h2 id="parent-signin-title" className="font-serif text-3xl font-semibold">Sign in</h2>
+          <p className="mt-2 text-sm text-[hsl(var(--p-ink)/0.7)]">Three steps, then you are paying.</p>
+          <ol className="mt-6 space-y-4">
+            {steps.map(([title, body], i) => (
+              <li key={title} className="flex gap-4">
+                <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[hsl(var(--p-emerald))] font-serif text-lg font-semibold text-white" aria-hidden="true">{i + 1}</span>
+                <div><p className="font-semibold">{title}</p><p className="text-sm text-[hsl(var(--p-ink)/0.65)]">{body}</p></div>
+              </li>
+            ))}
+          </ol>
+          <Link href="/sign-in?returnTo=parents" className="portal-btn mt-8 w-full justify-center !py-3.5 text-base" data-testid="link-parent-signin"><Mail size={17} aria-hidden="true" /> Sign in with email</Link>
+          <div className="mt-4 rounded-2xl border border-[hsl(var(--p-line))] bg-[hsl(var(--p-surface)/0.8)] p-4 text-sm" data-testid="text-parent-first-time">
+            <p className="flex items-center gap-2 font-semibold"><LockKeyhole size={15} aria-hidden="true" className="text-[hsl(var(--p-emerald))]" /> First time here?</p>
+            <p className="mt-1 text-[hsl(var(--p-ink)/0.7)]">Enter your email and press Continue. Choose a password once and type the 6-digit code we email you. After that, you sign in with your email and a code.</p>
+          </div>
+          <p className="mt-4 text-xs text-[hsl(var(--p-ink)/0.6)]">Not seeing your children after signing in? Ask the school office to add your email to your child's record.</p>
+          <div className="mt-8"><BackToWebsite /></div>
+        </div>
+      </section>
     </main>
   );
 }
@@ -72,14 +121,7 @@ export default function ParentPortal() {
   const back = useReturnFromPaystack(signedIn && q.isSuccess);
 
   if (!isLoaded) return <div className="portal p-10"><Skeleton className="mx-auto h-40 max-w-md" /></div>;
-  if (!signedIn) {
-    return (
-      <Gate title="Pay school fees online" body="Sign in with the email address the school has for you. You will see every child registered with that email, their fees and receipts.">
-        <Link href="/sign-in?returnTo=parents" className="portal-btn w-full justify-center !py-3.5" data-testid="link-parent-signin">Sign in with email</Link>
-        <p className="text-xs text-[hsl(var(--p-ink)/0.6)]">First time? Enter your email, choose a password and type the code we send you. After that you sign in with your email and a code.</p>
-      </Gate>
-    );
-  }
+  if (!signedIn) return <ParentWelcome />;
   if (q.isLoading) return <div className="portal p-10"><Skeleton className="mx-auto h-40 max-w-2xl" /></div>;
   if (q.isError || !q.data) {
     return <div className="portal grid min-h-screen place-items-center px-4"><div className="w-full max-w-md"><ErrorPanel title="The parent portal did not load" message={errorMessage(q.error)} onRetry={() => void q.refetch()} /></div></div>;

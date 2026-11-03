@@ -30,7 +30,8 @@
     "test:portal-facilities": "node ./test-portal.mjs portal-facilities",
     "test:portal-parent": "node ./test-portal.mjs portal-parent",
     "test:portal-principal": "node ./test-portal.mjs portal-principal",
-    "test:portal-principal-oversight": "node ./test-portal.mjs portal-principal-oversight"
+    "test:portal-principal-oversight": "node ./test-portal.mjs portal-principal-oversight",
+    "test:portal-primary-results": "node ./test-portal.mjs portal-primary-results"
   },
   "dependencies": {
     "@clerk/express": "^2.1.75",

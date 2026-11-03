@@ -6,6 +6,7 @@ import { EmptyState } from "../ui";
 import { parseScoreCsv, parseScorePart, previewGrade } from "./scoreSheet";
 import { useReportCommand } from "./useReportCommand";
 import { CbtScoresDialog } from "./CbtScoresDialog";
+import { partLabels, schemePossible, schemeTotal } from "./scheme";
 import { BookOpenCheck } from "lucide-react";
 
 type Entry = { ca: string; ca2: string; exam: string; total: string; grade: string; comment: string };
@@ -31,8 +32,11 @@ export function ScoresEditor({ ws, term, locked: lockedByStatus }: { ws: ReportW
   useEffect(() => { setDraft(saved); }, [saved]);
 
   // CA 1 + CA 2 + exam when the term splits continuous assessment; otherwise a single CA column.
-  const twoCa = (term.ca2Max ?? 0) > 0;
-  const possible = term.caMax + (term.ca2Max ?? 0) + term.examMax;
+  // Primary (Year 1 to 6): Mid-term and End-term out of 100, final = their average.
+  const primary = ws.scheme === "primary";
+  const twoCa = !primary && (term.ca2Max ?? 0) > 0;
+  const L = partLabels(ws.scheme, twoCa);
+  const possible = schemePossible(term, ws.scheme);
   // Manual mode: the teacher may type a total and a grade; otherwise they come from CA + exam and the scale.
   const manual = ws.workflow?.mode === "manual";
   const grades = new Set(ws.gradingScale.map((b) => b.grade.toUpperCase()));
@@ -43,7 +47,7 @@ export function ScoresEditor({ ws, term, locked: lockedByStatus }: { ws: ReportW
     const gradeText = manual ? d.grade.trim().toUpperCase() : "";
     const gradeError = gradeText && !grades.has(gradeText) ? "Not on the grading scale" : undefined;
     const entered = ca.value !== null || ca2.value !== null || exam.value !== null || typed.value !== null;
-    const total = typed.value ?? (ca.value ?? 0) + (ca2.value ?? 0) + (exam.value ?? 0);
+    const total = typed.value ?? schemeTotal(ws.scheme, ca.value, ca2.value, exam.value);
     const grade = gradeText || previewGrade(possible ? (total / possible) * 100 : 0, ws.gradingScale);
     const before = { ...BLANK, ...saved[st.id] };
     const dirty = before.ca !== d.ca || before.ca2 !== d.ca2 || before.exam !== d.exam || before.total !== d.total || before.grade !== d.grade || before.comment.trim() !== d.comment.trim();
@@ -89,7 +93,7 @@ export function ScoresEditor({ ws, term, locked: lockedByStatus }: { ws: ReportW
 
       <div className="portal-card overflow-hidden">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[hsl(var(--p-line))] px-4 py-3">
-          <p className="text-sm"><b>{subject?.name}</b> <span className="text-[hsl(var(--p-ink)/0.6)]">/ {enteredCount} of {ws.students.length} entered / {twoCa ? `CA 1 out of ${term.caMax}, CA 2 out of ${term.ca2Max}` : `CA out of ${term.caMax}`}, exam out of {term.examMax}</span></p>
+          <p className="text-sm"><b>{subject?.name}</b> <span className="text-[hsl(var(--p-ink)/0.6)]">/ {enteredCount} of {ws.students.length} entered / {primary ? "Mid-term and End-term each out of 100; final = (Mid-term + End-term) ÷ 2" : `${twoCa ? `CA 1 out of ${term.caMax}, CA 2 out of ${term.ca2Max}` : `CA out of ${term.caMax}`}, exam out of ${term.examMax}`}</span></p>
           <div className="flex gap-2">
             <button className="portal-btn-ghost" disabled={locked} onClick={() => setCbtOpen(true)} data-testid="button-import-cbt"><FileUp size={13} /> From CBT exam</button>
             <button className="portal-btn-ghost" disabled={locked} onClick={() => setCsvOpen(true)} data-testid="button-import-scores"><FileUp size={13} /> Paste or upload</button>
@@ -99,7 +103,7 @@ export function ScoresEditor({ ws, term, locked: lockedByStatus }: { ws: ReportW
         <div className="overflow-x-auto">
           <table className="w-full min-w-[860px] text-sm">
             <thead className="bg-[hsl(var(--p-paper-2)/0.7)] text-left text-xs uppercase tracking-wider text-[hsl(var(--p-ink)/0.6)]">
-              <tr><th className="px-4 py-2">Student</th><th className="px-2 py-2 w-24">{twoCa ? "CA 1" : "CA"} /{term.caMax}</th>{twoCa && <th className="px-2 py-2 w-24">CA 2 /{term.ca2Max}</th>}<th className="px-2 py-2 w-24">Exam /{term.examMax}</th><th className="px-2 py-2 w-20">Total{manual ? ` /${possible}` : ""}</th><th className="px-2 py-2 w-16">Grade</th><th className="px-2 py-2 min-w-[220px]">Subject teacher&apos;s comment</th></tr>
+              <tr><th className="px-4 py-2">Student</th><th className="px-2 py-2 w-24">{L.ca} /{term.caMax}</th>{twoCa && <th className="px-2 py-2 w-24">CA 2 /{term.ca2Max}</th>}<th className="px-2 py-2 w-24">{L.exam} /{term.examMax}</th><th className="px-2 py-2 w-20">{L.total}{manual || primary ? ` /${possible}` : ""}</th><th className="px-2 py-2 w-16">Grade</th><th className="px-2 py-2 min-w-[220px]">Subject teacher&apos;s comment</th></tr>
             </thead>
             <tbody className="divide-y divide-[hsl(var(--p-line))]">
               {rows.map((r) => (
@@ -107,7 +111,7 @@ export function ScoresEditor({ ws, term, locked: lockedByStatus }: { ws: ReportW
                   <td className="px-4 py-2"><p className="font-semibold">{r.st.name}</p><p className="font-mono text-xs text-[hsl(var(--p-ink)/0.5)]">{r.st.studentId}</p></td>
                   {(twoCa ? (["ca", "ca2", "exam"] as const) : (["ca", "exam"] as const)).map((k) => {
                     const error = "error" in r[k] ? r[k].error : undefined;
-                    const label = k === "ca" ? (twoCa ? "CA 1" : "CA") : k === "ca2" ? "CA 2" : "Exam";
+                    const label = L[k];
                     return (
                       <td key={k} className="px-2 py-2">
                         <input inputMode="decimal" className={"portal-input !py-1.5 text-center " + (error ? "!border-[hsl(var(--p-red))]" : "")} value={r.d[k]} disabled={locked} aria-label={`${label} score for ${r.st.name}`} aria-invalid={!!error} title={error} onChange={(e) => set(r.st.id, k, e.target.value)} data-testid={`input-${k}-${r.st.id}`} />
@@ -115,7 +119,7 @@ export function ScoresEditor({ ws, term, locked: lockedByStatus }: { ws: ReportW
                     );
                   })}
                   {manual ? (<>
-                    <td className="px-2 py-2"><input inputMode="decimal" className={"portal-input !py-1.5 text-center " + ("error" in r.typed && r.typed.error ? "!border-[hsl(var(--p-red))]" : "")} value={r.d.total} disabled={locked} placeholder={r.ca.value !== null || r.ca2.value !== null || r.exam.value !== null ? String((r.ca.value ?? 0) + (r.ca2.value ?? 0) + (r.exam.value ?? 0)) : ""} aria-label={`Total for ${r.st.name}`} onChange={(e) => set(r.st.id, "total", e.target.value)} data-testid={`input-total-${r.st.id}`} /></td>
+                    <td className="px-2 py-2"><input inputMode="decimal" className={"portal-input !py-1.5 text-center " + ("error" in r.typed && r.typed.error ? "!border-[hsl(var(--p-red))]" : "")} value={r.d.total} disabled={locked} placeholder={r.ca.value !== null || r.ca2.value !== null || r.exam.value !== null ? String(schemeTotal(ws.scheme, r.ca.value, r.ca2.value, r.exam.value)) : ""} aria-label={`Total for ${r.st.name}`} onChange={(e) => set(r.st.id, "total", e.target.value)} data-testid={`input-total-${r.st.id}`} /></td>
                     <td className="px-2 py-2"><input className={"portal-input !py-1.5 text-center uppercase " + (r.gradeError ? "!border-[hsl(var(--p-red))]" : "")} maxLength={4} value={r.d.grade} disabled={locked} placeholder={r.entered ? r.grade : ""} title={r.gradeError} aria-label={`Grade for ${r.st.name}`} onChange={(e) => set(r.st.id, "grade", e.target.value)} data-testid={`input-grade-${r.st.id}`} /></td>
                   </>) : (<>
                     <td className="px-2 py-2 font-semibold tabular-nums">{r.entered ? r.total : "-"}</td>
@@ -127,7 +131,7 @@ export function ScoresEditor({ ws, term, locked: lockedByStatus }: { ws: ReportW
             </tbody>
           </table>
         </div>
-        {manual && <p className="border-t border-[hsl(var(--p-line))] px-4 py-2 text-xs text-[hsl(var(--p-ink)/0.6)]">Manual results: type a total and grade to use them instead of the calculated ones. Leave them empty to calculate from CA and exam.</p>}
+        {manual && <p className="border-t border-[hsl(var(--p-line))] px-4 py-2 text-xs text-[hsl(var(--p-ink)/0.6)]">Manual results: type a total and grade to use them instead of the calculated ones. Leave them empty to calculate from {primary ? "the Mid-term and End-term marks" : "CA and exam"}.</p>}
         {invalid && <p className="border-t border-[hsl(var(--p-line))] px-4 py-2 text-xs text-[hsl(var(--p-red))]">Fix the highlighted scores before saving.</p>}
       </div>
 
@@ -135,8 +139,8 @@ export function ScoresEditor({ ws, term, locked: lockedByStatus }: { ws: ReportW
       <Dialog open={csvOpen} onOpenChange={setCsvOpen}>
         <DialogContent className="portal !min-h-0 max-h-[92dvh] max-w-xl overflow-y-auto rounded-2xl">
           <DialogHeader><DialogTitle className="font-serif text-2xl">Import {subject?.name} scores</DialogTitle>
-            <DialogDescription>One student per line: {twoCa ? "Student ID, CA 1, CA 2, Exam" : "Student ID, CA, Exam"}. Copying the columns from Excel works. Scores fill the grid for you to check before saving.</DialogDescription></DialogHeader>
-          <textarea className="portal-input min-h-[160px] font-mono text-sm" value={csv} onChange={(e) => setCsv(e.target.value)} placeholder={twoCa ? "Student ID, CA 1, CA 2, Exam\nNWE/2026/001, 16, 17, 51" : "Student ID, CA, Exam\nNWE/2026/001, 32, 51"} data-testid="input-score-csv" />
+            <DialogDescription>One student per line: {primary ? "Student ID, Mid-term, End-term" : twoCa ? "Student ID, CA 1, CA 2, Exam" : "Student ID, CA, Exam"}. Copying the columns from Excel works. Scores fill the grid for you to check before saving.</DialogDescription></DialogHeader>
+          <textarea className="portal-input min-h-[160px] font-mono text-sm" value={csv} onChange={(e) => setCsv(e.target.value)} placeholder={primary ? "Student ID, Mid-term, End-term\nNWE/2026/001, 78, 84" : twoCa ? "Student ID, CA 1, CA 2, Exam\nNWE/2026/001, 16, 17, 51" : "Student ID, CA, Exam\nNWE/2026/001, 32, 51"} data-testid="input-score-csv" />
           <label className="portal-btn-ghost w-fit cursor-pointer"><FileUp size={13} /> Upload CSV
             <input type="file" accept=".csv,text/csv,text/plain" className="sr-only" onChange={(e) => { e.target.files?.[0]?.text().then(setCsv); e.target.value = ""; }} />
           </label>

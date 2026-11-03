@@ -2064,6 +2064,17 @@ export type ReportWorkspaceGradingScaleItem = {
   remark: string;
 };
 
+/**
+ * primary (Year 1 to 6): Mid-term (ca) and End-term (exam) out of 100, final = their average, no positions; secondary: CA + exam with positions
+ */
+export type ReportWorkspaceScheme = typeof ReportWorkspaceScheme[keyof typeof ReportWorkspaceScheme];
+
+
+export const ReportWorkspaceScheme = {
+  primary: 'primary',
+  secondary: 'secondary',
+} as const;
+
 export type ReportWorkspaceTeachersItem = {
   id: number;
   name: string;
@@ -2217,6 +2228,8 @@ export interface ReportWorkspace {
   principalName: string;
   /** @nullable */
   principalSignature: string | null;
+  /** primary (Year 1 to 6): Mid-term (ca) and End-term (exam) out of 100, final = their average, no positions; secondary: CA + exam with positions */
+  scheme: ReportWorkspaceScheme;
   /** The principal printed on this class's report cards: who signed them in the principal's portal, else that school's principal, else principalName */
   cardPrincipalName: string;
   /** @nullable */
@@ -2492,6 +2505,17 @@ export interface ReportCommand {
   release?: ReportCommandRelease;
 }
 
+/**
+ * primary (Year 1 to 6): Mid-term (ca) and End-term (exam) out of 100, final = their average, no positions; secondary: CA + exam with positions
+ */
+export type StudentTermReportScheme = typeof StudentTermReportScheme[keyof typeof StudentTermReportScheme];
+
+
+export const StudentTermReportScheme = {
+  primary: 'primary',
+  secondary: 'secondary',
+} as const;
+
 export type StudentTermReportGradingScaleItem = {
   /**
      * @minimum 0
@@ -2603,6 +2627,8 @@ export type StudentTermReportCard = {
 } | null;
 
 export interface StudentTermReport {
+  /** primary (Year 1 to 6): Mid-term (ca) and End-term (exam) out of 100, final = their average, no positions; secondary: CA + exam with positions */
+  scheme: StudentTermReportScheme;
   /** The class the student was in for this term */
   className: string;
   gradingScale: StudentTermReportGradingScaleItem[];
@@ -2620,6 +2646,17 @@ export interface StudentTermReport {
   card: StudentTermReportCard;
   releasedAt: string;
 }
+
+/**
+ * primary (Year 1 to 6): Mid-term (ca) and End-term (exam) out of 100, final = their average, no positions; secondary: CA + exam with positions
+ */
+export type StudentReportsReportsItemScheme = typeof StudentReportsReportsItemScheme[keyof typeof StudentReportsReportsItemScheme];
+
+
+export const StudentReportsReportsItemScheme = {
+  primary: 'primary',
+  secondary: 'secondary',
+} as const;
 
 export type StudentReportsReportsItemGradingScaleItem = {
   /**
@@ -2732,6 +2769,8 @@ export type StudentReportsReportsItemCard = {
 } | null;
 
 export type StudentReportsReportsItem = {
+  /** primary (Year 1 to 6): Mid-term (ca) and End-term (exam) out of 100, final = their average, no positions; secondary: CA + exam with positions */
+  scheme: StudentReportsReportsItemScheme;
   /** The class the student was in for this term */
   className: string;
   gradingScale: StudentReportsReportsItemGradingScaleItem[];

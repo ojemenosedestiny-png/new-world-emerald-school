@@ -9,6 +9,7 @@ import type { ReportWorkspaceCardsItem } from './reportWorkspaceCardsItem';
 import type { ReportWorkspaceClassesItem } from './reportWorkspaceClassesItem';
 import type { ReportWorkspaceGradingScaleItem } from './reportWorkspaceGradingScaleItem';
 import type { ReportWorkspaceResultsItem } from './reportWorkspaceResultsItem';
+import type { ReportWorkspaceScheme } from './reportWorkspaceScheme';
 import type { ReportWorkspaceScoresItem } from './reportWorkspaceScoresItem';
 import type { ReportWorkspaceStudentsItem } from './reportWorkspaceStudentsItem';
 import type { ReportWorkspaceSubjectsItem } from './reportWorkspaceSubjectsItem';
@@ -23,6 +24,8 @@ export interface ReportWorkspace {
   principalName: string;
   /** @nullable */
   principalSignature: string | null;
+  /** primary (Year 1 to 6): Mid-term (ca) and End-term (exam) out of 100, final = their average, no positions; secondary: CA + exam with positions */
+  scheme: ReportWorkspaceScheme;
   /** The principal printed on this class's report cards: who signed them in the principal's portal, else that school's principal, else principalName */
   cardPrincipalName: string;
   /** @nullable */

@@ -162,12 +162,13 @@ schemas:
       name: { type: string }
   ReportWorkspace:
     type: object
-    required: [terms, classes, canAdmin, termId, classId, subjects, students, scores, cards, results, subjectStats, ranked, released, workflow, gradingScale, principalName, principalSignature, cardPrincipalName, cardPrincipalSignature, mySignature, isClassTeacher, editableSubjectIds, teachers]
+    required: [terms, classes, canAdmin, termId, classId, subjects, students, scores, cards, results, subjectStats, ranked, released, workflow, gradingScale, principalName, principalSignature, scheme, cardPrincipalName, cardPrincipalSignature, mySignature, isClassTeacher, editableSubjectIds, teachers]
     properties:
       workflow: { $ref: "#/schemas/ReportWorkflow" }
       gradingScale: { type: array, items: { $ref: "#/schemas/GradeBand" } }
       principalName: { type: string }
       principalSignature: { type: [string, "null"] }
+      scheme: { type: string, enum: [primary, secondary], description: "primary (Year 1 to 6): Mid-term (ca) and End-term (exam) out of 100, final = their average, no positions; secondary: CA + exam with positions" }
       cardPrincipalName: { type: string, description: "The principal printed on this class's report cards: who signed them in the principal's portal, else that school's principal, else principalName" }
       cardPrincipalSignature: { type: [string, "null"] }
       mySignature: { type: [string, "null"], description: The signed-in teacher's saved signature }
@@ -262,8 +263,9 @@ schemas:
           released: { type: boolean }
   StudentTermReport:
     type: object
-    required: [term, subjects, result, subjectStats, classSize, card, releasedAt, className, gradingScale, teacherName, teacherSignature, principalName, principalSignature]
+    required: [term, scheme, subjects, result, subjectStats, classSize, card, releasedAt, className, gradingScale, teacherName, teacherSignature, principalName, principalSignature]
     properties:
+      scheme: { type: string, enum: [primary, secondary], description: "primary (Year 1 to 6): Mid-term (ca) and End-term (exam) out of 100, final = their average, no positions; secondary: CA + exam with positions" }
       className: { type: string, description: The class the student was in for this term }
       gradingScale: { type: array, items: { $ref: "#/schemas/GradeBand" } }
       teacherName: { type: string }

@@ -988,6 +988,7 @@ export const GetReportWorkspaceResponse = zod.object({
 })),
   "principalName": zod.string(),
   "principalSignature": zod.string().nullable(),
+  "scheme": zod.enum(['primary', 'secondary']).describe('primary (Year 1 to 6): Mid-term (ca) and End-term (exam) out of 100, final = their average, no positions; secondary: CA + exam with positions'),
   "cardPrincipalName": zod.string().describe('The principal printed on this class\'s report cards: who signed them in the principal\'s portal, else that school\'s principal, else principalName'),
   "cardPrincipalSignature": zod.string().nullable(),
   "mySignature": zod.string().nullable().describe('The signed-in teacher\'s saved signature'),
@@ -1246,6 +1247,7 @@ export const GetStudentReportsResponse = zod.object({
   "studentId": zod.string(),
   "className": zod.string(),
   "reports": zod.array(zod.object({
+  "scheme": zod.enum(['primary', 'secondary']).describe('primary (Year 1 to 6): Mid-term (ca) and End-term (exam) out of 100, final = their average, no positions; secondary: CA + exam with positions'),
   "className": zod.string().describe('The class the student was in for this term'),
   "gradingScale": zod.array(zod.object({
   "min": zod.number().min(getStudentReportsResponseReportsItemGradingScaleItemMinMin).max(getStudentReportsResponseReportsItemGradingScaleItemMinMax),
@@ -3241,6 +3243,7 @@ export const GetPrincipalReportCardsResponse = zod.object({
 })),
   "principalName": zod.string(),
   "principalSignature": zod.string().nullable(),
+  "scheme": zod.enum(['primary', 'secondary']).describe('primary (Year 1 to 6): Mid-term (ca) and End-term (exam) out of 100, final = their average, no positions; secondary: CA + exam with positions'),
   "cardPrincipalName": zod.string().describe('The principal printed on this class\'s report cards: who signed them in the principal\'s portal, else that school\'s principal, else principalName'),
   "cardPrincipalSignature": zod.string().nullable(),
   "mySignature": zod.string().nullable().describe('The signed-in teacher\'s saved signature'),

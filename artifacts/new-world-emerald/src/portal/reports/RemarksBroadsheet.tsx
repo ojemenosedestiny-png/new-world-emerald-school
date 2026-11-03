@@ -82,7 +82,7 @@ export function RemarksEditor({ ws, term, locked }: { ws: ReportWorkspace; term:
           return (
             <div key={st.id} className="portal-card p-4" data-testid={"remarks-row-" + st.id}>
               <div className="flex flex-wrap items-center gap-3">
-                <div className="min-w-0 flex-1"><p className="font-semibold">{st.name}</p><p className="text-xs text-[hsl(var(--p-ink)/0.55)]">{result?.average != null ? `Average ${result.average}% / ${ordinal(result.position!)} of ${ws.ranked}` : "No scores yet"}</p></div>
+                <div className="min-w-0 flex-1"><p className="font-semibold">{st.name}</p><p className="text-xs text-[hsl(var(--p-ink)/0.55)]">{result?.average != null ? (ws.scheme === "primary" ? `Average ${result.average}% / ${result.subjectsTaken} subjects` : `Average ${result.average}% / ${ordinal(result.position!)} of ${ws.ranked}`) : "No scores yet"}</p></div>
                 <label className="flex items-center gap-1.5 text-xs">Present<input inputMode="numeric" className="portal-input !w-16 !py-1" value={d.daysPresent} disabled={locked} onChange={(e) => set(st.id, { daysPresent: e.target.value })} aria-label={`Days present for ${st.name}`} /></label>
                 <label className="flex items-center gap-1.5 text-xs">of<input inputMode="numeric" className="portal-input !w-16 !py-1" value={d.daysOpen} disabled={locked} onChange={(e) => set(st.id, { daysOpen: e.target.value })} aria-label={`Days opened for ${st.name}`} /></label>
               </div>
@@ -125,7 +125,7 @@ export function printableFor(ws: ReportWorkspace, term: ReportTerm, className: s
     studentName: st.name, studentId: st.studentId, className, term, subjects: ws.subjects,
     result: ws.results.find((r) => r.studentId === st.id) ?? { studentId: st.id, subjects: [], total: 0, average: null, grade: null, position: null, subjectsTaken: 0 },
     subjectStats: ws.subjectStats, classSize: ws.ranked, card: ws.cards.find((c) => c.studentId === st.id) ?? null,
-    gradingScale: ws.gradingScale, teacherName: ws.workflow?.teacherName, teacherSignature: ws.workflow?.teacherSignature,
+    gradingScale: ws.gradingScale, teacherName: ws.workflow?.teacherName, teacherSignature: ws.workflow?.teacherSignature, scheme: ws.scheme,
     principalName: ws.cardPrincipalName, principalSignature: ws.workflow?.status === "approved" || ws.workflow?.status === "published" ? ws.cardPrincipalSignature : null,
   }));
 }
@@ -134,7 +134,7 @@ export function printableFor(ws: ReportWorkspace, term: ReportTerm, className: s
 export function broadsheetFor(ws: ReportWorkspace, term: ReportTerm, className: string): BroadsheetData {
   const signed = ws.workflow?.status === "approved" || ws.workflow?.status === "published";
   return {
-    className, term, subjects: ws.subjects, students: ws.students, results: ws.results, subjectStats: ws.subjectStats, gradingScale: ws.gradingScale,
+    className, term, subjects: ws.subjects, students: ws.students, results: ws.results, subjectStats: ws.subjectStats, gradingScale: ws.gradingScale, scheme: ws.scheme,
     teacherName: ws.workflow?.teacherName, teacherSignature: ws.workflow?.teacherSignature, principalName: ws.cardPrincipalName, principalSignature: signed ? ws.cardPrincipalSignature : null,
   };
 }
@@ -159,24 +159,27 @@ export function Broadsheet({ ws, term, className }: { ws: ReportWorkspace; term:
   const { toast } = useToast();
   const print = (ids?: number[]) => { if (!printReportCards(printableFor(ws, term, className, ids))) toast({ variant: "destructive", title: "Pop-up blocked", description: "Allow pop-ups for this site to print report cards." }); };
   if (!ws.students.length || !ws.subjects.length) return <EmptyState icon={<Users size={22} />} title="Nothing to show yet" body="Add subjects and enter scores to see the class broadsheet." />;
-  const sorted = [...ws.students].sort((a, b) => (ws.results.find((r) => r.studentId === a.id)?.position ?? 9999) - (ws.results.find((r) => r.studentId === b.id)?.position ?? 9999));
+  // Primary results have no positions: the class is listed by name.
+  const primary = ws.scheme === "primary";
+  const sorted = primary ? [...ws.students].sort((a, b) => a.name.localeCompare(b.name))
+    : [...ws.students].sort((a, b) => (ws.results.find((r) => r.studentId === a.id)?.position ?? 9999) - (ws.results.find((r) => r.studentId === b.id)?.position ?? 9999));
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-sm text-[hsl(var(--p-ink)/0.65)]">{ws.ranked} of {ws.students.length} students ranked. Totals out of {termPossible(term)}.</p>
+        <p className="text-sm text-[hsl(var(--p-ink)/0.65)]">{primary ? `${ws.ranked} of ${ws.students.length} students have results. Final scores are (Mid-term + End-term) ÷ 2, out of 100.` : `${ws.ranked} of ${ws.students.length} students ranked. Totals out of ${termPossible(term)}.`}</p>
         <ClassPrintButtons ws={ws} term={term} className={className} />
       </div>
       <div className="portal-card overflow-x-auto">
         <table className="w-full min-w-[640px] text-sm" data-testid="table-broadsheet">
           <thead className="bg-[hsl(var(--p-ink))] text-[hsl(var(--p-paper))]">
-            <tr><th className="px-3 py-2 text-left">Pos.</th><th className="px-3 py-2 text-left">Student</th>{ws.subjects.map((s) => <th key={s.id} className="px-2 py-2 text-center font-semibold">{s.name}</th>)}<th className="px-2 py-2">Total</th><th className="px-2 py-2">Avg %</th><th className="px-2 py-2">Grade</th><th className="px-2 py-2"><span className="sr-only">Actions</span></th></tr>
+            <tr>{!primary && <th className="px-3 py-2 text-left">Pos.</th>}<th className="px-3 py-2 text-left">Student</th>{ws.subjects.map((s) => <th key={s.id} className="px-2 py-2 text-center font-semibold">{s.name}</th>)}<th className="px-2 py-2">Total</th><th className="px-2 py-2">Avg %</th><th className="px-2 py-2">Grade</th><th className="px-2 py-2"><span className="sr-only">Actions</span></th></tr>
           </thead>
           <tbody className="divide-y divide-[hsl(var(--p-line))]">
             {sorted.map((st) => {
               const r = ws.results.find((x) => x.studentId === st.id);
               return (
                 <tr key={st.id} className="odd:bg-[hsl(var(--p-surface)/0.7)] even:bg-[hsl(var(--p-paper-2)/0.5)]">
-                  <td className="px-3 py-2 font-bold">{r?.position ? ordinal(r.position) : "-"}</td>
+                  {!primary && <td className="px-3 py-2 font-bold">{r?.position ? ordinal(r.position) : "-"}</td>}
                   <td className="px-3 py-2"><p className="font-semibold">{st.name}</p><p className="font-mono text-[11px] opacity-50">{st.studentId}</p></td>
                   {ws.subjects.map((s) => { const x = r?.subjects.find((y) => y.subjectId === s.id); return <td key={s.id} className="px-2 py-2 text-center tabular-nums">{x ? <>{x.total} <span className="text-xs font-bold opacity-60">{x.grade}</span></> : <span className="opacity-30">-</span>}</td>; })}
                   <td className="px-2 py-2 text-center font-semibold tabular-nums">{r?.subjectsTaken ? r.total : "-"}</td>
@@ -189,7 +192,7 @@ export function Broadsheet({ ws, term, className }: { ws: ReportWorkspace; term:
           </tbody>
           <tfoot className="bg-[hsl(var(--p-emerald-soft)/0.6)] text-xs">
             {(["average", "highest", "lowest"] as const).map((k) => (
-              <tr key={k}><td /><td className="px-3 py-1.5 font-semibold capitalize">Class {k}</td>{ws.subjects.map((s) => <td key={s.id} className="px-2 py-1.5 text-center tabular-nums">{ws.subjectStats.find((x) => x.subjectId === s.id)?.[k] ?? "-"}</td>)}<td colSpan={4} /></tr>
+              <tr key={k}>{!primary && <td />}<td className="px-3 py-1.5 font-semibold capitalize">Class {k}</td>{ws.subjects.map((s) => <td key={s.id} className="px-2 py-1.5 text-center tabular-nums">{ws.subjectStats.find((x) => x.subjectId === s.id)?.[k] ?? "-"}</td>)}<td colSpan={4} /></tr>
             ))}
           </tfoot>
         </table>
