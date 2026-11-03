@@ -98,7 +98,28 @@ describe("principal: a subject for the whole year", () => {
     fireEvent.click(screen.getByTestId("toggle-assign-whole-year"));
     fireEvent.change(screen.getByTestId("select-assign-subject-name"), { target: { value: "Physics" } });
     fireEvent.click(screen.getByTestId("button-confirm-assign-subject"));
-    await waitFor(() => expect(api.manage).toHaveBeenCalledWith({ data: { action: "setGroupSubjectTeacher", classId: 3, classIds: [3], subjectName: "Physics", teacherId: 8, addMissing: false } }));
+    await waitFor(() => expect(api.manage).toHaveBeenCalledWith({ data: { action: "setGroupSubjectTeacher", classId: 3, classIds: [3], subjectName: "Physics", teacherId: 8, addMissing: true } }));
+  });
+
+  it("lets the principal type a new subject and assign it, and refuses odd characters", async () => {
+    render(wrap(<TeachersView data={data} />));
+    fireEvent.click(screen.getByTestId("button-assign-subject-7"));
+    fireEvent.change(screen.getByTestId("select-assign-subject-class"), { target: { value: "1" } });
+    fireEvent.change(screen.getByTestId("select-assign-subject-name"), { target: { value: "<b>" } });
+    expect((screen.getByTestId("button-confirm-assign-subject") as HTMLButtonElement).disabled).toBe(true);
+    fireEvent.change(screen.getByTestId("select-assign-subject-name"), { target: { value: "  further   mathematics " } });
+    expect(screen.getByTestId("text-assign-subject-preview").textContent).toContain("is a new subject for these classes and will be added");
+    fireEvent.click(screen.getByTestId("button-confirm-assign-subject"));
+    await waitFor(() => expect(api.manage).toHaveBeenCalledWith({ data: { action: "setGroupSubjectTeacher", classId: 1, classIds: [1, 2, 3], subjectName: "further mathematics", teacherId: 7, addMissing: true } }));
+  });
+
+  it("matches a typed subject to the one the school already has, whatever the capitals", async () => {
+    render(wrap(<TeachersView data={data} />));
+    fireEvent.click(screen.getByTestId("button-assign-subject-7"));
+    fireEvent.change(screen.getByTestId("select-assign-subject-class"), { target: { value: "1" } });
+    fireEvent.change(screen.getByTestId("select-assign-subject-name"), { target: { value: "physics" } });
+    fireEvent.click(screen.getByTestId("button-confirm-assign-subject"));
+    await waitFor(() => expect(api.manage).toHaveBeenCalledWith({ data: { action: "setGroupSubjectTeacher", classId: 1, classIds: [1, 2, 3], subjectName: "Physics", teacherId: 7, addMissing: true } }));
   });
 
   it("summarises a teacher who has a subject in every arm", () => {

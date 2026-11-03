@@ -117,8 +117,9 @@ portalPrincipalRouter.post("/principal", async (req, res) => {
       // One subject's teacher across every arm of a year group (Year 11 Amber, Jade, Chrysolite...).
       const ids = [...new Set([cls.id, ...(body.classIds ?? [])])];
       check(ids.length <= 20, "Choose at most 20 classes.");
-      const name = (body.subjectName ?? "").trim();
-      check(name, "Choose a subject.");
+      const name = (body.subjectName ?? "").trim().replace(/\s+/g, " ");
+      check(name, "Type or choose a subject.");
+      check(name.length <= 80 && /^[\p{L}\p{N}][\p{L}\p{N} &()'.,/+-]*$/u.test(name), "Use letters, numbers and simple punctuation for the subject name, up to 80 characters.");
       const rows = await db.select({ id: portalClasses.id, name: portalClasses.name }).from(portalClasses).where(inArray(portalClasses.id, ids));
       check(rows.length === ids.length, "Class not found.", 404);
       check(rows.every((r) => classSection(r.name) === section), "Every class must be in your school.", 403);
@@ -127,13 +128,14 @@ portalPrincipalRouter.post("/principal", async (req, res) => {
       const added = await db.transaction(async (tx) => {
         let added: string[] = [];
         if (body.addMissing) {
-          // Every arm should match: arms without the subject get it, named as the other arms have it.
+          // Every class should match: classes without the subject get it, named as the others have it, or as the
+          // principal typed it when it is a new subject.
           const existing = await tx.select({ classId: portalSubjects.classId, name: portalSubjects.name }).from(portalSubjects).where(and(inArray(portalSubjects.classId, ids), same));
-          check(existing.length, `None of these classes has ${name}.`, 404);
+          const subjectName = existing[0]?.name.trim() ?? name;
           const missing = rows.filter((r) => !existing.some((e) => e.classId === r.id));
           for (const r of missing) {
             const [{ next }] = await tx.select({ next: sql<number>`coalesce(max(${portalSubjects.sortOrder}), -1)::int + 1` }).from(portalSubjects).where(eq(portalSubjects.classId, r.id));
-            await tx.insert(portalSubjects).values({ classId: r.id, name: existing[0].name.trim(), sortOrder: next });
+            await tx.insert(portalSubjects).values({ classId: r.id, name: subjectName, sortOrder: next });
           }
           added = missing.map((r) => r.name);
         }

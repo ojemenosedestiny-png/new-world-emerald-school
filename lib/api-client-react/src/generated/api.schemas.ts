@@ -786,7 +786,7 @@ export interface PrincipalCommand {
      * @maxLength 120
      */
   subjectName?: string;
-  /** For setGroupSubjectTeacher: also add the subject to any of the classes that do not offer it yet, so every arm matches */
+  /** For setGroupSubjectTeacher: add the subject to any of the classes that do not offer it yet (a new, typed subject is added to all of them), so every arm matches */
   addMissing?: boolean;
 }
 

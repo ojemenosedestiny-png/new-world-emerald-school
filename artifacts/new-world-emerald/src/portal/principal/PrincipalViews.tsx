@@ -293,15 +293,19 @@ function AssignSubjectDialog({ teacher, data, cmd, onClose }: { teacher: Princip
   const cls = data.classes.find((c) => c.id === classId);
   const arms = cls ? armsOf(data, cls) : [];
   const [wholeYear, setWholeYear] = useState(true);
-  const pool = wholeYear ? arms : cls ? [cls] : [];
-  const subjects = [...new Map(pool.flatMap((c) => c.subjects.map((s) => [s.name.trim().toLowerCase(), s.name.trim()] as const))).values()].sort();
-  const [subject, setSubject] = useState("");
-  const chosen = subjects.includes(subject) ? subject : "";
   const targets = wholeYear ? arms : cls ? [cls] : [];
+  // The principal types the subject; every subject already used in the school is offered as a suggestion.
+  const known = [...new Map(data.classes.flatMap((c) => c.subjects.map((s) => [s.name.trim().toLowerCase(), s.name.trim()] as const))).values()].sort();
+  const [subject, setSubject] = useState("");
+  const typed = subject.trim().replace(/\s+/g, " ");
+  const inTargets = targets.flatMap((c) => c.subjects).find((s) => s.name.trim().toLowerCase() === typed.toLowerCase());
+  const chosen = inTargets?.name.trim() ?? known.find((n) => n.toLowerCase() === typed.toLowerCase()) ?? typed;
+  const valid = !!chosen && chosen.length <= 80 && /^[\p{L}\p{N}][\p{L}\p{N} &()'.,/+-]*$/u.test(chosen);
   const lacking = targets.filter((c) => !c.subjects.some((s) => s.name.trim().toLowerCase() === chosen.toLowerCase()));
+  const isNew = !!chosen && lacking.length === targets.length;
   const save = async () => {
-    if (!cls || !chosen) return;
-    const ok = await cmd.run({ action: "setGroupSubjectTeacher", classId: cls.id, classIds: targets.map((c) => c.id), subjectName: chosen, teacherId: teacher.id, addMissing: wholeYear });
+    if (!cls || !valid) return;
+    const ok = await cmd.run({ action: "setGroupSubjectTeacher", classId: cls.id, classIds: targets.map((c) => c.id), subjectName: chosen, teacherId: teacher.id, addMissing: true });
     if (ok) onClose();
   };
   return (
@@ -309,7 +313,7 @@ function AssignSubjectDialog({ teacher, data, cmd, onClose }: { teacher: Princip
       <DialogContent className="portal !min-h-0 max-w-md rounded-2xl">
         <DialogHeader>
           <DialogTitle className="font-serif text-2xl">Assign a subject</DialogTitle>
-          <DialogDescription>Choose a class and a subject for {teacher.name}.</DialogDescription>
+          <DialogDescription>Choose a class, then type the subject {teacher.name} will teach.</DialogDescription>
         </DialogHeader>
         <label className="block text-sm font-semibold">Class
           <select className="portal-input mt-1" value={classId} onChange={(e) => { setClassId(Number(e.target.value)); setSubject(""); }} data-testid="select-assign-subject-class">
@@ -325,20 +329,21 @@ function AssignSubjectDialog({ teacher, data, cmd, onClose }: { teacher: Princip
           </label>
         )}
         <label className="block text-sm font-semibold">Subject
-          <select className="portal-input mt-1" value={chosen} onChange={(e) => setSubject(e.target.value)} disabled={!subjects.length} data-testid="select-assign-subject-name">
-            <option value="">{subjects.length ? "Choose a subject" : "No subjects in this class yet"}</option>
-            {subjects.map((n) => <option key={n} value={n}>{n}</option>)}
-          </select>
+          <input className="portal-input mt-1" list="principal-subject-suggestions" maxLength={80} autoComplete="off" placeholder="Type a subject, e.g. Further Mathematics" value={subject} onChange={(e) => setSubject(e.target.value)} data-testid="select-assign-subject-name" />
+          <datalist id="principal-subject-suggestions">{known.map((n) => <option key={n} value={n} />)}</datalist>
+          <span className={"mt-1 block text-xs font-normal " + MUTED}>Type any subject. Suggestions are the subjects the school already has.</span>
         </label>
-        {chosen && (
+        {chosen && !valid && <p className="text-sm text-[hsl(var(--p-red))]">Use letters, numbers and simple punctuation, up to 80 characters.</p>}
+        {chosen && valid && (
           <p className="rounded-xl bg-[hsl(var(--p-paper-2)/0.7)] p-3 text-sm" data-testid="text-assign-subject-preview">
             {teacher.name} will teach <b>{chosen}</b> in {targets.map((c) => c.name).join(", ")}.
-            {wholeYear && lacking.length > 0 && <> {chosen} will be added to {lacking.map((c) => c.name).join(", ")}, which {lacking.length === 1 ? "does" : "do"} not offer it yet.</>}
+            {isNew ? <> <b>{chosen}</b> is a new subject for {targets.length === 1 ? "this class" : "these classes"} and will be added, so it appears on their score sheets and report cards.</>
+              : lacking.length > 0 && <> {chosen} will be added to {lacking.map((c) => c.name).join(", ")}, which {lacking.length === 1 ? "does" : "do"} not offer it yet.</>}
           </p>
         )}
         <DialogFooter className="gap-2">
           <button type="button" className="portal-btn-ghost" onClick={onClose}>Cancel</button>
-          <button type="button" className="portal-btn" disabled={!chosen || cmd.pending} onClick={() => void save()} data-testid="button-confirm-assign-subject">{cmd.pending ? "Saving..." : "Assign subject"}</button>
+          <button type="button" className="portal-btn" disabled={!valid || cmd.pending} onClick={() => void save()} data-testid="button-confirm-assign-subject">{cmd.pending ? "Saving..." : "Assign subject"}</button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
