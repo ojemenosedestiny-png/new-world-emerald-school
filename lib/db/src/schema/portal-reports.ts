@@ -3,7 +3,7 @@ import { createInsertSchema } from "drizzle-zod";
 import { portalClasses } from "./portal-classes";
 import { portalStudents } from "./portal-students";
 
-// Academic term, e.g. session "2026/2027", term "First Term". Score maxima apply to every subject.
+// Academic term, e.g. session "2026/2027", term "Autumn Term". Score maxima apply to every subject.
 export const portalTerms = pgTable("portal_terms", {
   id: serial("id").primaryKey(),
   session: text("session").notNull(),

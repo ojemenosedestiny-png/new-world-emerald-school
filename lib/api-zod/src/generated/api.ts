@@ -3020,7 +3020,7 @@ export const GetPrincipalDashboardQueryParams = zod.object({
 export const GetPrincipalDashboardResponse = zod.object({
   "today": zod.string(),
   "days": zod.array(zod.string()).describe('The last seven days, oldest first, ending today'),
-  "examTerm": zod.string().describe('The term the exam counts are for, such as First Term, 2026\/2027'),
+  "examTerm": zod.string().describe('The term the exam counts are for, such as Autumn Term, 2026\/2027'),
   "resultTerm": zod.string().nullable().describe('The latest report card term, if any'),
   "figures": zod.object({
   "teachers": zod.number(),

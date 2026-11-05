@@ -10,11 +10,10 @@ import { BulkEnrol } from "../src/portal/manage/BulkEnrol";
 import { overviewCounts } from "../src/portal/manage/Overview";
 import { duplicateExam } from "../src/portal/manage/ExamsPanel";
 
-const mocks = vi.hoisted(() => ({ manage: vi.fn(), enrol: vi.fn() }));
+const mocks = vi.hoisted(() => ({ manage: vi.fn() }));
 vi.mock("@workspace/api-client-react", async (original) => ({
   ...await original<typeof import("@workspace/api-client-react")>(),
   useManagePortal: () => ({ mutateAsync: mocks.manage, isPending: false }),
-  useEnrolStudent: () => ({ mutateAsync: mocks.enrol, isPending: false }),
 }));
 
 const now = Date.UTC(2026, 9, 23, 12);
@@ -90,27 +89,41 @@ describe("bulk enrolment", () => {
     expect(html).toContain("&lt;script&gt;alert(1)&lt;/script&gt;");
     expect(html).toContain("Abc-123!xyz");
   });
-  it("enrols each valid student with an automatic ID and activation link, and reports failures", async () => {
-    mocks.enrol.mockImplementation(async ({ data }: { data: { name: string; guardianEmail: string | null } }) => {
-      if (data.name === "Bayo Ade") throw new Error("Enter a valid parent email, or leave it empty.");
-      const n = mocks.enrol.mock.calls.length;
-      return { student: { id: n, studentId: `NWE/2026/0000${n}`, name: data.name, className: "JSS 1", guardianEmail: data.guardianEmail },
-        url: `https://school.example/portal/activate?t=${"a".repeat(64)}`, expiresAt: new Date().toISOString(), emailed: !!data.guardianEmail, emailNote: "" };
+  it("creates an ID and a password for each valid student, shows them once, and reports failures", async () => {
+    mocks.manage.mockImplementation(async ({ data }: { data: { student: { name: string; studentId: string } } }) => {
+      if (data.student.name === "Bayo Ade") throw new Error("That Student ID is already in use.");
+      return { message: "Student enrolled.", studentId: data.student.studentId || `NWE/2026/0000${mocks.manage.mock.calls.length}` };
     });
     const data = { classes: [{ id: 7, name: "JSS 1" }], students: [], teachers: [], exams: [], attempts: [], materials: [], notices: [] } as unknown as PortalManagement;
-    render(wrap(<BulkEnrol data={data} onClose={() => {}} />));
+    const close = vi.fn();
+    render(wrap(<BulkEnrol data={data} onClose={close} />));
     fireEvent.change(screen.getByTestId("input-bulk-list"), { target: { value: "Ada Obi, ada.parent@example.com\nBayo Ade\nChi Eze, , OLD-77\n, nobody@example.com" } });
     expect(screen.getByTestId("text-bulk-summary").textContent).toContain("3 ready");
     fireEvent.click(screen.getByTestId("button-run-bulk"));
     await waitFor(() => expect(screen.getByTestId("text-bulk-enrolled").textContent).toBe("2"));
-    expect(mocks.enrol).toHaveBeenCalledTimes(3);
-    const sent = mocks.enrol.mock.calls.map(([arg]) => arg.data);
-    expect(sent.map((d: { name: string; classId: number; guardianEmail: string | null; studentId: string | null; send: boolean }) => [d.name, d.classId, d.guardianEmail, d.studentId, d.send])).toEqual([
-      ["Ada Obi", 7, "ada.parent@example.com", null, true], ["Bayo Ade", 7, null, null, true], ["Chi Eze", 7, null, "OLD-77", true],
+    expect(mocks.manage).toHaveBeenCalledTimes(3);
+    const sent = mocks.manage.mock.calls.map(([arg]) => arg.data);
+    expect(sent.map((d: { action: string; student: { name: string; classId: number; guardianEmail: string | null; studentId: string; active: boolean } }) => [d.action, d.student.name, d.student.classId, d.student.guardianEmail, d.student.studentId, d.student.active])).toEqual([
+      ["saveStudent", "Ada Obi", 7, "ada.parent@example.com", "", true], ["saveStudent", "Bayo Ade", 7, null, "", true], ["saveStudent", "Chi Eze", 7, null, "OLD-77", true],
     ]);
-    expect(screen.getByTestId("text-bulk-emailed").textContent).toBe("1");
-    expect(screen.getByText(/valid parent email/)).toBeTruthy();
-    expect(screen.getByTestId("button-print-slips").textContent).toContain("activation slips");
+    // Everyone gets their own password, of the length the server requires, and it is shown with their ID.
+    const passwords = sent.map((d: { student: { password: string } }) => d.student.password);
+    expect(new Set(passwords).size).toBe(3);
+    expect(passwords.every((p: string) => p.length >= 10)).toBe(true);
+    const table = screen.getByTestId("table-bulk-logins");
+    expect(table.textContent).toContain("NWE/2026/00001");
+    expect(table.textContent).toContain(passwords[0]);
+    expect(table.textContent).toContain("OLD-77");
+    expect(table.textContent).not.toContain(passwords[1]);
+    expect(screen.getByText(/already in use/)).toBeTruthy();
+    expect(screen.getByTestId("button-print-slips").textContent).toContain("login slips");
+    // Closing before the passwords are saved asks first.
+    const confirm = vi.spyOn(window, "confirm").mockReturnValueOnce(false).mockReturnValueOnce(true);
+    fireEvent.click(screen.getByTestId("button-close-bulk"));
+    expect(close).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByTestId("button-close-bulk"));
+    expect(close).toHaveBeenCalledTimes(1);
+    confirm.mockRestore();
   });
 });
 

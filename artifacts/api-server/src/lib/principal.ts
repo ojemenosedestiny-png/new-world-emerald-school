@@ -91,11 +91,11 @@ export function classSection(name: string): SchoolSection | null {
   return null;
 }
 
-const TERM_NAMES = ["First Term", "Second Term", "Third Term"];
+const TERM_NAMES = ["Autumn Term", "Spring Term", "Summer Term"];
 
 /**
- * The school term an exam falls in, from its date in Lagos: September to December is the first term,
- * January to March the second, April to August the third. Key "2026-1" is the 2026/2027 first term.
+ * The school term an exam falls in, from its date in Lagos: September to December is the Autumn Term,
+ * January to March the Spring Term, April to August the Summer Term. Key "2026-1" is the 2026/2027 Autumn Term.
  */
 export function examTerm(date: Date): { key: string; label: string } {
   const lagos = new Date(date.getTime() + 3_600_000);

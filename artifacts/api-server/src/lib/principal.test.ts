@@ -32,9 +32,9 @@ test("classes belong to the primary principal (Year 1-6) or the secondary princi
 });
 
 test("exams fall in a school term by their date in Lagos", () => {
-  assert.deepEqual(examTerm(new Date("2026-11-04T09:00:00Z")), { key: "2026-1", label: "First Term, 2026/2027" });
-  assert.deepEqual(examTerm(new Date("2027-02-10T09:00:00Z")), { key: "2026-2", label: "Second Term, 2026/2027" });
-  assert.deepEqual(examTerm(new Date("2027-06-01T09:00:00Z")), { key: "2026-3", label: "Third Term, 2026/2027" });
+  assert.deepEqual(examTerm(new Date("2026-11-04T09:00:00Z")), { key: "2026-1", label: "Autumn Term, 2026/2027" });
+  assert.deepEqual(examTerm(new Date("2027-02-10T09:00:00Z")), { key: "2026-2", label: "Spring Term, 2026/2027" });
+  assert.deepEqual(examTerm(new Date("2027-06-01T09:00:00Z")), { key: "2026-3", label: "Summer Term, 2026/2027" });
   // 23:30 UTC on 31 August is already 1 September in Lagos.
   assert.equal(examTerm(new Date("2026-08-31T23:30:00Z")).key, "2026-1");
   assert.deepEqual(lastDays("2026-11-02", 3), ["2026-10-31", "2026-11-01", "2026-11-02"]);

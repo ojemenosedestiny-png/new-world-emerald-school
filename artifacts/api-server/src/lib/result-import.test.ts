@@ -21,17 +21,17 @@ test("result import: sessions and terms are understood in common forms", () => {
   assert.equal(normalSession("2021/2022"), "2021/2022");
   assert.equal(normalSession("2021-22"), "2021/2022");
   assert.equal(normalSession("2021/2023"), null);
-  assert.equal(normalTerm("1st"), "First Term");
-  assert.equal(normalTerm("Second term"), "Second Term");
-  assert.equal(normalTerm("3"), "Third Term");
-  assert.equal(normalTerm("Summer"), null);
+  assert.equal(normalTerm("1st"), "Autumn Term");
+  assert.equal(normalTerm("Second term"), "Spring Term");
+  assert.equal(normalTerm("3"), "Summer Term");
+  assert.equal(normalTerm("Holiday"), null);
 });
 
 test("result import: every row is checked, with errors not saved and warnings explained", () => {
   const lookups: Lookups = {
     students: new Map([["NWE/2021/00001", { id: 1, name: "Ada Obi" }], ["NWE/2021/00002", { id: 2, name: "Bayo Ade" }]]),
     classes: new Map([["jss1", { id: 10, name: "JSS 1" }]]),
-    terms: new Map([["2021/2022|First Term", { id: 5, caMax: 30, examMax: 70 }]]),
+    terms: new Map([["2021/2022|Autumn Term", { id: 5, caMax: 30, examMax: 70 }]]),
     subjects: new Map([["10|mathematics", 100]]),
     existingScores: new Set(["5|1|100"]),
     locked: new Map(),
@@ -49,7 +49,7 @@ test("result import: every row is checked, with errors not saved and warnings ex
   const rows = checkRows(rowsFromCsv(csv).rows, lookups, { caMax: 40, examMax: 60 });
   const [ada, adaAgain, bayo, nobody, badClass, tooHigh, newTerm] = rows;
   assert.equal(ada.status, "warning");
-  assert.deepEqual([ada.studentDbId, ada.classId, ada.term, ada.total, ada.grade], [1, 10, "First Term", 85, "A"]);
+  assert.deepEqual([ada.studentDbId, ada.classId, ada.term, ada.total, ada.grade], [1, 10, "Autumn Term", 85, "A"]);
   assert.match(ada.messages.join(), /already saved; it will be replaced/);
   assert.equal(adaAgain.status, "error");
   assert.match(adaAgain.messages.join(), /Duplicate/);
@@ -59,9 +59,16 @@ test("result import: every row is checked, with errors not saved and warnings ex
   assert.match(nobody.messages.join(), /No student with ID NWE\/2021\/00009/);
   assert.match(badClass.messages.join(), /No class named SS 9/);
   assert.match(tooHigh.messages.join(), /CA "31" must be 0 to 30/, "the term's own maxima apply");
-  assert.match(newTerm.messages.join(), /New term Second Term, 2022\/2023 will be created/);
+  assert.match(newTerm.messages.join(), /New term Spring Term, 2022\/2023 will be created/);
   assert.match(newTerm.messages.join(), /Total 40 differs from CA \+ exam \(20\)/);
 
   const locked = checkRows(rowsFromCsv(csv).rows.slice(0, 1), { ...lookups, locked: new Map([["5|10", "published"]]) }, { caMax: 40, examMax: 60 });
   assert.match(locked[0].messages.join(), /are published. Return them to draft/);
+});
+
+test("result import: old and new term names mean the same term", () => {
+  for (const raw of ["First Term", "1st", "first", "1", "Autumn", "autumn term"]) assert.equal(normalTerm(raw), "Autumn Term", raw);
+  for (const raw of ["Second term", "2", "Spring Term"]) assert.equal(normalTerm(raw), "Spring Term", raw);
+  for (const raw of ["Third Term", "summer"]) assert.equal(normalTerm(raw), "Summer Term", raw);
+  assert.equal(normalTerm("Winter"), null);
 });

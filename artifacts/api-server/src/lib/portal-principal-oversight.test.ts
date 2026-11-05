@@ -88,7 +88,7 @@ test("principal oversight: overview, exams by term, and signing results", async 
     // Exams by term: this term's by default, with who set it and how the class did; older terms on request.
     const exams = await call("/principal/exams", principal);
     assert.equal(exams.status, 200, JSON.stringify(exams.data));
-    assert.ok(exams.data.terms.some((t: { key: string; label: string }) => t.key === "2024-2" && t.label === "Second Term, 2024/2025"));
+    assert.ok(exams.data.terms.some((t: { key: string; label: string }) => t.key === "2024-2" && t.label === "Spring Term, 2024/2025"));
     const mid = exams.data.exams.find((e: { id: number }) => e.id === current.id);
     assert.deepEqual([mid.setBy, mid.status, mid.questionCount, mid.totalMarks, mid.students, mid.sat, mid.marked, mid.averagePercent], [`${marker} Mr Musa`, "open", 2, 10, 2, 1, 1, 80]);
     const old = await call("/principal/exams?term=2024-2", principal);

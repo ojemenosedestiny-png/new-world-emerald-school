@@ -264,7 +264,7 @@ schemas:
     properties:
       today: { type: string }
       days: { type: array, items: { type: string }, description: "The last seven days, oldest first, ending today" }
-      examTerm: { type: string, description: "The term the exam counts are for, such as First Term, 2026/2027" }
+      examTerm: { type: string, description: "The term the exam counts are for, such as Autumn Term, 2026/2027" }
       resultTerm: { type: ["string", "null"], description: "The latest report card term, if any" }
       figures: { $ref: "#/components/schemas/PrincipalDashboardFigures" }
       teachers: { type: array, items: { $ref: "#/components/schemas/PrincipalTeacherWeek" } }

@@ -45,3 +45,10 @@ test("hostel and bus fees: one charge per student, term and kind, with a fixed r
   assert.match(billingProblem("", "2026/2027", ["bus"])!, /term/);
   assert.match(billingProblem("First Term", "2026/2027", [])!, /hostel fees, bus fees or both/);
 });
+
+test("Autumn Term keeps the First Term fee reference, so a term billed under the old name is never billed twice", () => {
+  const billee = { kind: "hostel" as const, studentCode: "NWE/2026/00014", studentName: "Ada Obi", className: "JSS 2", place: "Emerald House", amountKobo: 150_000_00 };
+  assert.equal(facilityCharges("Autumn Term", "2026/2027", [billee])[0].reference, facilityCharges("First Term", "2026/2027", [billee])[0].reference);
+  assert.equal(facilityCharges("Spring Term", "2026/2027", [billee])[0].reference, "HOSTEL-2026-2027-SECOND-TERM-NWE-2026-00014");
+  assert.equal(facilityCharges("Autumn Term", "2026/2027", [billee])[0].term, "Autumn Term");
+});

@@ -60,17 +60,17 @@ it("a student sees their room and bus, and a clear message when they have neithe
 });
 
 it("bills a term's hostel and bus fees: the office checks first, then creates the charges", async () => {
-  api.manage.mockImplementationOnce(async () => ({ message: "This will bill 2 boarders (₦300,000.00) and 1 bus rider (₦40,000.00) for Second Term 2026/2027." }));
+  api.manage.mockImplementationOnce(async () => ({ message: "This will bill 2 boarders (₦300,000.00) and 1 bus rider (₦40,000.00) for Spring Term 2026/2027." }));
   render(wrap(<HostelPanel />));
   fireEvent.click(screen.getByTestId("button-bill-hostel"));
-  fireEvent.change(screen.getByTestId("select-bill-term"), { target: { value: "Second Term" } });
+  fireEvent.change(screen.getByTestId("select-bill-term"), { target: { value: "Spring Term" } });
   fireEvent.change(screen.getByTestId("input-bill-session"), { target: { value: "2026/2027" } });
   fireEvent.click(screen.getByTestId("check-bill-bus"));
   fireEvent.click(screen.getByTestId("button-bill-check"));
   await waitFor(() => expect(screen.getByTestId("text-bill-preview").textContent).toMatch(/2 boarders/));
-  expect(api.manage).toHaveBeenCalledWith({ data: { action: "billTerm", billing: { term: "Second Term", academicYear: "2026/2027", kinds: ["hostel", "bus"], preview: true } } });
+  expect(api.manage).toHaveBeenCalledWith({ data: { action: "billTerm", billing: { term: "Spring Term", academicYear: "2026/2027", kinds: ["hostel", "bus"], preview: true } } });
   fireEvent.click(screen.getByTestId("button-bill-create"));
-  await waitFor(() => expect(api.manage).toHaveBeenLastCalledWith({ data: { action: "billTerm", billing: { term: "Second Term", academicYear: "2026/2027", kinds: ["hostel", "bus"], preview: false } } }));
+  await waitFor(() => expect(api.manage).toHaveBeenLastCalledWith({ data: { action: "billTerm", billing: { term: "Spring Term", academicYear: "2026/2027", kinds: ["hostel", "bus"], preview: false } } }));
 });
 
 it("changing the term after checking asks for a fresh check before billing", async () => {
@@ -79,7 +79,7 @@ it("changing the term after checking asks for a fresh check before billing", asy
   fireEvent.click(screen.getByTestId("button-bill-bus"));
   fireEvent.click(screen.getByTestId("button-bill-check"));
   await waitFor(() => expect(screen.getByTestId("button-bill-create")).toBeTruthy());
-  fireEvent.change(screen.getByTestId("select-bill-term"), { target: { value: "Third Term" } });
+  fireEvent.change(screen.getByTestId("select-bill-term"), { target: { value: "Summer Term" } });
   expect(screen.queryByTestId("button-bill-create")).toBeNull();
   expect(screen.getByTestId("button-bill-check")).toBeTruthy();
 });

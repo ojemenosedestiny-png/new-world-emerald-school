@@ -27,7 +27,7 @@ function TermDialog({ initial, onClose }: { initial: ReportTermInput; onClose: (
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
             <Field label="Session" htmlFor="term-session" hint="e.g. 2026/2027"><input id="term-session" className="portal-input" value={t.session} onChange={(e) => setT({ ...t, session: e.target.value })} data-testid="input-term-session" /></Field>
-            <Field label="Term" htmlFor="term-name"><select id="term-name" className="portal-input" value={t.term} onChange={(e) => setT({ ...t, term: e.target.value })} data-testid="select-term-name">{["First Term", "Second Term", "Third Term"].map((x) => <option key={x}>{x}</option>)}</select></Field>
+            <Field label="Term" htmlFor="term-name"><select id="term-name" className="portal-input" value={t.term} onChange={(e) => setT({ ...t, term: e.target.value })} data-testid="select-term-name">{["Autumn Term", "Spring Term", "Summer Term"].map((x) => <option key={x}>{x}</option>)}</select></Field>
           </div>
           <div className="grid grid-cols-3 gap-3">
             <Field label="CA 1 maximum" htmlFor="term-ca"><input id="term-ca" type="number" min={0} max={100} className="portal-input" value={t.caMax} onChange={(e) => setT({ ...t, caMax: Number(e.target.value) })} data-testid="input-term-ca1" /></Field>
@@ -99,7 +99,7 @@ export function ReportsPanel() {
   const ready = term && cls && ws.termId === term.id && ws.classId === cls.id;
   // Primary classes (Year 1 to 6) use Mid-term and End-term out of 100; the term's own maxima are for secondary.
   const classTerm = term && schemeTerm(term, ws.scheme);
-  const blankTerm: ReportTermInput = { session: `${new Date().getFullYear()}/${new Date().getFullYear() + 1}`, term: "First Term", caMax: 20, ca2Max: 20, examMax: 60, nextTermBegins: "" };
+  const blankTerm: ReportTermInput = { session: `${new Date().getFullYear()}/${new Date().getFullYear() + 1}`, term: "Autumn Term", caMax: 20, ca2Max: 20, examMax: 60, nextTermBegins: "" };
   const missing = ready ? ws.students.filter((s) => (ws.results.find((r) => r.studentId === s.id)?.subjectsTaken ?? 0) < ws.subjects.length).length : 0;
   const sections: [Section, string][] = ws.isClassTeacher || !ready
     ? [["scores", "Scores"], ["remarks", "Remarks & attendance"], ["review", "Review & preview"], ["broadsheet", "Broadsheet & print"], ...(ws.canAdmin ? [["subjects", "Subjects"] as [Section, string]] : []), ["settings", ws.canAdmin ? "Settings" : "My signature"]]
@@ -109,7 +109,7 @@ export function ReportsPanel() {
   if (!ws.terms.length) {
     return (
       <>
-        <EmptyState icon={<CalendarPlus size={22} />} title="Set up the first term" body={ws.canAdmin ? "Create a term (for example First Term, 2026/2027) to start recording scores and producing report cards." : "An administrator needs to create a term before scores can be entered."}
+        <EmptyState icon={<CalendarPlus size={22} />} title="Set up the first term" body={ws.canAdmin ? "Create a term (for example Autumn Term, 2026/2027) to start recording scores and producing report cards." : "An administrator needs to create a term before scores can be entered."}
           action={ws.canAdmin ? <button className="portal-btn" onClick={() => setTermForm(blankTerm)} data-testid="button-first-term"><CalendarPlus size={15} /> Create term</button> : undefined} />
         {termForm && <TermDialog initial={termForm} onClose={() => setTermForm(null)} />}
       </>

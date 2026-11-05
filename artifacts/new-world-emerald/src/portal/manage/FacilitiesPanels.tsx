@@ -36,7 +36,7 @@ export function currentSession(now = new Date()) {
   const y = now.getFullYear();
   return now.getMonth() >= 8 ? `${y}/${y + 1}` : `${y - 1}/${y}`;
 }
-const TERMS = ["First Term", "Second Term", "Third Term"];
+const TERMS = ["Autumn Term", "Spring Term", "Summer Term"];
 
 /**
  * Bills a term's hostel and bus fees as charges on each boarder's and rider's fee statement. The office checks

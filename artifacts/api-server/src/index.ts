@@ -2,6 +2,7 @@ import "./lib/clerk-telemetry-off";
 import app from "./app";
 import { logger } from "./lib/logger";
 import { cloudinaryUrlProblem } from "./lib/cloudinary";
+import { renameSchoolTerms } from "./lib/rename-terms";
 
 const rawPort = process.env["PORT"];
 
@@ -27,4 +28,5 @@ app.listen(port, (err) => {
   // A pasted-wrong media setting shows up plainly in the Render logs.
   const cloudinaryProblem = cloudinaryUrlProblem();
   if (cloudinaryProblem) logger.warn(cloudinaryProblem);
+  void renameSchoolTerms();
 });

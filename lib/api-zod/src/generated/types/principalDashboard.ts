@@ -13,7 +13,7 @@ export interface PrincipalDashboard {
   today: string;
   /** The last seven days, oldest first, ending today */
   days: string[];
-  /** The term the exam counts are for, such as First Term, 2026/2027 */
+  /** The term the exam counts are for, such as Autumn Term, 2026/2027 */
   examTerm: string;
   /**
      * The latest report card term, if any

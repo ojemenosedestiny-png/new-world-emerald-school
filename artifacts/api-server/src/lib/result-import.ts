@@ -1,3 +1,7 @@
+import { normalTerm } from "./term-names";
+
+export { normalTerm };
+
 // Importing past results from the old portal. Pure functions so every rule is unit tested;
 // the route supplies the students, classes, terms and subjects that already exist.
 
@@ -52,8 +56,8 @@ const norm = (s: string) => s.trim().toLowerCase().replace(/[_\s]+/g, " ").repla
 export function templateCsv() {
   const head = IMPORT_COLUMNS.map((c) => c.label);
   const rows = [
-    ["NWE/2021/00001", "Sample Student", "JSS 1", "2021/2022", "First Term", "Mathematics", "32", "51", "83", "A", "A hardworking student.", "Excellent result.", "58", "60"],
-    ["NWE/2021/00001", "Sample Student", "JSS 1", "2021/2022", "First Term", "English Language", "28", "44", "72", "A", "A hardworking student.", "Excellent result.", "58", "60"],
+    ["NWE/2021/00001", "Sample Student", "JSS 1", "2021/2022", "Autumn Term", "Mathematics", "32", "51", "83", "A", "A hardworking student.", "Excellent result.", "58", "60"],
+    ["NWE/2021/00001", "Sample Student", "JSS 1", "2021/2022", "Autumn Term", "English Language", "28", "44", "72", "A", "A hardworking student.", "Excellent result.", "58", "60"],
   ];
   return [head, ...rows].map((r) => r.map((v) => (/[",\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v)).join(",")).join("\r\n") + "\r\n";
 }
@@ -83,14 +87,6 @@ export function rowsFromCsv(text: string): { rows: RawResult[]; missing: string[
   return { rows, missing };
 }
 
-/** "1st", "first", "1", "First Term" all mean "First Term". */
-export function normalTerm(raw: string): string | null {
-  const t = raw.trim().toLowerCase().replace(/\s*term\s*/, "");
-  if (["1", "1st", "first"].includes(t)) return "First Term";
-  if (["2", "2nd", "second"].includes(t)) return "Second Term";
-  if (["3", "3rd", "third"].includes(t)) return "Third Term";
-  return null;
-}
 /** "2021/2022", "2021-2022" and "2021/22" all mean "2021/2022". */
 export function normalSession(raw: string): string | null {
   const m = raw.trim().match(/^(\d{4})\s*[/-]\s*(\d{2}|\d{4})$/);

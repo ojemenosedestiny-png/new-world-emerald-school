@@ -1,3 +1,5 @@
+import { termForReference } from "./term-names";
+
 // Hostel and transport rules, free of the database so they can be unit tested.
 
 export const GENDERS = ["boys", "girls", "mixed"] as const;
@@ -56,7 +58,7 @@ const refPart = (v: string) => v.trim().toUpperCase().replace(/[^A-Z0-9]+/g, "-"
  */
 export function facilityCharges(term: string, academicYear: string, billees: FacilityBillee[]) {
   return billees.filter((b) => b.amountKobo > 0).map((b) => ({
-    reference: [b.kind === "hostel" ? "HOSTEL" : "BUS", refPart(academicYear), refPart(term), refPart(b.studentCode)].join("-"),
+    reference: [b.kind === "hostel" ? "HOSTEL" : "BUS", refPart(academicYear), refPart(termForReference(term)), refPart(b.studentCode)].join("-"),
     studentName: b.studentName, studentIdentifier: b.studentCode, className: b.className,
     term: term.trim(), academicYear: academicYear.trim(),
     description: b.kind === "hostel" ? `Hostel: ${b.place}` : `School bus: ${b.place}`,

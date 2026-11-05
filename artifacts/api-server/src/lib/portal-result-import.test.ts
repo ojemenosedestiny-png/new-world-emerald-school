@@ -69,7 +69,7 @@ test("result import: old results are checked, saved to the right student, class 
     const preview = await send("/results-import/preview", csv, { admin: true });
     assert.equal(preview.status, 200, JSON.stringify(preview.data));
     assert.deepEqual([preview.data.total, preview.data.errors, preview.data.students], [5, 2, 2]);
-    assert.deepEqual(preview.data.newTerms, [`First Term, ${session}`]);
+    assert.deepEqual(preview.data.newTerms, [`Autumn Term, ${session}`]);
     assert.deepEqual(preview.data.newSubjects.sort(), [`English Language in ${old.name}`, `Mathematics in ${old.name}`]);
     assert.ok(preview.data.problems.some((p: { line: number; messages: string[] }) => p.line === 5 && /No student/.test(p.messages.join())));
     assert.ok(preview.data.problems.some((p: { line: number; messages: string[] }) => p.line === 6 && /Duplicate/.test(p.messages.join())));

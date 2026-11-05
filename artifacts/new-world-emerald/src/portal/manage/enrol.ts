@@ -60,7 +60,7 @@ function csvCell(value: string) {
 }
 
 export function loginsCsv(logins: IssuedLogin[]) {
-  const lines = [["Student ID", "Name", "Class", "Temporary password"], ...logins.map((l) => [l.studentId, l.name, l.className, l.password])];
+  const lines = [["Student ID (username)", "Name", "Class", "Password"], ...logins.map((l) => [l.studentId, l.name, l.className, l.password])];
   return lines.map((line) => line.map(csvCell).join(",")).join("\r\n") + "\r\n";
 }
 
@@ -75,10 +75,10 @@ export function loginSlipsHtml(logins: IssuedLogin[], portalUrl: string) {
       <p class="class">${escapeHtml(l.className)}</p>
       <dl>
         <dt>Portal</dt><dd>${escapeHtml(portalUrl)}</dd>
-        <dt>Student ID</dt><dd class="mono">${escapeHtml(l.studentId)}</dd>
-        <dt>Temporary password</dt><dd class="mono">${escapeHtml(l.password)}</dd>
+        <dt>Student ID (username)</dt><dd class="mono">${escapeHtml(l.studentId)}</dd>
+        <dt>Password</dt><dd class="mono">${escapeHtml(l.password)}</dd>
       </dl>
-      <p class="note">You will be asked to choose your own password the first time you sign in. Keep it private.</p>
+      <p class="note">Sign in at the Student Portal. Keep your password private; you can change it in the portal.</p>
     </section>`).join("");
   return `<!doctype html><html><head><meta charset="utf-8"><title>Student portal login slips</title><style>
     body{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;margin:16px;color:#10232c}
