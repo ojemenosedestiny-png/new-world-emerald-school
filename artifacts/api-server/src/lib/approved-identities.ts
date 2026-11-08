@@ -40,9 +40,17 @@ export function principalEmails(section: "primary" | "secondary" = "secondary"):
   return (process.env[section === "primary" ? "SCHOOL_PRIMARY_PRINCIPAL_EMAILS" : "SCHOOL_PRINCIPAL_EMAILS"] ?? "").split(/[,;\s]+/).map((v) => v.trim().toLowerCase()).filter(Boolean);
 }
 
-/** Every email whose Clerk verification is tracked: administrators and both principals. */
+/**
+ * The exam officer (SCHOOL_EXAM_OFFICER_EMAILS): the final step before any exam reaches students. When set, teachers,
+ * principals and the office send exams to the exam officer, who publishes or returns them. Not an administrator.
+ */
+export function examOfficerEmails(): string[] {
+  return (process.env.SCHOOL_EXAM_OFFICER_EMAILS ?? "").split(/[,;\s]+/).map((v) => v.trim().toLowerCase()).filter(Boolean);
+}
+
+/** Every email whose Clerk verification is tracked: administrators, both principals and the exam officer. */
 export function verifiedRoleEmails(): string[] {
-  return [...new Set([...approvedEmails(), ...principalEmails("secondary"), ...principalEmails("primary")])];
+  return [...new Set([...approvedEmails(), ...principalEmails("secondary"), ...principalEmails("primary"), ...examOfficerEmails()])];
 }
 
 /** When true, administrators must have Clerk two-factor authentication turned on. */

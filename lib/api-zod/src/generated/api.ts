@@ -610,6 +610,8 @@ export const GetPortalManagementResponse = zod.object({
   "shuffleOptions": zod.boolean().optional().describe('Each student gets multiple-choice options in a different order'),
   "drawCount": zod.number().min(getPortalManagementResponseExamsItemDrawCountMin).max(getPortalManagementResponseExamsItemDrawCountMax).optional().describe('Question bank: questions per student, drawn at random (0 = all)'),
   "lockdown": zod.boolean().optional().describe('Full screen, no copy or paste, and exits from the exam screen are recorded'),
+  "reviewStatus": zod.string().optional().describe('Exam officer review: empty (draft), submitted, returned or approved. Set by the server only'),
+  "reviewNote": zod.string().optional().describe('The exam officer\'s note when an exam is returned'),
   "instantResults": zod.boolean().optional().describe('After submitting, each student sees the right answer to every multiple-choice question; scores wait for release')
 })),
   "attempts": zod.array(zod.object({
@@ -694,7 +696,8 @@ export const GetPortalManagementResponse = zod.object({
   "classId": zod.number(),
   "className": zod.string()
 }))
-}).optional().describe('For a teacher, what the principal or office assigned them. Absent for administrators.')
+}).optional().describe('For a teacher, what the principal or office assigned them. Absent for administrators.'),
+  "examOfficer": zod.boolean().optional().describe('The school has an exam officer: staff send exams to them to publish')
 })
 
 
@@ -825,6 +828,8 @@ export const ManagePortalBody = zod.object({
   "shuffleOptions": zod.boolean().optional().describe('Each student gets multiple-choice options in a different order'),
   "drawCount": zod.number().min(managePortalBodyExamDrawCountMin).max(managePortalBodyExamDrawCountMax).optional().describe('Question bank: questions per student, drawn at random (0 = all)'),
   "lockdown": zod.boolean().optional().describe('Full screen, no copy or paste, and exits from the exam screen are recorded'),
+  "reviewStatus": zod.string().optional().describe('Exam officer review: empty (draft), submitted, returned or approved. Set by the server only'),
+  "reviewNote": zod.string().optional().describe('The exam officer\'s note when an exam is returned'),
   "instantResults": zod.boolean().optional().describe('After submitting, each student sees the right answer to every multiple-choice question; scores wait for release')
 }).optional(),
   "material": zod.object({
@@ -3350,6 +3355,202 @@ export const GetPrincipalReportCardsResponse = zod.object({
 })),
   "ranked": zod.number(),
   "released": zod.boolean()
+})
+
+
+/**
+ * Every exam in the school for one term (terms follow the exam dates), with where it is in publishing and how each section stands (exam officer only)
+ */
+export const getExamOfficerOverviewQueryTermRegExp = new RegExp('^\\d{4}-[1-3]$');
+
+
+export const GetExamOfficerOverviewQueryParams = zod.object({
+  "term": zod.coerce.string().regex(getExamOfficerOverviewQueryTermRegExp).optional().describe('A term key such as 2026-1; defaults to this term')
+})
+
+export const GetExamOfficerOverviewResponse = zod.object({
+  "configured": zod.boolean().describe('An exam officer is set, so staff exams wait here for publishing'),
+  "today": zod.string(),
+  "term": zod.string().nullable(),
+  "terms": zod.array(zod.object({
+  "key": zod.string(),
+  "label": zod.string(),
+  "count": zod.number()
+})),
+  "exams": zod.array(zod.object({
+  "id": zod.number(),
+  "title": zod.string(),
+  "subject": zod.string(),
+  "classId": zod.number(),
+  "className": zod.string(),
+  "section": zod.enum(['primary', 'secondary', 'other']),
+  "setBy": zod.string(),
+  "startsAt": zod.coerce.date(),
+  "endsAt": zod.coerce.date(),
+  "durationMinutes": zod.number(),
+  "mode": zod.string(),
+  "questionCount": zod.number(),
+  "totalMarks": zod.number(),
+  "status": zod.enum(['draft', 'awaiting', 'returned', 'scheduled', 'open', 'closed', 'released']),
+  "reviewNote": zod.string(),
+  "submittedBy": zod.string(),
+  "submittedAt": zod.coerce.date().nullable(),
+  "reviewedBy": zod.string(),
+  "reviewedAt": zod.coerce.date().nullable(),
+  "students": zod.number(),
+  "sat": zod.number(),
+  "marked": zod.number(),
+  "opened": zod.number().describe('Times staff opened, copied or downloaded the questions')
+})),
+  "sections": zod.array(zod.object({
+  "section": zod.enum(['primary', 'secondary', 'other']),
+  "label": zod.string(),
+  "draft": zod.number(),
+  "awaiting": zod.number(),
+  "returned": zod.number(),
+  "scheduled": zod.number(),
+  "open": zod.number(),
+  "closed": zod.number(),
+  "released": zod.number()
+}))
+})
+
+
+/**
+ * Publish an exam to students, return it to the teacher with a note, or withdraw a published exam (exam officer only)
+ */
+export const manageExamOfficerBodyNoteMax = 1000;
+
+
+
+export const ManageExamOfficerBody = zod.object({
+  "action": zod.enum(['publish', 'return', 'withdraw']),
+  "examId": zod.number(),
+  "note": zod.string().max(manageExamOfficerBodyNoteMax).optional().describe('For return (required) and withdraw: what the teacher should change')
+})
+
+export const ManageExamOfficerResponse = zod.object({
+  "message": zod.string(),
+  "studentId": zod.string().optional().describe('The Student ID of a student just enrolled')
+})
+
+
+/**
+ * One exam paper with its answers, its history and who opened its questions (exam officer only; the visit is logged)
+ */
+export const GetExamOfficerExamParams = zod.object({
+  "examId": zod.coerce.number()
+})
+
+export const GetExamOfficerExamResponse = zod.object({
+  "exam": zod.object({
+  "id": zod.number(),
+  "title": zod.string(),
+  "subject": zod.string(),
+  "classId": zod.number(),
+  "className": zod.string(),
+  "section": zod.enum(['primary', 'secondary', 'other']),
+  "setBy": zod.string(),
+  "startsAt": zod.coerce.date(),
+  "endsAt": zod.coerce.date(),
+  "durationMinutes": zod.number(),
+  "mode": zod.string(),
+  "questionCount": zod.number(),
+  "totalMarks": zod.number(),
+  "status": zod.enum(['draft', 'awaiting', 'returned', 'scheduled', 'open', 'closed', 'released']),
+  "reviewNote": zod.string(),
+  "submittedBy": zod.string(),
+  "submittedAt": zod.coerce.date().nullable(),
+  "reviewedBy": zod.string(),
+  "reviewedAt": zod.coerce.date().nullable(),
+  "students": zod.number(),
+  "sat": zod.number(),
+  "marked": zod.number(),
+  "opened": zod.number().describe('Times staff opened, copied or downloaded the questions')
+}),
+  "instructions": zod.string(),
+  "questions": zod.array(zod.object({
+  "id": zod.string(),
+  "type": zod.string(),
+  "text": zod.string(),
+  "options": zod.array(zod.string()),
+  "correctAnswer": zod.number().nullable(),
+  "marks": zod.number(),
+  "passage": zod.string(),
+  "hasDiagram": zod.boolean()
+})),
+  "history": zod.array(zod.object({
+  "at": zod.coerce.date(),
+  "who": zod.string(),
+  "label": zod.string(),
+  "kind": zod.enum(['saved', 'pdf', 'diagram', 'submitted', 'published', 'returned', 'withdrawn', 'hidden', 'opened', 'marked', 'released', 'deleted', 'attempt']),
+  "examId": zod.number().nullable(),
+  "examTitle": zod.string()
+}))
+})
+
+
+/**
+ * What each member of staff did with exams between two days (Lagos time) - questions uploaded and opened, publishing, marking and results (exam officer only)
+ */
+export const getExamOfficerActivityQueryFromRegExp = new RegExp('^\\d{4}-\\d{2}-\\d{2}$');
+export const getExamOfficerActivityQueryToRegExp = new RegExp('^\\d{4}-\\d{2}-\\d{2}$');
+
+
+export const GetExamOfficerActivityQueryParams = zod.object({
+  "from": zod.coerce.string().regex(getExamOfficerActivityQueryFromRegExp).optional(),
+  "to": zod.coerce.string().regex(getExamOfficerActivityQueryToRegExp).optional()
+})
+
+export const GetExamOfficerActivityResponse = zod.object({
+  "from": zod.string(),
+  "to": zod.string(),
+  "today": zod.string(),
+  "staff": zod.array(zod.object({
+  "email": zod.string(),
+  "name": zod.string(),
+  "role": zod.enum(['teacher', 'exam officer', 'office']),
+  "counts": zod.object({
+  "saved": zod.number(),
+  "pdf": zod.number(),
+  "diagram": zod.number(),
+  "submitted": zod.number(),
+  "published": zod.number(),
+  "returned": zod.number(),
+  "withdrawn": zod.number(),
+  "hidden": zod.number(),
+  "opened": zod.number(),
+  "marked": zod.number(),
+  "released": zod.number(),
+  "deleted": zod.number(),
+  "attempt": zod.number()
+}),
+  "events": zod.array(zod.object({
+  "at": zod.coerce.date(),
+  "who": zod.string(),
+  "label": zod.string(),
+  "kind": zod.enum(['saved', 'pdf', 'diagram', 'submitted', 'published', 'returned', 'withdrawn', 'hidden', 'opened', 'marked', 'released', 'deleted', 'attempt']),
+  "examId": zod.number().nullable(),
+  "examTitle": zod.string()
+}))
+}))
+})
+
+
+/**
+ * Records that a member of staff opened, copied or downloaded an exam's questions, for the exam officer
+ */
+export const RecordExamAccessParams = zod.object({
+  "examId": zod.coerce.number()
+})
+
+export const RecordExamAccessBody = zod.object({
+  "kind": zod.enum(['open', 'copy', 'pdf'])
+})
+
+export const RecordExamAccessResponse = zod.object({
+  "message": zod.string(),
+  "studentId": zod.string().optional().describe('The Student ID of a student just enrolled')
 })
 
 

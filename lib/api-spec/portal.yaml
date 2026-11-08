@@ -289,6 +289,8 @@ schemas:
       shuffleOptions: { type: boolean, description: Each student gets multiple-choice options in a different order }
       drawCount: { type: integer, minimum: 0, maximum: 200, description: "Question bank: questions per student, drawn at random (0 = all)" }
       lockdown: { type: boolean, description: "Full screen, no copy or paste, and exits from the exam screen are recorded" }
+      reviewStatus: { type: string, readOnly: true, description: "Exam officer review: empty (draft), submitted, returned or approved. Set by the server only" }
+      reviewNote: { type: string, readOnly: true, description: "The exam officer's note when an exam is returned" }
       instantResults: { type: boolean, description: "After submitting, each student sees the right answer to every multiple-choice question; scores wait for release" }
   PortalExamSummary:
     type: object
@@ -402,6 +404,7 @@ schemas:
       materials: { type: array, items: { $ref: "#/schemas/PortalMaterial" } }
       notices: { type: array, items: { $ref: "#/schemas/PortalNotice" } }
       teaching: { $ref: "#/schemas/PortalTeaching" }
+      examOfficer: { type: boolean, description: "The school has an exam officer: staff send exams to them to publish" }
   PortalTeaching:
     type: object
     description: For a teacher, what the principal or office assigned them. Absent for administrators.

@@ -1071,6 +1071,203 @@ export interface PrincipalResultsCommand {
   signature?: string | null;
 }
 
+export type ExamAccessKind = typeof ExamAccessKind[keyof typeof ExamAccessKind];
+
+
+export const ExamAccessKind = {
+  open: 'open',
+  copy: 'copy',
+  pdf: 'pdf',
+} as const;
+
+export interface ExamAccess {
+  kind: ExamAccessKind;
+}
+
+export type ExamOfficerExamSection = typeof ExamOfficerExamSection[keyof typeof ExamOfficerExamSection];
+
+
+export const ExamOfficerExamSection = {
+  primary: 'primary',
+  secondary: 'secondary',
+  other: 'other',
+} as const;
+
+export type ExamOfficerExamStatus = typeof ExamOfficerExamStatus[keyof typeof ExamOfficerExamStatus];
+
+
+export const ExamOfficerExamStatus = {
+  draft: 'draft',
+  awaiting: 'awaiting',
+  returned: 'returned',
+  scheduled: 'scheduled',
+  open: 'open',
+  closed: 'closed',
+  released: 'released',
+} as const;
+
+export interface ExamOfficerExam {
+  id: number;
+  title: string;
+  subject: string;
+  classId: number;
+  className: string;
+  section: ExamOfficerExamSection;
+  setBy: string;
+  startsAt: string;
+  endsAt: string;
+  durationMinutes: number;
+  mode: string;
+  questionCount: number;
+  totalMarks: number;
+  status: ExamOfficerExamStatus;
+  reviewNote: string;
+  submittedBy: string;
+  /** @nullable */
+  submittedAt: string | null;
+  reviewedBy: string;
+  /** @nullable */
+  reviewedAt: string | null;
+  students: number;
+  sat: number;
+  marked: number;
+  /** Times staff opened, copied or downloaded the questions */
+  opened: number;
+}
+
+export type ExamOfficerSectionSection = typeof ExamOfficerSectionSection[keyof typeof ExamOfficerSectionSection];
+
+
+export const ExamOfficerSectionSection = {
+  primary: 'primary',
+  secondary: 'secondary',
+  other: 'other',
+} as const;
+
+export interface ExamOfficerSection {
+  section: ExamOfficerSectionSection;
+  label: string;
+  draft: number;
+  awaiting: number;
+  returned: number;
+  scheduled: number;
+  open: number;
+  closed: number;
+  released: number;
+}
+
+export interface ExamOfficerTerm {
+  key: string;
+  label: string;
+  count: number;
+}
+
+export interface ExamOfficerOverview {
+  /** An exam officer is set, so staff exams wait here for publishing */
+  configured: boolean;
+  today: string;
+  /** @nullable */
+  term: string | null;
+  terms: ExamOfficerTerm[];
+  exams: ExamOfficerExam[];
+  sections: ExamOfficerSection[];
+}
+
+export type ExamOfficerEventKind = typeof ExamOfficerEventKind[keyof typeof ExamOfficerEventKind];
+
+
+export const ExamOfficerEventKind = {
+  saved: 'saved',
+  pdf: 'pdf',
+  diagram: 'diagram',
+  submitted: 'submitted',
+  published: 'published',
+  returned: 'returned',
+  withdrawn: 'withdrawn',
+  hidden: 'hidden',
+  opened: 'opened',
+  marked: 'marked',
+  released: 'released',
+  deleted: 'deleted',
+  attempt: 'attempt',
+} as const;
+
+export interface ExamOfficerEvent {
+  at: string;
+  who: string;
+  label: string;
+  kind: ExamOfficerEventKind;
+  /** @nullable */
+  examId: number | null;
+  examTitle: string;
+}
+
+export interface ExamOfficerPaper {
+  exam: ExamOfficerExam;
+  instructions: string;
+  questions: PrincipalExamQuestion[];
+  history: ExamOfficerEvent[];
+}
+
+export interface ExamOfficerCounts {
+  saved: number;
+  pdf: number;
+  diagram: number;
+  submitted: number;
+  published: number;
+  returned: number;
+  withdrawn: number;
+  hidden: number;
+  opened: number;
+  marked: number;
+  released: number;
+  deleted: number;
+  attempt: number;
+}
+
+export type ExamOfficerStaffRole = typeof ExamOfficerStaffRole[keyof typeof ExamOfficerStaffRole];
+
+
+export const ExamOfficerStaffRole = {
+  teacher: 'teacher',
+  exam_officer: 'exam officer',
+  office: 'office',
+} as const;
+
+export interface ExamOfficerStaff {
+  email: string;
+  name: string;
+  role: ExamOfficerStaffRole;
+  counts: ExamOfficerCounts;
+  events: ExamOfficerEvent[];
+}
+
+export interface ExamOfficerActivity {
+  from: string;
+  to: string;
+  today: string;
+  staff: ExamOfficerStaff[];
+}
+
+export type ExamOfficerCommandAction = typeof ExamOfficerCommandAction[keyof typeof ExamOfficerCommandAction];
+
+
+export const ExamOfficerCommandAction = {
+  publish: 'publish',
+  return: 'return',
+  withdraw: 'withdraw',
+} as const;
+
+export interface ExamOfficerCommand {
+  action: ExamOfficerCommandAction;
+  examId: number;
+  /**
+     * For return (required) and withdraw: what the teacher should change
+     * @maxLength 1000
+     */
+  note?: string;
+}
+
 export type MessageChannel = typeof MessageChannel[keyof typeof MessageChannel];
 
 
@@ -3170,6 +3367,10 @@ export interface PortalExam {
   drawCount?: number;
   /** Full screen, no copy or paste, and exits from the exam screen are recorded */
   lockdown?: boolean;
+  /** Exam officer review: empty (draft), submitted, returned or approved. Set by the server only */
+  readonly reviewStatus?: string;
+  /** The exam officer's note when an exam is returned */
+  readonly reviewNote?: string;
   /** After submitting, each student sees the right answer to every multiple-choice question; scores wait for release */
   instantResults?: boolean;
 }
@@ -3763,6 +3964,10 @@ export type PortalManagementExamsItem = {
   drawCount?: number;
   /** Full screen, no copy or paste, and exits from the exam screen are recorded */
   lockdown?: boolean;
+  /** Exam officer review: empty (draft), submitted, returned or approved. Set by the server only */
+  readonly reviewStatus?: string;
+  /** The exam officer's note when an exam is returned */
+  readonly reviewNote?: string;
   /** After submitting, each student sees the right answer to every multiple-choice question; scores wait for release */
   instantResults?: boolean;
 };
@@ -3945,6 +4150,8 @@ export interface PortalManagement {
   notices: PortalManagementNoticesItem[];
   /** For a teacher, what the principal or office assigned them. Absent for administrators. */
   teaching?: PortalManagementTeaching;
+  /** The school has an exam officer: staff send exams to them to publish */
+  examOfficer?: boolean;
 }
 
 export type PortalTeachingClassTeacherOfItem = {
@@ -4186,6 +4393,10 @@ export type PortalCommandExam = {
   drawCount?: number;
   /** Full screen, no copy or paste, and exits from the exam screen are recorded */
   lockdown?: boolean;
+  /** Exam officer review: empty (draft), submitted, returned or approved. Set by the server only */
+  readonly reviewStatus?: string;
+  /** The exam officer's note when an exam is returned */
+  readonly reviewNote?: string;
   /** After submitting, each student sees the right answer to every multiple-choice question; scores wait for release */
   instantResults?: boolean;
 };
@@ -5230,6 +5441,25 @@ export const GetPrincipalReportCardsSection = {
   primary: 'primary',
   secondary: 'secondary',
 } as const;
+
+export type GetExamOfficerOverviewParams = {
+/**
+ * A term key such as 2026-1; defaults to this term
+ * @pattern ^\d{4}-[1-3]$
+ */
+term?: string;
+};
+
+export type GetExamOfficerActivityParams = {
+/**
+ * @pattern ^\d{4}-\d{2}-\d{2}$
+ */
+from?: string;
+/**
+ * @pattern ^\d{4}-\d{2}-\d{2}$
+ */
+to?: string;
+};
 
 export type GetLocalAccount200 = {
   id: string;

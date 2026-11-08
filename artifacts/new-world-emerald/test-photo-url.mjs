@@ -30,6 +30,6 @@ test("the public homepage route does not depend on signed-in status", async () =
   // Sign-in defaults to /admin; the only alternative is the allow-listed portal return target.
   assert.match(signIn, /const target = basePath \+ \(token \? RETURN_TARGETS\[token\] : "\/admin"\);/);
   // Allow-list of internal return paths only: the staff portal, the Director dashboard, the parent portal and the two principals' portals.
-  assert.match(signIn, /RETURN_TARGETS: Record<string, string> = \{ portal: "\/portal\/manage", director: "\/director", parents: "\/parents", principal: "\/principal", "primary-principal": "\/principal\/primary" \};/);
+  assert.match(signIn, /RETURN_TARGETS: Record<string, string> = \{ portal: "\/portal\/manage", director: "\/director", parents: "\/parents", principal: "\/principal", "primary-principal": "\/principal\/primary", "exam-officer": "\/exam-officer" \};/);
   assert.match(signIn, /<SignIn [^>]*forceRedirectUrl=\{target\}/);
 });

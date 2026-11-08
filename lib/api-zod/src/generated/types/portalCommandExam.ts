@@ -49,6 +49,10 @@ export type PortalCommandExam = {
   drawCount?: number;
   /** Full screen, no copy or paste, and exits from the exam screen are recorded */
   lockdown?: boolean;
+  /** Exam officer review: empty (draft), submitted, returned or approved. Set by the server only */
+  readonly reviewStatus?: string;
+  /** The exam officer's note when an exam is returned */
+  readonly reviewNote?: string;
   /** After submitting, each student sees the right answer to every multiple-choice question; scores wait for release */
   instantResults?: boolean;
 };

@@ -29,6 +29,7 @@ const COMMANDS: Record<string, [ActivityKind, string]> = {
 // Other changes, recorded as "<METHOD> <path>" (without /api).
 const PATHS: [RegExp, ActivityKind, string][] = [
   [/^PUT \/portal\/attendance$/, "register", "Took the class register"],
+  [/^POST \/portal\/exams\/\d+\/access$/, "exams", "Opened an exam paper"],
   [/^POST \/portal\/assignments$/, "assignments", "Set an assignment"],
   [/^PUT \/portal\/assignments\/\d+$/, "assignments", "Edited an assignment"],
   [/^DELETE \/portal\/assignments\/\d+$/, "assignments", "Deleted an assignment"],

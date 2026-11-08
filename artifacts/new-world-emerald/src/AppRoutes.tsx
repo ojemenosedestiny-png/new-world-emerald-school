@@ -19,6 +19,7 @@ const Director = lazy(() => import("@/pages/Director"));
 const ActivateAccount = lazy(() => import("@/pages/ActivateAccount"));
 const ParentPortal = lazy(() => import("@/pages/ParentPortal"));
 const Principal = lazy(() => import("@/pages/Principal"));
+const ExamOfficer = lazy(() => import("@/pages/ExamOfficer"));
 const NotFound = lazy(() => import("@/pages/not-found"));
 
 /** The teacher link: signed-in staff go to their workspace; everyone else to staff sign-in, where a new email continues into creating the account. */
@@ -59,6 +60,8 @@ export function AppRoutes() {
         {/* The principals: assign teachers to classes and see each teacher's day. Secondary (JSS 1 to SS 3) and primary (Year 1 to Year 6). */}
         <Route path="/principal">{() => <Principal section="secondary" />}</Route>
         <Route path="/principal/primary">{() => <Principal section="primary" />}</Route>
+        {/* The exam officer: publishes every exam to students and sees exam activity. */}
+        <Route path="/exam-officer" component={ExamOfficer} />
         <Route component={NotFound} />
       </Switch>
     </RouteBoundary>

@@ -166,7 +166,7 @@ export function ExamEditor({ data, initial, onClose }: { data: PortalManagement;
     if (errors.length || needsKeyConfirm) return;
     const questions = exam.questions.map(({ passage, ...q }) => (passage?.trim() ? { ...q, passage } : q));
     const payload = { ...exam, questions, title: exam.title.trim(), subject: exam.subject.trim(), durationMinutes: Number(exam.durationMinutes) };
-    if (await cmd.run({ action: "saveExam", exam: payload }, exam.id ? "Exam updated" : "Exam saved")) onClose();
+    if (await cmd.run({ action: "saveExam", exam: payload }, data.examOfficer && exam.published ? "Saved and sent to the exam officer" : exam.id ? "Exam updated" : "Exam saved")) onClose();
   };
 
   return (
@@ -267,7 +267,8 @@ export function ExamEditor({ data, initial, onClose }: { data: PortalManagement;
           </div>
 
           <div className="space-y-2 rounded-2xl bg-[hsl(var(--p-emerald-soft)/0.5)] p-4 text-sm">
-            <label className="flex items-center gap-2 font-semibold"><input type="checkbox" checked={exam.published} onChange={(e) => set({ published: e.target.checked })} data-testid="checkbox-exam-published" /> Publish to students in this class</label>
+            <label className="flex items-center gap-2 font-semibold"><input type="checkbox" checked={exam.published} onChange={(e) => set({ published: e.target.checked })} data-testid="checkbox-exam-published" /> {data.examOfficer ? "Send to the exam officer to publish to this class" : "Publish to students in this class"}</label>
+            {data.examOfficer && <p className="text-xs text-[hsl(var(--p-ink)/0.65)]" data-testid="text-exam-officer-note">The exam officer checks the exam and publishes it. Changing a published exam sends it back to them.</p>}
             <label className="flex items-start gap-2"><input type="checkbox" className="mt-1" checked={exam.instantResults ?? true} onChange={(e) => set({ instantResults: e.target.checked })} data-testid="checkbox-instant-results" />
               <span>Show the right answers after each student submits<span className="block text-xs text-[hsl(var(--p-ink)/0.6)]">Students see which multiple-choice answers they got wrong and the right answer for each. Their score stays hidden until you release results. Note that a student who finishes early could share the answers with others still writing; use question shuffling or untick this for high-stakes exams.</span></span></label>
             {exam.published && exam.fileId && (

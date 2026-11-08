@@ -1,0 +1,191 @@
+paths:
+  overview:
+    get:
+      operationId: getExamOfficerOverview
+      description: Every exam in the school for one term (terms follow the exam dates), with where it is in publishing and how each section stands (exam officer only)
+      parameters:
+        - { name: term, in: query, required: false, description: "A term key such as 2026-1; defaults to this term", schema: { type: string, pattern: "^\\d{4}-[1-3]$" } }
+      responses:
+        "200":
+          description: Exams and publishing by section
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ExamOfficerOverview" }
+    post:
+      operationId: manageExamOfficer
+      description: Publish an exam to students, return it to the teacher with a note, or withdraw a published exam (exam officer only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ExamOfficerCommand" }
+      responses:
+        "200":
+          description: Saved
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PortalMessage" }
+  exam:
+    get:
+      operationId: getExamOfficerExam
+      description: One exam paper with its answers, its history and who opened its questions (exam officer only; the visit is logged)
+      parameters:
+        - { name: examId, in: path, required: true, schema: { type: integer } }
+      responses:
+        "200":
+          description: The paper and its history
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ExamOfficerPaper" }
+  activity:
+    get:
+      operationId: getExamOfficerActivity
+      description: What each member of staff did with exams between two days (Lagos time) - questions uploaded and opened, publishing, marking and results (exam officer only)
+      parameters:
+        - { name: from, in: query, required: false, schema: { type: string, pattern: "^\\d{4}-\\d{2}-\\d{2}$" } }
+        - { name: to, in: query, required: false, schema: { type: string, pattern: "^\\d{4}-\\d{2}-\\d{2}$" } }
+      responses:
+        "200":
+          description: Exam activity by member of staff
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ExamOfficerActivity" }
+  access:
+    post:
+      operationId: recordExamAccess
+      description: Records that a member of staff opened, copied or downloaded an exam's questions, for the exam officer
+      parameters:
+        - { name: examId, in: path, required: true, schema: { type: integer } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ExamAccess" }
+      responses:
+        "200":
+          description: Recorded
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PortalMessage" }
+schemas:
+  ExamAccess:
+    type: object
+    required: [kind]
+    properties:
+      kind: { type: string, enum: [open, copy, pdf] }
+  ExamOfficerExam:
+    type: object
+    required: [id, title, subject, classId, className, section, setBy, startsAt, endsAt, durationMinutes, mode, questionCount, totalMarks, status, reviewNote, submittedBy, submittedAt, reviewedBy, reviewedAt, students, sat, marked, opened]
+    properties:
+      id: { type: integer }
+      title: { type: string }
+      subject: { type: string }
+      classId: { type: integer }
+      className: { type: string }
+      section: { type: string, enum: [primary, secondary, other] }
+      setBy: { type: string }
+      startsAt: { type: string, format: date-time }
+      endsAt: { type: string, format: date-time }
+      durationMinutes: { type: integer }
+      mode: { type: string }
+      questionCount: { type: integer }
+      totalMarks: { type: number }
+      status: { type: string, enum: [draft, awaiting, returned, scheduled, open, closed, released] }
+      reviewNote: { type: string }
+      submittedBy: { type: string }
+      submittedAt: { type: ["string", "null"], format: date-time }
+      reviewedBy: { type: string }
+      reviewedAt: { type: ["string", "null"], format: date-time }
+      students: { type: integer }
+      sat: { type: integer }
+      marked: { type: integer }
+      opened: { type: integer, description: "Times staff opened, copied or downloaded the questions" }
+  ExamOfficerSection:
+    type: object
+    required: [section, label, draft, awaiting, returned, scheduled, open, closed, released]
+    properties:
+      section: { type: string, enum: [primary, secondary, other] }
+      label: { type: string }
+      draft: { type: integer }
+      awaiting: { type: integer }
+      returned: { type: integer }
+      scheduled: { type: integer }
+      open: { type: integer }
+      closed: { type: integer }
+      released: { type: integer }
+  ExamOfficerTerm:
+    type: object
+    required: [key, label, count]
+    properties:
+      key: { type: string }
+      label: { type: string }
+      count: { type: integer }
+  ExamOfficerOverview:
+    type: object
+    required: [configured, today, term, terms, exams, sections]
+    properties:
+      configured: { type: boolean, description: "An exam officer is set, so staff exams wait here for publishing" }
+      today: { type: string }
+      term: { type: ["string", "null"] }
+      terms: { type: array, items: { $ref: "#/components/schemas/ExamOfficerTerm" } }
+      exams: { type: array, items: { $ref: "#/components/schemas/ExamOfficerExam" } }
+      sections: { type: array, items: { $ref: "#/components/schemas/ExamOfficerSection" } }
+  ExamOfficerEvent:
+    type: object
+    required: [at, who, label, kind, examId, examTitle]
+    properties:
+      at: { type: string, format: date-time }
+      who: { type: string }
+      label: { type: string }
+      kind: { type: string, enum: [saved, pdf, diagram, submitted, published, returned, withdrawn, hidden, opened, marked, released, deleted, attempt] }
+      examId: { type: [integer, "null"] }
+      examTitle: { type: string }
+  ExamOfficerPaper:
+    type: object
+    required: [exam, instructions, questions, history]
+    properties:
+      exam: { $ref: "#/components/schemas/ExamOfficerExam" }
+      instructions: { type: string }
+      questions: { type: array, items: { $ref: "#/components/schemas/PrincipalExamQuestion" } }
+      history: { type: array, items: { $ref: "#/components/schemas/ExamOfficerEvent" } }
+  ExamOfficerCounts:
+    type: object
+    required: [saved, pdf, diagram, submitted, published, returned, withdrawn, hidden, opened, marked, released, deleted, attempt]
+    properties:
+      saved: { type: integer }
+      pdf: { type: integer }
+      diagram: { type: integer }
+      submitted: { type: integer }
+      published: { type: integer }
+      returned: { type: integer }
+      withdrawn: { type: integer }
+      hidden: { type: integer }
+      opened: { type: integer }
+      marked: { type: integer }
+      released: { type: integer }
+      deleted: { type: integer }
+      attempt: { type: integer }
+  ExamOfficerStaff:
+    type: object
+    required: [email, name, role, counts, events]
+    properties:
+      email: { type: string }
+      name: { type: string }
+      role: { type: string, enum: [teacher, exam officer, office] }
+      counts: { $ref: "#/components/schemas/ExamOfficerCounts" }
+      events: { type: array, items: { $ref: "#/components/schemas/ExamOfficerEvent" } }
+  ExamOfficerActivity:
+    type: object
+    required: [from, to, today, staff]
+    properties:
+      from: { type: string }
+      to: { type: string }
+      today: { type: string }
+      staff: { type: array, items: { $ref: "#/components/schemas/ExamOfficerStaff" } }
+  ExamOfficerCommand:
+    type: object
+    required: [action, examId]
+    properties:
+      action: { type: string, enum: [publish, return, withdraw] }
+      examId: { type: integer }
+      note: { type: string, maxLength: 1000, description: "For return (required) and withdraw: what the teacher should change" }

@@ -52,6 +52,11 @@ import type {
   DirectorReport,
   EmailTestResult,
   EnrolStudentInput,
+  ExamAccess,
+  ExamOfficerActivity,
+  ExamOfficerCommand,
+  ExamOfficerOverview,
+  ExamOfficerPaper,
   Facilities,
   FacilitiesCommand,
   FeePaymentReport,
@@ -64,6 +69,8 @@ import type {
   GetAttendanceSummaryParams,
   GetAuditLogParams,
   GetDirectorOverviewParams,
+  GetExamOfficerActivityParams,
+  GetExamOfficerOverviewParams,
   GetLocalAccount200,
   GetPrincipalActivityParams,
   GetPrincipalDashboardParams,
@@ -5631,6 +5638,379 @@ export function useGetPrincipalReportCards<TData = Awaited<ReturnType<typeof get
 
 
 
+
+export const getGetExamOfficerOverviewUrl = (params?: GetExamOfficerOverviewParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/portal/exam-officer?${stringifiedParams}` : `/api/portal/exam-officer`
+}
+
+/**
+ * Every exam in the school for one term (terms follow the exam dates), with where it is in publishing and how each section stands (exam officer only)
+ */
+export const getExamOfficerOverview = async (params?: GetExamOfficerOverviewParams, options?: RequestInit): Promise<ExamOfficerOverview> => {
+
+  return customFetch<ExamOfficerOverview>(getGetExamOfficerOverviewUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetExamOfficerOverviewQueryKey = (params?: GetExamOfficerOverviewParams,) => {
+    return [
+    `/api/portal/exam-officer`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetExamOfficerOverviewQueryOptions = <TData = Awaited<ReturnType<typeof getExamOfficerOverview>>, TError = ErrorType<unknown>>(params?: GetExamOfficerOverviewParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getExamOfficerOverview>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetExamOfficerOverviewQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getExamOfficerOverview>>> = ({ signal }) => getExamOfficerOverview(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getExamOfficerOverview>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetExamOfficerOverviewQueryResult = NonNullable<Awaited<ReturnType<typeof getExamOfficerOverview>>>
+export type GetExamOfficerOverviewQueryError = ErrorType<unknown>
+
+
+
+export function useGetExamOfficerOverview<TData = Awaited<ReturnType<typeof getExamOfficerOverview>>, TError = ErrorType<unknown>>(
+ params?: GetExamOfficerOverviewParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getExamOfficerOverview>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetExamOfficerOverviewQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getManageExamOfficerUrl = () => {
+
+
+
+
+  return `/api/portal/exam-officer`
+}
+
+/**
+ * Publish an exam to students, return it to the teacher with a note, or withdraw a published exam (exam officer only)
+ */
+export const manageExamOfficer = async (examOfficerCommand: ExamOfficerCommand, options?: RequestInit): Promise<PortalMessage> => {
+
+  return customFetch<PortalMessage>(getManageExamOfficerUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(examOfficerCommand)
+  }
+);}
+
+
+
+
+
+export const getManageExamOfficerMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof manageExamOfficer>>, TError,{data: BodyType<ExamOfficerCommand>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof manageExamOfficer>>, TError,{data: BodyType<ExamOfficerCommand>}, TContext> => {
+
+const mutationKey = ['manageExamOfficer'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof manageExamOfficer>>, {data: BodyType<ExamOfficerCommand>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  manageExamOfficer(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ManageExamOfficerMutationResult = NonNullable<Awaited<ReturnType<typeof manageExamOfficer>>>
+    export type ManageExamOfficerMutationBody = BodyType<ExamOfficerCommand>
+    export type ManageExamOfficerMutationError = ErrorType<unknown>
+
+    export const useManageExamOfficer = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof manageExamOfficer>>, TError,{data: BodyType<ExamOfficerCommand>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof manageExamOfficer>>,
+        TError,
+        {data: BodyType<ExamOfficerCommand>},
+        TContext
+      > => {
+      return useMutation(getManageExamOfficerMutationOptions(options));
+    }
+
+export const getGetExamOfficerExamUrl = (examId: number,) => {
+
+
+
+
+  return `/api/portal/exam-officer/exams/${examId}`
+}
+
+/**
+ * One exam paper with its answers, its history and who opened its questions (exam officer only; the visit is logged)
+ */
+export const getExamOfficerExam = async (examId: number, options?: RequestInit): Promise<ExamOfficerPaper> => {
+
+  return customFetch<ExamOfficerPaper>(getGetExamOfficerExamUrl(examId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetExamOfficerExamQueryKey = (examId: number,) => {
+    return [
+    `/api/portal/exam-officer/exams/${examId}`
+    ] as const;
+    }
+
+
+export const getGetExamOfficerExamQueryOptions = <TData = Awaited<ReturnType<typeof getExamOfficerExam>>, TError = ErrorType<unknown>>(examId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getExamOfficerExam>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetExamOfficerExamQueryKey(examId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getExamOfficerExam>>> = ({ signal }) => getExamOfficerExam(examId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: examId !== null && examId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getExamOfficerExam>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetExamOfficerExamQueryResult = NonNullable<Awaited<ReturnType<typeof getExamOfficerExam>>>
+export type GetExamOfficerExamQueryError = ErrorType<unknown>
+
+
+
+export function useGetExamOfficerExam<TData = Awaited<ReturnType<typeof getExamOfficerExam>>, TError = ErrorType<unknown>>(
+ examId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getExamOfficerExam>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetExamOfficerExamQueryOptions(examId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetExamOfficerActivityUrl = (params?: GetExamOfficerActivityParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/portal/exam-officer/activity?${stringifiedParams}` : `/api/portal/exam-officer/activity`
+}
+
+/**
+ * What each member of staff did with exams between two days (Lagos time) - questions uploaded and opened, publishing, marking and results (exam officer only)
+ */
+export const getExamOfficerActivity = async (params?: GetExamOfficerActivityParams, options?: RequestInit): Promise<ExamOfficerActivity> => {
+
+  return customFetch<ExamOfficerActivity>(getGetExamOfficerActivityUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetExamOfficerActivityQueryKey = (params?: GetExamOfficerActivityParams,) => {
+    return [
+    `/api/portal/exam-officer/activity`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetExamOfficerActivityQueryOptions = <TData = Awaited<ReturnType<typeof getExamOfficerActivity>>, TError = ErrorType<unknown>>(params?: GetExamOfficerActivityParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getExamOfficerActivity>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetExamOfficerActivityQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getExamOfficerActivity>>> = ({ signal }) => getExamOfficerActivity(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getExamOfficerActivity>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetExamOfficerActivityQueryResult = NonNullable<Awaited<ReturnType<typeof getExamOfficerActivity>>>
+export type GetExamOfficerActivityQueryError = ErrorType<unknown>
+
+
+
+export function useGetExamOfficerActivity<TData = Awaited<ReturnType<typeof getExamOfficerActivity>>, TError = ErrorType<unknown>>(
+ params?: GetExamOfficerActivityParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getExamOfficerActivity>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetExamOfficerActivityQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getRecordExamAccessUrl = (examId: number,) => {
+
+
+
+
+  return `/api/portal/exams/${examId}/access`
+}
+
+/**
+ * Records that a member of staff opened, copied or downloaded an exam's questions, for the exam officer
+ */
+export const recordExamAccess = async (examId: number,
+    examAccess: ExamAccess, options?: RequestInit): Promise<PortalMessage> => {
+
+  return customFetch<PortalMessage>(getRecordExamAccessUrl(examId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(examAccess)
+  }
+);}
+
+
+
+
+
+export const getRecordExamAccessMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof recordExamAccess>>, TError,{examId: number;data: BodyType<ExamAccess>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof recordExamAccess>>, TError,{examId: number;data: BodyType<ExamAccess>}, TContext> => {
+
+const mutationKey = ['recordExamAccess'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof recordExamAccess>>, {examId: number;data: BodyType<ExamAccess>}> = (props) => {
+          const {examId,data} = props ?? {};
+
+          return  recordExamAccess(examId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RecordExamAccessMutationResult = NonNullable<Awaited<ReturnType<typeof recordExamAccess>>>
+    export type RecordExamAccessMutationBody = BodyType<ExamAccess>
+    export type RecordExamAccessMutationError = ErrorType<unknown>
+
+    export const useRecordExamAccess = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof recordExamAccess>>, TError,{examId: number;data: BodyType<ExamAccess>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof recordExamAccess>>,
+        TError,
+        {examId: number;data: BodyType<ExamAccess>},
+        TContext
+      > => {
+      return useMutation(getRecordExamAccessMutationOptions(options));
+    }
 
 export const getGetMyMessagesUrl = () => {
 

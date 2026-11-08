@@ -32,7 +32,8 @@
     "test:portal-principal": "node ./test-portal.mjs portal-principal",
     "test:portal-principal-oversight": "node ./test-portal.mjs portal-principal-oversight",
     "test:portal-primary-results": "node ./test-portal.mjs portal-primary-results",
-    "test:portal-term-rename": "node ./test-portal.mjs portal-term-rename"
+    "test:portal-term-rename": "node ./test-portal.mjs portal-term-rename",
+    "test:portal-exam-officer": "node ./test-portal.mjs portal-exam-officer"
   },
   "dependencies": {
     "@clerk/express": "^2.1.75",

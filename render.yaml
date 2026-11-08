@@ -34,6 +34,9 @@ services:
       # The primary school principal's email (Year 1 to Year 6): opens /principal/primary only. Leave it out of SCHOOL_ADMIN_EMAILS unless they also need full office access.
       - key: SCHOOL_PRIMARY_PRINCIPAL_EMAILS
         sync: false
+      # The exam officer's email: opens /exam-officer. When set, every exam waits for the exam officer to publish it.
+      - key: SCHOOL_EXAM_OFFICER_EMAILS
+        sync: false
       - key: REQUIRE_ADMIN_MFA
         value: "false"
       - key: RESEND_API_KEY

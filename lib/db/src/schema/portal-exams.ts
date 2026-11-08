@@ -39,6 +39,14 @@ export const portalExams = pgTable("portal_exams", {
   instantResults: boolean("instant_results").notNull().default(true),
   // Who first saved the exam (name, or email): shown to the principals. Empty for exams set before this was recorded.
   createdBy: text("created_by").notNull().default(""),
+  // The exam officer's review, when the school has one: "" (draft), "submitted" (waiting for the exam officer),
+  // "returned" (sent back with a note) or "approved" (published by the exam officer; content unchanged since).
+  reviewStatus: text("review_status").notNull().default(""),
+  reviewNote: text("review_note").notNull().default(""),
+  submittedBy: text("submitted_by").notNull().default(""),
+  submittedAt: timestamp("submitted_at", { withTimezone: true }),
+  reviewedBy: text("reviewed_by").notNull().default(""),
+  reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
 });
 export const insertPortalExamSchema = createInsertSchema(portalExams).omit({ id: true });
 export type PortalExamRecord = typeof portalExams.$inferSelect;

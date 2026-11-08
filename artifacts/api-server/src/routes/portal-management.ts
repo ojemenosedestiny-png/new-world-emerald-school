@@ -15,6 +15,8 @@ import { cleanSubjects } from "../lib/community";
 import { paperSettingsProblem } from "../lib/cbt";
 import { PRACTICE_TITLE, practiceExam } from "../lib/practice-exam";
 import { lagosToday } from "../lib/principal";
+import { examOfficerEmails } from "../lib/approved-identities";
+import { asReview, staffPublish } from "../lib/exam-review";
 
 /** The short address teachers use: it opens staff sign-in and returns to the teacher workspace. */
 export const TEACHER_PATH = "/teacher";
@@ -94,7 +96,7 @@ portalManagementRouter.get("/manage", async (req, res) => {
       .orderBy(asc(portalClasses.name), asc(portalSubjects.sortOrder), asc(portalSubjects.name));
     teaching = { classTeacherOf: classes.filter((c) => actor.classIds.includes(c.id)).map((c) => ({ id: c.id, name: c.name })), subjects };
   }
-  res.json({ classes, students, teachers, exams, attempts, materials, notices, ...(teaching ? { teaching } : {}) });
+  res.json({ classes, students, teachers, exams, attempts, materials, notices, examOfficer: examOfficerEmails().length > 0, ...(teaching ? { teaching } : {}) });
 });
 portalManagementRouter.post("/manage", async (req, res) => {
   const actor = await portalActor(req);
@@ -193,8 +195,16 @@ portalManagementRouter.post("/manage", async (req, res) => {
       const paper = { shuffleQuestions: data.shuffleQuestions ?? false, shuffleOptions: data.shuffleOptions ?? false, drawCount: data.drawCount ?? 0 };
       const paperProblem = paperSettingsProblem(data.mode, data.questions, paper);
       check(!paperProblem, paperProblem ?? "");
-      const { id, ...rest } = data;
+      // The exam officer's review is set only here, never taken from what was sent.
+      const { id, reviewStatus: _review, reviewNote: _note, ...rest } = data;
       const values = { ...rest, ...paper, lockdown: data.lockdown ?? false, instantResults: data.instantResults ?? true, title: data.title.trim(), subject: data.subject.trim(), startsAt, endsAt, fileId: data.fileId || null };
+      const gate = examOfficerEmails().length > 0;
+      const by = actor.name || req.identity?.email || "";
+      // Who sent it, by email, so the exam officer can tell staff apart.
+      const sender = req.identity?.email || by;
+      // Saving content means the exam officer has not seen this version: publishing sends it for review again.
+      const decision = staffPublish({ gate, wantPublished: data.published, wasPublished: false, review: "", contentChanged: true });
+      const review = gate ? { published: decision.published, reviewStatus: decision.review, ...(decision.submitted ? { submittedBy: sender, submittedAt: new Date(), reviewNote: "" } : {}) } : {};
       await db.transaction(async (tx) => {
         if (id) {
           const [old] = await tx.select().from(portalExams).where(eq(portalExams.id, id)).for("update");
@@ -202,14 +212,16 @@ portalManagementRouter.post("/manage", async (req, res) => {
           classAllowed(actor, old.classId);
           const [attempt] = await tx.select({ id: portalAttempts.id }).from(portalAttempts).where(eq(portalAttempts.examId, id)).limit(1);
           check(!attempt, "Students have started this exam. Its content is locked; use publish and result controls instead.", 409);
-          await tx.update(portalExams).set(values).where(eq(portalExams.id, id));
-        } else await tx.insert(portalExams).values({ ...values, createdBy: actor.name || req.identity?.email || "" });
+          await tx.update(portalExams).set({ ...values, ...review }).where(eq(portalExams.id, id));
+        } else await tx.insert(portalExams).values({ ...values, ...review, createdBy: by });
       });
+      if (decision.submitted) { res.json({ message: "Saved and sent to the exam officer to publish." }); return; }
       break;
     }
     case "examStatus": {
       const data = body.examStatus;
       check(data, "Exam status required.");
+      let submitted = false;
       await db.transaction(async (tx) => {
         const [exam] = await tx.select().from(portalExams).where(eq(portalExams.id, data.id)).for("update");
         check(exam, "Exam not found.", 404);
@@ -220,8 +232,16 @@ portalManagementRouter.post("/manage", async (req, res) => {
           const [unmarked] = await tx.select({ id: portalAttempts.id }).from(portalAttempts).where(and(eq(portalAttempts.examId, exam.id), sql`${portalAttempts.status} <> 'marked'`)).limit(1);
           check(!unmarked, "All attempts must be submitted and marked before results are released.");
         }
-        await tx.update(portalExams).set({ published: data.published, resultsReleased: data.resultsReleased }).where(eq(portalExams.id, exam.id));
+        const gate = examOfficerEmails().length > 0;
+        const decision = staffPublish({ gate, wantPublished: data.published, wasPublished: exam.published, review: asReview(exam.reviewStatus), contentChanged: false });
+        await tx.update(portalExams).set({
+          published: decision.published, resultsReleased: data.resultsReleased,
+          ...(gate ? { reviewStatus: decision.review } : {}),
+          ...(decision.submitted ? { submittedBy: req.identity?.email || actor.name, submittedAt: new Date(), reviewNote: "" } : {}),
+        }).where(eq(portalExams.id, exam.id));
+        submitted = decision.submitted;
       });
+      if (submitted) { res.json({ message: "Sent to the exam officer to publish." }); return; }
       break;
     }
     case "saveMaterial": {
@@ -280,7 +300,9 @@ portalManagementRouter.post("/manage", async (req, res) => {
       const existing = new Set((await db.select({ classId: portalExams.classId }).from(portalExams).where(eq(portalExams.title, PRACTICE_TITLE))).map((e) => e.classId));
       const missing = classes.filter((c) => !existing.has(c.id));
       check(classes.length, "Create a class first.");
-      if (missing.length) await db.insert(portalExams).values(missing.map((c) => practiceExam(c.id)));
+      // With an exam officer, the practice tests wait for publishing like any other exam.
+      const officer = examOfficerEmails().length > 0 ? { published: false, reviewStatus: "submitted", submittedBy: req.identity?.email || actor.name, submittedAt: new Date() } : {};
+      if (missing.length) await db.insert(portalExams).values(missing.map((c) => ({ ...practiceExam(c.id), ...officer })));
       res.json({ message: missing.length ? `Practice CBT added to ${missing.length} ${missing.length === 1 ? "class" : "classes"}.` : "Every class already has the practice CBT." });
       return;
     }

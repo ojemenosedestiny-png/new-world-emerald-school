@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { PortalManagement, PortalExam } from "@workspace/api-client-react";
+import { useRecordExamAccess, type PortalManagement, type PortalExam } from "@workspace/api-client-react";
 import { BarChart3, ClipboardList, Copy, Eye, EyeOff, FileText, Lock, Pencil, Plus, Send, Sparkles, Trash2, Undo2 } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { EmptyState, StatusPill } from "../ui";
@@ -28,6 +28,10 @@ export function ExamsPanel({ data, isAdmin = false }: { data: PortalManagement; 
   const [resultsFor, setResultsFor] = useState<number | null>(null);
   const [deleting, setDeleting] = useState<{ id: number; title: string } | null>(null);
   const resultsExam = data.exams.find((e) => e.id === resultsFor);
+  // With an exam officer, staff send exams to be published; opening, copying or downloading questions is recorded for them.
+  const officer = !!data.examOfficer;
+  const access = useRecordExamAccess();
+  const record = (id: number, kind: "open" | "copy" | "pdf") => { access.mutate({ examId: id, data: { kind } }); };
 
   return (
     <div className="space-y-4">
@@ -46,7 +50,7 @@ export function ExamsPanel({ data, isAdmin = false }: { data: PortalManagement; 
               <div className="flex flex-col gap-4 md:flex-row md:items-start">
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
-                    <StatusPill tone={e.published ? "green" : "muted"}>{e.published ? "Published" : "Draft"}</StatusPill>
+                    <StatusPill tone={e.published ? "green" : e.reviewStatus === "submitted" ? "gold" : e.reviewStatus === "returned" ? "red" : "muted"}>{e.published ? "Published" : e.reviewStatus === "submitted" ? "Waiting for the exam officer" : e.reviewStatus === "returned" ? "Returned by the exam officer" : "Draft"}</StatusPill>
                     {e.resultsReleased && <StatusPill tone="ink">Results released</StatusPill>}
                     {started && <StatusPill tone="gold"><Lock size={10} /> Content frozen</StatusPill>}
                     <span className="text-xs text-[hsl(var(--p-ink)/0.55)]">{className(data.classes, e.classId)} / {e.subject} / {e.mode === "pdf" ? "PDF paper" : "Interactive"}</span>
@@ -54,17 +58,18 @@ export function ExamsPanel({ data, isAdmin = false }: { data: PortalManagement; 
                   <h3 className="mt-2 font-serif text-xl font-semibold">{e.title}</h3>
                   <p className="mt-1 text-sm text-[hsl(var(--p-ink)/0.6)]">{formatDateTime(e.startsAt)} to {formatDateTime(e.endsAt)} / {e.durationMinutes} min / {e.questions.length} {e.questions.length === 1 ? "question" : "questions"}</p>
                   <p className="mt-1 text-sm text-[hsl(var(--p-ink)/0.6)]">{attempts.length} started / {submitted.length} submitted / {unmarked} awaiting marking</p>
+                  {!e.published && e.reviewStatus === "returned" && e.reviewNote && <p className="mt-2 rounded-lg bg-[hsl(var(--p-red)/0.07)] px-3 py-2 text-sm" data-testid={"text-review-note-" + id}><b>Exam officer:</b> {e.reviewNote}</p>}
                 </div>
                 <div className="flex flex-wrap gap-2 md:justify-end">
                   <button className="portal-btn-ghost" onClick={() => setResultsFor(id)} data-testid={"button-results-exam-" + id}><BarChart3 size={13} /> Results</button>
-                  <button className="portal-btn-ghost" onClick={() => setEditing(duplicateExam(e))} data-testid={"button-duplicate-exam-" + id}><Copy size={13} /> Duplicate</button>
-                  {!started && <button className="portal-btn-ghost" onClick={() => setEditing({ ...e, questions: e.questions.map((q) => ({ ...q, options: [...q.options] })) })} data-testid={"button-edit-exam-" + id}><Pencil size={13} /> Edit</button>}
-                  {e.fileId && <a className="portal-btn-ghost" href={fileUrl(e.fileId)} target="_blank" rel="noreferrer"><FileText size={13} /> Paper</a>}
+                  <button className="portal-btn-ghost" onClick={() => { record(id, "copy"); setEditing(duplicateExam(e)); }} data-testid={"button-duplicate-exam-" + id}><Copy size={13} /> Duplicate</button>
+                  {!started && <button className="portal-btn-ghost" onClick={() => { record(id, "open"); setEditing({ ...e, questions: e.questions.map((q) => ({ ...q, options: [...q.options] })) }); }} data-testid={"button-edit-exam-" + id}><Pencil size={13} /> Edit</button>}
+                  {e.fileId && <a className="portal-btn-ghost" href={fileUrl(e.fileId)} target="_blank" rel="noreferrer" onClick={() => record(id, "pdf")}><FileText size={13} /> Paper</a>}
                   {started && (e.published
                     ? <button className="portal-btn-ghost" disabled={cmd.pending} onClick={() => setConfirm({ id, published: false, resultsReleased: e.resultsReleased, label: "Hide this exam?", body: "Students will no longer see it on their dashboard. Existing attempts are kept." })} data-testid={"button-hide-exam-" + id}><EyeOff size={13} /> Hide</button>
-                    : <button className="portal-btn-ghost" disabled={cmd.pending} onClick={() => setConfirm({ id, published: true, resultsReleased: e.resultsReleased, label: "Publish this exam again?", body: "Students in the class will see it again." })} data-testid={"button-publish-exam-" + id}><Eye size={13} /> Publish</button>)}
+                    : <button className="portal-btn-ghost" disabled={cmd.pending} onClick={() => setConfirm({ id, published: true, resultsReleased: e.resultsReleased, label: officer && e.reviewStatus !== "approved" ? "Send to the exam officer?" : "Publish this exam again?", body: officer && e.reviewStatus !== "approved" ? "The exam officer publishes it to students." : "Students in the class will see it again." })} data-testid={"button-publish-exam-" + id}><Eye size={13} /> {officer && e.reviewStatus !== "approved" ? "Send to exam officer" : "Publish"}</button>)}
                   {!started && e.published && <button className="portal-btn-ghost" disabled={cmd.pending} onClick={() => setConfirm({ id, published: false, resultsReleased: false, label: "Unpublish this exam?", body: "It returns to draft and students will no longer see it." })} data-testid={"button-unpublish-exam-" + id}><EyeOff size={13} /> Unpublish</button>}
-                  {!started && !e.published && <button className="portal-btn-ghost" onClick={() => setEditing({ ...e, published: true })} data-testid={"button-review-publish-" + id}><Eye size={13} /> Review and publish</button>}
+                  {!started && !e.published && e.reviewStatus !== "submitted" && <button className="portal-btn-ghost" onClick={() => { record(id, "open"); setEditing({ ...e, published: true }); }} data-testid={"button-review-publish-" + id}><Eye size={13} /> {officer ? "Review and send to exam officer" : "Review and publish"}</button>}
                   {submitted.length > 0 && (e.resultsReleased
                     ? <button className="portal-btn-ghost" disabled={cmd.pending} onClick={() => setConfirm({ id, published: e.published, resultsReleased: false, label: "Withhold results?", body: "Students will see their result as pending again." })} data-testid={"button-withhold-" + id}><Undo2 size={13} /> Withhold results</button>
                     : <button className="portal-btn-gold portal-btn !py-1.5 text-[13px]" disabled={cmd.pending || unmarked > 0} title={unmarked ? "Mark every submitted attempt first" : undefined} onClick={() => setConfirm({ id, published: e.published, resultsReleased: true, label: "Release results?", body: "Every student who submitted will see their score and feedback." })} data-testid={"button-release-" + id}><Send size={13} /> Release results</button>)}

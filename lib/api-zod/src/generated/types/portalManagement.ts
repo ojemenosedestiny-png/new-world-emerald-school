@@ -24,4 +24,6 @@ export interface PortalManagement {
   notices: PortalManagementNoticesItem[];
   /** For a teacher, what the principal or office assigned them. Absent for administrators. */
   teaching?: PortalManagementTeaching;
+  /** The school has an exam officer: staff send exams to them to publish */
+  examOfficer?: boolean;
 }

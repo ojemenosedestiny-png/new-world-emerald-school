@@ -141,6 +141,14 @@ paths:
     $ref: "./principal.yaml#/paths/results"
   /portal/principal/report-cards:
     $ref: "./principal.yaml#/paths/reportCards"
+  /portal/exam-officer:
+    $ref: "./exam-officer.yaml#/paths/overview"
+  /portal/exam-officer/exams/{examId}:
+    $ref: "./exam-officer.yaml#/paths/exam"
+  /portal/exam-officer/activity:
+    $ref: "./exam-officer.yaml#/paths/activity"
+  /portal/exams/{examId}/access:
+    $ref: "./exam-officer.yaml#/paths/access"
   /portal/my-messages:
     $ref: "./messages.yaml#/paths/myMessages"
   /portal/my-messages/read:
@@ -1181,6 +1189,28 @@ components:
       $ref: "./principal.yaml#/schemas/PrincipalResults"
     PrincipalResultsCommand:
       $ref: "./principal.yaml#/schemas/PrincipalResultsCommand"
+    ExamAccess:
+      $ref: "./exam-officer.yaml#/schemas/ExamAccess"
+    ExamOfficerExam:
+      $ref: "./exam-officer.yaml#/schemas/ExamOfficerExam"
+    ExamOfficerSection:
+      $ref: "./exam-officer.yaml#/schemas/ExamOfficerSection"
+    ExamOfficerTerm:
+      $ref: "./exam-officer.yaml#/schemas/ExamOfficerTerm"
+    ExamOfficerOverview:
+      $ref: "./exam-officer.yaml#/schemas/ExamOfficerOverview"
+    ExamOfficerEvent:
+      $ref: "./exam-officer.yaml#/schemas/ExamOfficerEvent"
+    ExamOfficerPaper:
+      $ref: "./exam-officer.yaml#/schemas/ExamOfficerPaper"
+    ExamOfficerCounts:
+      $ref: "./exam-officer.yaml#/schemas/ExamOfficerCounts"
+    ExamOfficerStaff:
+      $ref: "./exam-officer.yaml#/schemas/ExamOfficerStaff"
+    ExamOfficerActivity:
+      $ref: "./exam-officer.yaml#/schemas/ExamOfficerActivity"
+    ExamOfficerCommand:
+      $ref: "./exam-officer.yaml#/schemas/ExamOfficerCommand"
     MessageChannel:
       $ref: "./messages.yaml#/schemas/MessageChannel"
     PortalChatMessage:

@@ -1,5 +1,5 @@
 import type { NextFunction, Request, Response } from "express";
-import { adminMfaRequired, approvedEmails, directorEmails, principalEmails, superAdminEmails } from "./approved-identities";
+import { adminMfaRequired, approvedEmails, directorEmails, examOfficerEmails, principalEmails, superAdminEmails } from "./approved-identities";
 
 /** Approved, verified administrator email, before any two-factor requirement. */
 function isApprovedAdmin(req: Request): boolean {
@@ -35,6 +35,19 @@ export function isSectionPrincipal(req: Request, section: "primary" | "secondary
   if (!req.dbUser || !email || !req.identity?.emailVerified) return false;
   if (adminMfaRequired() && req.identity.mfa !== true) return false;
   return principalEmails(section).includes(email);
+}
+
+/** The exam officer's own account: a verified email in SCHOOL_EXAM_OFFICER_EMAILS (two-factor when required). */
+export function isExamOfficer(req: Request): boolean {
+  const email = req.identity?.email?.trim().toLowerCase();
+  if (!req.dbUser || !email || !req.identity?.emailVerified) return false;
+  if (adminMfaRequired() && req.identity.mfa !== true) return false;
+  return examOfficerEmails().includes(email);
+}
+
+/** May use the exam officer's portal and publish exams: the exam officer, or the super administrator. */
+export function canPublishExams(req: Request): boolean {
+  return isExamOfficer(req) || isSuperAdmin(req);
 }
 
 /** May open a section's principal portal: that section's principal, or the super administrator (who cannot sign). */
