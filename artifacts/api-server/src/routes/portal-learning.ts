@@ -189,7 +189,7 @@ portalLearningRouter.post("/submissions/:id/mark", async (req, res) => {
 });
 
 // ---- Assignments (students)
-async function studentViews(classId: number, studentId: number) {
+export async function studentViews(classId: number, studentId: number) {
   const rows = await db.select().from(portalAssignments)
     .where(and(eq(portalAssignments.classId, classId), eq(portalAssignments.published, true))).orderBy(asc(portalAssignments.dueAt));
   const subs = rows.length ? await db.select().from(portalSubmissions)

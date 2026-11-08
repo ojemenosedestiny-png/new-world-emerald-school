@@ -1,7 +1,11 @@
 import { Router, type Request } from "express";
-import { and, desc, eq, gt, inArray, sql } from "drizzle-orm";
-import { db, parentPayments, parentWalletEntries, parentWallets, portalClasses, portalStudents, type ParentPaymentRecord, type ParentPaymentSelection } from "@workspace/db";
-import { StartParentPaymentBody, AdjustParentWalletBody } from "@workspace/api-zod";
+import { and, desc, eq, gt, gte, inArray, or, sql } from "drizzle-orm";
+import { db, parentPayments, parentWalletEntries, parentWallets, portalAttempts, portalAttendance, portalClasses, portalExams, portalStudents, type ParentPaymentRecord, type ParentPaymentSelection } from "@workspace/db";
+import { StartParentPaymentBody, AdjustParentWalletBody, GetParentChildProgressParams } from "@workspace/api-zod";
+import { publishedReportsFor } from "./portal-reports";
+import { studentViews } from "./portal-learning";
+import { attemptView, finalizeExpired } from "../lib/portal-assessment";
+import { tally } from "../lib/learning";
 import { check, portalActor, verifiedClerkEmail } from "../lib/portal-auth";
 import { statementFor, type DbExec } from "./portal-fees";
 import { amountProblem, chosen, newPaymentReference, selectionProblem, settle, type OutstandingItem } from "../lib/parent-payments";
@@ -24,8 +28,9 @@ async function signedInParent(req: Request) {
   return email;
 }
 
+// A parent's children: every current student with this email as their first or second parent.
 const childrenOf = (exec: DbExec, email: string) => exec.select().from(portalStudents)
-  .where(and(sql`lower(trim(${portalStudents.guardianEmail})) = ${email}`, eq(portalStudents.active, true)))
+  .where(and(or(sql`lower(trim(${portalStudents.guardianEmail})) = ${email}`, sql`lower(trim(${portalStudents.secondGuardianEmail})) = ${email}`), eq(portalStudents.active, true)))
   .orderBy(portalStudents.name);
 
 /** Each child with their fee statement, and every item that still has money owed (bank transfers being checked are left out). */
@@ -236,4 +241,41 @@ portalParentRouter.post("/parent-wallets/adjust", async (req, res) => {
   });
   await recordAudit({ actorKind: "staff", actorId: req.dbUser?.id ?? "office", actorLabel: req.identity?.email ?? "office", action: "parent.wallet_adjusted", targetType: "parent_wallet", targetId: email, after: { amountKobo: body.amountKobo, note }, ip: clientIp(req), userAgent: req.headers["user-agent"] ?? null });
   res.json({ message: `Wallet updated. New balance: ₦${(balanceAfterKobo / 100).toLocaleString("en-NG", { minimumFractionDigits: 2 })}.` });
+});
+
+/**
+ * One child's progress for their parent: published report cards, exam and test results (scores only once the teacher
+ * releases them), attendance over the last six months and homework. Only the child's own parents may see it.
+ */
+portalParentRouter.get("/parent/children/:studentId", async (req, res) => {
+  const email = await signedInParent(req);
+  const { studentId } = GetParentChildProgressParams.parse(req.params);
+  const child = (await childrenOf(db, email)).find((k) => k.id === studentId);
+  check(child, "This child is not linked to your email.", 404);
+  const since = new Date(Date.now() - 180 * 86_400_000).toISOString().slice(0, 10);
+  const [reports, exams, attempts, attendance, homework] = await Promise.all([
+    publishedReportsFor(child),
+    db.select().from(portalExams).where(eq(portalExams.classId, child.classId)),
+    db.select().from(portalAttempts).where(eq(portalAttempts.studentId, child.id)),
+    db.select().from(portalAttendance).where(and(eq(portalAttendance.studentId, child.id), gte(portalAttendance.date, since))).orderBy(desc(portalAttendance.date)),
+    studentViews(child.classId, child.id),
+  ]);
+  const results = [];
+  for (const attempt of attempts) {
+    const exam = exams.find((e) => e.id === attempt.examId) ?? (await db.select().from(portalExams).where(eq(portalExams.id, attempt.examId)))[0];
+    if (!exam) continue;
+    const v = attemptView(await finalizeExpired(attempt), exam);
+    results.push({ examId: exam.id, title: exam.title, subject: exam.subject, date: v.startedAt, status: v.status as "in_progress" | "submitted" | "marked", released: v.resultsReleased, score: "score" in v ? v.score ?? null : null, totalMarks: v.totalMarks });
+  }
+  results.sort((a, b) => b.date.localeCompare(a.date));
+  const now = new Date();
+  const upcoming = exams.filter((e) => e.published && e.endsAt > now && !attempts.some((a) => a.examId === e.id))
+    .sort((a, b) => a.startsAt.getTime() - b.startsAt.getTime())
+    .map((e) => ({ examId: e.id, title: e.title, subject: e.subject, startsAt: e.startsAt.toISOString(), endsAt: e.endsAt.toISOString() }));
+  res.json({
+    child: { id: child.id, name: child.name, studentId: child.studentId, className: reports.className },
+    reports: reports.reports, results, upcoming,
+    attendance: { since, totals: tally(attendance.map((r) => r.status)), records: attendance.slice(0, 60).map((r) => ({ date: r.date, status: r.status, note: r.note })) },
+    homework,
+  });
 });

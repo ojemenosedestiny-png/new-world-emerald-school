@@ -1,5 +1,5 @@
 import type { NextFunction, Request, Response } from "express";
-import { adminMfaRequired, approvedEmails, directorEmails, examOfficerEmails, principalEmails, superAdminEmails } from "./approved-identities";
+import { adminMfaRequired, approvedEmails, directorEmails, examOfficerEmails, headEmails, principalEmails, superAdminEmails } from "./approved-identities";
 
 /** Approved, verified administrator email, before any two-factor requirement. */
 function isApprovedAdmin(req: Request): boolean {
@@ -37,6 +37,21 @@ export function isSectionPrincipal(req: Request, section: "primary" | "secondary
   return principalEmails(section).includes(email);
 }
 
+/** The Head of School (SCHOOL_HEAD_EMAILS), an administrator who may act in every portal. */
+export function isHeadOfSchool(req: Request): boolean {
+  return isWebsiteAdmin(req) && headEmails().includes(req.identity!.email!.trim().toLowerCase());
+}
+
+/** May open the Director's dashboard: the Director or the Head of School. */
+export function canViewDirector(req: Request): boolean {
+  return isDirector(req) || isHeadOfSchool(req);
+}
+
+/** May email teachers and parents from the school: the Director or the Head of School. */
+export function canSendSchoolEmail(req: Request): boolean {
+  return isDirector(req) || isHeadOfSchool(req);
+}
+
 /** The exam officer's own account: a verified email in SCHOOL_EXAM_OFFICER_EMAILS (two-factor when required). */
 export function isExamOfficer(req: Request): boolean {
   const email = req.identity?.email?.trim().toLowerCase();
@@ -47,12 +62,12 @@ export function isExamOfficer(req: Request): boolean {
 
 /** May use the exam officer's portal and publish exams: the exam officer, or the super administrator. */
 export function canPublishExams(req: Request): boolean {
-  return isExamOfficer(req) || isSuperAdmin(req);
+  return isExamOfficer(req) || isSuperAdmin(req) || isHeadOfSchool(req);
 }
 
 /** May open a section's principal portal: that section's principal, or the super administrator (who cannot sign). */
 export function isPrincipal(req: Request, section: "primary" | "secondary" = "secondary"): boolean {
-  return isSectionPrincipal(req, section) || isSuperAdmin(req);
+  return isSectionPrincipal(req, section) || isSuperAdmin(req) || isHeadOfSchool(req);
 }
 
 export function requireWebsiteAdmin(req: Request, res: Response): boolean {

@@ -21,6 +21,7 @@ export * from "./media-objects";
 export * from "./portal-learning";
 export * from "./portal-messages";
 export * from "./director-reports";
+export * from "./school-messages";
 export * from "./portal-inventory";
 export * from "./portal-facilities";
 export * from "./parent-payments";

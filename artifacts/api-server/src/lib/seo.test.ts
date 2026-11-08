@@ -10,7 +10,7 @@ const shell = readFileSync(join(process.cwd(), "../new-world-emerald/index.html"
 test("only the homepage and the store are public; signed-in areas are private; anything else is missing", () => {
   assert.equal(pageSeo("/").kind, "public");
   assert.equal(pageSeo("/commerce/").kind, "public");
-  for (const p of ["/admin", "/director", "/teacher", "/account", "/portal", "/portal/manage", "/portal/activate", "/portal/exam/12", "/parents", "/principal", "/principal/primary", "/exam-officer", "/sign-in", "/sign-in/factor-one", "/sign-up/verify"]) {
+  for (const p of ["/admin", "/director", "/teacher", "/account", "/portal", "/portal/manage", "/portal/activate", "/portal/exam/12", "/parents", "/principal", "/principal/primary", "/exam-officer", "/head", "/sign-in", "/sign-in/factor-one", "/sign-up/verify"]) {
     assert.equal(pageSeo(p).kind, "private", p);
   }
   for (const p of ["/ijmb", "/university", "/portal/exam", "/admin/x", "/robots", "/principal/nursery"]) assert.equal(pageSeo(p).kind, "missing", p);

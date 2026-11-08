@@ -3,6 +3,7 @@ import app from "./app";
 import { logger } from "./lib/logger";
 import { cloudinaryUrlProblem } from "./lib/cloudinary";
 import { renameSchoolTerms } from "./lib/rename-terms";
+import { sendPendingSchoolEmails } from "./routes/portal-school-email";
 
 const rawPort = process.env["PORT"];
 
@@ -29,4 +30,6 @@ app.listen(port, (err) => {
   const cloudinaryProblem = cloudinaryUrlProblem();
   if (cloudinaryProblem) logger.warn(cloudinaryProblem);
   void renameSchoolTerms();
+  // Emails to teachers and parents still waiting when the server restarted go out now.
+  void sendPendingSchoolEmails();
 });

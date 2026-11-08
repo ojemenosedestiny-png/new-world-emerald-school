@@ -8,7 +8,7 @@ import {
 import { approvedEmails, directorEmails } from "../lib/approved-identities";
 import { SendDirectorBroadcastBody } from "@workspace/api-zod";
 import { BROADCASTS_PER_DAY, MAX_RECIPIENTS, broadcastProblem, broadcastRecipients, type Audience } from "../lib/director-broadcast";
-import { isDirector } from "../lib/website-admin";
+import { isDirector, canViewDirector } from "../lib/website-admin";
 import { siteBaseUrl } from "../lib/accounts";
 import { directorReportEmail, emailConfigured, sendEmail, staffBroadcastEmail } from "../lib/email";
 import { REPORT_PERIODS, highlights, mondayOf, percent, reportWindow, weeklyReportDue, type DirectorReport } from "../lib/director";
@@ -103,7 +103,8 @@ export async function buildDirectorReport(now = new Date(), days = 7): Promise<D
 }
 
 function directorOnly(req: Request, res: Response) {
-  if (isDirector(req)) return true;
+  // The Head of School sees the Director's dashboard too.
+  if (canViewDirector(req)) return true;
   res.status(403).json({ error: "This page is for the Director only." });
   return false;
 }

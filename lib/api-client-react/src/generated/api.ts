@@ -102,6 +102,9 @@ import type {
   MyFacilities,
   MyMessages,
   MyPhoto,
+  ParentChildProgress,
+  ParentLinkCommand,
+  ParentLinks,
   ParentOverview,
   ParentPayment,
   ParentPaymentRequest,
@@ -148,6 +151,10 @@ import type {
   RevokeRequest,
   SchoolCommerceSettings,
   SchoolCommerceSettingsUpdate,
+  SchoolEmailDetail,
+  SchoolEmailMessage,
+  SchoolEmailRequest,
+  SchoolEmailWorkspace,
   SecuritySessions,
   SendDirectorReport200,
   SiteContent,
@@ -6011,6 +6018,438 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       > => {
       return useMutation(getRecordExamAccessMutationOptions(options));
     }
+
+export const getGetSchoolEmailUrl = () => {
+
+
+
+
+  return `/api/portal/school-email`
+}
+
+/**
+ * Teachers and parents who can be emailed, today's allowance and the sent history (Director or Head of School only)
+ */
+export const getSchoolEmail = async ( options?: RequestInit): Promise<SchoolEmailWorkspace> => {
+
+  return customFetch<SchoolEmailWorkspace>(getGetSchoolEmailUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetSchoolEmailQueryKey = () => {
+    return [
+    `/api/portal/school-email`
+    ] as const;
+    }
+
+
+export const getGetSchoolEmailQueryOptions = <TData = Awaited<ReturnType<typeof getSchoolEmail>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSchoolEmail>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetSchoolEmailQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSchoolEmail>>> = ({ signal }) => getSchoolEmail({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSchoolEmail>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetSchoolEmailQueryResult = NonNullable<Awaited<ReturnType<typeof getSchoolEmail>>>
+export type GetSchoolEmailQueryError = ErrorType<unknown>
+
+
+
+export function useGetSchoolEmail<TData = Awaited<ReturnType<typeof getSchoolEmail>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSchoolEmail>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetSchoolEmailQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getSendSchoolEmailUrl = () => {
+
+
+
+
+  return `/api/portal/school-email`
+}
+
+/**
+ * Send one private copy to each chosen teacher or parent, addressed by name; replies go to the sender (Director or Head of School only)
+ */
+export const sendSchoolEmail = async (schoolEmailRequest: SchoolEmailRequest, options?: RequestInit): Promise<SchoolEmailMessage> => {
+
+  return customFetch<SchoolEmailMessage>(getSendSchoolEmailUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(schoolEmailRequest)
+  }
+);}
+
+
+
+
+
+export const getSendSchoolEmailMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof sendSchoolEmail>>, TError,{data: BodyType<SchoolEmailRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof sendSchoolEmail>>, TError,{data: BodyType<SchoolEmailRequest>}, TContext> => {
+
+const mutationKey = ['sendSchoolEmail'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof sendSchoolEmail>>, {data: BodyType<SchoolEmailRequest>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  sendSchoolEmail(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SendSchoolEmailMutationResult = NonNullable<Awaited<ReturnType<typeof sendSchoolEmail>>>
+    export type SendSchoolEmailMutationBody = BodyType<SchoolEmailRequest>
+    export type SendSchoolEmailMutationError = ErrorType<unknown>
+
+    export const useSendSchoolEmail = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof sendSchoolEmail>>, TError,{data: BodyType<SchoolEmailRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof sendSchoolEmail>>,
+        TError,
+        {data: BodyType<SchoolEmailRequest>},
+        TContext
+      > => {
+      return useMutation(getSendSchoolEmailMutationOptions(options));
+    }
+
+export const getGetSchoolEmailMessageUrl = (messageId: number,) => {
+
+
+
+
+  return `/api/portal/school-email/${messageId}`
+}
+
+/**
+ * One sent email and whether each copy was delivered
+ */
+export const getSchoolEmailMessage = async (messageId: number, options?: RequestInit): Promise<SchoolEmailDetail> => {
+
+  return customFetch<SchoolEmailDetail>(getGetSchoolEmailMessageUrl(messageId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetSchoolEmailMessageQueryKey = (messageId: number,) => {
+    return [
+    `/api/portal/school-email/${messageId}`
+    ] as const;
+    }
+
+
+export const getGetSchoolEmailMessageQueryOptions = <TData = Awaited<ReturnType<typeof getSchoolEmailMessage>>, TError = ErrorType<unknown>>(messageId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSchoolEmailMessage>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetSchoolEmailMessageQueryKey(messageId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSchoolEmailMessage>>> = ({ signal }) => getSchoolEmailMessage(messageId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: messageId !== null && messageId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSchoolEmailMessage>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetSchoolEmailMessageQueryResult = NonNullable<Awaited<ReturnType<typeof getSchoolEmailMessage>>>
+export type GetSchoolEmailMessageQueryError = ErrorType<unknown>
+
+
+
+export function useGetSchoolEmailMessage<TData = Awaited<ReturnType<typeof getSchoolEmailMessage>>, TError = ErrorType<unknown>>(
+ messageId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSchoolEmailMessage>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetSchoolEmailMessageQueryOptions(messageId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetParentLinksUrl = () => {
+
+
+
+
+  return `/api/portal/parent-links`
+}
+
+/**
+ * Every parent email with their children, and every current student (school office only)
+ */
+export const getParentLinks = async ( options?: RequestInit): Promise<ParentLinks> => {
+
+  return customFetch<ParentLinks>(getGetParentLinksUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetParentLinksQueryKey = () => {
+    return [
+    `/api/portal/parent-links`
+    ] as const;
+    }
+
+
+export const getGetParentLinksQueryOptions = <TData = Awaited<ReturnType<typeof getParentLinks>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getParentLinks>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetParentLinksQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getParentLinks>>> = ({ signal }) => getParentLinks({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getParentLinks>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetParentLinksQueryResult = NonNullable<Awaited<ReturnType<typeof getParentLinks>>>
+export type GetParentLinksQueryError = ErrorType<unknown>
+
+
+
+export function useGetParentLinks<TData = Awaited<ReturnType<typeof getParentLinks>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getParentLinks>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetParentLinksQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getManageParentLinksUrl = () => {
+
+
+
+
+  return `/api/portal/parent-links`
+}
+
+/**
+ * Link a parent email to a child (up to two parents per child) or unlink it (school office only)
+ */
+export const manageParentLinks = async (parentLinkCommand: ParentLinkCommand, options?: RequestInit): Promise<PortalMessage> => {
+
+  return customFetch<PortalMessage>(getManageParentLinksUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(parentLinkCommand)
+  }
+);}
+
+
+
+
+
+export const getManageParentLinksMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof manageParentLinks>>, TError,{data: BodyType<ParentLinkCommand>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof manageParentLinks>>, TError,{data: BodyType<ParentLinkCommand>}, TContext> => {
+
+const mutationKey = ['manageParentLinks'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof manageParentLinks>>, {data: BodyType<ParentLinkCommand>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  manageParentLinks(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ManageParentLinksMutationResult = NonNullable<Awaited<ReturnType<typeof manageParentLinks>>>
+    export type ManageParentLinksMutationBody = BodyType<ParentLinkCommand>
+    export type ManageParentLinksMutationError = ErrorType<unknown>
+
+    export const useManageParentLinks = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof manageParentLinks>>, TError,{data: BodyType<ParentLinkCommand>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof manageParentLinks>>,
+        TError,
+        {data: BodyType<ParentLinkCommand>},
+        TContext
+      > => {
+      return useMutation(getManageParentLinksMutationOptions(options));
+    }
+
+export const getGetParentChildProgressUrl = (studentId: number,) => {
+
+
+
+
+  return `/api/portal/parent/children/${studentId}`
+}
+
+/**
+ * One child's report cards, exam and test results, attendance and homework, for their own parent
+ */
+export const getParentChildProgress = async (studentId: number, options?: RequestInit): Promise<ParentChildProgress> => {
+
+  return customFetch<ParentChildProgress>(getGetParentChildProgressUrl(studentId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetParentChildProgressQueryKey = (studentId: number,) => {
+    return [
+    `/api/portal/parent/children/${studentId}`
+    ] as const;
+    }
+
+
+export const getGetParentChildProgressQueryOptions = <TData = Awaited<ReturnType<typeof getParentChildProgress>>, TError = ErrorType<unknown>>(studentId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getParentChildProgress>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetParentChildProgressQueryKey(studentId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getParentChildProgress>>> = ({ signal }) => getParentChildProgress(studentId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: studentId !== null && studentId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getParentChildProgress>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetParentChildProgressQueryResult = NonNullable<Awaited<ReturnType<typeof getParentChildProgress>>>
+export type GetParentChildProgressQueryError = ErrorType<unknown>
+
+
+
+export function useGetParentChildProgress<TData = Awaited<ReturnType<typeof getParentChildProgress>>, TError = ErrorType<unknown>>(
+ studentId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getParentChildProgress>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetParentChildProgressQueryOptions(studentId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 
 export const getGetMyMessagesUrl = () => {
 

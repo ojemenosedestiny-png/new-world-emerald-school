@@ -3554,6 +3554,316 @@ export const RecordExamAccessResponse = zod.object({
 })
 
 
+/**
+ * Teachers and parents who can be emailed, today's allowance and the sent history (Director or Head of School only)
+ */
+export const GetSchoolEmailResponse = zod.object({
+  "sender": zod.object({
+  "email": zod.string(),
+  "role": zod.enum(['director', 'head']),
+  "name": zod.string()
+}),
+  "emailReady": zod.boolean(),
+  "dailyLimit": zod.number(),
+  "sentToday": zod.number(),
+  "people": zod.array(zod.object({
+  "kind": zod.enum(['teacher', 'parent']),
+  "email": zod.string(),
+  "name": zod.string().describe('A teacher\'s name, or Parent of <children>'),
+  "detail": zod.string().describe('A teacher\'s classes, or a parent\'s children and their classes'),
+  "classIds": zod.array(zod.number())
+})),
+  "classes": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string()
+})),
+  "history": zod.array(zod.object({
+  "id": zod.number(),
+  "subject": zod.string(),
+  "body": zod.string(),
+  "senderName": zod.string(),
+  "senderEmail": zod.string(),
+  "senderRole": zod.enum(['director', 'head']),
+  "recipients": zod.number(),
+  "sent": zod.number(),
+  "failed": zod.number(),
+  "status": zod.enum(['sending', 'done']),
+  "createdAt": zod.coerce.date(),
+  "finishedAt": zod.coerce.date().nullable()
+}))
+})
+
+
+/**
+ * Send one private copy to each chosen teacher or parent, addressed by name; replies go to the sender (Director or Head of School only)
+ */
+export const sendSchoolEmailBodySubjectMax = 150;
+
+export const sendSchoolEmailBodyMessageMax = 10000;
+
+export const sendSchoolEmailBodyRecipientsItemEmailMax = 320;
+
+export const sendSchoolEmailBodyRecipientsMax = 1000;
+
+
+
+export const SendSchoolEmailBody = zod.object({
+  "subject": zod.string().max(sendSchoolEmailBodySubjectMax),
+  "message": zod.string().max(sendSchoolEmailBodyMessageMax),
+  "recipients": zod.array(zod.object({
+  "kind": zod.enum(['teacher', 'parent']),
+  "email": zod.string().max(sendSchoolEmailBodyRecipientsItemEmailMax)
+})).max(sendSchoolEmailBodyRecipientsMax)
+})
+
+export const SendSchoolEmailResponse = zod.object({
+  "id": zod.number(),
+  "subject": zod.string(),
+  "body": zod.string(),
+  "senderName": zod.string(),
+  "senderEmail": zod.string(),
+  "senderRole": zod.enum(['director', 'head']),
+  "recipients": zod.number(),
+  "sent": zod.number(),
+  "failed": zod.number(),
+  "status": zod.enum(['sending', 'done']),
+  "createdAt": zod.coerce.date(),
+  "finishedAt": zod.coerce.date().nullable()
+})
+
+
+/**
+ * One sent email and whether each copy was delivered
+ */
+export const GetSchoolEmailMessageParams = zod.object({
+  "messageId": zod.coerce.number()
+})
+
+export const GetSchoolEmailMessageResponse = zod.object({
+  "message": zod.object({
+  "id": zod.number(),
+  "subject": zod.string(),
+  "body": zod.string(),
+  "senderName": zod.string(),
+  "senderEmail": zod.string(),
+  "senderRole": zod.enum(['director', 'head']),
+  "recipients": zod.number(),
+  "sent": zod.number(),
+  "failed": zod.number(),
+  "status": zod.enum(['sending', 'done']),
+  "createdAt": zod.coerce.date(),
+  "finishedAt": zod.coerce.date().nullable()
+}),
+  "recipients": zod.array(zod.object({
+  "kind": zod.enum(['teacher', 'parent']),
+  "email": zod.string(),
+  "name": zod.string(),
+  "status": zod.enum(['pending', 'sent', 'failed']),
+  "detail": zod.string(),
+  "sentAt": zod.coerce.date().nullable()
+}))
+})
+
+
+/**
+ * Every parent email with their children, and every current student (school office only)
+ */
+export const GetParentLinksResponse = zod.object({
+  "parents": zod.array(zod.object({
+  "email": zod.string(),
+  "children": zod.array(zod.object({
+  "id": zod.number(),
+  "studentId": zod.string(),
+  "name": zod.string(),
+  "className": zod.string(),
+  "slot": zod.enum(['first', 'second'])
+}))
+})),
+  "students": zod.array(zod.object({
+  "id": zod.number(),
+  "studentId": zod.string(),
+  "name": zod.string(),
+  "className": zod.string(),
+  "parents": zod.array(zod.string())
+}))
+})
+
+
+/**
+ * Link a parent email to a child (up to two parents per child) or unlink it (school office only)
+ */
+export const manageParentLinksBodyEmailMax = 320;
+
+
+
+export const ManageParentLinksBody = zod.object({
+  "action": zod.enum(['link', 'unlink', 'invite']).describe('invite emails the parent their sign-in link'),
+  "email": zod.string().max(manageParentLinksBodyEmailMax),
+  "studentId": zod.number().optional().describe('For link and unlink')
+})
+
+export const ManageParentLinksResponse = zod.object({
+  "message": zod.string(),
+  "studentId": zod.string().optional().describe('The Student ID of a student just enrolled')
+})
+
+
+/**
+ * One child's report cards, exam and test results, attendance and homework, for their own parent
+ */
+export const GetParentChildProgressParams = zod.object({
+  "studentId": zod.coerce.number()
+})
+
+export const getParentChildProgressResponseReportsItemGradingScaleItemMinMin = 0;
+export const getParentChildProgressResponseReportsItemGradingScaleItemMinMax = 100;
+
+export const getParentChildProgressResponseReportsItemGradingScaleItemGradeMax = 4;
+
+export const getParentChildProgressResponseReportsItemGradingScaleItemRemarkMax = 40;
+
+export const getParentChildProgressResponseReportsItemCardOneTeacherRemarkMax = 600;
+
+export const getParentChildProgressResponseReportsItemCardOnePrincipalRemarkMax = 600;
+
+export const getParentChildProgressResponseReportsItemCardOneDaysPresentMin = 0;
+export const getParentChildProgressResponseReportsItemCardOneDaysPresentMax = 366;
+
+export const getParentChildProgressResponseReportsItemCardOneDaysOpenMin = 0;
+export const getParentChildProgressResponseReportsItemCardOneDaysOpenMax = 366;
+
+export const getParentChildProgressResponseReportsItemCardOneTraitsMaxOne = 5;
+
+
+
+export const GetParentChildProgressResponse = zod.object({
+  "child": zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "studentId": zod.string(),
+  "className": zod.string()
+}),
+  "reports": zod.array(zod.object({
+  "scheme": zod.enum(['primary', 'secondary']).describe('primary (Year 1 to 6): Mid-term (ca) and End-term (exam) out of 100, final = their average, no positions; secondary: CA + exam with positions'),
+  "className": zod.string().describe('The class the student was in for this term'),
+  "gradingScale": zod.array(zod.object({
+  "min": zod.number().min(getParentChildProgressResponseReportsItemGradingScaleItemMinMin).max(getParentChildProgressResponseReportsItemGradingScaleItemMinMax),
+  "grade": zod.string().min(1).max(getParentChildProgressResponseReportsItemGradingScaleItemGradeMax),
+  "remark": zod.string().max(getParentChildProgressResponseReportsItemGradingScaleItemRemarkMax)
+})),
+  "teacherName": zod.string(),
+  "teacherSignature": zod.string().nullable(),
+  "principalName": zod.string(),
+  "principalSignature": zod.string().nullable(),
+  "term": zod.object({
+  "id": zod.number(),
+  "session": zod.string(),
+  "term": zod.string(),
+  "caMax": zod.number().describe('CA 1 maximum (the only CA when ca2Max is 0)'),
+  "ca2Max": zod.number().describe('CA 2 maximum; 0 means a single CA column'),
+  "examMax": zod.number(),
+  "nextTermBegins": zod.string().nullable()
+}),
+  "subjects": zod.array(zod.object({
+  "id": zod.number(),
+  "classId": zod.number(),
+  "name": zod.string(),
+  "sortOrder": zod.number(),
+  "teacherId": zod.number().nullable().describe('The subject teacher'),
+  "teacherName": zod.string().nullish().describe('The subject teacher\'s name, for the report card')
+})),
+  "result": zod.object({
+  "studentId": zod.number(),
+  "subjects": zod.array(zod.object({
+  "subjectId": zod.number(),
+  "ca": zod.number().nullable(),
+  "ca2": zod.number().nullable(),
+  "exam": zod.number().nullable(),
+  "comment": zod.string().describe('The subject teacher\'s comment'),
+  "total": zod.number(),
+  "percent": zod.number(),
+  "grade": zod.string(),
+  "remark": zod.string(),
+  "position": zod.number()
+})),
+  "total": zod.number(),
+  "average": zod.number().nullable(),
+  "grade": zod.string().nullable(),
+  "position": zod.number().nullable(),
+  "subjectsTaken": zod.number()
+}),
+  "subjectStats": zod.array(zod.object({
+  "subjectId": zod.number(),
+  "average": zod.number(),
+  "highest": zod.number(),
+  "lowest": zod.number(),
+  "entries": zod.number()
+})),
+  "classSize": zod.number(),
+  "card": zod.union([zod.object({
+  "studentId": zod.number(),
+  "teacherRemark": zod.string().max(getParentChildProgressResponseReportsItemCardOneTeacherRemarkMax),
+  "principalRemark": zod.string().max(getParentChildProgressResponseReportsItemCardOnePrincipalRemarkMax),
+  "daysPresent": zod.number().min(getParentChildProgressResponseReportsItemCardOneDaysPresentMin).max(getParentChildProgressResponseReportsItemCardOneDaysPresentMax).nullable(),
+  "daysOpen": zod.number().min(getParentChildProgressResponseReportsItemCardOneDaysOpenMin).max(getParentChildProgressResponseReportsItemCardOneDaysOpenMax).nullable(),
+  "traits": zod.record(zod.string(), zod.number().min(1).max(getParentChildProgressResponseReportsItemCardOneTraitsMaxOne)).optional().describe('Behaviour ratings from 1 to 5, keyed by trait name. Leave out to keep what is saved.')
+}),zod.null()]),
+  "releasedAt": zod.string()
+})),
+  "results": zod.array(zod.object({
+  "examId": zod.number(),
+  "title": zod.string(),
+  "subject": zod.string(),
+  "date": zod.coerce.date(),
+  "status": zod.enum(['in_progress', 'submitted', 'marked']),
+  "released": zod.boolean(),
+  "score": zod.number().nullable(),
+  "totalMarks": zod.number()
+})),
+  "upcoming": zod.array(zod.object({
+  "examId": zod.number(),
+  "title": zod.string(),
+  "subject": zod.string(),
+  "startsAt": zod.coerce.date(),
+  "endsAt": zod.coerce.date()
+})),
+  "attendance": zod.object({
+  "since": zod.string(),
+  "totals": zod.object({
+  "present": zod.number(),
+  "late": zod.number(),
+  "absent": zod.number(),
+  "excused": zod.number(),
+  "daysPresent": zod.number().describe('Present or late'),
+  "daysRecorded": zod.number()
+}),
+  "records": zod.array(zod.object({
+  "date": zod.string(),
+  "status": zod.string(),
+  "note": zod.string()
+}))
+}),
+  "homework": zod.array(zod.object({
+  "id": zod.number(),
+  "subject": zod.string(),
+  "title": zod.string(),
+  "instructions": zod.string(),
+  "dueAt": zod.string(),
+  "maxScore": zod.number(),
+  "submission": zod.union([zod.object({
+  "id": zod.number(),
+  "text": zod.string(),
+  "imageIds": zod.array(zod.string()),
+  "submittedAt": zod.string(),
+  "late": zod.boolean(),
+  "score": zod.number().nullable(),
+  "feedback": zod.string(),
+  "markedAt": zod.string().nullable()
+}),zod.null()])
+}))
+})
+
+
 export const GetMyMessagesResponse = zod.object({
   "threads": zod.array(zod.object({
   "channel": zod.enum(['class', 'office']),

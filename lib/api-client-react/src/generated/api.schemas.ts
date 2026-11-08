@@ -1268,6 +1268,427 @@ export interface ExamOfficerCommand {
   note?: string;
 }
 
+export type SchoolEmailPersonKind = typeof SchoolEmailPersonKind[keyof typeof SchoolEmailPersonKind];
+
+
+export const SchoolEmailPersonKind = {
+  teacher: 'teacher',
+  parent: 'parent',
+} as const;
+
+export interface SchoolEmailPerson {
+  kind: SchoolEmailPersonKind;
+  email: string;
+  /** A teacher's name, or Parent of <children> */
+  name: string;
+  /** A teacher's classes, or a parent's children and their classes */
+  detail: string;
+  classIds: number[];
+}
+
+export type SchoolEmailMessageSenderRole = typeof SchoolEmailMessageSenderRole[keyof typeof SchoolEmailMessageSenderRole];
+
+
+export const SchoolEmailMessageSenderRole = {
+  director: 'director',
+  head: 'head',
+} as const;
+
+export type SchoolEmailMessageStatus = typeof SchoolEmailMessageStatus[keyof typeof SchoolEmailMessageStatus];
+
+
+export const SchoolEmailMessageStatus = {
+  sending: 'sending',
+  done: 'done',
+} as const;
+
+export interface SchoolEmailMessage {
+  id: number;
+  subject: string;
+  body: string;
+  senderName: string;
+  senderEmail: string;
+  senderRole: SchoolEmailMessageSenderRole;
+  recipients: number;
+  sent: number;
+  failed: number;
+  status: SchoolEmailMessageStatus;
+  createdAt: string;
+  /** @nullable */
+  finishedAt: string | null;
+}
+
+export type SchoolEmailSenderRole = typeof SchoolEmailSenderRole[keyof typeof SchoolEmailSenderRole];
+
+
+export const SchoolEmailSenderRole = {
+  director: 'director',
+  head: 'head',
+} as const;
+
+export interface SchoolEmailSender {
+  email: string;
+  role: SchoolEmailSenderRole;
+  name: string;
+}
+
+export interface SchoolEmailClass {
+  id: number;
+  name: string;
+}
+
+export interface SchoolEmailWorkspace {
+  sender: SchoolEmailSender;
+  emailReady: boolean;
+  dailyLimit: number;
+  sentToday: number;
+  people: SchoolEmailPerson[];
+  classes: SchoolEmailClass[];
+  history: SchoolEmailMessage[];
+}
+
+export type SchoolEmailTargetKind = typeof SchoolEmailTargetKind[keyof typeof SchoolEmailTargetKind];
+
+
+export const SchoolEmailTargetKind = {
+  teacher: 'teacher',
+  parent: 'parent',
+} as const;
+
+export interface SchoolEmailTarget {
+  kind: SchoolEmailTargetKind;
+  /** @maxLength 320 */
+  email: string;
+}
+
+export interface SchoolEmailRequest {
+  /** @maxLength 150 */
+  subject: string;
+  /** @maxLength 10000 */
+  message: string;
+  /** @maxItems 1000 */
+  recipients: SchoolEmailTarget[];
+}
+
+export type SchoolEmailRecipientKind = typeof SchoolEmailRecipientKind[keyof typeof SchoolEmailRecipientKind];
+
+
+export const SchoolEmailRecipientKind = {
+  teacher: 'teacher',
+  parent: 'parent',
+} as const;
+
+export type SchoolEmailRecipientStatus = typeof SchoolEmailRecipientStatus[keyof typeof SchoolEmailRecipientStatus];
+
+
+export const SchoolEmailRecipientStatus = {
+  pending: 'pending',
+  sent: 'sent',
+  failed: 'failed',
+} as const;
+
+export interface SchoolEmailRecipient {
+  kind: SchoolEmailRecipientKind;
+  email: string;
+  name: string;
+  status: SchoolEmailRecipientStatus;
+  detail: string;
+  /** @nullable */
+  sentAt: string | null;
+}
+
+export interface SchoolEmailDetail {
+  message: SchoolEmailMessage;
+  recipients: SchoolEmailRecipient[];
+}
+
+export type ParentLinkChildSlot = typeof ParentLinkChildSlot[keyof typeof ParentLinkChildSlot];
+
+
+export const ParentLinkChildSlot = {
+  first: 'first',
+  second: 'second',
+} as const;
+
+export interface ParentLinkChild {
+  id: number;
+  studentId: string;
+  name: string;
+  className: string;
+  slot: ParentLinkChildSlot;
+}
+
+export interface ParentLinkParent {
+  email: string;
+  children: ParentLinkChild[];
+}
+
+export interface ParentLinkStudent {
+  id: number;
+  studentId: string;
+  name: string;
+  className: string;
+  parents: string[];
+}
+
+export interface ParentLinks {
+  parents: ParentLinkParent[];
+  students: ParentLinkStudent[];
+}
+
+/**
+ * invite emails the parent their sign-in link
+ */
+export type ParentLinkCommandAction = typeof ParentLinkCommandAction[keyof typeof ParentLinkCommandAction];
+
+
+export const ParentLinkCommandAction = {
+  link: 'link',
+  unlink: 'unlink',
+  invite: 'invite',
+} as const;
+
+export interface ParentLinkCommand {
+  /** invite emails the parent their sign-in link */
+  action: ParentLinkCommandAction;
+  /** @maxLength 320 */
+  email: string;
+  /** For link and unlink */
+  studentId?: number;
+}
+
+export type ParentChildResultStatus = typeof ParentChildResultStatus[keyof typeof ParentChildResultStatus];
+
+
+export const ParentChildResultStatus = {
+  in_progress: 'in_progress',
+  submitted: 'submitted',
+  marked: 'marked',
+} as const;
+
+export interface ParentChildResult {
+  examId: number;
+  title: string;
+  subject: string;
+  date: string;
+  status: ParentChildResultStatus;
+  released: boolean;
+  /** @nullable */
+  score: number | null;
+  totalMarks: number;
+}
+
+export interface ParentChildUpcoming {
+  examId: number;
+  title: string;
+  subject: string;
+  startsAt: string;
+  endsAt: string;
+}
+
+export interface ParentChildAttendanceDay {
+  date: string;
+  status: string;
+  note: string;
+}
+
+export interface AttendanceTotals {
+  present: number;
+  late: number;
+  absent: number;
+  excused: number;
+  /** Present or late */
+  daysPresent: number;
+  daysRecorded: number;
+}
+
+export interface ParentChildAttendance {
+  since: string;
+  totals: AttendanceTotals;
+  records: ParentChildAttendanceDay[];
+}
+
+export interface ParentChildInfo {
+  id: number;
+  name: string;
+  studentId: string;
+  className: string;
+}
+
+/**
+ * primary (Year 1 to 6): Mid-term (ca) and End-term (exam) out of 100, final = their average, no positions; secondary: CA + exam with positions
+ */
+export type StudentTermReportScheme = typeof StudentTermReportScheme[keyof typeof StudentTermReportScheme];
+
+
+export const StudentTermReportScheme = {
+  primary: 'primary',
+  secondary: 'secondary',
+} as const;
+
+export type StudentTermReportGradingScaleItem = {
+  /**
+     * @minimum 0
+     * @maximum 100
+     */
+  min: number;
+  /**
+     * @minLength 1
+     * @maxLength 4
+     */
+  grade: string;
+  /** @maxLength 40 */
+  remark: string;
+};
+
+export type StudentTermReportTerm = {
+  id: number;
+  session: string;
+  term: string;
+  /** CA 1 maximum (the only CA when ca2Max is 0) */
+  caMax: number;
+  /** CA 2 maximum; 0 means a single CA column */
+  ca2Max: number;
+  examMax: number;
+  /** @nullable */
+  nextTermBegins: string | null;
+};
+
+export type StudentTermReportSubjectsItem = {
+  id: number;
+  classId: number;
+  name: string;
+  sortOrder: number;
+  /**
+     * The subject teacher
+     * @nullable
+     */
+  teacherId: number | null;
+  /**
+     * The subject teacher's name, for the report card
+     * @nullable
+     */
+  teacherName?: string | null;
+};
+
+export type StudentTermReportResultSubjectsItem = {
+  subjectId: number;
+  /** @nullable */
+  ca: number | null;
+  /** @nullable */
+  ca2: number | null;
+  /** @nullable */
+  exam: number | null;
+  /** The subject teacher's comment */
+  comment: string;
+  total: number;
+  percent: number;
+  grade: string;
+  remark: string;
+  position: number;
+};
+
+export type StudentTermReportResult = {
+  studentId: number;
+  subjects: StudentTermReportResultSubjectsItem[];
+  total: number;
+  /** @nullable */
+  average: number | null;
+  /** @nullable */
+  grade: string | null;
+  /** @nullable */
+  position: number | null;
+  subjectsTaken: number;
+};
+
+export type StudentTermReportSubjectStatsItem = {
+  subjectId: number;
+  average: number;
+  highest: number;
+  lowest: number;
+  entries: number;
+};
+
+/**
+ * Behaviour ratings from 1 to 5, keyed by trait name. Leave out to keep what is saved.
+ */
+export type StudentTermReportCardTraits = {[key: string]: number};
+
+export type StudentTermReportCard = {
+  studentId: number;
+  /** @maxLength 600 */
+  teacherRemark: string;
+  /** @maxLength 600 */
+  principalRemark: string;
+  /**
+     * @minimum 0
+     * @maximum 366
+     * @nullable
+     */
+  daysPresent: number | null;
+  /**
+     * @minimum 0
+     * @maximum 366
+     * @nullable
+     */
+  daysOpen: number | null;
+  /** Behaviour ratings from 1 to 5, keyed by trait name. Leave out to keep what is saved. */
+  traits?: StudentTermReportCardTraits;
+} | null;
+
+export interface StudentTermReport {
+  /** primary (Year 1 to 6): Mid-term (ca) and End-term (exam) out of 100, final = their average, no positions; secondary: CA + exam with positions */
+  scheme: StudentTermReportScheme;
+  /** The class the student was in for this term */
+  className: string;
+  gradingScale: StudentTermReportGradingScaleItem[];
+  teacherName: string;
+  /** @nullable */
+  teacherSignature: string | null;
+  principalName: string;
+  /** @nullable */
+  principalSignature: string | null;
+  term: StudentTermReportTerm;
+  subjects: StudentTermReportSubjectsItem[];
+  result: StudentTermReportResult;
+  subjectStats: StudentTermReportSubjectStatsItem[];
+  classSize: number;
+  card: StudentTermReportCard;
+  releasedAt: string;
+}
+
+export interface SubmissionView {
+  id: number;
+  text: string;
+  imageIds: string[];
+  submittedAt: string;
+  late: boolean;
+  /** @nullable */
+  score: number | null;
+  feedback: string;
+  /** @nullable */
+  markedAt: string | null;
+}
+
+export interface StudentAssignment {
+  id: number;
+  subject: string;
+  title: string;
+  instructions: string;
+  dueAt: string;
+  maxScore: number;
+  submission: SubmissionView | null;
+}
+
+export interface ParentChildProgress {
+  child: ParentChildInfo;
+  reports: StudentTermReport[];
+  results: ParentChildResult[];
+  upcoming: ParentChildUpcoming[];
+  attendance: ParentChildAttendance;
+  homework: StudentAssignment[];
+}
+
 export type MessageChannel = typeof MessageChannel[keyof typeof MessageChannel];
 
 
@@ -1378,16 +1799,6 @@ export interface AttendanceSave {
   records: AttendanceSaveRecordsItem[];
 }
 
-export interface AttendanceTotals {
-  present: number;
-  late: number;
-  absent: number;
-  excused: number;
-  /** Present or late */
-  daysPresent: number;
-  daysRecorded: number;
-}
-
 export type AttendanceSummaryRow = AttendanceTotals & {
   id: number;
   name: string;
@@ -1451,19 +1862,6 @@ export type StaffAssignment = AssignmentInput & {
   students: number;
 }, 'instructions'>>;
 
-export interface SubmissionView {
-  id: number;
-  text: string;
-  imageIds: string[];
-  submittedAt: string;
-  late: boolean;
-  /** @nullable */
-  score: number | null;
-  feedback: string;
-  /** @nullable */
-  markedAt: string | null;
-}
-
 export interface SubmissionRow {
   studentId: number;
   name: string;
@@ -1476,16 +1874,6 @@ export interface SubmissionMark {
   score: number;
   /** @maxLength 2000 */
   feedback: string;
-}
-
-export interface StudentAssignment {
-  id: number;
-  subject: string;
-  title: string;
-  instructions: string;
-  dueAt: string;
-  maxScore: number;
-  submission: SubmissionView | null;
 }
 
 export interface SubmissionInput {
@@ -2714,148 +3102,6 @@ export interface ReportCommand {
   scores?: ReportCommandScores;
   cards?: ReportCommandCards;
   release?: ReportCommandRelease;
-}
-
-/**
- * primary (Year 1 to 6): Mid-term (ca) and End-term (exam) out of 100, final = their average, no positions; secondary: CA + exam with positions
- */
-export type StudentTermReportScheme = typeof StudentTermReportScheme[keyof typeof StudentTermReportScheme];
-
-
-export const StudentTermReportScheme = {
-  primary: 'primary',
-  secondary: 'secondary',
-} as const;
-
-export type StudentTermReportGradingScaleItem = {
-  /**
-     * @minimum 0
-     * @maximum 100
-     */
-  min: number;
-  /**
-     * @minLength 1
-     * @maxLength 4
-     */
-  grade: string;
-  /** @maxLength 40 */
-  remark: string;
-};
-
-export type StudentTermReportTerm = {
-  id: number;
-  session: string;
-  term: string;
-  /** CA 1 maximum (the only CA when ca2Max is 0) */
-  caMax: number;
-  /** CA 2 maximum; 0 means a single CA column */
-  ca2Max: number;
-  examMax: number;
-  /** @nullable */
-  nextTermBegins: string | null;
-};
-
-export type StudentTermReportSubjectsItem = {
-  id: number;
-  classId: number;
-  name: string;
-  sortOrder: number;
-  /**
-     * The subject teacher
-     * @nullable
-     */
-  teacherId: number | null;
-  /**
-     * The subject teacher's name, for the report card
-     * @nullable
-     */
-  teacherName?: string | null;
-};
-
-export type StudentTermReportResultSubjectsItem = {
-  subjectId: number;
-  /** @nullable */
-  ca: number | null;
-  /** @nullable */
-  ca2: number | null;
-  /** @nullable */
-  exam: number | null;
-  /** The subject teacher's comment */
-  comment: string;
-  total: number;
-  percent: number;
-  grade: string;
-  remark: string;
-  position: number;
-};
-
-export type StudentTermReportResult = {
-  studentId: number;
-  subjects: StudentTermReportResultSubjectsItem[];
-  total: number;
-  /** @nullable */
-  average: number | null;
-  /** @nullable */
-  grade: string | null;
-  /** @nullable */
-  position: number | null;
-  subjectsTaken: number;
-};
-
-export type StudentTermReportSubjectStatsItem = {
-  subjectId: number;
-  average: number;
-  highest: number;
-  lowest: number;
-  entries: number;
-};
-
-/**
- * Behaviour ratings from 1 to 5, keyed by trait name. Leave out to keep what is saved.
- */
-export type StudentTermReportCardTraits = {[key: string]: number};
-
-export type StudentTermReportCard = {
-  studentId: number;
-  /** @maxLength 600 */
-  teacherRemark: string;
-  /** @maxLength 600 */
-  principalRemark: string;
-  /**
-     * @minimum 0
-     * @maximum 366
-     * @nullable
-     */
-  daysPresent: number | null;
-  /**
-     * @minimum 0
-     * @maximum 366
-     * @nullable
-     */
-  daysOpen: number | null;
-  /** Behaviour ratings from 1 to 5, keyed by trait name. Leave out to keep what is saved. */
-  traits?: StudentTermReportCardTraits;
-} | null;
-
-export interface StudentTermReport {
-  /** primary (Year 1 to 6): Mid-term (ca) and End-term (exam) out of 100, final = their average, no positions; secondary: CA + exam with positions */
-  scheme: StudentTermReportScheme;
-  /** The class the student was in for this term */
-  className: string;
-  gradingScale: StudentTermReportGradingScaleItem[];
-  teacherName: string;
-  /** @nullable */
-  teacherSignature: string | null;
-  principalName: string;
-  /** @nullable */
-  principalSignature: string | null;
-  term: StudentTermReportTerm;
-  subjects: StudentTermReportSubjectsItem[];
-  result: StudentTermReportResult;
-  subjectStats: StudentTermReportSubjectStatsItem[];
-  classSize: number;
-  card: StudentTermReportCard;
-  releasedAt: string;
 }
 
 /**

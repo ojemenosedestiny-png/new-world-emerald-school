@@ -19,6 +19,8 @@ import { portalParentRouter } from "./portal-parent";
 import { portalPrincipalRouter } from "./portal-principal";
 import { portalPrincipalOversightRouter } from "./portal-principal-oversight";
 import { portalExamOfficerRouter } from "./portal-exam-officer";
+import { portalSchoolEmailRouter } from "./portal-school-email";
+import { portalParentLinksRouter } from "./portal-parent-links";
 
 const portalRouter = Router();
 portalRouter.use(portalOriginGuard);
@@ -41,6 +43,8 @@ portalRouter.use(portalParentRouter);
 portalRouter.use(portalPrincipalRouter);
 portalRouter.use(portalPrincipalOversightRouter);
 portalRouter.use(portalExamOfficerRouter);
+portalRouter.use(portalSchoolEmailRouter);
+portalRouter.use(portalParentLinksRouter);
 const errors: ErrorRequestHandler = (error, req, res, _next) => {
   if (res.headersSent) { if (!res.destroyed) res.destroy(); return; }
   if (error instanceof PortalError) { res.status(error.status).json({ error: error.message }); return; }

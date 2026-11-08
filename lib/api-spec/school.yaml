@@ -1,0 +1,242 @@
+paths:
+  email:
+    get:
+      operationId: getSchoolEmail
+      description: Teachers and parents who can be emailed, today's allowance and the sent history (Director or Head of School only)
+      responses:
+        "200":
+          description: Recipients and history
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SchoolEmailWorkspace" }
+    post:
+      operationId: sendSchoolEmail
+      description: Send one private copy to each chosen teacher or parent, addressed by name; replies go to the sender (Director or Head of School only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SchoolEmailRequest" }
+      responses:
+        "200":
+          description: Queued; copies go out in the background
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SchoolEmailMessage" }
+  emailMessage:
+    get:
+      operationId: getSchoolEmailMessage
+      description: One sent email and whether each copy was delivered
+      parameters:
+        - { name: messageId, in: path, required: true, schema: { type: integer } }
+      responses:
+        "200":
+          description: The email and its recipients
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SchoolEmailDetail" }
+  parentLinks:
+    get:
+      operationId: getParentLinks
+      description: Every parent email with their children, and every current student (school office only)
+      responses:
+        "200":
+          description: Parents and students
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ParentLinks" }
+    post:
+      operationId: manageParentLinks
+      description: Link a parent email to a child (up to two parents per child) or unlink it (school office only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ParentLinkCommand" }
+      responses:
+        "200":
+          description: Saved
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PortalMessage" }
+  childProgress:
+    get:
+      operationId: getParentChildProgress
+      description: One child's report cards, exam and test results, attendance and homework, for their own parent
+      parameters:
+        - { name: studentId, in: path, required: true, schema: { type: integer } }
+      responses:
+        "200":
+          description: The child's progress
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ParentChildProgress" }
+schemas:
+  SchoolEmailPerson:
+    type: object
+    required: [kind, email, name, detail, classIds]
+    properties:
+      kind: { type: string, enum: [teacher, parent] }
+      email: { type: string }
+      name: { type: string, description: "A teacher's name, or Parent of <children>" }
+      detail: { type: string, description: "A teacher's classes, or a parent's children and their classes" }
+      classIds: { type: array, items: { type: integer } }
+  SchoolEmailMessage:
+    type: object
+    required: [id, subject, body, senderName, senderEmail, senderRole, recipients, sent, failed, status, createdAt, finishedAt]
+    properties:
+      id: { type: integer }
+      subject: { type: string }
+      body: { type: string }
+      senderName: { type: string }
+      senderEmail: { type: string }
+      senderRole: { type: string, enum: [director, head] }
+      recipients: { type: integer }
+      sent: { type: integer }
+      failed: { type: integer }
+      status: { type: string, enum: [sending, done] }
+      createdAt: { type: string, format: date-time }
+      finishedAt: { type: ["string", "null"], format: date-time }
+  SchoolEmailSender:
+    type: object
+    required: [email, role, name]
+    properties:
+      email: { type: string }
+      role: { type: string, enum: [director, head] }
+      name: { type: string }
+  SchoolEmailClass:
+    type: object
+    required: [id, name]
+    properties:
+      id: { type: integer }
+      name: { type: string }
+  SchoolEmailWorkspace:
+    type: object
+    required: [sender, emailReady, dailyLimit, sentToday, people, classes, history]
+    properties:
+      sender: { $ref: "#/components/schemas/SchoolEmailSender" }
+      emailReady: { type: boolean }
+      dailyLimit: { type: integer }
+      sentToday: { type: integer }
+      people: { type: array, items: { $ref: "#/components/schemas/SchoolEmailPerson" } }
+      classes: { type: array, items: { $ref: "#/components/schemas/SchoolEmailClass" } }
+      history: { type: array, items: { $ref: "#/components/schemas/SchoolEmailMessage" } }
+  SchoolEmailTarget:
+    type: object
+    required: [kind, email]
+    properties:
+      kind: { type: string, enum: [teacher, parent] }
+      email: { type: string, maxLength: 320 }
+  SchoolEmailRequest:
+    type: object
+    required: [subject, message, recipients]
+    properties:
+      subject: { type: string, maxLength: 150 }
+      message: { type: string, maxLength: 10000 }
+      recipients: { type: array, items: { $ref: "#/components/schemas/SchoolEmailTarget" }, maxItems: 1000 }
+  SchoolEmailRecipient:
+    type: object
+    required: [kind, email, name, status, detail, sentAt]
+    properties:
+      kind: { type: string, enum: [teacher, parent] }
+      email: { type: string }
+      name: { type: string }
+      status: { type: string, enum: [pending, sent, failed] }
+      detail: { type: string }
+      sentAt: { type: ["string", "null"], format: date-time }
+  SchoolEmailDetail:
+    type: object
+    required: [message, recipients]
+    properties:
+      message: { $ref: "#/components/schemas/SchoolEmailMessage" }
+      recipients: { type: array, items: { $ref: "#/components/schemas/SchoolEmailRecipient" } }
+  ParentLinkChild:
+    type: object
+    required: [id, studentId, name, className, slot]
+    properties:
+      id: { type: integer }
+      studentId: { type: string }
+      name: { type: string }
+      className: { type: string }
+      slot: { type: string, enum: [first, second] }
+  ParentLinkParent:
+    type: object
+    required: [email, children]
+    properties:
+      email: { type: string }
+      children: { type: array, items: { $ref: "#/components/schemas/ParentLinkChild" } }
+  ParentLinkStudent:
+    type: object
+    required: [id, studentId, name, className, parents]
+    properties:
+      id: { type: integer }
+      studentId: { type: string }
+      name: { type: string }
+      className: { type: string }
+      parents: { type: array, items: { type: string } }
+  ParentLinks:
+    type: object
+    required: [parents, students]
+    properties:
+      parents: { type: array, items: { $ref: "#/components/schemas/ParentLinkParent" } }
+      students: { type: array, items: { $ref: "#/components/schemas/ParentLinkStudent" } }
+  ParentLinkCommand:
+    type: object
+    required: [action, email]
+    properties:
+      action: { type: string, enum: [link, unlink, invite], description: "invite emails the parent their sign-in link" }
+      email: { type: string, maxLength: 320 }
+      studentId: { type: integer, description: "For link and unlink" }
+  ParentChildResult:
+    type: object
+    required: [examId, title, subject, date, status, released, score, totalMarks]
+    properties:
+      examId: { type: integer }
+      title: { type: string }
+      subject: { type: string }
+      date: { type: string, format: date-time }
+      status: { type: string, enum: [in_progress, submitted, marked] }
+      released: { type: boolean }
+      score: { type: ["number", "null"] }
+      totalMarks: { type: number }
+  ParentChildUpcoming:
+    type: object
+    required: [examId, title, subject, startsAt, endsAt]
+    properties:
+      examId: { type: integer }
+      title: { type: string }
+      subject: { type: string }
+      startsAt: { type: string, format: date-time }
+      endsAt: { type: string, format: date-time }
+  ParentChildAttendanceDay:
+    type: object
+    required: [date, status, note]
+    properties:
+      date: { type: string }
+      status: { type: string }
+      note: { type: string }
+  ParentChildAttendance:
+    type: object
+    required: [since, totals, records]
+    properties:
+      since: { type: string }
+      totals: { $ref: "#/components/schemas/AttendanceTotals" }
+      records: { type: array, items: { $ref: "#/components/schemas/ParentChildAttendanceDay" } }
+  ParentChildInfo:
+    type: object
+    required: [id, name, studentId, className]
+    properties:
+      id: { type: integer }
+      name: { type: string }
+      studentId: { type: string }
+      className: { type: string }
+  ParentChildProgress:
+    type: object
+    required: [child, reports, results, upcoming, attendance, homework]
+    properties:
+      child: { $ref: "#/components/schemas/ParentChildInfo" }
+      reports: { type: array, items: { $ref: "#/components/schemas/StudentTermReport" } }
+      results: { type: array, items: { $ref: "#/components/schemas/ParentChildResult" } }
+      upcoming: { type: array, items: { $ref: "#/components/schemas/ParentChildUpcoming" } }
+      attendance: { $ref: "#/components/schemas/ParentChildAttendance" }
+      homework: { type: array, items: { $ref: "#/components/schemas/StudentAssignment" } }

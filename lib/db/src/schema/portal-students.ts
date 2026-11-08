@@ -12,6 +12,8 @@ export const portalStudents = pgTable("portal_students", {
   failedLogins: integer("failed_logins").notNull().default(0),
   lockedUntil: timestamp("locked_until", { withTimezone: true }),
   // Parent or guardian who receives activation and password-reset links.
+  // A second parent (e.g. mother and father): both see the child in the parent portal.
+  secondGuardianEmail: text("second_guardian_email"),
   guardianEmail: text("guardian_email"),
   // "pending" until the account is activated through its link; existing accounts are "active".
   accountStatus: text("account_status").notNull().default("active"),

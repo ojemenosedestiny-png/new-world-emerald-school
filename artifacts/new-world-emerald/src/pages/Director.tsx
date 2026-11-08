@@ -11,7 +11,7 @@ import { usePortalTheme } from "@/portal/shell/theme";
 import { IdleSignOut } from "@/components/IdleSignOut";
 import { asset } from "@/lib/asset";
 import { ResultsReview } from "@/portal/reports/ResultsReview";
-import { StaffEmail } from "@/portal/director/StaffEmail";
+import { SchoolEmail } from "@/portal/messaging/SchoolEmail";
 
 const naira = (kobo: number) => new Intl.NumberFormat("en-NG", { style: "currency", currency: "NGN", maximumFractionDigits: 0 }).format(kobo / 100);
 const day = (iso: string) => new Intl.DateTimeFormat("en-NG", { day: "numeric", month: "short", year: "numeric" }).format(new Date(iso));
@@ -198,7 +198,7 @@ export default function Director() {
             <p className={"text-xs " + MUTED}>Director</p>
           </div>
           <div className="inline-flex rounded-lg border border-[hsl(var(--p-line))] p-0.5 text-sm print:hidden" role="group" aria-label="View">
-            {([["overview", "Overview"], ["results", "Results"], ["email", "Email staff"]] as const).map(([v, label]) => (
+            {([["overview", "Overview"], ["results", "Results"], ["email", "Email teachers and parents"]] as const).map(([v, label]) => (
               <button key={v} type="button" aria-pressed={view === v} onClick={() => setView(v)} className={"rounded-md px-3 py-1.5 font-semibold " + (view === v ? "bg-[hsl(var(--p-ink))] text-[hsl(var(--p-paper))]" : MUTED)} data-testid={`view-${v}`}>{label}</button>
             ))}
           </div>
@@ -212,7 +212,7 @@ export default function Director() {
         </div>
       </header>
       <main className="mx-auto max-w-6xl space-y-5 px-4 pt-6 lg:px-8">
-        {view === "email" ? <StaffEmail /> : view === "results" ? (<>
+        {view === "email" ? <SchoolEmail /> : view === "results" ? (<>
           <div>
             <h1 className="font-serif text-[28px] font-semibold leading-tight">Results</h1>
             <p className={"mt-1 text-sm " + MUTED}>Review each class's totals, positions and every student's result before it reaches students. You can approve and publish here.</p>

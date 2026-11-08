@@ -27,7 +27,7 @@ export function emailSender(raw: string | undefined): string | null {
   return null;
 }
 
-export async function sendEmail(message: { to: string; subject: string; html: string; text: string }, env: NodeJS.ProcessEnv = process.env, fetchImpl: typeof fetch = fetch): Promise<EmailResult> {
+export async function sendEmail(message: { to: string; subject: string; html: string; text: string; replyTo?: string }, env: NodeJS.ProcessEnv = process.env, fetchImpl: typeof fetch = fetch): Promise<EmailResult> {
   if (!emailConfigured(env)) return { sent: false, reason: "not_configured" };
   const from = emailSender(env.EMAIL_FROM);
   if (!from) return { sent: false, reason: "not_configured", detail: EMAIL_FROM_HELP };
@@ -35,7 +35,7 @@ export async function sendEmail(message: { to: string; subject: string; html: st
     const response = await fetchImpl("https://api.resend.com/emails", {
       method: "POST",
       headers: { Authorization: `Bearer ${env.RESEND_API_KEY!.trim()}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ from, to: [message.to], subject: message.subject, html: message.html, text: message.text }),
+      body: JSON.stringify({ from, to: [message.to], subject: message.subject, html: message.html, text: message.text, ...(message.replyTo ? { reply_to: message.replyTo } : {}) }),
       signal: AbortSignal.timeout(15_000),
     });
     if (response.ok) return { sent: true };
@@ -50,11 +50,11 @@ export async function sendEmail(message: { to: string; subject: string; html: st
 
 const esc = (v: string) => v.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
 
-function layout(title: string, bodyHtml: string, cta: { label: string; url: string }, footer: string) {
+function layout(title: string, bodyHtml: string, cta: { label: string; url: string }, footer: string, kicker = "Student portal") {
   return `<!doctype html><html><body style="margin:0;background:#f4f1ea;font-family:Segoe UI,Arial,sans-serif;color:#10232c">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="padding:24px 12px">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#ffffff;border-radius:16px;overflow:hidden;border:1px solid #e3ded2">
-  <tr><td style="background:#10232c;padding:20px 28px;border-bottom:3px solid #d9a524"><p style="margin:0;color:#f7f4ec;font:700 18px Georgia,serif">New World Emerald Private School</p><p style="margin:4px 0 0;color:#d9a524;font:600 11px Arial,sans-serif;letter-spacing:.2em;text-transform:uppercase">Student portal</p></td></tr>
+  <tr><td style="background:#10232c;padding:20px 28px;border-bottom:3px solid #d9a524"><p style="margin:0;color:#f7f4ec;font:700 18px Georgia,serif">New World Emerald Private School</p><p style="margin:4px 0 0;color:#d9a524;font:600 11px Arial,sans-serif;letter-spacing:.2em;text-transform:uppercase">${esc(kicker)}</p></td></tr>
   <tr><td style="padding:28px">
     <h1 style="margin:0 0 12px;font:600 22px Georgia,serif">${esc(title)}</h1>
     ${bodyHtml}
@@ -203,6 +203,32 @@ export function staffBroadcastEmail(p: { subject: string; message: string; sende
     "You receive this because you are a member of staff at New World Emerald Private School.");
   const text = `${p.message.trim()}\n\n${p.senderName}\nDirector, New World Emerald Private School\n\nStaff portal: ${p.portalUrl}`;
   return { subject: p.subject, html, text };
+}
+
+/**
+ * A private email from the Director or the Head of School to one teacher or parent: their own greeting, the message,
+ * and the sender's name and title. Replies go to the sender.
+ */
+export function schoolLetterEmail(p: { subject: string; message: string; greeting: string; senderName: string; senderTitle: string; kind: "teacher" | "parent"; siteUrl: string }) {
+  const paragraphs = p.message.trim().split(/\n\s*\n/).map((para) => `<p style="margin:0 0 12px;line-height:1.65">${esc(para.trim()).replace(/\n/g, "<br>")}</p>`).join("");
+  const cta = p.kind === "parent" ? { label: "Open the parent portal", url: `${p.siteUrl}/parents` } : { label: "Open the staff portal", url: `${p.siteUrl}/portal/manage` };
+  const html = layout(p.subject, `<p style="margin:0 0 14px;line-height:1.6">${esc(p.greeting)},</p>${paragraphs}<p style="margin:18px 0 0;line-height:1.6">Yours sincerely,<br><b>${esc(p.senderName)}</b><br><span style="color:#5c6b70">${esc(p.senderTitle)}, New World Emerald Private School</span></p>`,
+    cta, p.kind === "parent" ? "This email was sent to you as a parent at New World Emerald Private School. Reply to it to answer the sender directly." : "This email was sent to you as a member of staff at New World Emerald Private School. Reply to it to answer the sender directly.",
+    p.senderTitle);
+  const text = `${p.greeting},\n\n${p.message.trim()}\n\nYours sincerely,\n${p.senderName}\n${p.senderTitle}, New World Emerald Private School\n\n${cta.label}: ${cta.url}`;
+  return { subject: p.subject, html, text };
+}
+
+/** A parent's sign-in link: they sign up with this email and see the children the school linked to it. */
+export function parentInviteEmail(p: { url: string; children: string[] }) {
+  const kids = p.children.length ? `You will see ${p.children.join(", ")} there: school fees, report cards, results, attendance and homework.` : "You will see your children there once the school links them to this email: school fees, report cards, results, attendance and homework.";
+  const html = layout("Your parent portal", `
+    <p style="margin:0 0 10px;line-height:1.6">New World Emerald Private School has set up the parent portal for you. ${esc(kids)}</p>
+    <p style="margin:0;line-height:1.6">Open the link, keep this email address, choose a password and type the code we email you. After that you sign in with your email and a code.</p>`,
+    { label: "Open the parent portal", url: p.url },
+    "You receive this because the school has your email on your child's record. If you were not expecting it, you can ignore it.", "Parent portal");
+  const text = `New World Emerald Private School has set up the parent portal for you. ${kids}\n\nOpen the parent portal:\n${p.url}\n\nKeep this email address, choose a password and type the code we email you.`;
+  return { subject: "Your New World Emerald parent portal", html, text };
 }
 
 /** The parent's receipt after a school-fee payment: what was paid for each child, and their wallet balance. */

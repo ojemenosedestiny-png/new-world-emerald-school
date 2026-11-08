@@ -149,6 +149,14 @@ paths:
     $ref: "./exam-officer.yaml#/paths/activity"
   /portal/exams/{examId}/access:
     $ref: "./exam-officer.yaml#/paths/access"
+  /portal/school-email:
+    $ref: "./school.yaml#/paths/email"
+  /portal/school-email/{messageId}:
+    $ref: "./school.yaml#/paths/emailMessage"
+  /portal/parent-links:
+    $ref: "./school.yaml#/paths/parentLinks"
+  /portal/parent/children/{studentId}:
+    $ref: "./school.yaml#/paths/childProgress"
   /portal/my-messages:
     $ref: "./messages.yaml#/paths/myMessages"
   /portal/my-messages/read:
@@ -1211,6 +1219,46 @@ components:
       $ref: "./exam-officer.yaml#/schemas/ExamOfficerActivity"
     ExamOfficerCommand:
       $ref: "./exam-officer.yaml#/schemas/ExamOfficerCommand"
+    SchoolEmailPerson:
+      $ref: "./school.yaml#/schemas/SchoolEmailPerson"
+    SchoolEmailMessage:
+      $ref: "./school.yaml#/schemas/SchoolEmailMessage"
+    SchoolEmailSender:
+      $ref: "./school.yaml#/schemas/SchoolEmailSender"
+    SchoolEmailClass:
+      $ref: "./school.yaml#/schemas/SchoolEmailClass"
+    SchoolEmailWorkspace:
+      $ref: "./school.yaml#/schemas/SchoolEmailWorkspace"
+    SchoolEmailTarget:
+      $ref: "./school.yaml#/schemas/SchoolEmailTarget"
+    SchoolEmailRequest:
+      $ref: "./school.yaml#/schemas/SchoolEmailRequest"
+    SchoolEmailRecipient:
+      $ref: "./school.yaml#/schemas/SchoolEmailRecipient"
+    SchoolEmailDetail:
+      $ref: "./school.yaml#/schemas/SchoolEmailDetail"
+    ParentLinkChild:
+      $ref: "./school.yaml#/schemas/ParentLinkChild"
+    ParentLinkParent:
+      $ref: "./school.yaml#/schemas/ParentLinkParent"
+    ParentLinkStudent:
+      $ref: "./school.yaml#/schemas/ParentLinkStudent"
+    ParentLinks:
+      $ref: "./school.yaml#/schemas/ParentLinks"
+    ParentLinkCommand:
+      $ref: "./school.yaml#/schemas/ParentLinkCommand"
+    ParentChildResult:
+      $ref: "./school.yaml#/schemas/ParentChildResult"
+    ParentChildUpcoming:
+      $ref: "./school.yaml#/schemas/ParentChildUpcoming"
+    ParentChildAttendanceDay:
+      $ref: "./school.yaml#/schemas/ParentChildAttendanceDay"
+    ParentChildAttendance:
+      $ref: "./school.yaml#/schemas/ParentChildAttendance"
+    ParentChildInfo:
+      $ref: "./school.yaml#/schemas/ParentChildInfo"
+    ParentChildProgress:
+      $ref: "./school.yaml#/schemas/ParentChildProgress"
     MessageChannel:
       $ref: "./messages.yaml#/schemas/MessageChannel"
     PortalChatMessage:

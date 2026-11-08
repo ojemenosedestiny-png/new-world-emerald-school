@@ -394,7 +394,11 @@ portalReportsRouter.post("/reports/manage", async (req, res) => {
 });
 
 portalReportsRouter.get("/reports", async (req, res) => {
-  const student = studentOnly(await portalActor(req));
+  res.json(await publishedReportsFor(studentOnly(await portalActor(req))));
+});
+
+/** A student's published report cards, newest term first: for the student, and for their parents. */
+export async function publishedReportsFor(student: { id: number; classId: number; name: string; studentId: string }) {
   const [cls] = await db.select().from(portalClasses).where(eq(portalClasses.id, student.classId));
   // Published results for the student's current class, and for any class they had scores in (past years, imported results).
   const scoredIn = await db.selectDistinct({ termId: portalScores.termId, classId: portalSubjects.classId }).from(portalScores)
@@ -418,5 +422,5 @@ portalReportsRouter.get("/reports", async (req, res) => {
     });
   }
   reports.sort((a, b) => b.sortKey - a.sortKey);
-  res.json({ studentName: student.name, studentId: student.studentId, className: cls?.name ?? "", reports: reports.map(({ sortKey: _s, ...r }) => r) });
-});
+  return { studentName: student.name, studentId: student.studentId, className: cls?.name ?? "", reports: reports.map(({ sortKey: _s, ...r }) => r) };
+}

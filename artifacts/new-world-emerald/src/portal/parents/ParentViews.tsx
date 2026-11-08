@@ -5,7 +5,7 @@ import {
   useStartParentPayment, getGetParentOverviewQueryKey,
   type ParentOverview, type ParentPayment, type ParentChild,
 } from "@workspace/api-client-react";
-import { ArrowRight, Check, Copy, CreditCard, Loader2, Lock, Printer, Receipt, ShieldCheck, Wallet } from "lucide-react";
+import { ArrowRight, Check, Copy, CreditCard, LineChart, Loader2, Lock, Printer, Receipt, ShieldCheck, Wallet } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { EmptyState, StatusPill } from "../ui";
@@ -215,7 +215,7 @@ export function PayFees({ data, onPaid }: { data: ParentOverview; onPaid: (p: Pa
 }
 
 /** Each child: name, class, ID, how much is paid, and every fee on their statement. */
-export function ChildrenView({ children }: { children: ParentChild[] }) {
+export function ChildrenView({ children, onProgress }: { children: ParentChild[]; onProgress?: (id: number) => void }) {
   return (
     <div className="grid gap-4 md:grid-cols-2">
       {children.map((c) => {
@@ -230,6 +230,7 @@ export function ChildrenView({ children }: { children: ParentChild[] }) {
               </div>
               <div className="text-right"><p className={"text-[11px] uppercase tracking-wider " + MUTED}>Student ID</p><CopyId id={c.studentId} /></div>
             </header>
+            {onProgress && <button type="button" className="portal-btn-ghost w-full justify-center" onClick={() => onProgress(c.id)} data-testid={`button-child-progress-${c.id}`}><LineChart size={15} aria-hidden="true" /> Report cards, results, attendance and homework</button>}
             <Progress paid={t.paidKobo} total={t.totalKobo} />
             <div className="flex items-baseline justify-between rounded-xl bg-[hsl(var(--p-paper-2))] px-4 py-3">
               <span className="text-sm font-semibold">Still owed</span>

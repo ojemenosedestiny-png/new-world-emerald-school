@@ -6,7 +6,7 @@ import { EmptyState, ErrorPanel, Skeleton } from "../ui";
 import { errorMessage } from "../lib";
 import { ordinal, printReportCards, termLabel } from "./reportCard";
 
-function TermReport({ data, report, open, onToggle }: { data: StudentReportsData; report: StudentTermReport; open: boolean; onToggle: () => void }) {
+export function TermReport({ data, report, open, onToggle }: { data: StudentReportsData; report: StudentTermReport; open: boolean; onToggle: () => void }) {
   const { toast } = useToast();
   const names = new Map(report.subjects.map((s) => [s.id, s.name]));
   const stats = new Map(report.subjectStats.map((s) => [s.subjectId, s]));

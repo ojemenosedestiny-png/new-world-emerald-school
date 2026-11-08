@@ -3,7 +3,7 @@ import { Link } from "wouter";
 import { useAuth, useClerk, useUser } from "@clerk/react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useGetParentOverview, getGetParentOverviewQueryKey, useVerifyParentPayment, type ParentPayment } from "@workspace/api-client-react";
-import { CreditCard, Loader2, LockKeyhole, Mail, Receipt, ShieldCheck, Users, Wallet } from "lucide-react";
+import { CreditCard, LineChart, Loader2, LockKeyhole, Mail, Receipt, ShieldCheck, Users, Wallet } from "lucide-react";
 import "@/portal/portal.css";
 import { AppShell, type NavGroup, type NavItem } from "@/portal/shell/AppShell";
 import { usePortalTheme } from "@/portal/shell/theme";
@@ -11,10 +11,11 @@ import { BackToWebsite, ErrorPanel, Skeleton } from "@/portal/ui";
 import { errorMessage, usePortalMeta } from "@/portal/lib";
 import { IdleSignOut } from "@/components/IdleSignOut";
 import { ChildrenView, PaymentsView, PayFees, ReceiptBody, ReceiptDialog, WalletView } from "@/portal/parents/ParentViews";
+import { ChildProgressView } from "@/portal/parents/ChildProgress";
 import { asset } from "@/lib/asset";
 
-type Section = "pay" | "children" | "payments" | "wallet";
-const TITLES: Record<Section, string> = { pay: "Pay school fees", children: "My children", payments: "Payments & receipts", wallet: "School wallet" };
+type Section = "pay" | "children" | "progress" | "payments" | "wallet";
+const TITLES: Record<Section, string> = { pay: "Pay school fees", children: "My children", progress: "School progress", payments: "Payments & receipts", wallet: "School wallet" };
 
 function Gate({ title, body, children }: { title: string; body: string; children?: ReactNode }) {
   return (
@@ -116,6 +117,7 @@ export default function ParentPortal() {
   const { signOut } = useClerk();
   const signedIn = isLoaded && isSignedIn === true;
   const [section, setSection] = useState<Section>("pay");
+  const [progressChild, setProgressChild] = useState<number | null>(null);
   const [receipt, setReceipt] = useState<ParentPayment | null>(null);
   const q = useGetParentOverview({ query: { queryKey: [...getGetParentOverviewQueryKey(), user?.id ?? "anon"], enabled: signedIn, retry: 1, refetchInterval: 60_000 } });
   const back = useReturnFromPaystack(signedIn && q.isSuccess);
@@ -140,6 +142,7 @@ export default function ParentPortal() {
   const nav: NavItem<Section>[] = [
     { key: "pay", label: "Pay fees", icon: CreditCard, badge: owing, testId: "tab-parent-pay" },
     { key: "children", label: "My children", icon: Users, testId: "tab-parent-children" },
+    { key: "progress", label: "School progress", icon: LineChart, testId: "tab-parent-progress" },
     { key: "payments", label: "Receipts", icon: Receipt, testId: "tab-parent-payments" },
     { key: "wallet", label: "Wallet", icon: Wallet, testId: "tab-parent-wallet" },
   ];
@@ -149,11 +152,12 @@ export default function ParentPortal() {
     <AppShell subtitle="Parent portal" groups={groups} active={section} onNavigate={(k) => setSection(k as Section)}
       title={TITLES[section]} eyebrow={data.children.map((c) => c.name.split(" ")[0]).join(" · ")}
       user={{ name: user?.fullName || data.email, detail: data.email }} theme={theme.theme} onTheme={theme.setTheme}
-      onSignOut={leave} bottomNav={nav}>
+      onSignOut={leave} bottomNav={nav.filter((n) => n.key !== "wallet").map((n) => n.key === "progress" ? { ...n, label: "Progress" } : n)}>
       <IdleSignOut enabled onSignOut={leave} />
       <div className="px-4 pb-6 pt-4 lg:px-0 lg:pt-0">
         {section === "pay" && <PayFees data={data} onPaid={setReceipt} />}
-        {section === "children" && <ChildrenView children={data.children} />}
+        {section === "children" && <ChildrenView children={data.children} onProgress={(id) => { setProgressChild(id); setSection("progress"); }} />}
+        {section === "progress" && <ChildProgressView children={data.children} selected={progressChild} onSelect={setProgressChild} />}
         {section === "payments" && <PaymentsView payments={data.payments} onOpen={setReceipt} />}
         {section === "wallet" && <WalletView data={data} />}
       </div>

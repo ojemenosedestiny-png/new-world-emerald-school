@@ -9,8 +9,17 @@ let refreshedAt = 0;
 let refreshing = false;
 
 export function approvedEmails(): string[] {
-  return (process.env.SCHOOL_ADMIN_EMAILS ?? "")
-    .split(/[,;\s]+/).map((value) => value.trim().toLowerCase()).filter(Boolean);
+  const admins = (process.env.SCHOOL_ADMIN_EMAILS ?? "").split(/[,;\s]+/).map((value) => value.trim().toLowerCase()).filter(Boolean);
+  // The Head of School is always an administrator too.
+  return [...new Set([...admins, ...headEmails()])];
+}
+
+/**
+ * The Head of School (SCHOOL_HEAD_EMAILS): sees and acts everywhere (the office, both principal portals, the exam
+ * officer's portal and the Director's dashboard) and emails teachers and parents. No default: unset means nobody.
+ */
+export function headEmails(): string[] {
+  return (process.env.SCHOOL_HEAD_EMAILS ?? "").split(/[,;\s]+/).map((value) => value.trim().toLowerCase()).filter(Boolean);
 }
 
 /** Super administrators; defaults to the first approved administrator email. */
