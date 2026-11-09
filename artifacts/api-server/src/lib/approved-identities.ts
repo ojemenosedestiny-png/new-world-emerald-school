@@ -8,8 +8,18 @@ let identities = new Map<string, Identity>();
 let refreshedAt = 0;
 let refreshing = false;
 
+/**
+ * The emails in a Render setting. Forgiving of how they were pasted: commas, semicolons, spaces or new lines between
+ * them, quote marks or angle brackets around them, capitals, and a stray "NAME=" in front.
+ */
+export function emailList(raw: string | undefined): string[] {
+  return (raw ?? "").replace(/^\s*[A-Z_]+\s*=\s*/, "").split(/[,;\s]+/)
+    .map((v) => v.replace(/^["'<(]+|[>"')]+$/g, "").trim().toLowerCase())
+    .filter((v) => v.includes("@"));
+}
+
 export function approvedEmails(): string[] {
-  const admins = (process.env.SCHOOL_ADMIN_EMAILS ?? "").split(/[,;\s]+/).map((value) => value.trim().toLowerCase()).filter(Boolean);
+  const admins = emailList(process.env.SCHOOL_ADMIN_EMAILS);
   // The Head of School is always an administrator too.
   return [...new Set([...admins, ...headEmails()])];
 }
@@ -19,12 +29,12 @@ export function approvedEmails(): string[] {
  * officer's portal and the Director's dashboard) and emails teachers and parents. No default: unset means nobody.
  */
 export function headEmails(): string[] {
-  return (process.env.SCHOOL_HEAD_EMAILS ?? "").split(/[,;\s]+/).map((value) => value.trim().toLowerCase()).filter(Boolean);
+  return emailList(process.env.SCHOOL_HEAD_EMAILS);
 }
 
 /** Super administrators; defaults to the first approved administrator email. */
 export function superAdminEmails(): string[] {
-  const explicit = (process.env.SCHOOL_SUPER_ADMIN_EMAILS ?? "").split(/[,;\s]+/).map((v) => v.trim().toLowerCase()).filter(Boolean);
+  const explicit = emailList(process.env.SCHOOL_SUPER_ADMIN_EMAILS);
   if (explicit.length) return explicit.filter((e) => approvedEmails().includes(e));
   const first = approvedEmails()[0];
   return first ? [first] : [];
@@ -35,7 +45,7 @@ export function superAdminEmails(): string[] {
  * Set in SCHOOL_DIRECTOR_EMAILS; must also be an approved administrator. No default: unset means nobody.
  */
 export function directorEmails(): string[] {
-  const listed = (process.env.SCHOOL_DIRECTOR_EMAILS ?? "").split(/[,;\s]+/).map((v) => v.trim().toLowerCase()).filter(Boolean);
+  const listed = emailList(process.env.SCHOOL_DIRECTOR_EMAILS);
   return listed.filter((e) => approvedEmails().includes(e));
 }
 
@@ -46,7 +56,7 @@ export function directorEmails(): string[] {
  * their own portal and nothing else (least privilege). No default: unset means nobody.
  */
 export function principalEmails(section: "primary" | "secondary" = "secondary"): string[] {
-  return (process.env[section === "primary" ? "SCHOOL_PRIMARY_PRINCIPAL_EMAILS" : "SCHOOL_PRINCIPAL_EMAILS"] ?? "").split(/[,;\s]+/).map((v) => v.trim().toLowerCase()).filter(Boolean);
+  return emailList(process.env[section === "primary" ? "SCHOOL_PRIMARY_PRINCIPAL_EMAILS" : "SCHOOL_PRINCIPAL_EMAILS"]);
 }
 
 /**
@@ -54,7 +64,7 @@ export function principalEmails(section: "primary" | "secondary" = "secondary"):
  * principals and the office send exams to the exam officer, who publishes or returns them. Not an administrator.
  */
 export function examOfficerEmails(): string[] {
-  return (process.env.SCHOOL_EXAM_OFFICER_EMAILS ?? "").split(/[,;\s]+/).map((v) => v.trim().toLowerCase()).filter(Boolean);
+  return emailList(process.env.SCHOOL_EXAM_OFFICER_EMAILS);
 }
 
 /** Every email whose Clerk verification is tracked: administrators, both principals and the exam officer. */

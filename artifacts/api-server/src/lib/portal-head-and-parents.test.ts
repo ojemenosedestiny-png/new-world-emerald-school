@@ -104,6 +104,10 @@ test("head of school and parents: private emails to teachers and parents, two pa
       `parent:Parent of Ada Obi`, `parent:Parent of Chi Obi`, `parent:Parent of Not Theirs`, `teacher:${marker} Mr Musa`, `teacher:${marker} Mrs Bounce`,
     ].sort());
     assert.equal((await call("/school-email", director)).data.sender.role, "director");
+    // Someone listed as both Director and Head of School is the Head of School here.
+    process.env.SCHOOL_DIRECTOR_EMAILS = `${director},"${head}"`;
+    assert.equal((await call("/school-email", head)).data.sender.role, "head");
+    process.env.SCHOOL_DIRECTOR_EMAILS = director;
 
     // Only real teachers and parents can be chosen.
     const send = (who: string, recipients: object[], extra = {}) => call("/school-email", who, { subject: "PTA meeting", message: "Dear all\n\nWe meet on Friday.", recipients, ...extra });

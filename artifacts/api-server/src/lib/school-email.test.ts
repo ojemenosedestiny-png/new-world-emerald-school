@@ -48,3 +48,13 @@ test("each letter is addressed to its reader, escapes what they wrote, and signs
   assert.match(mail.text, /^Dear Parent of Ada Obi,\n\nLine one/);
   assert.match(schoolLetterEmail({ subject: "S", message: "M", greeting: "Dear Mr Musa", senderName: "D", senderTitle: "Director", kind: "teacher", siteUrl: "https://s" }).html, /https:\/\/s\/portal\/manage/);
 });
+
+test("email settings are read however they were pasted into Render", async () => {
+  const { emailList } = await import("./approved-identities");
+  assert.deepEqual(emailList(" Head@School.com "), ["head@school.com"]);
+  assert.deepEqual(emailList('"head@school.com"'), ["head@school.com"]);
+  assert.deepEqual(emailList("SCHOOL_HEAD_EMAILS=head@school.com"), ["head@school.com"]);
+  assert.deepEqual(emailList("<a@school.com>; 'b@school.com'\nc@school.com"), ["a@school.com", "b@school.com", "c@school.com"]);
+  assert.deepEqual(emailList("not an email"), []);
+  assert.deepEqual(emailList(undefined), []);
+});

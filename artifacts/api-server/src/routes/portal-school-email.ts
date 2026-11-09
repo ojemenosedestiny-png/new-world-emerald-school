@@ -3,7 +3,7 @@ import { and, asc, desc, eq, gte, sql } from "drizzle-orm";
 import { db, portalClasses, portalStudents, portalTeachers, schoolMessageRecipients, schoolMessages } from "@workspace/db";
 import { GetSchoolEmailMessageParams, SendSchoolEmailBody } from "@workspace/api-zod";
 import { check } from "../lib/portal-auth";
-import { canSendSchoolEmail, isDirector } from "../lib/website-admin";
+import { canSendSchoolEmail, isHeadOfSchool } from "../lib/website-admin";
 import { dailyLimit, emailProblem, schoolDirectory } from "../lib/school-email";
 import { emailConfigured, schoolLetterEmail, sendEmail } from "../lib/email";
 import { siteBaseUrl } from "../lib/accounts";
@@ -15,7 +15,7 @@ export const portalSchoolEmailRouter = Router();
 function senderOnly(req: Request) {
   check(req.dbUser, "Sign in first.", 401);
   check(canSendSchoolEmail(req), "Only the Director and the Head of School can email teachers and parents.", 403);
-  return { email: req.identity!.email!.trim().toLowerCase(), role: isDirector(req) ? "director" as const : "head" as const };
+  return { email: req.identity!.email!.trim().toLowerCase(), role: isHeadOfSchool(req) ? "head" as const : "director" as const };
 }
 
 async function directory() {
