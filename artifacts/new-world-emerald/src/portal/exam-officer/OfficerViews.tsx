@@ -11,7 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { EmptyState, ErrorPanel, Skeleton, StatusPill } from "../ui";
 import { errorMessage } from "../lib";
 
-export type OfficerTab = "overview" | "queue" | "exams" | "activity";
+export type OfficerTab = "overview" | "queue" | "exams" | "timetables" | "activity";
 type Status = ExamOfficerExam["status"];
 
 const MUTED = "text-[hsl(var(--p-ink)/0.62)]";

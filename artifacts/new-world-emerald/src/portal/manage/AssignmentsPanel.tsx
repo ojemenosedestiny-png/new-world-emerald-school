@@ -1,16 +1,17 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   useListStaffAssignments, getListStaffAssignmentsQueryKey, useCreateAssignment, useUpdateAssignment, useDeleteAssignment,
   useListAssignmentSubmissions, getListAssignmentSubmissionsQueryKey, useMarkSubmission,
   type AssignmentInput, type PortalManagement, type StaffAssignment, type SubmissionRow,
 } from "@workspace/api-client-react";
-import { ArrowLeft, CalendarClock, ClipboardCheck, NotebookPen, Pencil, Plus, Trash2 } from "lucide-react";
+import { ArrowLeft, CalendarClock, ClipboardCheck, FileText, NotebookPen, Pencil, Plus, Trash2, Upload, X } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { EmptyState, ErrorPanel, Field, Skeleton, StatusPill } from "../ui";
-import { errorMessage } from "../lib";
+import { errorMessage, fileUrl } from "../lib";
+import { uploadDocument } from "../Timetables";
 import { imageUrl } from "../photos";
 import { ClassSelect } from "./ClassSelect";
 import { fromLocalInput, toLocalInput } from "./EventsPanel";
@@ -98,11 +99,22 @@ export function AssignmentsPanel({ data }: { data: PortalManagement }) {
   const [form, setForm] = useState<Form | null>(null);
   const [openId, setOpenId] = useState<number | null>(null);
   const [deleting, setDeleting] = useState<StaffAssignment | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const attach = async (f: File | undefined) => {
+    if (!f || !form) return;
+    if (f.type !== "application/pdf") { toast({ variant: "destructive", title: "PDF files only" }); return; }
+    if (f.size > 15 * 1024 * 1024) { toast({ variant: "destructive", title: "File too large", description: "The limit is 15 MB." }); return; }
+    setUploading(true);
+    try { const r = await uploadDocument(f, form.classId); setForm((p) => p && { ...p, fileId: r.fileId }); toast({ title: "Question sheet attached" }); }
+    catch (e) { toast({ variant: "destructive", title: "Upload failed", description: errorMessage(e) }); }
+    finally { setUploading(false); }
+  };
   const pending = create.isPending || update.isPending || remove.isPending;
   const refresh = () => queryClient.invalidateQueries({ queryKey: getListStaffAssignmentsQueryKey() });
   const blank = (): Form => {
     const due = new Date(Date.now() + 7 * 86_400_000); due.setHours(16, 0, 0, 0);
-    return { classId: data.classes[0]?.id ?? 0, subject: "", title: "", instructions: "", dueAt: due.toISOString(), maxScore: 10, published: true };
+    return { classId: data.classes[0]?.id ?? 0, subject: "", title: "", instructions: "", dueAt: due.toISOString(), maxScore: 10, published: true, fileId: null };
   };
   const save = async () => {
     if (!form) return;
@@ -139,11 +151,12 @@ export function AssignmentsPanel({ data }: { data: PortalManagement }) {
                   <div className="flex flex-wrap items-center gap-2"><StatusPill tone={a.published ? "green" : "muted"}>{a.published ? "Published" : "Draft"}</StatusPill><span className="text-xs text-[hsl(var(--p-ink)/0.6)]">{a.className} · {a.subject}</span></div>
                   <p className="mt-1.5 font-serif text-lg font-semibold">{a.title}</p>
                   <p className={"mt-0.5 flex items-center gap-1 text-xs " + (overdue ? "text-[hsl(var(--p-red))]" : "text-[hsl(var(--p-ink)/0.6)]")}><CalendarClock size={12} /> Due {when(a.dueAt)} · out of {a.maxScore}</p>
+                  {a.fileId && <a className="mt-1 inline-flex items-center gap-1 text-xs font-semibold text-[hsl(var(--p-emerald))]" href={fileUrl(a.fileId)} target="_blank" rel="noreferrer"><FileText size={12} /> Question sheet (PDF)</a>}
                   <p className="mt-1 text-xs text-[hsl(var(--p-ink)/0.6)]" data-testid={`text-assignment-counts-${a.id}`}>{a.submitted} of {a.students} submitted · {a.marked} marked</p>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   <button className="portal-btn" onClick={() => setOpenId(a.id)} data-testid={`button-open-submissions-${a.id}`}><ClipboardCheck size={14} /> Mark</button>
-                  <button className="portal-btn-ghost" onClick={() => setForm({ id: a.id, classId: a.classId, subject: a.subject, title: a.title, instructions: a.instructions, dueAt: a.dueAt, maxScore: a.maxScore, published: a.published })} data-testid={`button-edit-assignment-${a.id}`}><Pencil size={13} /> Edit</button>
+                  <button className="portal-btn-ghost" onClick={() => setForm({ id: a.id, classId: a.classId, subject: a.subject, title: a.title, instructions: a.instructions, dueAt: a.dueAt, maxScore: a.maxScore, published: a.published, fileId: a.fileId ?? null })} data-testid={`button-edit-assignment-${a.id}`}><Pencil size={13} /> Edit</button>
                   <button className="portal-btn-ghost" disabled={pending} onClick={() => setDeleting(a)} data-testid={`button-delete-assignment-${a.id}`}><Trash2 size={13} /> Delete</button>
                 </div>
               </div>
@@ -155,18 +168,23 @@ export function AssignmentsPanel({ data }: { data: PortalManagement }) {
           <DialogHeader><DialogTitle className="font-serif text-2xl">{form?.id ? "Edit assignment" : "New assignment"}</DialogTitle><DialogDescription>Published assignments appear in the class's student portal.</DialogDescription></DialogHeader>
           {form && <div className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-2">
-              <Field label="Class" htmlFor="as-class"><ClassSelect id="as-class" classes={data.classes} value={form.classId} onChange={(v) => setForm({ ...form, classId: v })} /></Field>
+              <Field label="Class" htmlFor="as-class"><ClassSelect id="as-class" classes={data.classes} value={form.classId} disabled={!!form.fileId} onChange={(v) => setForm({ ...form, classId: v })} /></Field>
               <Field label="Subject" htmlFor="as-subject"><input id="as-subject" className="portal-input" maxLength={80} value={form.subject} onChange={(e) => setForm({ ...form, subject: e.target.value })} data-testid="input-assignment-subject" /></Field>
             </div>
             <Field label="Title" htmlFor="as-title"><input id="as-title" className="portal-input" maxLength={160} value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} data-testid="input-assignment-title" /></Field>
             <Field label="Instructions" htmlFor="as-instructions"><textarea id="as-instructions" className="portal-input min-h-[120px]" maxLength={5000} value={form.instructions ?? ""} onChange={(e) => setForm({ ...form, instructions: e.target.value })} data-testid="input-assignment-instructions" /></Field>
+            <div className="flex flex-wrap items-center gap-2">
+              <input ref={fileRef} type="file" accept="application/pdf" className="hidden" onChange={(e) => { void attach(e.target.files?.[0]); e.target.value = ""; }} data-testid="input-assignment-pdf" />
+              <button type="button" className="portal-btn-ghost" disabled={uploading || !form.classId} onClick={() => fileRef.current?.click()} data-testid="button-upload-assignment-pdf"><Upload size={13} /> {uploading ? "Uploading..." : form.fileId ? "Replace PDF" : "Attach a question sheet (PDF, optional)"}</button>
+              {form.fileId && <><a className="portal-btn-ghost" href={fileUrl(form.fileId)} target="_blank" rel="noreferrer"><FileText size={13} /> View</a><button type="button" className="portal-btn-ghost" onClick={() => setForm({ ...form, fileId: null })} data-testid="button-remove-assignment-pdf"><X size={13} /> Remove</button></>}
+            </div>
             <div className="grid gap-4 sm:grid-cols-2">
               <Field label="Due" htmlFor="as-due"><input id="as-due" type="datetime-local" className="portal-input" value={toLocalInput(form.dueAt, false)} onChange={(e) => setForm({ ...form, dueAt: fromLocalInput(e.target.value, false) ?? form.dueAt })} data-testid="input-assignment-due" /></Field>
               <Field label="Marked out of" htmlFor="as-max"><input id="as-max" type="number" min={1} max={1000} className="portal-input" value={form.maxScore} onChange={(e) => setForm({ ...form, maxScore: Math.max(1, Math.min(1000, Number(e.target.value) || 1)) })} data-testid="input-assignment-max" /></Field>
             </div>
             <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.published} onChange={(e) => setForm({ ...form, published: e.target.checked })} data-testid="checkbox-assignment-published" /> Published (students can see it)</label>
           </div>}
-          <DialogFooter><button className="portal-btn" onClick={() => void save()} disabled={pending || !form?.title.trim() || !form?.subject.trim() || !form?.classId} data-testid="button-save-assignment">{pending ? "Saving..." : "Save assignment"}</button></DialogFooter>
+          <DialogFooter><button className="portal-btn" onClick={() => void save()} disabled={pending || uploading || !form?.title.trim() || !form?.subject.trim() || !form?.classId} data-testid="button-save-assignment">{pending ? "Saving..." : "Save assignment"}</button></DialogFooter>
         </DialogContent>
       </Dialog>
       <AlertDialog open={!!deleting} onOpenChange={(o) => !o && setDeleting(null)}>

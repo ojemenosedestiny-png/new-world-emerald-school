@@ -1909,7 +1909,8 @@ export const ListStaffAssignmentsResponseItem = zod.object({
   "instructions": zod.string().max(listStaffAssignmentsResponseOneInstructionsMax),
   "dueAt": zod.string(),
   "maxScore": zod.number().min(1).max(listStaffAssignmentsResponseOneMaxScoreMax),
-  "published": zod.boolean()
+  "published": zod.boolean(),
+  "fileId": zod.string().nullish().describe('An optional question sheet (PDF) uploaded for the class')
 }).and(zod.object({
   "id": zod.number(),
   "className": zod.string(),
@@ -1937,7 +1938,8 @@ export const CreateAssignmentBody = zod.object({
   "instructions": zod.string().max(createAssignmentBodyInstructionsMax).optional(),
   "dueAt": zod.string(),
   "maxScore": zod.number().min(1).max(createAssignmentBodyMaxScoreMax),
-  "published": zod.boolean()
+  "published": zod.boolean(),
+  "fileId": zod.string().nullish().describe('An optional question sheet (PDF) uploaded for the class')
 })
 
 export const createAssignmentResponseOneSubjectMax = 80;
@@ -1957,7 +1959,8 @@ export const CreateAssignmentResponse = zod.object({
   "instructions": zod.string().max(createAssignmentResponseOneInstructionsMax),
   "dueAt": zod.string(),
   "maxScore": zod.number().min(1).max(createAssignmentResponseOneMaxScoreMax),
-  "published": zod.boolean()
+  "published": zod.boolean(),
+  "fileId": zod.string().nullish().describe('An optional question sheet (PDF) uploaded for the class')
 }).and(zod.object({
   "id": zod.number(),
   "className": zod.string(),
@@ -1988,7 +1991,8 @@ export const UpdateAssignmentBody = zod.object({
   "instructions": zod.string().max(updateAssignmentBodyInstructionsMax).optional(),
   "dueAt": zod.string(),
   "maxScore": zod.number().min(1).max(updateAssignmentBodyMaxScoreMax),
-  "published": zod.boolean()
+  "published": zod.boolean(),
+  "fileId": zod.string().nullish().describe('An optional question sheet (PDF) uploaded for the class')
 })
 
 export const updateAssignmentResponseOneSubjectMax = 80;
@@ -2008,7 +2012,8 @@ export const UpdateAssignmentResponse = zod.object({
   "instructions": zod.string().max(updateAssignmentResponseOneInstructionsMax),
   "dueAt": zod.string(),
   "maxScore": zod.number().min(1).max(updateAssignmentResponseOneMaxScoreMax),
-  "published": zod.boolean()
+  "published": zod.boolean(),
+  "fileId": zod.string().nullish().describe('An optional question sheet (PDF) uploaded for the class')
 }).and(zod.object({
   "id": zod.number(),
   "className": zod.string(),
@@ -2078,6 +2083,7 @@ export const ListMyAssignmentsResponseItem = zod.object({
   "instructions": zod.string(),
   "dueAt": zod.string(),
   "maxScore": zod.number(),
+  "fileId": zod.string().nullish().describe('The question sheet (PDF), if the teacher attached one'),
   "submission": zod.union([zod.object({
   "id": zod.number(),
   "text": zod.string(),
@@ -2116,6 +2122,7 @@ export const SubmitAssignmentResponse = zod.object({
   "instructions": zod.string(),
   "dueAt": zod.string(),
   "maxScore": zod.number(),
+  "fileId": zod.string().nullish().describe('The question sheet (PDF), if the teacher attached one'),
   "submission": zod.union([zod.object({
   "id": zod.number(),
   "text": zod.string(),
@@ -3850,6 +3857,7 @@ export const GetParentChildProgressResponse = zod.object({
   "instructions": zod.string(),
   "dueAt": zod.string(),
   "maxScore": zod.number(),
+  "fileId": zod.string().nullish().describe('The question sheet (PDF), if the teacher attached one'),
   "submission": zod.union([zod.object({
   "id": zod.number(),
   "text": zod.string(),
@@ -3860,8 +3868,92 @@ export const GetParentChildProgressResponse = zod.object({
   "feedback": zod.string(),
   "markedAt": zod.string().nullable()
 }),zod.null()])
+})),
+  "timetables": zod.array(zod.object({
+  "id": zod.number(),
+  "title": zod.string(),
+  "kind": zod.enum(['exam', 'class']),
+  "classIds": zod.array(zod.number()).describe('Empty means the whole school'),
+  "classNames": zod.array(zod.string()),
+  "fileId": zod.string(),
+  "fileType": zod.enum(['pdf', 'image']),
+  "published": zod.boolean(),
+  "createdBy": zod.string(),
+  "updatedAt": zod.coerce.date()
 }))
 })
+
+
+/**
+ * Timetables the signed-in staff member or exam officer can see and post, and the classes they may post for
+ */
+export const ListTimetablesResponse = zod.object({
+  "canWholeSchool": zod.boolean(),
+  "classes": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string()
+})),
+  "timetables": zod.array(zod.object({
+  "id": zod.number(),
+  "title": zod.string(),
+  "kind": zod.enum(['exam', 'class']),
+  "classIds": zod.array(zod.number()).describe('Empty means the whole school'),
+  "classNames": zod.array(zod.string()),
+  "fileId": zod.string(),
+  "fileType": zod.enum(['pdf', 'image']),
+  "published": zod.boolean(),
+  "createdBy": zod.string(),
+  "updatedAt": zod.coerce.date()
+}))
+})
+
+
+/**
+ * Post, change or remove a class or exam timetable (the office, the exam officer, or a teacher for their own classes)
+ */
+export const manageTimetablesBodyTimetableTitleMax = 150;
+
+export const manageTimetablesBodyTimetableClassIdsMax = 100;
+
+export const manageTimetablesBodyTimetableFileIdMax = 64;
+
+
+
+export const ManageTimetablesBody = zod.object({
+  "action": zod.enum(['save', 'delete']),
+  "timetable": zod.object({
+  "id": zod.number().optional(),
+  "title": zod.string().max(manageTimetablesBodyTimetableTitleMax),
+  "kind": zod.enum(['exam', 'class']),
+  "classIds": zod.array(zod.number()).max(manageTimetablesBodyTimetableClassIdsMax).describe('Empty means the whole school'),
+  "fileId": zod.string().max(manageTimetablesBodyTimetableFileIdMax),
+  "published": zod.boolean()
+}).optional(),
+  "id": zod.number().optional().describe('For delete')
+})
+
+export const ManageTimetablesResponse = zod.object({
+  "message": zod.string(),
+  "studentId": zod.string().optional().describe('The Student ID of a student just enrolled')
+})
+
+
+/**
+ * The published timetables for the signed-in student's class and the whole school
+ */
+export const ListMyTimetablesResponseItem = zod.object({
+  "id": zod.number(),
+  "title": zod.string(),
+  "kind": zod.enum(['exam', 'class']),
+  "classIds": zod.array(zod.number()).describe('Empty means the whole school'),
+  "classNames": zod.array(zod.string()),
+  "fileId": zod.string(),
+  "fileType": zod.enum(['pdf', 'image']),
+  "published": zod.boolean(),
+  "createdBy": zod.string(),
+  "updatedAt": zod.coerce.date()
+})
+export const ListMyTimetablesResponse = zod.array(ListMyTimetablesResponseItem)
 
 
 export const GetMyMessagesResponse = zod.object({

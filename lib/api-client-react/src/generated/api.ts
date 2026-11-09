@@ -176,6 +176,9 @@ import type {
   SubmissionInput,
   SubmissionMark,
   SubmissionRow,
+  Timetable,
+  TimetableCommand,
+  TimetableWorkspace,
   UploadMetadata,
   UploadPortalDiagramParams,
   UploadUrlResponse,
@@ -6439,6 +6442,222 @@ export function useGetParentChildProgress<TData = Awaited<ReturnType<typeof getP
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetParentChildProgressQueryOptions(studentId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getListTimetablesUrl = () => {
+
+
+
+
+  return `/api/portal/timetables`
+}
+
+/**
+ * Timetables the signed-in staff member or exam officer can see and post, and the classes they may post for
+ */
+export const listTimetables = async ( options?: RequestInit): Promise<TimetableWorkspace> => {
+
+  return customFetch<TimetableWorkspace>(getListTimetablesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListTimetablesQueryKey = () => {
+    return [
+    `/api/portal/timetables`
+    ] as const;
+    }
+
+
+export const getListTimetablesQueryOptions = <TData = Awaited<ReturnType<typeof listTimetables>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listTimetables>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListTimetablesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listTimetables>>> = ({ signal }) => listTimetables({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listTimetables>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListTimetablesQueryResult = NonNullable<Awaited<ReturnType<typeof listTimetables>>>
+export type ListTimetablesQueryError = ErrorType<unknown>
+
+
+
+export function useListTimetables<TData = Awaited<ReturnType<typeof listTimetables>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listTimetables>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListTimetablesQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getManageTimetablesUrl = () => {
+
+
+
+
+  return `/api/portal/timetables`
+}
+
+/**
+ * Post, change or remove a class or exam timetable (the office, the exam officer, or a teacher for their own classes)
+ */
+export const manageTimetables = async (timetableCommand: TimetableCommand, options?: RequestInit): Promise<PortalMessage> => {
+
+  return customFetch<PortalMessage>(getManageTimetablesUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(timetableCommand)
+  }
+);}
+
+
+
+
+
+export const getManageTimetablesMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof manageTimetables>>, TError,{data: BodyType<TimetableCommand>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof manageTimetables>>, TError,{data: BodyType<TimetableCommand>}, TContext> => {
+
+const mutationKey = ['manageTimetables'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof manageTimetables>>, {data: BodyType<TimetableCommand>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  manageTimetables(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ManageTimetablesMutationResult = NonNullable<Awaited<ReturnType<typeof manageTimetables>>>
+    export type ManageTimetablesMutationBody = BodyType<TimetableCommand>
+    export type ManageTimetablesMutationError = ErrorType<unknown>
+
+    export const useManageTimetables = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof manageTimetables>>, TError,{data: BodyType<TimetableCommand>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof manageTimetables>>,
+        TError,
+        {data: BodyType<TimetableCommand>},
+        TContext
+      > => {
+      return useMutation(getManageTimetablesMutationOptions(options));
+    }
+
+export const getListMyTimetablesUrl = () => {
+
+
+
+
+  return `/api/portal/my-timetables`
+}
+
+/**
+ * The published timetables for the signed-in student's class and the whole school
+ */
+export const listMyTimetables = async ( options?: RequestInit): Promise<Timetable[]> => {
+
+  return customFetch<Timetable[]>(getListMyTimetablesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListMyTimetablesQueryKey = () => {
+    return [
+    `/api/portal/my-timetables`
+    ] as const;
+    }
+
+
+export const getListMyTimetablesQueryOptions = <TData = Awaited<ReturnType<typeof listMyTimetables>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listMyTimetables>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListMyTimetablesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listMyTimetables>>> = ({ signal }) => listMyTimetables({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listMyTimetables>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListMyTimetablesQueryResult = NonNullable<Awaited<ReturnType<typeof listMyTimetables>>>
+export type ListMyTimetablesQueryError = ErrorType<unknown>
+
+
+
+export function useListMyTimetables<TData = Awaited<ReturnType<typeof listMyTimetables>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listMyTimetables>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListMyTimetablesQueryOptions(options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

@@ -2,7 +2,7 @@ import { useState, type ReactNode } from "react";
 import { Link } from "wouter";
 import { useAuth, useClerk, useUser } from "@clerk/react";
 import { useGetPortalSession, getGetPortalSessionQueryKey, useGetPortalManagement, getGetPortalManagementQueryKey, useListPhotoReviews, getListPhotoReviewsQueryKey, useListMessageThreads, getListMessageThreadsQueryKey } from "@workspace/api-client-react";
-import { ArrowRight, BedDouble, CreditCard, BookOpen, Boxes, Bus, FileUp, CalendarCheck, CalendarDays, Camera, CheckSquare, Images, NotebookPen, ClipboardList, FileBarChart, Globe, GraduationCap, LayoutDashboard, Megaphone, MessagesSquare, MonitorSmartphone, School, ScrollText, ShieldAlert, Users } from "lucide-react";
+import { ArrowRight, BedDouble, CreditCard, BookOpen, Boxes, Bus, FileUp, CalendarCheck, CalendarRange, CalendarDays, Camera, CheckSquare, Images, NotebookPen, ClipboardList, FileBarChart, Globe, GraduationCap, LayoutDashboard, Megaphone, MessagesSquare, MonitorSmartphone, School, ScrollText, ShieldAlert, Users } from "lucide-react";
 import "@/portal/portal.css";
 import { BackToWebsite, ErrorPanel, Skeleton } from "@/portal/ui";
 import { errorMessage, usePortalMeta } from "@/portal/lib";
@@ -21,6 +21,7 @@ import { EventsPanel } from "@/portal/manage/EventsPanel";
 import { GalleryPanel, PhotoReviewsPanel } from "@/portal/manage/GalleryPanel";
 import { AttendancePanel } from "@/portal/manage/AttendancePanel";
 import { AssignmentsPanel } from "@/portal/manage/AssignmentsPanel";
+import { TimetablesPanel } from "@/portal/Timetables";
 import { MessagesPanel } from "@/portal/manage/MessagesPanel";
 import { InventoryPanel } from "@/portal/manage/InventoryPanel";
 import { ImportResultsPanel } from "@/portal/manage/ImportResultsPanel";
@@ -42,9 +43,9 @@ function Gate({ title, body, children }: { title: string; body: string; children
   );
 }
 
-type Section = "overview" | "messages" | "attendance" | "assignments" | "exams" | "marking" | "reports" | "revision" | "notices" | "events" | "gallery" | "photos" | "inventory" | "importResults" | "hostel" | "transport" | "payments" | "parents" | "students" | "teachers" | "classes" | "sessions" | "audit";
+type Section = "overview" | "messages" | "attendance" | "assignments" | "timetables" | "exams" | "marking" | "reports" | "revision" | "notices" | "events" | "gallery" | "photos" | "inventory" | "importResults" | "hostel" | "transport" | "payments" | "parents" | "students" | "teachers" | "classes" | "sessions" | "audit";
 const TITLES: Record<Section, string> = {
-  overview: "Dashboard", messages: "Messages", attendance: "Attendance", assignments: "Assignments", exams: "Exams", marking: "Marking", reports: "Report cards", revision: "Revision notes",
+  overview: "Dashboard", messages: "Messages", attendance: "Attendance", assignments: "Assignments", timetables: "Timetables", exams: "Exams", marking: "Marking", reports: "Report cards", revision: "Revision notes",
   notices: "Announcements", events: "Events calendar", gallery: "Gallery", photos: "Photo approvals", inventory: "Inventory", importResults: "Import old results", payments: "Online fee payments", parents: "Parents and children", hostel: "Hostel rooms", transport: "Transport routes", students: "Students", teachers: "Teachers", classes: "Classes", sessions: "Sessions", audit: "Audit log",
 };
 
@@ -82,6 +83,7 @@ export default function PortalManage() {
       ...(isAdmin ? [] : [{ key: "students" as const, label: "My students", icon: GraduationCap, testId: "tab-manage-my-students" }]),
       { key: "attendance", label: "Attendance", icon: CalendarCheck, testId: "tab-manage-attendance" },
       { key: "assignments", label: "Assignments", icon: NotebookPen, testId: "tab-manage-assignments" },
+      { key: "timetables", label: "Timetables", icon: CalendarRange, testId: "tab-manage-timetables" },
       { key: "exams", label: "Exams", icon: ClipboardList, badge: writing, testId: "tab-manage-exams" },
       { key: "marking", label: "Marking", icon: CheckSquare, badge: toMark, testId: "tab-manage-marking" },
       { key: "reports", label: "Report cards", icon: FileBarChart, testId: "tab-manage-reports" },
@@ -144,6 +146,7 @@ export default function PortalManage() {
             {isAdmin && section === "transport" && <TransportPanel />}
             {section === "attendance" && <AttendancePanel data={d} />}
             {section === "assignments" && <AssignmentsPanel data={d} />}
+            {section === "timetables" && <TimetablesPanel />}
             {section === "exams" && <ExamsPanel data={d} isAdmin={isAdmin} />}
             {section === "marking" && <MarkingPanel data={d} />}
             {section === "reports" && <ReportsPanel />}

@@ -250,6 +250,7 @@ schemas:
       dueAt: { type: string }
       maxScore: { type: integer, minimum: 1, maximum: 1000 }
       published: { type: boolean }
+      fileId: { type: ["string", "null"], description: "An optional question sheet (PDF) uploaded for the class" }
   StaffAssignment:
     allOf:
       - { $ref: "#/components/schemas/AssignmentInput" }
@@ -297,6 +298,7 @@ schemas:
       instructions: { type: string }
       dueAt: { type: string }
       maxScore: { type: integer }
+      fileId: { type: ["string", "null"], description: "The question sheet (PDF), if the teacher attached one" }
       submission: { oneOf: [{ $ref: "#/components/schemas/SubmissionView" }, { type: "null" }] }
   SubmissionInput:
     type: object

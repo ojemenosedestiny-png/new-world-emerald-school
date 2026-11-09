@@ -2,7 +2,7 @@ import { useState, type ReactNode } from "react";
 import { Link } from "wouter";
 import { useAuth, useClerk, useUser } from "@clerk/react";
 import { ApiError, getGetExamOfficerOverviewQueryKey, useGetExamOfficerOverview } from "@workspace/api-client-react";
-import { Activity, FileCheck2, Inbox, LayoutDashboard } from "lucide-react";
+import { Activity, CalendarRange, FileCheck2, Inbox, LayoutDashboard } from "lucide-react";
 import "@/portal/portal.css";
 import { AppShell, type NavItem } from "@/portal/shell/AppShell";
 import { usePortalTheme } from "@/portal/shell/theme";
@@ -11,8 +11,9 @@ import { errorMessage, usePortalMeta } from "@/portal/lib";
 import { IdleSignOut } from "@/components/IdleSignOut";
 import { ActivityView, AllExamsView, OverviewView, PaperDialog, QueueView, type OfficerTab } from "@/portal/exam-officer/OfficerViews";
 import { asset } from "@/lib/asset";
+import { TimetablesPanel } from "@/portal/Timetables";
 
-const TITLES: Record<OfficerTab, string> = { overview: "Overview", queue: "Publishing queue", exams: "All exams", activity: "Staff exam activity" };
+const TITLES: Record<OfficerTab, string> = { overview: "Overview", queue: "Publishing queue", exams: "All exams", timetables: "Exam timetables", activity: "Staff exam activity" };
 
 function Gate({ title, body, children }: { title: string; body: string; children?: ReactNode }) {
   return (
@@ -57,18 +58,20 @@ export default function ExamOfficer() {
     { key: "overview", label: "Overview", icon: LayoutDashboard, testId: "tab-officer-overview" },
     { key: "queue", label: "Publishing queue", icon: Inbox, testId: "tab-officer-queue", ...(waiting ? { badge: waiting } : {}) },
     { key: "exams", label: "All exams", icon: FileCheck2, testId: "tab-officer-exams" },
+    { key: "timetables", label: "Timetables", icon: CalendarRange, testId: "tab-officer-timetables" },
     { key: "activity", label: "Staff activity", icon: Activity, testId: "tab-officer-activity" },
   ];
   return (
     <AppShell subtitle="Exam officer" groups={[{ items: nav }]} active={tab} onNavigate={(k) => setTab(k as OfficerTab)}
       title={TITLES[tab]} eyebrow="New World Emerald Private School"
       user={{ name: user?.fullName || "Exam officer", detail: user?.primaryEmailAddress?.emailAddress ?? "" }} theme={theme.theme} onTheme={theme.setTheme}
-      onSignOut={leave} bottomNav={[nav[0], { ...nav[1], label: "Queue" }, { ...nav[2], label: "Exams" }, { ...nav[3], label: "Activity" }]}>
+      onSignOut={leave} bottomNav={[nav[0], { ...nav[1], label: "Queue" }, { ...nav[2], label: "Exams" }, { ...nav[4], label: "Activity" }]}>
       <IdleSignOut enabled onSignOut={leave} />
       <div className="px-4 pb-6 pt-4 lg:px-0 lg:pt-0">
         {tab === "overview" && <OverviewView data={q.data} name={user?.fullName ?? ""} onOpen={setTab} onView={setViewing} />}
         {tab === "queue" && <QueueView data={q.data} onView={setViewing} />}
         {tab === "exams" && <AllExamsView data={q.data} onTerm={setTerm} onView={setViewing} />}
+        {tab === "timetables" && <TimetablesPanel />}
         {tab === "activity" && <ActivityView />}
       </div>
       {viewing !== null && <PaperDialog id={viewing} onClose={() => setViewing(null)} />}

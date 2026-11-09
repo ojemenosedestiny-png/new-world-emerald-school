@@ -1,7 +1,7 @@
 import express, { Router, type NextFunction, type Request, type Response } from "express";
 import { and, asc, eq, gte, inArray, lte, sql } from "drizzle-orm";
 import {
-  db, portalAssignments, portalAttendance, portalClasses, portalImages, portalStudents, portalSubmissions,
+  db, portalAssignments, portalAttendance, portalClasses, portalFiles, portalImages, portalStudents, portalSubmissions,
   type PortalAssignmentRecord, type PortalSubmissionRecord,
 } from "@workspace/db";
 import {
@@ -11,6 +11,7 @@ import {
 import { check, classAllowed, PortalError, portalActor, staffOnly, studentOnly, type PortalActor } from "../lib/portal-auth";
 import { MAX_IMAGE_BYTES, removeImage, saveImage } from "../lib/images";
 import { addDays, assignmentValues, isCalendarDate, isLate, schoolDate, tally } from "../lib/learning";
+import { diagramContentType } from "../lib/portal-pdf";
 
 export const portalLearningRouter = Router();
 const MAX_PHOTOS = 5;
@@ -117,7 +118,7 @@ async function staffViews(assignments: PortalAssignmentRecord[]) {
     .where(inArray(portalSubmissions.assignmentId, assignments.map((a) => a.id)));
   return assignments.map((a) => ({
     id: a.id, classId: a.classId, className: names.get(a.classId) ?? "", subject: a.subject, title: a.title, instructions: a.instructions,
-    dueAt: a.dueAt.toISOString(), maxScore: a.maxScore, published: a.published,
+    dueAt: a.dueAt.toISOString(), maxScore: a.maxScore, published: a.published, fileId: a.fileId ?? null,
     students: students.filter((s) => s.classId === a.classId).length,
     submitted: subs.filter((s) => s.assignmentId === a.id).length,
     marked: subs.filter((s) => s.assignmentId === a.id && s.markedAt).length,
@@ -137,9 +138,18 @@ portalLearningRouter.post("/assignments", async (req, res) => {
   await classFor(actor, body.classId);
   const result = assignmentValues(body);
   if (!result.ok) throw new PortalError(400, result.error);
-  const [row] = await db.insert(portalAssignments).values({ ...result.values, classId: body.classId, createdBy: req.identity?.email ?? actor.name }).returning();
+  const fileId = await sheetFor(body.fileId, body.classId);
+  const [row] = await db.insert(portalAssignments).values({ ...result.values, fileId, classId: body.classId, createdBy: req.identity?.email ?? actor.name }).returning();
   res.json((await staffViews([row]))[0]);
 });
+
+/** An assignment's question sheet: a PDF uploaded for the same class, or none. */
+async function sheetFor(fileId: string | null | undefined, classId: number) {
+  if (!fileId) return null;
+  const [file] = await db.select().from(portalFiles).where(eq(portalFiles.id, fileId));
+  check(file && file.classId === classId && !diagramContentType(file.objectName), "Upload the question sheet as a PDF for this class.");
+  return file.id;
+}
 
 async function ownAssignment(actor: PortalActor, id: number) {
   const [row] = await db.select().from(portalAssignments).where(eq(portalAssignments.id, id));
@@ -155,7 +165,8 @@ portalLearningRouter.put("/assignments/:id", async (req, res) => {
   await classFor(actor, body.classId);
   const result = assignmentValues(body);
   if (!result.ok) throw new PortalError(400, result.error);
-  const [row] = await db.update(portalAssignments).set({ ...result.values, classId: body.classId }).where(eq(portalAssignments.id, old.id)).returning();
+  const fileId = await sheetFor(body.fileId, body.classId);
+  const [row] = await db.update(portalAssignments).set({ ...result.values, fileId, classId: body.classId }).where(eq(portalAssignments.id, old.id)).returning();
   res.json((await staffViews([row]))[0]);
 });
 
@@ -196,7 +207,7 @@ export async function studentViews(classId: number, studentId: number) {
     .where(and(eq(portalSubmissions.studentId, studentId), inArray(portalSubmissions.assignmentId, rows.map((a) => a.id)))) : [];
   return rows.map((a) => {
     const s = subs.find((x) => x.assignmentId === a.id);
-    return { id: a.id, subject: a.subject, title: a.title, instructions: a.instructions, dueAt: a.dueAt.toISOString(), maxScore: a.maxScore, submission: s ? submissionView(s, a) : null };
+    return { id: a.id, subject: a.subject, title: a.title, instructions: a.instructions, dueAt: a.dueAt.toISOString(), maxScore: a.maxScore, fileId: a.fileId ?? null, submission: s ? submissionView(s, a) : null };
   });
 }
 

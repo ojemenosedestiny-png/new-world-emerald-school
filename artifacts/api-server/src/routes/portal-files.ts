@@ -1,8 +1,10 @@
 import express, { Router } from "express";
 import { randomUUID } from "node:crypto";
-import { and, eq, sql } from "drizzle-orm";
-import { db, portalFiles, portalClasses, portalMaterials, portalExams, portalAttempts } from "@workspace/db";
-import { check, classAllowed, portalActor, studentOnly } from "../lib/portal-auth";
+import { and, eq, or, sql } from "drizzle-orm";
+import { db, portalFiles, portalClasses, portalMaterials, portalExams, portalAttempts, portalAssignments, portalStudents, portalTimetables } from "@workspace/db";
+import { check, classAllowed, portalActor, studentOnly, type PortalActor } from "../lib/portal-auth";
+import { parentEmail } from "./portal-parent";
+import { canPublishExams } from "../lib/website-admin";
 import { ObjectStorageService, objectStorageClient } from "../lib/objectStorage";
 import { serveObject } from "../lib/serve-object";
 import { diagramContentType, paperFromLayout, readPdfLayout, type PdfLayout } from "../lib/portal-pdf";
@@ -24,14 +26,15 @@ function objectFile(objectName: string) {
  * Stores a private file for a class. Papers keep their original names (a bare id in the bucket,
  * <id>.pdf on Cloudinary); diagram pictures carry an image extension so they are never served as papers.
  */
-async function storeClassFile(body: Buffer, classId: number, ext: "pdf" | "png" | "jpg" | "webp") {
+async function storeClassFile(body: Buffer, classId: number | null, ext: "pdf" | "png" | "jpg" | "webp", kind: "diagram" | "document" = "diagram") {
   const id = randomUUID();
   const contentType = ext === "pdf" ? "application/pdf" : diagramContentType("." + ext)!;
-  let objectName = ext === "pdf" ? id : `diagram-${id}.${ext}`;
+  // A picture uploaded as a document (a timetable photo) is named doc-<id>; exam diagrams stay diagram-<id>.
+  let objectName = ext === "pdf" ? id : `${kind === "document" ? "doc" : "diagram"}-${id}.${ext}`;
   let discard: () => Promise<unknown>;
   if (cloudinaryReady()) {
-    const publicId = ext === "pdf" ? `nwe/portal/files/${id}.pdf` : `nwe/portal/diagrams/${id}.${ext}`;
-    await uploadToCloudinary(body, { publicId, resourceType: "raw", visibility: "private", maxBytes: ext === "pdf" ? MAX_PDF_BYTES : MAX_DIAGRAM_BYTES });
+    const publicId = ext === "pdf" ? `nwe/portal/files/${id}.pdf` : kind === "document" ? `nwe/portal/files/${id}.${ext}` : `nwe/portal/diagrams/${id}.${ext}`;
+    await uploadToCloudinary(body, { publicId, resourceType: "raw", visibility: "private", maxBytes: ext === "pdf" || kind === "document" ? MAX_PDF_BYTES : MAX_DIAGRAM_BYTES });
     objectName = CLOUDINARY_PREFIX + publicId;
     discard = () => deleteFromCloudinary(publicId, "raw", "private");
   } else {
@@ -114,7 +117,10 @@ portalFilesRouter.get("/diagrams/:id", async (req, res) => {
   const [file] = await db.select().from(portalFiles).where(eq(portalFiles.id, String(req.params.id)));
   const contentType = file ? diagramContentType(file.objectName) : null;
   check(file && contentType, "Diagram not found.", 404);
-  if (actor.role === "admin" || actor.role === "teacher") classAllowed(actor, file.classId);
+  // Whole-school documents (timetable pictures) are never exam diagrams.
+  const classId = file.classId;
+  check(classId !== null, "Diagram not found.", 404);
+  if (actor.role === "admin" || actor.role === "teacher") classAllowed(actor, classId);
   else {
     // Students see a diagram only once it is in a paper they have started.
     const student = studentOnly(actor);
@@ -133,13 +139,78 @@ portalFilesRouter.get("/diagrams/:id", async (req, res) => {
   }
   await serveObject(req, res, storage, async () => objectFile(file.objectName), { noStore: true });
 });
+/**
+ * Staff (and the exam officer) upload a timetable or an assignment's question sheet: a PDF, or a picture of a
+ * timetable. With a class it belongs to that class; without one it is a whole-school document (the office or the exam
+ * officer only).
+ */
+const documentFirst: express.RequestHandler = async (req, _res, next) => {
+  try {
+    const classId = req.query.classId ? Number(req.query.classId) : null;
+    check(classId === null || (Number.isInteger(classId) && classId > 0), "Choose a valid class.");
+    if (canPublishExams(req)) return next();
+    const actor = await portalActor(req);
+    if (classId === null) check(actor.role === "admin", "Only the school office or the exam officer can upload for the whole school.", actor.role === "guest" ? 401 : 403);
+    else classAllowed(actor, classId);
+    next();
+  } catch (error) { next(error); }
+};
+portalFilesRouter.post("/documents", documentFirst, express.raw({ type: ["application/pdf", "image/png", "image/jpeg", "image/webp"], limit: "15mb" }), async (req, res) => {
+  const classId = req.query.classId ? Number(req.query.classId) : null;
+  if (classId !== null) { const [c] = await db.select({ id: portalClasses.id }).from(portalClasses).where(eq(portalClasses.id, classId)); check(c, "Class not found.", 404); }
+  const pdf = Buffer.isBuffer(req.body) && req.body.length > 5 && req.body.subarray(0, 5).toString() === "%PDF-";
+  const image = pdf ? null : imageKind(req.body);
+  check(pdf || image, "Upload a PDF, or a PNG, JPEG or WebP picture (up to 15MB).");
+  const fileId = await storeClassFile(req.body as Buffer, classId, pdf ? "pdf" : image!, "document");
+  res.json({ fileId, fileType: pdf ? "pdf" : "image" });
+});
+
+/** Whether a timetable or a published assignment shares this file with the given classes (or the whole school). */
+async function sharedWith(fileId: string, classIds: number[]) {
+  const timetables = await db.select({ classIds: portalTimetables.classIds }).from(portalTimetables).where(and(eq(portalTimetables.fileId, fileId), eq(portalTimetables.published, true)));
+  if (timetables.some((t) => !t.classIds.length || t.classIds.some((id) => classIds.includes(id)))) return "timetable" as const;
+  if (!classIds.length) return null;
+  const [assignment] = await db.select({ id: portalAssignments.id }).from(portalAssignments)
+    .where(and(eq(portalAssignments.fileId, fileId), eq(portalAssignments.published, true), or(...classIds.map((id) => eq(portalAssignments.classId, id))))).limit(1);
+  return assignment ? "assignment" as const : null;
+}
+
+/** May this person open the file? Staff for their classes (and whole-school files); students and parents when shared. */
+async function mayOpen(req: express.Request, actor: PortalActor, file: typeof portalFiles.$inferSelect, picture: boolean): Promise<boolean | null> {
+  if (actor.role === "admin" || actor.role === "teacher") {
+    if (file.classId === null || actor.role === "admin" || actor.classIds.includes(file.classId)) return true;
+    // A timetable another teacher posted for this teacher's class too.
+    if (await sharedWith(file.id, actor.classIds)) return true;
+    classAllowed(actor, file.classId);
+    return true;
+  }
+  if (actor.role === "student") {
+    if (await sharedWith(file.id, [actor.student!.classId])) return true;
+    // Otherwise the earlier rules decide: the class's revision notes, or a PDF exam during an attempt.
+    return !picture && file.classId === actor.student!.classId ? null : false;
+  }
+  // A parent: the classes of the children linked to their verified email.
+  const email = await parentEmail(req);
+  if (!email) return false;
+  const kids = await db.select({ classId: portalStudents.classId }).from(portalStudents)
+    .where(and(eq(portalStudents.active, true), or(sql`lower(trim(${portalStudents.guardianEmail})) = ${email}`, sql`lower(trim(${portalStudents.secondGuardianEmail})) = ${email}`)));
+  // Someone with no child at the school sees nothing, not even whole-school timetables.
+  return kids.length > 0 && !!(await sharedWith(file.id, [...new Set(kids.map((k) => k.classId))]));
+}
+
 portalFilesRouter.get("/files/:id", async (req, res) => {
-  const actor = await portalActor(req);
   const [file] = await db.select().from(portalFiles).where(eq(portalFiles.id, String(req.params.id)));
-  check(file && !diagramContentType(file.objectName), "Document not found.", 404);
-  if (actor.role === "admin" || actor.role === "teacher") classAllowed(actor, file.classId);
-  else {
-    const student = studentOnly(actor);
+  check(file, "Document not found.", 404);
+  // Exam diagrams are served by /diagrams; only pictures uploaded as documents (timetables) are served here.
+  const picture = diagramContentType(file.objectName);
+  check(!picture || /(^|\/)doc-|nwe\/portal\/files\//.test(file.objectName), "Document not found.", 404);
+  // The exam officer opens whole-school documents and every timetable; otherwise the usual rules apply.
+  const officerFile = canPublishExams(req) && (file.classId === null || !!(await db.select({ id: portalTimetables.id }).from(portalTimetables).where(eq(portalTimetables.fileId, file.id)).limit(1))[0]);
+  const actor = officerFile ? null : await portalActor(req);
+  const allowed = actor ? await mayOpen(req, actor, file, !!picture) : true;
+  if (allowed === false) check(false, "Document not found.", 404);
+  if (allowed === null) {
+    const student = studentOnly(actor!);
     check(student.classId === file.classId, "Document not found.", 404);
     const [material] = await db.select({ id: portalMaterials.id }).from(portalMaterials)
       .where(and(eq(portalMaterials.fileId, file.id), eq(portalMaterials.classId, student.classId), eq(portalMaterials.published, true))).limit(1);
@@ -151,10 +222,11 @@ portalFilesRouter.get("/files/:id", async (req, res) => {
     }
   }
   res.setHeader("X-Content-Type-Options", "nosniff");
-  res.setHeader("Content-Disposition", 'inline; filename="school-document.pdf"');
+  const type = picture ?? "application/pdf";
+  res.setHeader("Content-Disposition", `inline; filename="school-document.${picture ? picture.split("/")[1].replace("jpeg", "jpg") : "pdf"}"`);
   if (file.objectName.startsWith(CLOUDINARY_PREFIX)) {
-    await pipeFromCloudinary(res, downloadUrl(file.objectName.slice(CLOUDINARY_PREFIX.length), "raw", "private", "application/pdf"), {
-      "Content-Type": "application/pdf", "Cache-Control": "private, no-store",
+    await pipeFromCloudinary(res, downloadUrl(file.objectName.slice(CLOUDINARY_PREFIX.length), "raw", "private", type), {
+      "Content-Type": type, "Cache-Control": "private, no-store",
     });
     return;
   }

@@ -79,6 +79,12 @@ describe("student assignments", () => {
     expect(screen.getByTestId("feedback-1").textContent).toContain("Excellent work");
     expect(screen.queryByTestId("button-open-submit-1")).toBeNull();
   });
+  it("links the teacher's question sheet only when there is one", () => {
+    api.assignments = [assignment({ fileId: "sheet-9" }), assignment({ id: 2, title: "Decimals" })];
+    render(wrap(<StudentAssignments />));
+    expect(screen.getByTestId("link-assignment-sheet-1").getAttribute("href")).toMatch(/\/api\/portal\/files\/sheet-9$/);
+    expect(screen.queryByTestId("link-assignment-sheet-2")).toBeNull();
+  });
   it("explains an empty list", () => {
     api.assignments = [];
     render(wrap(<StudentAssignments />));

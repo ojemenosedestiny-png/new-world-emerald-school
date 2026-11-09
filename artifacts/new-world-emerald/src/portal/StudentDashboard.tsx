@@ -6,7 +6,7 @@ import {
   getGetPortalSessionQueryKey,
   type PortalSession, type PortalDashboardExamsItem, type PortalDashboardAttemptsItem,
 } from "@workspace/api-client-react";
-import { Award, BookOpen, Bus, CalendarCheck, CalendarClock, CalendarDays, ClipboardList, FileBarChart, Home, Images, KeyRound, LayoutGrid, Megaphone, MessagesSquare, NotebookPen, PlayCircle, Timer, UserRound, Users, Wallet } from "lucide-react";
+import { Award, BookOpen, Bus, CalendarCheck, CalendarClock, CalendarDays, CalendarRange, ClipboardList, FileBarChart, Home, Images, KeyRound, LayoutGrid, Megaphone, MessagesSquare, NotebookPen, PlayCircle, Timer, UserRound, Users, Wallet } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { EmptyState, ErrorPanel, Skeleton, StatusPill } from "./ui";
@@ -20,6 +20,7 @@ import { StudentEvents } from "./StudentEvents";
 import { StaffDirectory } from "./StaffDirectory";
 import { StudentGallery } from "./StudentGallery";
 import { StudentAssignments } from "./StudentAssignments";
+import { StudentTimetables } from "./Timetables";
 import { StudentAttendance } from "./StudentAttendance";
 import { StudentMessages } from "./StudentMessages";
 import { StudentLibrary } from "./StudentLibrary";
@@ -108,12 +109,13 @@ export function StudentDashboard({ session, theme }: { session: PortalSession; t
   const exams = useMemo(() => sortStudentExams(activeStudentExams(data?.exams ?? [], data?.attempts ?? []), data?.attempts ?? []), [data]);
   const average = studentAverage(data?.attempts ?? []);
 
-  const titles: Record<StudentSection, string> = { home: "Home", exams: "Exams", results: "GradeSheet", reports: "Report cards", revision: "Library", notices: "Notices", profile: "Profile", events: "Events", staff: "Staffs", gallery: "Gallery", attendance: "Attendance", assignments: "Assignments", messages: "Messages", fees: "Fees", boarding: "Hostel & bus" };
+  const titles: Record<StudentSection, string> = { home: "Home", exams: "Exams", timetables: "Timetables", results: "GradeSheet", reports: "Report cards", revision: "Library", notices: "Notices", profile: "Profile", events: "Events", staff: "Staffs", gallery: "Gallery", attendance: "Attendance", assignments: "Assignments", messages: "Messages", fees: "Fees", boarding: "Hostel & bus" };
   const openCount = (data?.exams ?? []).filter((e) => examWindow(e.startsAt, e.endsAt) === "open" && attemptByExam.get(e.id)?.status !== "submitted" && attemptByExam.get(e.id)?.status !== "marked").length;
   const groups: NavGroup<StudentSection>[] = [
     { items: [{ key: "home", label: "Home", icon: Home, testId: "tab-home" }, { key: "profile", label: "Profile", icon: UserRound, testId: "tab-profile" }, { key: "messages", label: "Messages", icon: MessagesSquare, badge: unreadMessages, testId: "tab-messages" }] },
     { label: "Learning", items: [
       { key: "exams", label: "Exams", icon: ClipboardList, badge: openCount, testId: "tab-exams" },
+      { key: "timetables", label: "Timetables", icon: CalendarRange, testId: "tab-timetables" },
       { key: "assignments", label: "Assignments", icon: NotebookPen, testId: "tab-assignments" },
       { key: "results", label: "GradeSheet", icon: Award, testId: "tab-results" },
       { key: "reports", label: "Report cards", icon: FileBarChart, testId: "tab-reports" },
@@ -162,6 +164,7 @@ export function StudentDashboard({ session, theme }: { session: PortalSession; t
             {section === "gallery" && <StudentGallery />}
             {section === "attendance" && <StudentAttendance />}
             {section === "assignments" && <StudentAssignments />}
+            {section === "timetables" && <StudentTimetables />}
             {section === "messages" && <StudentMessages />}
             {section === "fees" && <StudentFees />}
             {section === "boarding" && <StudentFacilities />}

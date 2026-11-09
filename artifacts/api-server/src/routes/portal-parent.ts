@@ -4,6 +4,7 @@ import { db, parentPayments, parentWalletEntries, parentWallets, portalAttempts,
 import { StartParentPaymentBody, AdjustParentWalletBody, GetParentChildProgressParams } from "@workspace/api-zod";
 import { publishedReportsFor } from "./portal-reports";
 import { studentViews } from "./portal-learning";
+import { timetablesForClass } from "./portal-timetables";
 import { attemptView, finalizeExpired } from "../lib/portal-assessment";
 import { tally } from "../lib/learning";
 import { check, portalActor, verifiedClerkEmail } from "../lib/portal-auth";
@@ -21,6 +22,8 @@ type Log = { warn: (o: object, m: string) => void; error: (o: object, m: string)
 // confirmed it by signing in with an emailed code. Tests replace the lookup.
 let parentEmailOf: (req: Request) => Promise<string | null> = verifiedClerkEmail;
 export function setParentEmailResolverForTest(fn: typeof parentEmailOf) { parentEmailOf = fn; }
+/** The signed-in parent's verified email, or null. */
+export const parentEmail = (req: Request) => parentEmailOf(req);
 
 async function signedInParent(req: Request) {
   const email = await parentEmailOf(req);
@@ -253,12 +256,13 @@ portalParentRouter.get("/parent/children/:studentId", async (req, res) => {
   const child = (await childrenOf(db, email)).find((k) => k.id === studentId);
   check(child, "This child is not linked to your email.", 404);
   const since = new Date(Date.now() - 180 * 86_400_000).toISOString().slice(0, 10);
-  const [reports, exams, attempts, attendance, homework] = await Promise.all([
+  const [reports, exams, attempts, attendance, homework, timetables] = await Promise.all([
     publishedReportsFor(child),
     db.select().from(portalExams).where(eq(portalExams.classId, child.classId)),
     db.select().from(portalAttempts).where(eq(portalAttempts.studentId, child.id)),
     db.select().from(portalAttendance).where(and(eq(portalAttendance.studentId, child.id), gte(portalAttendance.date, since))).orderBy(desc(portalAttendance.date)),
     studentViews(child.classId, child.id),
+    timetablesForClass(child.classId),
   ]);
   const results = [];
   for (const attempt of attempts) {
@@ -276,6 +280,6 @@ portalParentRouter.get("/parent/children/:studentId", async (req, res) => {
     child: { id: child.id, name: child.name, studentId: child.studentId, className: reports.className },
     reports: reports.reports, results, upcoming,
     attendance: { since, totals: tally(attendance.map((r) => r.status)), records: attendance.slice(0, 60).map((r) => ({ date: r.date, status: r.status, note: r.note })) },
-    homework,
+    homework, timetables,
   });
 });

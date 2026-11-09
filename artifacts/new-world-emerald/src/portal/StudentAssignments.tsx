@@ -4,10 +4,10 @@ import {
   useListMyAssignments, getListMyAssignmentsQueryKey, useSubmitAssignment, uploadAssignmentImage,
   type StudentAssignment,
 } from "@workspace/api-client-react";
-import { CalendarClock, Camera, NotebookPen, Send, X } from "lucide-react";
+import { CalendarClock, Camera, FileText, NotebookPen, Send, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { EmptyState, ErrorPanel, Skeleton, StatusPill } from "./ui";
-import { errorMessage, formatDateTime } from "./lib";
+import { errorMessage, fileUrl, formatDateTime } from "./lib";
 import { imageUrl, preparePhoto } from "./photos";
 
 const MAX_PHOTOS = 5;
@@ -90,6 +90,7 @@ function AssignmentCard({ a }: { a: StudentAssignment }) {
       <h3 className="mt-1 font-serif text-xl font-semibold">{a.title}</h3>
       <p className="mt-1 inline-flex items-center gap-1 text-sm text-[hsl(var(--p-ink)/0.62)]"><CalendarClock size={14} /> Due {formatDateTime(a.dueAt)} / {a.maxScore} {a.maxScore === 1 ? "mark" : "marks"}</p>
       {a.instructions && <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-[hsl(var(--p-ink)/0.78)]">{a.instructions}</p>}
+      {a.fileId && <a className="portal-btn-ghost mt-3" href={fileUrl(a.fileId)} target="_blank" rel="noreferrer" data-testid={`link-assignment-sheet-${a.id}`}><FileText size={14} /> Open the question sheet (PDF)</a>}
       {state === "marked" && sub && (
         <div className="mt-4 rounded-xl bg-[hsl(var(--p-emerald-soft))] p-4" data-testid={`feedback-${a.id}`}>
           <p className="font-serif text-2xl font-bold text-[hsl(var(--p-emerald))]">{sub.score ?? "-"}<span className="text-base text-[hsl(var(--p-ink)/0.45)]"> / {a.maxScore}</span></p>

@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { getGetParentChildProgressQueryKey, useGetParentChildProgress, type ParentChild, type ParentChildProgress as Progress } from "@workspace/api-client-react";
-import { BookOpenCheck, CalendarCheck, ClipboardList, FileBarChart } from "lucide-react";
+import { BookOpenCheck, CalendarCheck, CalendarRange, ClipboardList, FileBarChart, FileText } from "lucide-react";
 import { EmptyState, ErrorPanel, Skeleton, StatusPill } from "../ui";
-import { errorMessage } from "../lib";
+import { errorMessage, fileUrl } from "../lib";
+import { TimetableList } from "../Timetables";
 import { TermReport } from "../reports/StudentReports";
 
-type Tab = "reports" | "results" | "attendance" | "homework";
+type Tab = "reports" | "results" | "attendance" | "homework" | "timetables";
 const MUTED = "text-[hsl(var(--p-ink)/0.62)]";
 const day = (iso: string) => new Intl.DateTimeFormat("en-GB", { timeZone: "Africa/Lagos", weekday: "short", day: "numeric", month: "short", year: "numeric" }).format(new Date(iso));
 const dateOnly = (d: string) => new Intl.DateTimeFormat("en-GB", { timeZone: "UTC", weekday: "short", day: "numeric", month: "short" }).format(new Date(d + "T12:00:00Z"));
@@ -41,7 +42,7 @@ function ChildPanel({ studentId }: { studentId: number }) {
   const average = released.length ? Math.round(released.reduce((n, r) => n + (r.score! / (r.totalMarks || 1)) * 100, 0) / released.length) : null;
   const due = d.homework.filter((h) => !h.submission && new Date(h.dueAt) > new Date()).length;
   const missed = d.homework.filter((h) => !h.submission && new Date(h.dueAt) <= new Date()).length;
-  const tabs: [Tab, string, typeof FileBarChart, number][] = [["reports", "Report cards", FileBarChart, d.reports.length], ["results", "Exams and tests", ClipboardList, d.results.length], ["attendance", "Attendance", CalendarCheck, t.daysRecorded], ["homework", "Homework", BookOpenCheck, d.homework.length]];
+  const tabs: [Tab, string, typeof FileBarChart, number][] = [["reports", "Report cards", FileBarChart, d.reports.length], ["results", "Exams and tests", ClipboardList, d.results.length], ["attendance", "Attendance", CalendarCheck, t.daysRecorded], ["homework", "Homework", BookOpenCheck, d.homework.length], ["timetables", "Timetables", CalendarRange, d.timetables.length]];
   return (
     <div className="space-y-5" data-testid={`progress-${studentId}`}>
       <section className="portal-hero rounded-3xl p-6 sm:p-8" aria-labelledby="child-title">
@@ -67,6 +68,7 @@ function ChildPanel({ studentId }: { studentId: number }) {
       {tab === "results" && <Results d={d} />}
       {tab === "attendance" && <Attendance d={d} />}
       {tab === "homework" && <Homework d={d} />}
+      {tab === "timetables" && <TimetableList items={d.timetables} who={d.child.name.split(" ")[0] + "'s class"} />}
     </div>
   );
 }
@@ -135,6 +137,7 @@ function Homework({ d }: { d: Progress }) {
             <div className="flex items-start justify-between gap-2"><div className="min-w-0"><p className="text-xs font-semibold uppercase tracking-wider text-[hsl(var(--p-emerald))]">{h.subject}</p><h3 className="font-semibold">{h.title}</h3></div>
               {s?.markedAt ? <StatusPill tone="green">{s.score} / {h.maxScore}</StatusPill> : s ? <StatusPill tone="gold">Handed in{s.late ? " late" : ""}</StatusPill> : new Date(h.dueAt) < now ? <StatusPill tone="red">Not handed in</StatusPill> : <StatusPill tone="muted">Due</StatusPill>}</div>
             <p className={"mt-1 text-xs " + MUTED}>Due {day(h.dueAt)}</p>
+            {h.fileId && <a className="mt-2 inline-flex items-center gap-1 text-sm font-semibold text-[hsl(var(--p-emerald))] underline-offset-2 hover:underline" href={fileUrl(h.fileId)} target="_blank" rel="noreferrer" data-testid={`link-child-homework-sheet-${h.id}`}><FileText size={14} /> Question sheet (PDF)</a>}
             {s?.feedback && <p className="mt-2 rounded-lg bg-[hsl(var(--p-paper-2)/0.7)] px-3 py-2 text-sm"><b>Teacher:</b> {s.feedback}</p>}
           </li>
         );

@@ -157,6 +157,10 @@ paths:
     $ref: "./school.yaml#/paths/parentLinks"
   /portal/parent/children/{studentId}:
     $ref: "./school.yaml#/paths/childProgress"
+  /portal/timetables:
+    $ref: "./timetables.yaml#/paths/manage"
+  /portal/my-timetables:
+    $ref: "./timetables.yaml#/paths/mine"
   /portal/my-messages:
     $ref: "./messages.yaml#/paths/myMessages"
   /portal/my-messages/read:
@@ -1259,6 +1263,16 @@ components:
       $ref: "./school.yaml#/schemas/ParentChildInfo"
     ParentChildProgress:
       $ref: "./school.yaml#/schemas/ParentChildProgress"
+    Timetable:
+      $ref: "./timetables.yaml#/schemas/Timetable"
+    TimetableClass:
+      $ref: "./timetables.yaml#/schemas/TimetableClass"
+    TimetableWorkspace:
+      $ref: "./timetables.yaml#/schemas/TimetableWorkspace"
+    TimetableInput:
+      $ref: "./timetables.yaml#/schemas/TimetableInput"
+    TimetableCommand:
+      $ref: "./timetables.yaml#/schemas/TimetableCommand"
     MessageChannel:
       $ref: "./messages.yaml#/schemas/MessageChannel"
     PortalChatMessage:

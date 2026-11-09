@@ -1,0 +1,80 @@
+paths:
+  manage:
+    get:
+      operationId: listTimetables
+      description: Timetables the signed-in staff member or exam officer can see and post, and the classes they may post for
+      responses:
+        "200":
+          description: Timetables
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/TimetableWorkspace" }
+    post:
+      operationId: manageTimetables
+      description: Post, change or remove a class or exam timetable (the office, the exam officer, or a teacher for their own classes)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/TimetableCommand" }
+      responses:
+        "200":
+          description: Saved
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PortalMessage" }
+  mine:
+    get:
+      operationId: listMyTimetables
+      description: The published timetables for the signed-in student's class and the whole school
+      responses:
+        "200":
+          description: Timetables
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: "#/components/schemas/Timetable" } }
+schemas:
+  Timetable:
+    type: object
+    required: [id, title, kind, classIds, classNames, fileId, fileType, published, createdBy, updatedAt]
+    properties:
+      id: { type: integer }
+      title: { type: string }
+      kind: { type: string, enum: [exam, class] }
+      classIds: { type: array, items: { type: integer }, description: "Empty means the whole school" }
+      classNames: { type: array, items: { type: string } }
+      fileId: { type: string }
+      fileType: { type: string, enum: [pdf, image] }
+      published: { type: boolean }
+      createdBy: { type: string }
+      updatedAt: { type: string, format: date-time }
+  TimetableClass:
+    type: object
+    required: [id, name]
+    properties:
+      id: { type: integer }
+      name: { type: string }
+  TimetableWorkspace:
+    type: object
+    required: [canWholeSchool, classes, timetables]
+    properties:
+      canWholeSchool: { type: boolean }
+      classes: { type: array, items: { $ref: "#/components/schemas/TimetableClass" } }
+      timetables: { type: array, items: { $ref: "#/components/schemas/Timetable" } }
+  TimetableInput:
+    type: object
+    required: [title, kind, classIds, fileId, published]
+    properties:
+      id: { type: integer }
+      title: { type: string, maxLength: 150 }
+      kind: { type: string, enum: [exam, class] }
+      classIds: { type: array, items: { type: integer }, maxItems: 100, description: "Empty means the whole school" }
+      fileId: { type: string, maxLength: 64 }
+      published: { type: boolean }
+  TimetableCommand:
+    type: object
+    required: [action]
+    properties:
+      action: { type: string, enum: [save, delete] }
+      timetable: { $ref: "#/components/schemas/TimetableInput" }
+      id: { type: integer, description: "For delete" }

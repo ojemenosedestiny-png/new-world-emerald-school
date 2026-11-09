@@ -14,5 +14,10 @@ export interface StudentAssignment {
   instructions: string;
   dueAt: string;
   maxScore: number;
+  /**
+     * The question sheet (PDF), if the teacher attached one
+     * @nullable
+     */
+  fileId?: string | null;
   submission: SubmissionView | null;
 }

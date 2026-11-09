@@ -27,4 +27,9 @@ export interface AssignmentInput {
      */
   maxScore: number;
   published: boolean;
+  /**
+     * An optional question sheet (PDF) uploaded for the class
+     * @nullable
+     */
+  fileId?: string | null;
 }

@@ -25,9 +25,29 @@ export const portalAssignments = pgTable("portal_assignments", {
   dueAt: timestamp("due_at", { withTimezone: true }).notNull(),
   maxScore: integer("max_score").notNull().default(10),
   published: boolean("published").notNull().default(false),
+  // An optional question sheet (PDF) for the class, stored as a portal file.
+  fileId: text("file_id"),
   createdBy: text("created_by"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 }, (t) => [index("portal_assignments_class").on(t.classId)]);
+
+/**
+ * A timetable students and parents can open: a class timetable or an exam timetable, as a PDF or a picture,
+ * for the whole school (no classes) or for chosen classes.
+ */
+export const portalTimetables = pgTable("portal_timetables", {
+  id: serial("id").primaryKey(),
+  title: text("title").notNull(),
+  // "exam" or "class"
+  kind: text("kind").notNull(),
+  classIds: integer("class_ids").array().notNull().default([]),
+  fileId: text("file_id").notNull(),
+  published: boolean("published").notNull().default(true),
+  createdBy: text("created_by").notNull().default(""),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+export type PortalTimetableRecord = typeof portalTimetables.$inferSelect;
 export type PortalAssignmentRecord = typeof portalAssignments.$inferSelect;
 
 /** A student's answer to an assignment: text and up to five photos (portal_images ids). */

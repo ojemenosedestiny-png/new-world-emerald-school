@@ -1,6 +1,6 @@
 import { useMemo, useState, type CSSProperties } from "react";
 import { useGetStudentReports, getGetStudentReportsQueryKey, useListMyAssignments, getListMyAssignmentsQueryKey, useGetMyMessages, getGetMyMessagesQueryKey, useListPortalEvents, getListPortalEventsQueryKey, useGetMyPhoto, getGetMyPhotoQueryKey, type PortalDashboard } from "@workspace/api-client-react";
-import { Award, Bell, BookOpen, CalendarCheck, CalendarDays, ChevronRight, ClipboardList, FileBarChart, Images, MapPin, Megaphone, Menu, MessagesSquare, NotebookPen, Search, Timer, UserRound, Users, Wallet, type LucideIcon } from "lucide-react";
+import { Award, Bell, BookOpen, CalendarCheck, CalendarDays, CalendarRange, ChevronRight, ClipboardList, FileBarChart, Images, MapPin, Megaphone, Menu, MessagesSquare, NotebookPen, Search, Timer, UserRound, Users, Wallet, type LucideIcon } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useOpenShellMenu } from "./shell/AppShell";
 import { activeStudentExams, examWindow } from "./lib";
@@ -8,7 +8,7 @@ import { markSeen, readSeen, searchPortal, studentNotifications } from "./notifi
 import { calendarItems, upcomingItems, whenText } from "./events";
 import { Avatar } from "./photos";
 
-export type StudentSection = "home" | "exams" | "results" | "reports" | "revision" | "notices" | "profile" | "events" | "staff" | "gallery" | "attendance" | "assignments" | "messages" | "fees" | "boarding";
+export type StudentSection = "home" | "exams" | "timetables" | "results" | "reports" | "revision" | "notices" | "profile" | "events" | "staff" | "gallery" | "attendance" | "assignments" | "messages" | "fees" | "boarding";
 
 type Feature = { section: StudentSection; label: string; detail: string; icon: LucideIcon; tile: string; badge?: number };
 
@@ -36,6 +36,7 @@ export function StudentHome({ data, name, studentId, onGo }: { data: PortalDashb
   const features: Feature[] = [
     { section: "profile", label: "Profile", detail: "Your details and password", icon: UserRound, tile: "262 60% 55%" },
     { section: "exams", label: "Exams", detail: "Schedule and start", icon: ClipboardList, tile: "152 55% 36%", badge: openExams },
+    { section: "timetables", label: "Timetables", detail: "Exam and class timetables", icon: CalendarRange, tile: "226 55% 46%" },
     { section: "assignments", label: "Assignments", detail: "Homework and feedback", icon: NotebookPen, tile: "4 66% 50%", badge: toDo },
     { section: "messages", label: "Messages", detail: "Class teacher and office", icon: MessagesSquare, tile: "168 60% 34%", badge: unreadMessages },
     { section: "attendance", label: "Attendance", detail: "Your register record", icon: CalendarCheck, tile: "200 70% 42%" },

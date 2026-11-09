@@ -1677,7 +1677,42 @@ export interface StudentAssignment {
   instructions: string;
   dueAt: string;
   maxScore: number;
+  /**
+     * The question sheet (PDF), if the teacher attached one
+     * @nullable
+     */
+  fileId?: string | null;
   submission: SubmissionView | null;
+}
+
+export type TimetableKind = typeof TimetableKind[keyof typeof TimetableKind];
+
+
+export const TimetableKind = {
+  exam: 'exam',
+  class: 'class',
+} as const;
+
+export type TimetableFileType = typeof TimetableFileType[keyof typeof TimetableFileType];
+
+
+export const TimetableFileType = {
+  pdf: 'pdf',
+  image: 'image',
+} as const;
+
+export interface Timetable {
+  id: number;
+  title: string;
+  kind: TimetableKind;
+  /** Empty means the whole school */
+  classIds: number[];
+  classNames: string[];
+  fileId: string;
+  fileType: TimetableFileType;
+  published: boolean;
+  createdBy: string;
+  updatedAt: string;
 }
 
 export interface ParentChildProgress {
@@ -1687,6 +1722,56 @@ export interface ParentChildProgress {
   upcoming: ParentChildUpcoming[];
   attendance: ParentChildAttendance;
   homework: StudentAssignment[];
+  timetables: Timetable[];
+}
+
+export interface TimetableClass {
+  id: number;
+  name: string;
+}
+
+export interface TimetableWorkspace {
+  canWholeSchool: boolean;
+  classes: TimetableClass[];
+  timetables: Timetable[];
+}
+
+export type TimetableInputKind = typeof TimetableInputKind[keyof typeof TimetableInputKind];
+
+
+export const TimetableInputKind = {
+  exam: 'exam',
+  class: 'class',
+} as const;
+
+export interface TimetableInput {
+  id?: number;
+  /** @maxLength 150 */
+  title: string;
+  kind: TimetableInputKind;
+  /**
+     * Empty means the whole school
+     * @maxItems 100
+     */
+  classIds: number[];
+  /** @maxLength 64 */
+  fileId: string;
+  published: boolean;
+}
+
+export type TimetableCommandAction = typeof TimetableCommandAction[keyof typeof TimetableCommandAction];
+
+
+export const TimetableCommandAction = {
+  save: 'save',
+  delete: 'delete',
+} as const;
+
+export interface TimetableCommand {
+  action: TimetableCommandAction;
+  timetable?: TimetableInput;
+  /** For delete */
+  id?: number;
 }
 
 export type MessageChannel = typeof MessageChannel[keyof typeof MessageChannel];
@@ -1846,6 +1931,11 @@ export interface AssignmentInput {
      */
   maxScore: number;
   published: boolean;
+  /**
+     * An optional question sheet (PDF) uploaded for the class
+     * @nullable
+     */
+  fileId?: string | null;
 }
 
 export type StaffAssignment = AssignmentInput & {

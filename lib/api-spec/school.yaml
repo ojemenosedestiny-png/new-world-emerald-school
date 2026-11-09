@@ -232,7 +232,7 @@ schemas:
       className: { type: string }
   ParentChildProgress:
     type: object
-    required: [child, reports, results, upcoming, attendance, homework]
+    required: [child, reports, results, upcoming, attendance, homework, timetables]
     properties:
       child: { $ref: "#/components/schemas/ParentChildInfo" }
       reports: { type: array, items: { $ref: "#/components/schemas/StudentTermReport" } }
@@ -240,3 +240,4 @@ schemas:
       upcoming: { type: array, items: { $ref: "#/components/schemas/ParentChildUpcoming" } }
       attendance: { $ref: "#/components/schemas/ParentChildAttendance" }
       homework: { type: array, items: { $ref: "#/components/schemas/StudentAssignment" } }
+      timetables: { type: array, items: { $ref: "#/components/schemas/Timetable" } }

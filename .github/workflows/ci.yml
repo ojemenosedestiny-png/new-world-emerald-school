@@ -92,6 +92,7 @@ jobs:
           pnpm --filter @workspace/api-server run test:portal-term-rename
           pnpm --filter @workspace/api-server run test:portal-exam-officer
           pnpm --filter @workspace/api-server run test:portal-head-and-parents
+          pnpm --filter @workspace/api-server run test:portal-timetables
 
       - name: Backup and restore round trip (disposable Postgres)
         env:

@@ -21,6 +21,7 @@ import { portalPrincipalOversightRouter } from "./portal-principal-oversight";
 import { portalExamOfficerRouter } from "./portal-exam-officer";
 import { portalSchoolEmailRouter } from "./portal-school-email";
 import { portalParentLinksRouter } from "./portal-parent-links";
+import { portalTimetablesRouter } from "./portal-timetables";
 
 const portalRouter = Router();
 portalRouter.use(portalOriginGuard);
@@ -45,6 +46,7 @@ portalRouter.use(portalPrincipalOversightRouter);
 portalRouter.use(portalExamOfficerRouter);
 portalRouter.use(portalSchoolEmailRouter);
 portalRouter.use(portalParentLinksRouter);
+portalRouter.use(portalTimetablesRouter);
 const errors: ErrorRequestHandler = (error, req, res, _next) => {
   if (res.headersSent) { if (!res.destroyed) res.destroy(); return; }
   if (error instanceof PortalError) { res.status(error.status).json({ error: error.message }); return; }

@@ -90,7 +90,7 @@ describe("the office links parents to children", () => {
 });
 
 describe("parents see each child's progress", () => {
-  it("shows report cards, results (scores only once released), attendance and homework", () => {
+  it("shows report cards, results (scores only once released), attendance, homework and timetables", () => {
     api.progress = {
       child: { id: 1, name: "Ada Obi", studentId: "S1", className: "JSS 1" }, reports: [], upcoming: [{ examId: 9, title: "Science quiz", subject: "Basic Science", startsAt: "2026-11-12T08:00:00Z", endsAt: "2026-11-12T09:00:00Z" }],
       results: [
@@ -98,7 +98,8 @@ describe("parents see each child's progress", () => {
         { examId: 2, title: "Spelling", subject: "English", date: "2026-11-03T08:00:00Z", status: "submitted", released: false, score: null, totalMarks: 10 },
       ],
       attendance: { since: "2026-05-11", totals: { present: 18, late: 1, absent: 1, excused: 0, daysPresent: 19, daysRecorded: 20 }, records: [{ date: "2026-11-06", status: "absent", note: "Sick" }] },
-      homework: [{ id: 3, subject: "Mathematics", title: "Fractions", instructions: "", dueAt: "2026-11-01T08:00:00Z", maxScore: 10, submission: { id: 1, text: "", imageIds: [], submittedAt: "2026-10-31T10:00:00Z", late: false, score: 8, feedback: "Well done", markedAt: "2026-11-01T12:00:00Z" } }],
+      homework: [{ id: 3, subject: "Mathematics", title: "Fractions", instructions: "", dueAt: "2026-11-01T08:00:00Z", maxScore: 10, fileId: "sheet-1", submission: { id: 1, text: "", imageIds: [], submittedAt: "2026-10-31T10:00:00Z", late: false, score: 8, feedback: "Well done", markedAt: "2026-11-01T12:00:00Z" } }],
+      timetables: [{ id: 4, title: "Autumn Term exam timetable", kind: "exam", classIds: [], classNames: [], fileId: "tt-1", fileType: "pdf", published: true, createdBy: "officer@school.test", updatedAt: "2026-11-05T09:00:00Z" }],
     } satisfies ParentChildProgress;
     const children = [{ id: 1, name: "Ada Obi", studentId: "S1", photoImageId: null }, { id: 2, name: "Chi Obi", studentId: "S2", photoImageId: null }] as unknown as ParentChild[];
     const select = vi.fn();
@@ -116,6 +117,12 @@ describe("parents see each child's progress", () => {
     fireEvent.click(screen.getByTestId("tab-progress-homework"));
     expect(within(screen.getByTestId("child-homework-3")).getByText("8 / 10")).toBeTruthy();
     expect(screen.getByText("Well done")).toBeTruthy();
+    expect(screen.getByTestId("link-child-homework-sheet-3").getAttribute("href")).toMatch(/\/api\/portal\/files\/sheet-1$/);
+    fireEvent.click(screen.getByTestId("tab-progress-timetables"));
+    const card = screen.getByTestId("card-timetable-4");
+    expect(within(card).getByText("Exam timetable")).toBeTruthy();
+    expect(card.textContent).toContain("Whole school");
+    expect(within(card).getByTestId("link-timetable-4").getAttribute("href")).toMatch(/\/api\/portal\/files\/tt-1$/);
     fireEvent.click(screen.getByTestId("button-progress-child-2"));
     expect(select).toHaveBeenCalledWith(2);
   });

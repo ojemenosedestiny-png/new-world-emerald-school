@@ -11,6 +11,7 @@ import type { ParentChildResult } from './parentChildResult';
 import type { ParentChildUpcoming } from './parentChildUpcoming';
 import type { StudentAssignment } from './studentAssignment';
 import type { StudentTermReport } from './studentTermReport';
+import type { Timetable } from './timetable';
 
 export interface ParentChildProgress {
   child: ParentChildInfo;
@@ -19,4 +20,5 @@ export interface ParentChildProgress {
   upcoming: ParentChildUpcoming[];
   attendance: ParentChildAttendance;
   homework: StudentAssignment[];
+  timetables: Timetable[];
 }
