@@ -147,7 +147,7 @@ export default function PortalManage() {
             {section === "attendance" && <AttendancePanel data={d} />}
             {section === "assignments" && <AssignmentsPanel data={d} />}
             {section === "timetables" && <TimetablesPanel />}
-            {section === "exams" && <ExamsPanel data={d} isAdmin={isAdmin} />}
+            {section === "exams" && <ExamsPanel data={d} isAdmin={isAdmin} canClear={isAdmin && !!session.data?.superAdmin} />}
             {section === "marking" && <MarkingPanel data={d} />}
             {section === "reports" && <ReportsPanel />}
             {section === "revision" && <MaterialsPanel data={d} />}

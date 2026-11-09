@@ -4817,6 +4817,8 @@ export interface PortalCommand {
   examStatus?: PortalCommandExamStatus;
   target?: PortalCommandTarget;
   attemptControl?: PortalCommandAttemptControl;
+  /** deleteExam only: also delete every student's attempt and score for the exam (the school owner only, for clearing test exams) */
+  withAttempts?: boolean;
 }
 
 export interface PortalTarget {

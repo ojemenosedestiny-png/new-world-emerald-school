@@ -16,6 +16,7 @@ import { paperSettingsProblem } from "../lib/cbt";
 import { PRACTICE_TITLE, practiceExam } from "../lib/practice-exam";
 import { lagosToday } from "../lib/principal";
 import { examOfficerEmails } from "../lib/approved-identities";
+import { isSuperAdmin } from "../lib/website-admin";
 import { asReview, staffPublish } from "../lib/exam-review";
 
 /** The short address teachers use: it opens staff sign-in and returns to the teacher workspace. */
@@ -314,7 +315,11 @@ portalManagementRouter.post("/manage", async (req, res) => {
         check(exam, "Exam not found.", 404);
         classAllowed(actor, exam.classId);
         const [attempt] = await tx.select({ id: portalAttempts.id }).from(portalAttempts).where(eq(portalAttempts.examId, exam.id)).limit(1);
-        check(!attempt, "Students have started this exam, so it cannot be deleted. Hide it instead.", 409);
+        if (attempt) {
+          // Only the school owner may clear an exam students have taken (test exams), with its attempts and scores.
+          check(body.withAttempts === true && isSuperAdmin(req), "Students have started this exam, so it cannot be deleted. Hide it instead.", 409);
+          await tx.delete(portalAttempts).where(eq(portalAttempts.examId, exam.id));
+        }
         await tx.delete(portalExams).where(eq(portalExams.id, exam.id));
       });
       break;

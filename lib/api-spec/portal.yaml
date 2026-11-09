@@ -454,6 +454,7 @@ schemas:
       examStatus: { $ref: "#/schemas/PortalStatus" }
       target: { $ref: "#/schemas/PortalTarget" }
       attemptControl: { $ref: "#/schemas/PortalAttemptControl" }
+      withAttempts: { type: boolean, description: "deleteExam only: also delete every student's attempt and score for the exam (the school owner only, for clearing test exams)" }
   PortalTarget:
     type: object
     required: [id]

@@ -21,12 +21,14 @@ export function duplicateExam(e: PortalExam): PortalExam {
   };
 }
 
-export function ExamsPanel({ data, isAdmin = false }: { data: PortalManagement; isAdmin?: boolean }) {
+/** `canClear`: the school owner may also delete exams students have taken (test exams), with their attempts and scores. */
+export function ExamsPanel({ data, isAdmin = false, canClear = false }: { data: PortalManagement; isAdmin?: boolean; canClear?: boolean }) {
   const cmd = useCommand();
   const [editing, setEditing] = useState<PortalExam | null>(null);
   const [confirm, setConfirm] = useState<Pending>(null);
   const [resultsFor, setResultsFor] = useState<number | null>(null);
-  const [deleting, setDeleting] = useState<{ id: number; title: string } | null>(null);
+  const [deleting, setDeleting] = useState<{ id: number; title: string; attempts: number } | null>(null);
+  const [typed, setTyped] = useState("");
   const resultsExam = data.exams.find((e) => e.id === resultsFor);
   // With an exam officer, staff send exams to be published; opening, copying or downloading questions is recorded for them.
   const officer = !!data.examOfficer;
@@ -73,7 +75,7 @@ export function ExamsPanel({ data, isAdmin = false }: { data: PortalManagement; 
                   {submitted.length > 0 && (e.resultsReleased
                     ? <button className="portal-btn-ghost" disabled={cmd.pending} onClick={() => setConfirm({ id, published: e.published, resultsReleased: false, label: "Withhold results?", body: "Students will see their result as pending again." })} data-testid={"button-withhold-" + id}><Undo2 size={13} /> Withhold results</button>
                     : <button className="portal-btn-gold portal-btn !py-1.5 text-[13px]" disabled={cmd.pending || unmarked > 0} title={unmarked ? "Mark every submitted attempt first" : undefined} onClick={() => setConfirm({ id, published: e.published, resultsReleased: true, label: "Release results?", body: "Every student who submitted will see their score and feedback." })} data-testid={"button-release-" + id}><Send size={13} /> Release results</button>)}
-                  {!started && <button className="portal-btn-ghost" disabled={cmd.pending} onClick={() => setDeleting({ id, title: e.title })} data-testid={"button-delete-exam-" + id}><Trash2 size={13} /> Delete</button>}
+                  {(!started || canClear) && <button className="portal-btn-ghost" disabled={cmd.pending} onClick={() => { setTyped(""); setDeleting({ id, title: e.title, attempts: attempts.length }); }} data-testid={"button-delete-exam-" + id}><Trash2 size={13} /> Delete</button>}
                 </div>
               </div>
               {started && <p className="mt-3 text-xs text-[hsl(var(--p-ink)/0.5)]">A student has started this exam, so questions and settings can no longer change. Use publish and results controls only.</p>}
@@ -85,10 +87,17 @@ export function ExamsPanel({ data, isAdmin = false }: { data: PortalManagement; 
       {resultsExam && <ExamResults data={data} exam={resultsExam} isAdmin={isAdmin} onClose={() => setResultsFor(null)} />}
       <AlertDialog open={!!deleting} onOpenChange={(o) => !o && setDeleting(null)}>
         <AlertDialogContent>
-          <AlertDialogHeader><AlertDialogTitle className="font-serif text-2xl">Delete "{deleting?.title}"?</AlertDialogTitle><AlertDialogDescription>The exam and its questions are removed permanently. Only exams no student has started can be deleted.</AlertDialogDescription></AlertDialogHeader>
+          <AlertDialogHeader><AlertDialogTitle className="font-serif text-2xl">Delete "{deleting?.title}"?</AlertDialogTitle><AlertDialogDescription>
+            {deleting?.attempts
+              ? <>{deleting.attempts} {deleting.attempts === 1 ? "student has" : "students have"} taken this exam. Their answers and scores for it are deleted too, and cannot be brought back. Use this to clear test exams.</>
+              : "The exam and its questions are removed permanently. Only exams no student has started can be deleted."}
+          </AlertDialogDescription></AlertDialogHeader>
+          {!!deleting?.attempts && <label className="block text-sm">Type <b>DELETE</b> to confirm
+            <input className="portal-input mt-1" value={typed} onChange={(ev) => setTyped(ev.target.value)} autoComplete="off" data-testid="input-confirm-delete-exam" /></label>}
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction data-testid="button-confirm-delete-exam" onClick={() => { if (deleting) void cmd.run({ action: "deleteExam", target: { id: deleting.id } }, "Exam deleted"); setDeleting(null); }}>Delete exam</AlertDialogAction>
+            <AlertDialogAction data-testid="button-confirm-delete-exam" disabled={!!deleting?.attempts && typed.trim().toUpperCase() !== "DELETE"}
+              onClick={() => { if (deleting) void cmd.run({ action: "deleteExam", target: { id: deleting.id }, ...(deleting.attempts ? { withAttempts: true } : {}) }, deleting.attempts ? "Exam and its attempts deleted" : "Exam deleted"); setDeleting(null); }}>Delete exam</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

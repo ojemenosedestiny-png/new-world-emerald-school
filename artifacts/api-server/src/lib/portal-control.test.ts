@@ -141,6 +141,21 @@ test("staff can extend, reset and delete while students keep a safe exam flow", 
     assert.equal((await command({ action: "deleteNotice", target: { id: notice.id } })).status, 200);
     assert.equal((await db.select().from(portalNotices).where(eq(portalNotices.id, notice.id))).length, 0);
     assert.equal((await command({ action: "deleteNotice" })).status, 400);
+
+    // Only the school owner (super admin) can clear an exam students have taken, such as a test exam, with its attempts.
+    const savedSuper = process.env.SCHOOL_SUPER_ADMIN_EMAILS;
+    try {
+      process.env.SCHOOL_SUPER_ADMIN_EMAILS = "someone-else@example.test";
+      assert.equal((await command({ action: "deleteExam", target: { id: exam.id }, withAttempts: true })).status, 409, "another administrator");
+      process.env.SCHOOL_SUPER_ADMIN_EMAILS = "portal-control-admin@example.test";
+      assert.equal((await command({ action: "deleteExam", target: { id: exam.id } })).status, 409, "the owner must say the attempts go too");
+      assert.equal((await command({ action: "deleteExam", target: { id: exam.id }, withAttempts: true })).status, 200);
+      assert.equal((await db.select().from(portalExams).where(eq(portalExams.id, exam.id))).length, 0);
+      assert.equal((await db.select().from(portalAttempts).where(eq(portalAttempts.examId, exam.id))).length, 0);
+      assert.equal((await call(`/attempts/${secondId}`, "GET", undefined, cookie)).status, 404);
+    } finally {
+      if (savedSuper === undefined) delete process.env.SCHOOL_SUPER_ADMIN_EMAILS; else process.env.SCHOOL_SUPER_ADMIN_EMAILS = savedSuper;
+    }
   } finally {
     await new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
     if (classIds.length) {

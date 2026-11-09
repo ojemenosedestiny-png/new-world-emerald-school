@@ -867,7 +867,8 @@ export const ManagePortalBody = zod.object({
   "attemptControl": zod.object({
   "attemptId": zod.number(),
   "minutes": zod.number().min(1).max(managePortalBodyAttemptControlMinutesMax).optional()
-}).optional()
+}).optional(),
+  "withAttempts": zod.boolean().optional().describe('deleteExam only: also delete every student\'s attempt and score for the exam (the school owner only, for clearing test exams)')
 })
 
 export const ManagePortalResponse = zod.object({

@@ -130,4 +130,18 @@ describe("exam results controls", () => {
     fireEvent.click(await screen.findByTestId("button-confirm-delete-exam"));
     await waitFor(() => expect(mocks.manage).toHaveBeenCalledWith({ data: { action: "deleteExam", target: { id: 1 } } }));
   });
+  it("lets the school owner clear a taken exam after typing DELETE", async () => {
+    mocks.manage.mockResolvedValue({ message: "Saved successfully." });
+    const started = management();
+    const taken = started.attempts.filter((a) => a.examId === 1).length;
+    render(wrap(<ExamsPanel data={started} isAdmin canClear />));
+    fireEvent.click(screen.getByTestId("button-delete-exam-1"));
+    expect((await screen.findByText(new RegExp(`${taken} students? ha(s|ve) taken this exam`))).textContent).toContain("cannot be brought back");
+    const confirm = screen.getByTestId("button-confirm-delete-exam") as HTMLButtonElement;
+    expect(confirm.disabled).toBe(true);
+    fireEvent.change(screen.getByTestId("input-confirm-delete-exam"), { target: { value: "delete" } });
+    expect(confirm.disabled).toBe(false);
+    fireEvent.click(confirm);
+    await waitFor(() => expect(mocks.manage).toHaveBeenCalledWith({ data: { action: "deleteExam", target: { id: 1 }, withAttempts: true } }));
+  });
 });
