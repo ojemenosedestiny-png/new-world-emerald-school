@@ -72,6 +72,9 @@ test("head of school and parents: private emails to teachers and parents, two pa
     assert.equal((await link("link", dad, ada.id)).status, 409, "already linked");
     assert.equal((await link("link", stranger, ada.id)).status, 409, "two parents at most");
     assert.equal((await link("link", "not-an-email", chi.id)).status, 400);
+    const typo = await link("link", `dad-${lower}@gmial.com`, chi.id);
+    assert.equal(typo.status, 400);
+    assert.match(typo.data.error, /Did you mean dad-.*@gmail\.com/);
     const links = await call("/parent-links", office);
     assert.deepEqual(links.data.parents.find((p: { email: string }) => p.email === mum).children.map((c: { name: string }) => c.name), ["Ada Obi", "Chi Obi"]);
     assert.deepEqual(links.data.parents.find((p: { email: string }) => p.email === dad).children.map((c: { slot: string }) => c.slot), ["second"]);

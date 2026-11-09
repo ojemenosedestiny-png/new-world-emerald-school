@@ -5,6 +5,7 @@ import { ManageParentLinksBody } from "@workspace/api-zod";
 import { check, portalActor } from "../lib/portal-auth";
 import { siteBaseUrl, validEmail } from "../lib/accounts";
 import { emailConfigured, parentInviteEmail, sendEmail } from "../lib/email";
+import { emailTypoFix } from "../lib/email-typos";
 
 /** The parent's own sign-in link: the parent portal's sign-in with their email filled in. */
 export const parentSignInLink = (email: string, site = siteBaseUrl() ?? "https://newworldemeraldprivateschool.com") => `${site}/sign-in?returnTo=parents&email=${encodeURIComponent(email)}`;
@@ -53,6 +54,9 @@ portalParentLinksRouter.post("/parent-links", async (req, res) => {
   const body = ManageParentLinksBody.parse(req.body);
   const email = clean(body.email);
   check(validEmail(email), "Enter the parent's email address.");
+  const typo = emailTypoFix(email);
+  // A mistyped email that is already linked can still be unlinked.
+  check(!typo || body.action === "unlink", `"${email}" looks mistyped. Did you mean ${typo}? Check with the parent before linking.`);
   if (body.action === "invite") {
     check(emailConfigured(), "Email is not set up yet. Copy the link and send it to the parent yourself.", 503);
     const children = (await db.select({ name: portalStudents.name }).from(portalStudents)

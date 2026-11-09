@@ -79,13 +79,31 @@ describe("the office links parents to children", () => {
     render(wrap(<ParentLinksPanel />));
     fireEvent.change(screen.getByTestId("input-link-email"), { target: { value: "Dad@Home.test" } });
     fireEvent.change(screen.getByTestId("input-link-child"), { target: { value: "obi" } });
+    // Not until the email is typed a second time, the same way.
+    expect((screen.getByTestId("button-link-2") as HTMLButtonElement).disabled).toBe(true);
+    fireEvent.change(screen.getByTestId("input-link-email-again"), { target: { value: "dad@home.tst" } });
+    expect(screen.getByTestId("text-email-mismatch")).toBeTruthy();
+    fireEvent.change(screen.getByTestId("input-link-email-again"), { target: { value: "dad@home.test" } });
     fireEvent.click(screen.getByTestId("button-link-2"));
+    expect(screen.getByTestId("text-confirm-email").textContent).toBe("dad@home.test");
+    expect(api.links).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByTestId("button-confirm-link"));
     await waitFor(() => expect(api.links).toHaveBeenCalledWith({ data: { action: "link", email: "dad@home.test", studentId: 2 } }));
     fireEvent.click(screen.getByTestId("button-copy-parent-link"));
     await waitFor(() => expect(writeText).toHaveBeenCalledWith(parentLink("dad@home.test")));
     expect(parentLink("dad@home.test")).toMatch(/\/sign-in\?returnTo=parents&email=dad%40home.test$/);
     fireEvent.click(screen.getByTestId("button-email-parent-link"));
     await waitFor(() => expect(api.links).toHaveBeenCalledWith({ data: { action: "invite", email: "dad@home.test" } }));
+  });
+  it("catches a mistyped email provider and offers the fix", () => {
+    api.linksData = links;
+    render(wrap(<ParentLinksPanel />));
+    fireEvent.change(screen.getByTestId("input-link-email"), { target: { value: "dad@gmial.com" } });
+    expect(screen.getByTestId("text-email-typo").textContent).toContain("gmail.com");
+    expect(screen.queryByTestId("button-copy-parent-link")).toBeNull();
+    fireEvent.click(screen.getByTestId("button-fix-email"));
+    expect((screen.getByTestId("input-link-email") as HTMLInputElement).value).toBe("dad@gmail.com");
+    expect(screen.queryByTestId("text-email-typo")).toBeNull();
   });
 });
 
