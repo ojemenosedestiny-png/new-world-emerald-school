@@ -8,10 +8,11 @@ import { classFeeSchedulesTable, db, parentPayments, parentWalletEntries, parent
 import portalRouter from "../routes/portal";
 import { setParentEmailResolverForTest } from "../routes/portal-parent";
 import { hashPassword } from "./portal-auth";
+import { newPaymentReference } from "./parent-payments";
 
 // Database checks for the parent portal: who sees which child, Paystack payments, part payments,
 // overpayment into the wallet, wallet-only payments, tampering, and the office's receipts.
-test("parents: children, Paystack payments, wallet and office receipts", async () => {
+test("parents: children, card payments started before the switch-off, wallet and office receipts", async () => {
   const saved = { admins: process.env.SCHOOL_ADMIN_EMAILS, key: process.env.PAYSTACK_SECRET_KEY, resend: process.env.RESEND_API_KEY };
   const marker = `QA-PAR-${randomUUID().slice(0, 8)}`.toUpperCase();
   const lower = marker.toLowerCase();
@@ -68,7 +69,17 @@ test("parents: children, Paystack payments, wallet and office receipts", async (
     });
     return { status: r.status, data: await r.json() };
   }
-  const pay = (parent: string, items: { studentId: number; itemKey: string }[], amountKobo: number) => call("/parent/payments", { parent, body: { items, amountKobo } });
+  // New card payments are switched off (parents pay by bank transfer). Card payments started before the switch-off
+  // must still settle, so after checking the refusal the test records the pending payment as it was started then.
+  const pay = async (parent: string, items: { studentId: number; itemKey: string }[], amountKobo: number) => {
+    const r = await call("/parent/payments", { parent, body: { items, amountKobo } });
+    if (r.status !== 410) return r;
+    assert.match(r.data.error, /bank transfer/);
+    const reference = newPaymentReference();
+    await db.insert(parentPayments).values({ reference, parentEmail: parent, cardKobo: amountKobo, selection: items });
+    paystack.set(reference, { amount: amountKobo, status: "abandoned" });
+    return { status: 200, data: { reference, authorizationUrl: "https://checkout.paystack.com/started-before-switch-off", payment: null } };
+  };
   const verify = (parent: string, ref: string) => call(`/parent/payments/${ref}/verify`, { parent, body: {} });
 
   try {

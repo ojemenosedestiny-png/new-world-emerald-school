@@ -661,6 +661,93 @@ export type ParentOverviewWallet = {
   entries: ParentWalletEntry[];
 };
 
+export type PaymentAccountPurpose = typeof PaymentAccountPurpose[keyof typeof PaymentAccountPurpose];
+
+
+export const PaymentAccountPurpose = {
+  school_fees: 'school_fees',
+  exam_registration: 'exam_registration',
+} as const;
+
+export interface PaymentAccount {
+  id: number;
+  purpose: PaymentAccountPurpose;
+  /** Empty means every session */
+  academicYear: string;
+  bankName: string;
+  accountName: string;
+  accountNumber: string;
+  note: string;
+  active: boolean;
+}
+
+export type FeeTransferPurpose = typeof FeeTransferPurpose[keyof typeof FeeTransferPurpose];
+
+
+export const FeeTransferPurpose = {
+  school_fees: 'school_fees',
+  exam_registration: 'exam_registration',
+} as const;
+
+export interface FeeTransferAccount {
+  bankName: string;
+  accountName: string;
+  accountNumber: string;
+}
+
+export interface FeeTransfer {
+  id: number;
+  reference: string;
+  /** @nullable */
+  receiptNumber: string | null;
+  purpose: FeeTransferPurpose;
+  studentName: string;
+  studentIdentifier: string;
+  className: string;
+  description: string;
+  term: string;
+  academicYear: string;
+  amountKobo: number;
+  /** reported, confirmed, rejected or payment_requested */
+  status: string;
+  /** @nullable */
+  officeNote: string | null;
+  /** @nullable */
+  proofImageId: string | null;
+  /** @nullable */
+  transferReference: string | null;
+  payer: string;
+  account: FeeTransferAccount | null;
+  createdAt: string;
+  /** @nullable */
+  confirmedAt: string | null;
+  /** @nullable */
+  confirmedBy: string | null;
+}
+
+export type ParentExamFeeStatus = typeof ParentExamFeeStatus[keyof typeof ParentExamFeeStatus];
+
+
+export const ParentExamFeeStatus = {
+  due: 'due',
+  pending: 'pending',
+  paid: 'paid',
+} as const;
+
+export interface ParentExamFee {
+  studentId: number;
+  studentName: string;
+  studentCode: string;
+  className: string;
+  academicYear: string;
+  title: string;
+  amountKobo: number;
+  status: ParentExamFeeStatus;
+  itemKey: string;
+  /** none, draft, submitted or returned */
+  formStatus: string;
+}
+
 export interface ParentOverview {
   email: string;
   paystackReady: boolean;
@@ -669,6 +756,12 @@ export interface ParentOverview {
   children: ParentChild[];
   outstanding: ParentOutstandingItem[];
   payments: ParentPayment[];
+  /** The school's active bank accounts for fees and WAEC/NECO */
+  accounts: PaymentAccount[];
+  /** Bank transfers reported for this family, newest first */
+  transfers: FeeTransfer[];
+  /** WAEC/NECO registration fees for children in an open registration */
+  examFees: ParentExamFee[];
 }
 
 export type ParentPaymentRequestItemsItem = {
@@ -1772,6 +1865,326 @@ export interface TimetableCommand {
   timetable?: TimetableInput;
   /** For delete */
   id?: number;
+}
+
+export interface ChairmanCount {
+  label: string;
+  value: number;
+}
+
+export type ChairmanSectionSection = typeof ChairmanSectionSection[keyof typeof ChairmanSectionSection];
+
+
+export const ChairmanSectionSection = {
+  primary: 'primary',
+  secondary: 'secondary',
+  other: 'other',
+} as const;
+
+export interface ChairmanSection {
+  section: ChairmanSectionSection;
+  students: number;
+  classes: number;
+  /** @nullable */
+  attendanceRate: number | null;
+  /** @nullable */
+  averageScore: number | null;
+}
+
+export type ChairmanClassSection = typeof ChairmanClassSection[keyof typeof ChairmanClassSection];
+
+
+export const ChairmanClassSection = {
+  primary: 'primary',
+  secondary: 'secondary',
+  other: 'other',
+} as const;
+
+export interface ChairmanClass {
+  className: string;
+  section: ChairmanClassSection;
+  students: number;
+  /** @nullable */
+  attendanceRate: number | null;
+  recorded: number;
+  /** @nullable */
+  averageScore: number | null;
+  results: number;
+}
+
+export interface ChairmanDay {
+  date: string;
+  /** @nullable */
+  rate: number | null;
+  recorded: number;
+}
+
+export interface ChairmanWaec {
+  academicYear: string;
+  open: boolean;
+  candidates: number;
+  submitted: number;
+}
+
+export type ChairmanBoardTotals = {
+  students: number;
+  teachers: number;
+  classes: number;
+  /** @nullable */
+  attendanceRate: number | null;
+  absentToday: number;
+  /** @nullable */
+  averageScore: number | null;
+};
+
+export interface ChairmanBoard {
+  days: number;
+  from: string;
+  to: string;
+  generatedAt: string;
+  totals: ChairmanBoardTotals;
+  sections: ChairmanSection[];
+  classes: ChairmanClass[];
+  attendanceTrend: ChairmanDay[];
+  learning: ChairmanCount[];
+  admissions: ChairmanCount[];
+  highlights: string[];
+  waec: ChairmanWaec | null;
+}
+
+export type PaymentAccountInputPurpose = typeof PaymentAccountInputPurpose[keyof typeof PaymentAccountInputPurpose];
+
+
+export const PaymentAccountInputPurpose = {
+  school_fees: 'school_fees',
+  exam_registration: 'exam_registration',
+} as const;
+
+export interface PaymentAccountInput {
+  id?: number;
+  purpose: PaymentAccountInputPurpose;
+  /** @maxLength 20 */
+  academicYear: string;
+  /** @maxLength 80 */
+  bankName: string;
+  /** @maxLength 120 */
+  accountName: string;
+  /** @maxLength 20 */
+  accountNumber: string;
+  /** @maxLength 200 */
+  note: string;
+  active: boolean;
+}
+
+export type PaymentAccountCommandAction = typeof PaymentAccountCommandAction[keyof typeof PaymentAccountCommandAction];
+
+
+export const PaymentAccountCommandAction = {
+  save: 'save',
+  delete: 'delete',
+} as const;
+
+export interface PaymentAccountCommand {
+  action: PaymentAccountCommandAction;
+  account?: PaymentAccountInput;
+  id?: number;
+}
+
+export interface PaymentAccountWorkspace {
+  accounts: PaymentAccount[];
+  /** Academic sessions in use, newest first */
+  sessions: string[];
+}
+
+export interface ParentTransferInput {
+  studentId: number;
+  /**
+     * The fee item (class-12, charge-7) or exam-<session> for WAEC/NECO
+     * @maxLength 60
+     */
+  itemKey: string;
+  /** @maxLength 64 */
+  proofId: string;
+  /** @maxLength 80 */
+  transferReference?: string;
+}
+
+export interface FeeTransferWorkspace {
+  transfers: FeeTransfer[];
+  waiting: number;
+}
+
+export type FeeTransferReviewAction = typeof FeeTransferReviewAction[keyof typeof FeeTransferReviewAction];
+
+
+export const FeeTransferReviewAction = {
+  confirm: 'confirm',
+  reject: 'reject',
+} as const;
+
+export interface FeeTransferReview {
+  action: FeeTransferReviewAction;
+  /** @maxLength 300 */
+  note?: string;
+}
+
+export interface ExamRegistrationSettings {
+  /** @maxLength 20 */
+  academicYear: string;
+  /** @maxLength 120 */
+  title: string;
+  open: boolean;
+  /**
+     * @minimum 0
+     * @maximum 100000000
+     */
+  feeKobo: number;
+  /**
+     * @maxItems 15
+     * @items.maxLength 60
+     */
+  compulsorySubjects: string[];
+  /**
+     * @maxItems 60
+     * @items.maxLength 60
+     */
+  optionalSubjects: string[];
+  /**
+     * @minimum 1
+     * @maximum 15
+     */
+  maxSubjects: number;
+  /** @maxItems 50 */
+  classIds: number[];
+  /** @maxLength 10 */
+  deadline: string;
+}
+
+export interface ExamRegistrationFormFields {
+  /** @maxLength 60 */
+  surname: string;
+  /** @maxLength 60 */
+  firstName: string;
+  /** @maxLength 60 */
+  middleName: string;
+  /** @maxLength 10 */
+  dateOfBirth: string;
+  /** @maxLength 40 */
+  stateOfOrigin: string;
+  /** @maxLength 60 */
+  lga: string;
+  /** @maxLength 10 */
+  gender: string;
+  /** @maxLength 11 */
+  nin: string;
+  /**
+     * @maxItems 15
+     * @items.maxLength 60
+     */
+  subjects: string[];
+  /** @maxLength 20 */
+  phone: string;
+  /** @maxLength 120 */
+  email: string;
+  /** @maxLength 120 */
+  signatureName: string;
+}
+
+export type ExamRegistrationFormInput = ExamRegistrationFormFields & {
+  /** true to submit; false saves a draft */
+  submit: boolean;
+};
+
+export type ExamRegistrationFormStatus = typeof ExamRegistrationFormStatus[keyof typeof ExamRegistrationFormStatus];
+
+
+export const ExamRegistrationFormStatus = {
+  draft: 'draft',
+  submitted: 'submitted',
+  returned: 'returned',
+} as const;
+
+export type ExamRegistrationForm = ExamRegistrationFormFields & ({
+  id: number;
+  academicYear: string;
+  status: ExamRegistrationFormStatus;
+  officeNote: string;
+  /** @nullable */
+  submittedAt: string | null;
+  updatedAt: string;
+});
+
+export type ExamRegistrationFeeStatus = typeof ExamRegistrationFeeStatus[keyof typeof ExamRegistrationFeeStatus];
+
+
+export const ExamRegistrationFeeStatus = {
+  due: 'due',
+  pending: 'pending',
+  paid: 'paid',
+} as const;
+
+export interface ExamRegistrationFee {
+  amountKobo: number;
+  status: ExamRegistrationFeeStatus;
+  itemKey: string;
+}
+
+export type MyExamRegistrationStudent = {
+  name: string;
+  studentId: string;
+  className: string;
+};
+
+export interface MyExamRegistration {
+  settings: ExamRegistrationSettings | null;
+  eligible: boolean;
+  form: ExamRegistrationForm | null;
+  fee: ExamRegistrationFee | null;
+  account: FeeTransferAccount | null;
+  student: MyExamRegistrationStudent;
+}
+
+export type ExamRegistrationRowFeeStatus = typeof ExamRegistrationRowFeeStatus[keyof typeof ExamRegistrationRowFeeStatus];
+
+
+export const ExamRegistrationRowFeeStatus = {
+  due: 'due',
+  pending: 'pending',
+  paid: 'paid',
+} as const;
+
+export interface ExamRegistrationRow {
+  studentId: number;
+  studentName: string;
+  studentCode: string;
+  className: string;
+  feeStatus: ExamRegistrationRowFeeStatus;
+  form: ExamRegistrationForm | null;
+}
+
+export interface ExamRegistrationClass {
+  id: number;
+  name: string;
+}
+
+export interface ExamRegistrationAdmin {
+  settings: ExamRegistrationSettings | null;
+  sessions: string[];
+  classes: ExamRegistrationClass[];
+  rows: ExamRegistrationRow[];
+}
+
+export type ExamRegistrationReviewAction = typeof ExamRegistrationReviewAction[keyof typeof ExamRegistrationReviewAction];
+
+
+export const ExamRegistrationReviewAction = {
+  return: 'return',
+} as const;
+
+export interface ExamRegistrationReview {
+  action: ExamRegistrationReviewAction;
+  /** @maxLength 300 */
+  note: string;
 }
 
 export type MessageChannel = typeof MessageChannel[keyof typeof MessageChannel];
@@ -5797,6 +6210,14 @@ from?: string;
  * @pattern ^\d{4}-\d{2}-\d{2}$
  */
 to?: string;
+};
+
+export type GetExamRegistrationAdminParams = {
+academicYear?: string;
+};
+
+export type GetChairmanBoardParams = {
+days?: number;
 };
 
 export type GetLocalAccount200 = {

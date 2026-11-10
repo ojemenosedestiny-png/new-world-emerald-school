@@ -125,7 +125,7 @@ schemas:
       outstandingKobo: { type: integer }
   ParentOverview:
     type: object
-    required: [email, paystackReady, classCount, wallet, children, outstanding, payments]
+    required: [email, paystackReady, classCount, wallet, children, outstanding, payments, accounts, transfers, examFees]
     properties:
       email: { type: string }
       paystackReady: { type: boolean }
@@ -139,6 +139,9 @@ schemas:
       children: { type: array, items: { $ref: "#/components/schemas/ParentChild" } }
       outstanding: { type: array, items: { $ref: "#/components/schemas/ParentOutstandingItem" } }
       payments: { type: array, items: { $ref: "#/components/schemas/ParentPayment" } }
+      accounts: { type: array, items: { $ref: "#/components/schemas/PaymentAccount" }, description: "The school's active bank accounts for fees and WAEC/NECO" }
+      transfers: { type: array, items: { $ref: "#/components/schemas/FeeTransfer" }, description: "Bank transfers reported for this family, newest first" }
+      examFees: { type: array, items: { $ref: "#/components/schemas/ParentExamFee" }, description: "WAEC/NECO registration fees for children in an open registration" }
   ParentPaymentRequest:
     type: object
     required: [items, amountKobo]

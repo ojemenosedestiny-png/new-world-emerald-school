@@ -135,6 +135,19 @@ export const feePaymentReportsTable = pgTable(
     transferReference: text("transfer_reference"),
     // Payment screenshot uploaded by the payer (portal_images id, private).
     proofImageId: text("proof_image_id"),
+    // "school_fees" or "exam_registration" (WAEC/NECO): decides which school account it was paid into.
+    purpose: text("purpose").notNull().default("school_fees"),
+    // Set when a signed-in parent reports the transfer from the parent portal.
+    parentEmail: text("parent_email"),
+    studentPortalId: integer("student_portal_id"),
+    // The WAEC/NECO registration this fee is for (purpose "exam_registration").
+    registrationId: integer("registration_id"),
+    // The school account shown to the payer, copied so the receipt survives later changes.
+    accountBank: text("account_bank"),
+    accountName: text("account_name"),
+    accountNumber: text("account_number"),
+    confirmedBy: text("confirmed_by"),
+    confirmedAt: timestamp("confirmed_at", { withTimezone: true }),
     status: text("status").notNull().default("payment_requested"),
     officeNote: text("office_note"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),

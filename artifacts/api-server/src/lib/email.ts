@@ -231,6 +231,32 @@ export function parentInviteEmail(p: { url: string; children: string[] }) {
   return { subject: "Your New World Emerald parent portal", html, text };
 }
 
+/** A parent's bank transfer was checked by the school: a receipt when it was received, or why it was not accepted. */
+export function transferOutcomeEmail(p: {
+  confirmed: boolean; receiptNumber: string | null; studentName: string; description: string; academicYear: string; amountKobo: number; note: string; portalUrl: string;
+}) {
+  const ng = `NGN ${(p.amountKobo / 100).toLocaleString("en-NG", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  const what = `${p.description}${p.academicYear ? ` (${p.academicYear})` : ""} for ${p.studentName}`;
+  const title = p.confirmed ? "Payment received" : "We could not confirm your transfer";
+  const body = p.confirmed
+    ? `<p style="margin:0 0 10px;line-height:1.6">Thank you. The school has received your transfer of <b>${esc(ng)}</b> for ${esc(what)}.</p>
+       <p style="margin:0;line-height:1.6">Receipt number: <b style="font-family:Consolas,monospace">${esc(p.receiptNumber ?? "")}</b>. Your receipt is in the parent portal under Receipts, ready to print.</p>`
+    : `<p style="margin:0 0 10px;line-height:1.6">The school office could not confirm your transfer of <b>${esc(ng)}</b> for ${esc(what)}.</p>
+       ${p.note ? `<p style="margin:0 0 10px;line-height:1.6"><b>Note from the school:</b> ${esc(p.note)}</p>` : ""}
+       <p style="margin:0;line-height:1.6">Please check the payment and send it again from the parent portal, or call the school office.</p>`;
+  const html = layout(title, body, { label: "Open the parent portal", url: p.portalUrl }, "You receive this because you reported a payment in the New World Emerald parent portal.", "Parent portal");
+  const text = p.confirmed
+    ? `Thank you. The school has received your transfer of ${ng} for ${what}.
+Receipt number: ${p.receiptNumber}
+
+Your receipt is in the parent portal: ${p.portalUrl}`
+    : `The school office could not confirm your transfer of ${ng} for ${what}.${p.note ? `
+Note from the school: ${p.note}` : ""}
+
+Please check the payment and send it again from the parent portal: ${p.portalUrl}`;
+  return { subject: p.confirmed ? `Receipt ${p.receiptNumber}: payment received` : "Your school payment could not be confirmed", html, text };
+}
+
 /** The parent's receipt after a school-fee payment: what was paid for each child, and their wallet balance. */
 export function feeReceiptEmail(p: {
   reference: string; paidAt: Date; cardKobo: number; walletUsedKobo: number; walletCreditKobo: number; balanceAfterKobo: number;

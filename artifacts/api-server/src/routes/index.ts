@@ -14,6 +14,7 @@ import portalRouter from "./portal";
 import emailTestRouter from "./email-test";
 import schoolCommerceProofsRouter from "./school-commerce-proofs";
 import directorRouter from "./director";
+import chairmanRouter from "./chairman";
 import { publicRateLimit } from "../lib/public-rate-limit";
 
 const router: IRouter = Router();
@@ -37,5 +38,6 @@ router.use(schoolCommerceProofsRouter);
 router.use(siteContentRouter);
 router.use(emailTestRouter);
 router.use(directorRouter);
+router.use(chairmanRouter);
 
 export default router;

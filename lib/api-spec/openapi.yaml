@@ -161,6 +161,22 @@ paths:
     $ref: "./timetables.yaml#/paths/manage"
   /portal/my-timetables:
     $ref: "./timetables.yaml#/paths/mine"
+  /portal/payment-accounts:
+    $ref: "./payments.yaml#/paths/accounts"
+  /portal/parent/transfers:
+    $ref: "./payments.yaml#/paths/parentTransfer"
+  /portal/fee-transfers:
+    $ref: "./payments.yaml#/paths/transfers"
+  /portal/fee-transfers/{id}:
+    $ref: "./payments.yaml#/paths/review"
+  /portal/exam-registration:
+    $ref: "./exam-registration.yaml#/paths/admin"
+  /portal/exam-registration/{id}:
+    $ref: "./exam-registration.yaml#/paths/review"
+  /portal/my-exam-registration:
+    $ref: "./exam-registration.yaml#/paths/mine"
+  /chairman/board:
+    $ref: "./chairman.yaml#/paths/board"
   /portal/my-messages:
     $ref: "./messages.yaml#/paths/myMessages"
   /portal/my-messages/read:
@@ -1273,6 +1289,58 @@ components:
       $ref: "./timetables.yaml#/schemas/TimetableInput"
     TimetableCommand:
       $ref: "./timetables.yaml#/schemas/TimetableCommand"
+    ChairmanCount:
+      $ref: "./chairman.yaml#/schemas/ChairmanCount"
+    ChairmanSection:
+      $ref: "./chairman.yaml#/schemas/ChairmanSection"
+    ChairmanClass:
+      $ref: "./chairman.yaml#/schemas/ChairmanClass"
+    ChairmanDay:
+      $ref: "./chairman.yaml#/schemas/ChairmanDay"
+    ChairmanWaec:
+      $ref: "./chairman.yaml#/schemas/ChairmanWaec"
+    ChairmanBoard:
+      $ref: "./chairman.yaml#/schemas/ChairmanBoard"
+    PaymentAccount:
+      $ref: "./payments.yaml#/schemas/PaymentAccount"
+    PaymentAccountInput:
+      $ref: "./payments.yaml#/schemas/PaymentAccountInput"
+    PaymentAccountCommand:
+      $ref: "./payments.yaml#/schemas/PaymentAccountCommand"
+    PaymentAccountWorkspace:
+      $ref: "./payments.yaml#/schemas/PaymentAccountWorkspace"
+    ParentTransferInput:
+      $ref: "./payments.yaml#/schemas/ParentTransferInput"
+    FeeTransferAccount:
+      $ref: "./payments.yaml#/schemas/FeeTransferAccount"
+    FeeTransfer:
+      $ref: "./payments.yaml#/schemas/FeeTransfer"
+    FeeTransferWorkspace:
+      $ref: "./payments.yaml#/schemas/FeeTransferWorkspace"
+    FeeTransferReview:
+      $ref: "./payments.yaml#/schemas/FeeTransferReview"
+    ParentExamFee:
+      $ref: "./payments.yaml#/schemas/ParentExamFee"
+    ExamRegistrationSettings:
+      $ref: "./exam-registration.yaml#/schemas/ExamRegistrationSettings"
+    ExamRegistrationFormFields:
+      $ref: "./exam-registration.yaml#/schemas/ExamRegistrationFormFields"
+    ExamRegistrationFormInput:
+      $ref: "./exam-registration.yaml#/schemas/ExamRegistrationFormInput"
+    ExamRegistrationForm:
+      $ref: "./exam-registration.yaml#/schemas/ExamRegistrationForm"
+    ExamRegistrationFee:
+      $ref: "./exam-registration.yaml#/schemas/ExamRegistrationFee"
+    MyExamRegistration:
+      $ref: "./exam-registration.yaml#/schemas/MyExamRegistration"
+    ExamRegistrationRow:
+      $ref: "./exam-registration.yaml#/schemas/ExamRegistrationRow"
+    ExamRegistrationClass:
+      $ref: "./exam-registration.yaml#/schemas/ExamRegistrationClass"
+    ExamRegistrationAdmin:
+      $ref: "./exam-registration.yaml#/schemas/ExamRegistrationAdmin"
+    ExamRegistrationReview:
+      $ref: "./exam-registration.yaml#/schemas/ExamRegistrationReview"
     MessageChannel:
       $ref: "./messages.yaml#/schemas/MessageChannel"
     PortalChatMessage:

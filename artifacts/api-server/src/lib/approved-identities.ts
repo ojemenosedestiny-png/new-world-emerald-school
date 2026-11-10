@@ -67,9 +67,17 @@ export function examOfficerEmails(): string[] {
   return emailList(process.env.SCHOOL_EXAM_OFFICER_EMAILS);
 }
 
-/** Every email whose Clerk verification is tracked: administrators, both principals and the exam officer. */
+/**
+ * The Chairman of the board (SCHOOL_CHAIRMAN_EMAILS): sees the read-only board of the whole school. Not an
+ * administrator: cannot change anything, send anything or see money.
+ */
+export function chairmanEmails(): string[] {
+  return emailList(process.env.SCHOOL_CHAIRMAN_EMAILS);
+}
+
+/** Every email whose Clerk verification is tracked: administrators, both principals, the exam officer and the Chairman. */
 export function verifiedRoleEmails(): string[] {
-  return [...new Set([...approvedEmails(), ...principalEmails("secondary"), ...principalEmails("primary"), ...examOfficerEmails()])];
+  return [...new Set([...approvedEmails(), ...principalEmails("secondary"), ...principalEmails("primary"), ...examOfficerEmails(), ...chairmanEmails()])];
 }
 
 /** When true, administrators must have Clerk two-factor authentication turned on. */

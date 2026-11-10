@@ -35,7 +35,8 @@
     "test:portal-term-rename": "node ./test-portal.mjs portal-term-rename",
     "test:portal-exam-officer": "node ./test-portal.mjs portal-exam-officer",
     "test:portal-head-and-parents": "node ./test-portal.mjs portal-head-and-parents",
-    "test:portal-timetables": "node ./test-portal.mjs portal-timetables"
+    "test:portal-timetables": "node ./test-portal.mjs portal-timetables",
+    "test:portal-transfers": "node ./test-portal.mjs portal-transfers"
   },
   "dependencies": {
     "@clerk/express": "^2.1.75",

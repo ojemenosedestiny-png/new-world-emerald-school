@@ -1,0 +1,170 @@
+paths:
+  accounts:
+    get:
+      operationId: listPaymentAccounts
+      description: The school's bank accounts for school fees and WAEC/NECO, per academic session (the office and the Head of School)
+      responses:
+        "200":
+          description: Accounts
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PaymentAccountWorkspace" }
+    post:
+      operationId: managePaymentAccounts
+      description: Add, change or remove a bank account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PaymentAccountCommand" }
+      responses:
+        "200":
+          description: Saved
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PortalMessage" }
+  parentTransfer:
+    post:
+      operationId: reportParentTransfer
+      description: A parent tells the school they paid a fee by bank transfer, with a screenshot of the payment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ParentTransferInput" }
+      responses:
+        "200":
+          description: Sent to the school office
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/FeeTransfer" }
+  transfers:
+    get:
+      operationId: listFeeTransfers
+      description: Bank transfers reported by parents, newest first (the office and the Head of School)
+      responses:
+        "200":
+          description: Transfers
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/FeeTransferWorkspace" }
+  review:
+    post:
+      operationId: reviewFeeTransfer
+      description: Confirm a transfer (a receipt is issued to the parent) or say it was not received
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/FeeTransferReview" }
+      responses:
+        "200":
+          description: Reviewed
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/FeeTransfer" }
+schemas:
+  PaymentAccount:
+    type: object
+    required: [id, purpose, academicYear, bankName, accountName, accountNumber, note, active]
+    properties:
+      id: { type: integer }
+      purpose: { type: string, enum: [school_fees, exam_registration] }
+      academicYear: { type: string, description: "Empty means every session" }
+      bankName: { type: string }
+      accountName: { type: string }
+      accountNumber: { type: string }
+      note: { type: string }
+      active: { type: boolean }
+  PaymentAccountInput:
+    type: object
+    required: [purpose, academicYear, bankName, accountName, accountNumber, note, active]
+    properties:
+      id: { type: integer }
+      purpose: { type: string, enum: [school_fees, exam_registration] }
+      academicYear: { type: string, maxLength: 20 }
+      bankName: { type: string, maxLength: 80 }
+      accountName: { type: string, maxLength: 120 }
+      accountNumber: { type: string, maxLength: 20 }
+      note: { type: string, maxLength: 200 }
+      active: { type: boolean }
+  PaymentAccountCommand:
+    type: object
+    required: [action]
+    properties:
+      action: { type: string, enum: [save, delete] }
+      account: { $ref: "#/components/schemas/PaymentAccountInput" }
+      id: { type: integer }
+  PaymentAccountWorkspace:
+    type: object
+    required: [accounts, sessions]
+    properties:
+      accounts: { type: array, items: { $ref: "#/components/schemas/PaymentAccount" } }
+      sessions: { type: array, items: { type: string }, description: "Academic sessions in use, newest first" }
+  ParentTransferInput:
+    type: object
+    required: [studentId, itemKey, proofId]
+    properties:
+      studentId: { type: integer }
+      itemKey: { type: string, maxLength: 60, description: "The fee item (class-12, charge-7) or exam-<session> for WAEC/NECO" }
+      proofId: { type: string, maxLength: 64 }
+      transferReference: { type: string, maxLength: 80 }
+  FeeTransferAccount:
+    type: object
+    required: [bankName, accountName, accountNumber]
+    properties:
+      bankName: { type: string }
+      accountName: { type: string }
+      accountNumber: { type: string }
+  FeeTransfer:
+    type: object
+    required: [id, reference, receiptNumber, purpose, studentName, studentIdentifier, className, description, term, academicYear, amountKobo, status, officeNote, proofImageId, transferReference, payer, account, createdAt, confirmedAt, confirmedBy]
+    properties:
+      id: { type: integer }
+      reference: { type: string }
+      receiptNumber: { type: ["string", "null"] }
+      purpose: { type: string, enum: [school_fees, exam_registration] }
+      studentName: { type: string }
+      studentIdentifier: { type: string }
+      className: { type: string }
+      description: { type: string }
+      term: { type: string }
+      academicYear: { type: string }
+      amountKobo: { type: integer }
+      status: { type: string, description: "reported, confirmed, rejected or payment_requested" }
+      officeNote: { type: ["string", "null"] }
+      proofImageId: { type: ["string", "null"] }
+      transferReference: { type: ["string", "null"] }
+      payer: { type: string }
+      account: { oneOf: [{ $ref: "#/components/schemas/FeeTransferAccount" }, { type: "null" }] }
+      createdAt: { type: string, format: date-time }
+      confirmedAt: { type: ["string", "null"], format: date-time }
+      confirmedBy: { type: ["string", "null"] }
+  FeeTransferWorkspace:
+    type: object
+    required: [transfers, waiting]
+    properties:
+      transfers: { type: array, items: { $ref: "#/components/schemas/FeeTransfer" } }
+      waiting: { type: integer }
+  FeeTransferReview:
+    type: object
+    required: [action]
+    properties:
+      action: { type: string, enum: [confirm, reject] }
+      note: { type: string, maxLength: 300 }
+  ParentExamFee:
+    type: object
+    required: [studentId, studentName, studentCode, className, academicYear, title, amountKobo, status, itemKey, formStatus]
+    properties:
+      studentId: { type: integer }
+      studentName: { type: string }
+      studentCode: { type: string }
+      className: { type: string }
+      academicYear: { type: string }
+      title: { type: string }
+      amountKobo: { type: integer }
+      status: { type: string, enum: [due, pending, paid] }
+      itemKey: { type: string }
+      formStatus: { type: string, description: "none, draft, submitted or returned" }

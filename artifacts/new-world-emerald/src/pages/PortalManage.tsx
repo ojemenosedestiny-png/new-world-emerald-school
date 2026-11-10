@@ -21,6 +21,8 @@ import { EventsPanel } from "@/portal/manage/EventsPanel";
 import { GalleryPanel, PhotoReviewsPanel } from "@/portal/manage/GalleryPanel";
 import { AttendancePanel } from "@/portal/manage/AttendancePanel";
 import { AssignmentsPanel } from "@/portal/manage/AssignmentsPanel";
+import { FeePayments } from "@/portal/payments/OfficePayments";
+import { RegistrationAdmin } from "@/portal/exam-registration/RegistrationAdmin";
 import { TimetablesPanel } from "@/portal/Timetables";
 import { MessagesPanel } from "@/portal/manage/MessagesPanel";
 import { InventoryPanel } from "@/portal/manage/InventoryPanel";
@@ -43,10 +45,10 @@ function Gate({ title, body, children }: { title: string; body: string; children
   );
 }
 
-type Section = "overview" | "messages" | "attendance" | "assignments" | "timetables" | "exams" | "marking" | "reports" | "revision" | "notices" | "events" | "gallery" | "photos" | "inventory" | "importResults" | "hostel" | "transport" | "payments" | "parents" | "students" | "teachers" | "classes" | "sessions" | "audit";
+type Section = "overview" | "messages" | "attendance" | "assignments" | "timetables" | "exams" | "marking" | "reports" | "revision" | "notices" | "events" | "gallery" | "photos" | "inventory" | "importResults" | "hostel" | "transport" | "payments" | "waec" | "parents" | "students" | "teachers" | "classes" | "sessions" | "audit";
 const TITLES: Record<Section, string> = {
   overview: "Dashboard", messages: "Messages", attendance: "Attendance", assignments: "Assignments", timetables: "Timetables", exams: "Exams", marking: "Marking", reports: "Report cards", revision: "Revision notes",
-  notices: "Announcements", events: "Events calendar", gallery: "Gallery", photos: "Photo approvals", inventory: "Inventory", importResults: "Import old results", payments: "Online fee payments", parents: "Parents and children", hostel: "Hostel rooms", transport: "Transport routes", students: "Students", teachers: "Teachers", classes: "Classes", sessions: "Sessions", audit: "Audit log",
+  notices: "Announcements", events: "Events calendar", gallery: "Gallery", photos: "Photo approvals", inventory: "Inventory", importResults: "Import old results", payments: "Fee payments", waec: "WAEC / NECO registration", parents: "Parents and children", hostel: "Hostel rooms", transport: "Transport routes", students: "Students", teachers: "Teachers", classes: "Classes", sessions: "Sessions", audit: "Audit log",
 };
 
 export default function PortalManage() {
@@ -98,7 +100,8 @@ export default function PortalManage() {
       { key: "students" as const, label: "Students", icon: GraduationCap, testId: "tab-manage-students" },
       { key: "teachers" as const, label: "Teachers", icon: Users, testId: "tab-manage-teachers" },
       { key: "classes" as const, label: "Classes", icon: School, testId: "tab-manage-classes" },
-      { key: "payments" as const, label: "Online payments", icon: CreditCard, testId: "tab-manage-payments" },
+      { key: "payments" as const, label: "Fee payments", icon: CreditCard, testId: "tab-manage-payments" },
+      { key: "waec" as const, label: "WAEC / NECO", icon: GraduationCap, testId: "tab-manage-waec" },
       { key: "parents" as const, label: "Parents", icon: Users, testId: "tab-manage-parents" },
       { key: "hostel" as const, label: "Hostel rooms", icon: BedDouble, testId: "tab-manage-hostel" },
       { key: "transport" as const, label: "Transport routes", icon: Bus, testId: "tab-manage-transport" },
@@ -140,7 +143,8 @@ export default function PortalManage() {
             {section === "messages" && <MessagesPanel isAdmin={isAdmin} />}
             {section === "inventory" && <InventoryPanel data={d} isAdmin={isAdmin} />}
             {isAdmin && section === "importResults" && <ImportResultsPanel />}
-            {isAdmin && section === "payments" && <ParentPaymentsPanel />}
+            {isAdmin && section === "payments" && <FeePayments legacy={<ParentPaymentsPanel />} />}
+            {isAdmin && section === "waec" && <RegistrationAdmin />}
             {isAdmin && section === "parents" && <ParentLinksPanel />}
             {isAdmin && section === "hostel" && <HostelPanel />}
             {isAdmin && section === "transport" && <TransportPanel />}

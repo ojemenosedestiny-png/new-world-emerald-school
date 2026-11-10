@@ -2775,7 +2775,55 @@ export const GetParentOverviewResponse = zod.object({
   "createdAt": zod.coerce.date(),
   "paidAt": zod.coerce.date().nullable(),
   "settledAt": zod.coerce.date().nullable()
-}))
+})),
+  "accounts": zod.array(zod.object({
+  "id": zod.number(),
+  "purpose": zod.enum(['school_fees', 'exam_registration']),
+  "academicYear": zod.string().describe('Empty means every session'),
+  "bankName": zod.string(),
+  "accountName": zod.string(),
+  "accountNumber": zod.string(),
+  "note": zod.string(),
+  "active": zod.boolean()
+})).describe('The school\'s active bank accounts for fees and WAEC\/NECO'),
+  "transfers": zod.array(zod.object({
+  "id": zod.number(),
+  "reference": zod.string(),
+  "receiptNumber": zod.string().nullable(),
+  "purpose": zod.enum(['school_fees', 'exam_registration']),
+  "studentName": zod.string(),
+  "studentIdentifier": zod.string(),
+  "className": zod.string(),
+  "description": zod.string(),
+  "term": zod.string(),
+  "academicYear": zod.string(),
+  "amountKobo": zod.number(),
+  "status": zod.string().describe('reported, confirmed, rejected or payment_requested'),
+  "officeNote": zod.string().nullable(),
+  "proofImageId": zod.string().nullable(),
+  "transferReference": zod.string().nullable(),
+  "payer": zod.string(),
+  "account": zod.union([zod.object({
+  "bankName": zod.string(),
+  "accountName": zod.string(),
+  "accountNumber": zod.string()
+}),zod.null()]),
+  "createdAt": zod.coerce.date(),
+  "confirmedAt": zod.coerce.date().nullable(),
+  "confirmedBy": zod.string().nullable()
+})).describe('Bank transfers reported for this family, newest first'),
+  "examFees": zod.array(zod.object({
+  "studentId": zod.number(),
+  "studentName": zod.string(),
+  "studentCode": zod.string(),
+  "className": zod.string(),
+  "academicYear": zod.string(),
+  "title": zod.string(),
+  "amountKobo": zod.number(),
+  "status": zod.enum(['due', 'pending', 'paid']),
+  "itemKey": zod.string(),
+  "formStatus": zod.string().describe('none, draft, submitted or returned')
+})).describe('WAEC\/NECO registration fees for children in an open registration')
 })
 
 
@@ -3955,6 +4003,666 @@ export const ListMyTimetablesResponseItem = zod.object({
   "updatedAt": zod.coerce.date()
 })
 export const ListMyTimetablesResponse = zod.array(ListMyTimetablesResponseItem)
+
+
+/**
+ * The school's bank accounts for school fees and WAEC/NECO, per academic session (the office and the Head of School)
+ */
+export const ListPaymentAccountsResponse = zod.object({
+  "accounts": zod.array(zod.object({
+  "id": zod.number(),
+  "purpose": zod.enum(['school_fees', 'exam_registration']),
+  "academicYear": zod.string().describe('Empty means every session'),
+  "bankName": zod.string(),
+  "accountName": zod.string(),
+  "accountNumber": zod.string(),
+  "note": zod.string(),
+  "active": zod.boolean()
+})),
+  "sessions": zod.array(zod.string()).describe('Academic sessions in use, newest first')
+})
+
+
+/**
+ * Add, change or remove a bank account
+ */
+export const managePaymentAccountsBodyAccountAcademicYearMax = 20;
+
+export const managePaymentAccountsBodyAccountBankNameMax = 80;
+
+export const managePaymentAccountsBodyAccountAccountNameMax = 120;
+
+export const managePaymentAccountsBodyAccountAccountNumberMax = 20;
+
+export const managePaymentAccountsBodyAccountNoteMax = 200;
+
+
+
+export const ManagePaymentAccountsBody = zod.object({
+  "action": zod.enum(['save', 'delete']),
+  "account": zod.object({
+  "id": zod.number().optional(),
+  "purpose": zod.enum(['school_fees', 'exam_registration']),
+  "academicYear": zod.string().max(managePaymentAccountsBodyAccountAcademicYearMax),
+  "bankName": zod.string().max(managePaymentAccountsBodyAccountBankNameMax),
+  "accountName": zod.string().max(managePaymentAccountsBodyAccountAccountNameMax),
+  "accountNumber": zod.string().max(managePaymentAccountsBodyAccountAccountNumberMax),
+  "note": zod.string().max(managePaymentAccountsBodyAccountNoteMax),
+  "active": zod.boolean()
+}).optional(),
+  "id": zod.number().optional()
+})
+
+export const ManagePaymentAccountsResponse = zod.object({
+  "message": zod.string(),
+  "studentId": zod.string().optional().describe('The Student ID of a student just enrolled')
+})
+
+
+/**
+ * A parent tells the school they paid a fee by bank transfer, with a screenshot of the payment
+ */
+export const reportParentTransferBodyItemKeyMax = 60;
+
+export const reportParentTransferBodyProofIdMax = 64;
+
+export const reportParentTransferBodyTransferReferenceMax = 80;
+
+
+
+export const ReportParentTransferBody = zod.object({
+  "studentId": zod.number(),
+  "itemKey": zod.string().max(reportParentTransferBodyItemKeyMax).describe('The fee item (class-12, charge-7) or exam-<session> for WAEC\/NECO'),
+  "proofId": zod.string().max(reportParentTransferBodyProofIdMax),
+  "transferReference": zod.string().max(reportParentTransferBodyTransferReferenceMax).optional()
+})
+
+export const ReportParentTransferResponse = zod.object({
+  "id": zod.number(),
+  "reference": zod.string(),
+  "receiptNumber": zod.string().nullable(),
+  "purpose": zod.enum(['school_fees', 'exam_registration']),
+  "studentName": zod.string(),
+  "studentIdentifier": zod.string(),
+  "className": zod.string(),
+  "description": zod.string(),
+  "term": zod.string(),
+  "academicYear": zod.string(),
+  "amountKobo": zod.number(),
+  "status": zod.string().describe('reported, confirmed, rejected or payment_requested'),
+  "officeNote": zod.string().nullable(),
+  "proofImageId": zod.string().nullable(),
+  "transferReference": zod.string().nullable(),
+  "payer": zod.string(),
+  "account": zod.union([zod.object({
+  "bankName": zod.string(),
+  "accountName": zod.string(),
+  "accountNumber": zod.string()
+}),zod.null()]),
+  "createdAt": zod.coerce.date(),
+  "confirmedAt": zod.coerce.date().nullable(),
+  "confirmedBy": zod.string().nullable()
+})
+
+
+/**
+ * Bank transfers reported by parents, newest first (the office and the Head of School)
+ */
+export const ListFeeTransfersResponse = zod.object({
+  "transfers": zod.array(zod.object({
+  "id": zod.number(),
+  "reference": zod.string(),
+  "receiptNumber": zod.string().nullable(),
+  "purpose": zod.enum(['school_fees', 'exam_registration']),
+  "studentName": zod.string(),
+  "studentIdentifier": zod.string(),
+  "className": zod.string(),
+  "description": zod.string(),
+  "term": zod.string(),
+  "academicYear": zod.string(),
+  "amountKobo": zod.number(),
+  "status": zod.string().describe('reported, confirmed, rejected or payment_requested'),
+  "officeNote": zod.string().nullable(),
+  "proofImageId": zod.string().nullable(),
+  "transferReference": zod.string().nullable(),
+  "payer": zod.string(),
+  "account": zod.union([zod.object({
+  "bankName": zod.string(),
+  "accountName": zod.string(),
+  "accountNumber": zod.string()
+}),zod.null()]),
+  "createdAt": zod.coerce.date(),
+  "confirmedAt": zod.coerce.date().nullable(),
+  "confirmedBy": zod.string().nullable()
+})),
+  "waiting": zod.number()
+})
+
+
+/**
+ * Confirm a transfer (a receipt is issued to the parent) or say it was not received
+ */
+export const ReviewFeeTransferParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const reviewFeeTransferBodyNoteMax = 300;
+
+
+
+export const ReviewFeeTransferBody = zod.object({
+  "action": zod.enum(['confirm', 'reject']),
+  "note": zod.string().max(reviewFeeTransferBodyNoteMax).optional()
+})
+
+export const ReviewFeeTransferResponse = zod.object({
+  "id": zod.number(),
+  "reference": zod.string(),
+  "receiptNumber": zod.string().nullable(),
+  "purpose": zod.enum(['school_fees', 'exam_registration']),
+  "studentName": zod.string(),
+  "studentIdentifier": zod.string(),
+  "className": zod.string(),
+  "description": zod.string(),
+  "term": zod.string(),
+  "academicYear": zod.string(),
+  "amountKobo": zod.number(),
+  "status": zod.string().describe('reported, confirmed, rejected or payment_requested'),
+  "officeNote": zod.string().nullable(),
+  "proofImageId": zod.string().nullable(),
+  "transferReference": zod.string().nullable(),
+  "payer": zod.string(),
+  "account": zod.union([zod.object({
+  "bankName": zod.string(),
+  "accountName": zod.string(),
+  "accountNumber": zod.string()
+}),zod.null()]),
+  "createdAt": zod.coerce.date(),
+  "confirmedAt": zod.coerce.date().nullable(),
+  "confirmedBy": zod.string().nullable()
+})
+
+
+/**
+ * WAEC/NECO registration for one session (newest when none is given) with every form (the office and the Head of School)
+ */
+export const GetExamRegistrationAdminQueryParams = zod.object({
+  "academicYear": zod.coerce.string().optional()
+})
+
+export const getExamRegistrationAdminResponseSettingsOneAcademicYearMax = 20;
+
+export const getExamRegistrationAdminResponseSettingsOneTitleMax = 120;
+
+export const getExamRegistrationAdminResponseSettingsOneFeeKoboMin = 0;
+export const getExamRegistrationAdminResponseSettingsOneFeeKoboMax = 100000000;
+
+export const getExamRegistrationAdminResponseSettingsOneCompulsorySubjectsItemMax = 60;
+
+export const getExamRegistrationAdminResponseSettingsOneCompulsorySubjectsMax = 15;
+
+export const getExamRegistrationAdminResponseSettingsOneOptionalSubjectsItemMax = 60;
+
+export const getExamRegistrationAdminResponseSettingsOneOptionalSubjectsMax = 60;
+
+export const getExamRegistrationAdminResponseSettingsOneMaxSubjectsMax = 15;
+
+export const getExamRegistrationAdminResponseSettingsOneClassIdsMax = 50;
+
+export const getExamRegistrationAdminResponseSettingsOneDeadlineMax = 10;
+
+export const getExamRegistrationAdminResponseRowsItemFormOneOneSurnameMax = 60;
+
+export const getExamRegistrationAdminResponseRowsItemFormOneOneFirstNameMax = 60;
+
+export const getExamRegistrationAdminResponseRowsItemFormOneOneMiddleNameMax = 60;
+
+export const getExamRegistrationAdminResponseRowsItemFormOneOneDateOfBirthMax = 10;
+
+export const getExamRegistrationAdminResponseRowsItemFormOneOneStateOfOriginMax = 40;
+
+export const getExamRegistrationAdminResponseRowsItemFormOneOneLgaMax = 60;
+
+export const getExamRegistrationAdminResponseRowsItemFormOneOneGenderMax = 10;
+
+export const getExamRegistrationAdminResponseRowsItemFormOneOneNinMax = 11;
+
+export const getExamRegistrationAdminResponseRowsItemFormOneOneSubjectsItemMax = 60;
+
+export const getExamRegistrationAdminResponseRowsItemFormOneOneSubjectsMax = 15;
+
+export const getExamRegistrationAdminResponseRowsItemFormOneOnePhoneMax = 20;
+
+export const getExamRegistrationAdminResponseRowsItemFormOneOneEmailMax = 120;
+
+export const getExamRegistrationAdminResponseRowsItemFormOneOneSignatureNameMax = 120;
+
+
+
+export const GetExamRegistrationAdminResponse = zod.object({
+  "settings": zod.union([zod.object({
+  "academicYear": zod.string().max(getExamRegistrationAdminResponseSettingsOneAcademicYearMax),
+  "title": zod.string().max(getExamRegistrationAdminResponseSettingsOneTitleMax),
+  "open": zod.boolean(),
+  "feeKobo": zod.number().min(getExamRegistrationAdminResponseSettingsOneFeeKoboMin).max(getExamRegistrationAdminResponseSettingsOneFeeKoboMax),
+  "compulsorySubjects": zod.array(zod.string().max(getExamRegistrationAdminResponseSettingsOneCompulsorySubjectsItemMax)).max(getExamRegistrationAdminResponseSettingsOneCompulsorySubjectsMax),
+  "optionalSubjects": zod.array(zod.string().max(getExamRegistrationAdminResponseSettingsOneOptionalSubjectsItemMax)).max(getExamRegistrationAdminResponseSettingsOneOptionalSubjectsMax),
+  "maxSubjects": zod.number().min(1).max(getExamRegistrationAdminResponseSettingsOneMaxSubjectsMax),
+  "classIds": zod.array(zod.number()).max(getExamRegistrationAdminResponseSettingsOneClassIdsMax),
+  "deadline": zod.string().max(getExamRegistrationAdminResponseSettingsOneDeadlineMax)
+}),zod.null()]),
+  "sessions": zod.array(zod.string()),
+  "classes": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string()
+})),
+  "rows": zod.array(zod.object({
+  "studentId": zod.number(),
+  "studentName": zod.string(),
+  "studentCode": zod.string(),
+  "className": zod.string(),
+  "feeStatus": zod.enum(['due', 'pending', 'paid']),
+  "form": zod.union([zod.object({
+  "surname": zod.string().max(getExamRegistrationAdminResponseRowsItemFormOneOneSurnameMax),
+  "firstName": zod.string().max(getExamRegistrationAdminResponseRowsItemFormOneOneFirstNameMax),
+  "middleName": zod.string().max(getExamRegistrationAdminResponseRowsItemFormOneOneMiddleNameMax),
+  "dateOfBirth": zod.string().max(getExamRegistrationAdminResponseRowsItemFormOneOneDateOfBirthMax),
+  "stateOfOrigin": zod.string().max(getExamRegistrationAdminResponseRowsItemFormOneOneStateOfOriginMax),
+  "lga": zod.string().max(getExamRegistrationAdminResponseRowsItemFormOneOneLgaMax),
+  "gender": zod.string().max(getExamRegistrationAdminResponseRowsItemFormOneOneGenderMax),
+  "nin": zod.string().max(getExamRegistrationAdminResponseRowsItemFormOneOneNinMax),
+  "subjects": zod.array(zod.string().max(getExamRegistrationAdminResponseRowsItemFormOneOneSubjectsItemMax)).max(getExamRegistrationAdminResponseRowsItemFormOneOneSubjectsMax),
+  "phone": zod.string().max(getExamRegistrationAdminResponseRowsItemFormOneOnePhoneMax),
+  "email": zod.string().max(getExamRegistrationAdminResponseRowsItemFormOneOneEmailMax),
+  "signatureName": zod.string().max(getExamRegistrationAdminResponseRowsItemFormOneOneSignatureNameMax)
+}).and(zod.object({
+  "id": zod.number(),
+  "academicYear": zod.string(),
+  "status": zod.enum(['draft', 'submitted', 'returned']),
+  "officeNote": zod.string(),
+  "submittedAt": zod.coerce.date().nullable(),
+  "updatedAt": zod.coerce.date()
+})),zod.null()])
+}))
+})
+
+
+/**
+ * Open or close registration, set the fee, subjects and classes for a session
+ */
+export const saveExamRegistrationSettingsBodyAcademicYearMax = 20;
+
+export const saveExamRegistrationSettingsBodyTitleMax = 120;
+
+export const saveExamRegistrationSettingsBodyFeeKoboMin = 0;
+export const saveExamRegistrationSettingsBodyFeeKoboMax = 100000000;
+
+export const saveExamRegistrationSettingsBodyCompulsorySubjectsItemMax = 60;
+
+export const saveExamRegistrationSettingsBodyCompulsorySubjectsMax = 15;
+
+export const saveExamRegistrationSettingsBodyOptionalSubjectsItemMax = 60;
+
+export const saveExamRegistrationSettingsBodyOptionalSubjectsMax = 60;
+
+export const saveExamRegistrationSettingsBodyMaxSubjectsMax = 15;
+
+export const saveExamRegistrationSettingsBodyClassIdsMax = 50;
+
+export const saveExamRegistrationSettingsBodyDeadlineMax = 10;
+
+
+
+export const SaveExamRegistrationSettingsBody = zod.object({
+  "academicYear": zod.string().max(saveExamRegistrationSettingsBodyAcademicYearMax),
+  "title": zod.string().max(saveExamRegistrationSettingsBodyTitleMax),
+  "open": zod.boolean(),
+  "feeKobo": zod.number().min(saveExamRegistrationSettingsBodyFeeKoboMin).max(saveExamRegistrationSettingsBodyFeeKoboMax),
+  "compulsorySubjects": zod.array(zod.string().max(saveExamRegistrationSettingsBodyCompulsorySubjectsItemMax)).max(saveExamRegistrationSettingsBodyCompulsorySubjectsMax),
+  "optionalSubjects": zod.array(zod.string().max(saveExamRegistrationSettingsBodyOptionalSubjectsItemMax)).max(saveExamRegistrationSettingsBodyOptionalSubjectsMax),
+  "maxSubjects": zod.number().min(1).max(saveExamRegistrationSettingsBodyMaxSubjectsMax),
+  "classIds": zod.array(zod.number()).max(saveExamRegistrationSettingsBodyClassIdsMax),
+  "deadline": zod.string().max(saveExamRegistrationSettingsBodyDeadlineMax)
+})
+
+export const SaveExamRegistrationSettingsResponse = zod.object({
+  "message": zod.string(),
+  "studentId": zod.string().optional().describe('The Student ID of a student just enrolled')
+})
+
+
+/**
+ * Send a submitted form back to the student for a correction
+ */
+export const ReviewExamRegistrationParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const reviewExamRegistrationBodyNoteMax = 300;
+
+
+
+export const ReviewExamRegistrationBody = zod.object({
+  "action": zod.enum(['return']),
+  "note": zod.string().max(reviewExamRegistrationBodyNoteMax)
+})
+
+export const ReviewExamRegistrationResponse = zod.object({
+  "message": zod.string(),
+  "studentId": zod.string().optional().describe('The Student ID of a student just enrolled')
+})
+
+
+/**
+ * The signed-in student's WAEC/NECO registration form, the fee and whether it is paid
+ */
+export const getMyExamRegistrationResponseSettingsOneAcademicYearMax = 20;
+
+export const getMyExamRegistrationResponseSettingsOneTitleMax = 120;
+
+export const getMyExamRegistrationResponseSettingsOneFeeKoboMin = 0;
+export const getMyExamRegistrationResponseSettingsOneFeeKoboMax = 100000000;
+
+export const getMyExamRegistrationResponseSettingsOneCompulsorySubjectsItemMax = 60;
+
+export const getMyExamRegistrationResponseSettingsOneCompulsorySubjectsMax = 15;
+
+export const getMyExamRegistrationResponseSettingsOneOptionalSubjectsItemMax = 60;
+
+export const getMyExamRegistrationResponseSettingsOneOptionalSubjectsMax = 60;
+
+export const getMyExamRegistrationResponseSettingsOneMaxSubjectsMax = 15;
+
+export const getMyExamRegistrationResponseSettingsOneClassIdsMax = 50;
+
+export const getMyExamRegistrationResponseSettingsOneDeadlineMax = 10;
+
+export const getMyExamRegistrationResponseFormOneOneSurnameMax = 60;
+
+export const getMyExamRegistrationResponseFormOneOneFirstNameMax = 60;
+
+export const getMyExamRegistrationResponseFormOneOneMiddleNameMax = 60;
+
+export const getMyExamRegistrationResponseFormOneOneDateOfBirthMax = 10;
+
+export const getMyExamRegistrationResponseFormOneOneStateOfOriginMax = 40;
+
+export const getMyExamRegistrationResponseFormOneOneLgaMax = 60;
+
+export const getMyExamRegistrationResponseFormOneOneGenderMax = 10;
+
+export const getMyExamRegistrationResponseFormOneOneNinMax = 11;
+
+export const getMyExamRegistrationResponseFormOneOneSubjectsItemMax = 60;
+
+export const getMyExamRegistrationResponseFormOneOneSubjectsMax = 15;
+
+export const getMyExamRegistrationResponseFormOneOnePhoneMax = 20;
+
+export const getMyExamRegistrationResponseFormOneOneEmailMax = 120;
+
+export const getMyExamRegistrationResponseFormOneOneSignatureNameMax = 120;
+
+
+
+export const GetMyExamRegistrationResponse = zod.object({
+  "settings": zod.union([zod.object({
+  "academicYear": zod.string().max(getMyExamRegistrationResponseSettingsOneAcademicYearMax),
+  "title": zod.string().max(getMyExamRegistrationResponseSettingsOneTitleMax),
+  "open": zod.boolean(),
+  "feeKobo": zod.number().min(getMyExamRegistrationResponseSettingsOneFeeKoboMin).max(getMyExamRegistrationResponseSettingsOneFeeKoboMax),
+  "compulsorySubjects": zod.array(zod.string().max(getMyExamRegistrationResponseSettingsOneCompulsorySubjectsItemMax)).max(getMyExamRegistrationResponseSettingsOneCompulsorySubjectsMax),
+  "optionalSubjects": zod.array(zod.string().max(getMyExamRegistrationResponseSettingsOneOptionalSubjectsItemMax)).max(getMyExamRegistrationResponseSettingsOneOptionalSubjectsMax),
+  "maxSubjects": zod.number().min(1).max(getMyExamRegistrationResponseSettingsOneMaxSubjectsMax),
+  "classIds": zod.array(zod.number()).max(getMyExamRegistrationResponseSettingsOneClassIdsMax),
+  "deadline": zod.string().max(getMyExamRegistrationResponseSettingsOneDeadlineMax)
+}),zod.null()]),
+  "eligible": zod.boolean(),
+  "form": zod.union([zod.object({
+  "surname": zod.string().max(getMyExamRegistrationResponseFormOneOneSurnameMax),
+  "firstName": zod.string().max(getMyExamRegistrationResponseFormOneOneFirstNameMax),
+  "middleName": zod.string().max(getMyExamRegistrationResponseFormOneOneMiddleNameMax),
+  "dateOfBirth": zod.string().max(getMyExamRegistrationResponseFormOneOneDateOfBirthMax),
+  "stateOfOrigin": zod.string().max(getMyExamRegistrationResponseFormOneOneStateOfOriginMax),
+  "lga": zod.string().max(getMyExamRegistrationResponseFormOneOneLgaMax),
+  "gender": zod.string().max(getMyExamRegistrationResponseFormOneOneGenderMax),
+  "nin": zod.string().max(getMyExamRegistrationResponseFormOneOneNinMax),
+  "subjects": zod.array(zod.string().max(getMyExamRegistrationResponseFormOneOneSubjectsItemMax)).max(getMyExamRegistrationResponseFormOneOneSubjectsMax),
+  "phone": zod.string().max(getMyExamRegistrationResponseFormOneOnePhoneMax),
+  "email": zod.string().max(getMyExamRegistrationResponseFormOneOneEmailMax),
+  "signatureName": zod.string().max(getMyExamRegistrationResponseFormOneOneSignatureNameMax)
+}).and(zod.object({
+  "id": zod.number(),
+  "academicYear": zod.string(),
+  "status": zod.enum(['draft', 'submitted', 'returned']),
+  "officeNote": zod.string(),
+  "submittedAt": zod.coerce.date().nullable(),
+  "updatedAt": zod.coerce.date()
+})),zod.null()]),
+  "fee": zod.union([zod.object({
+  "amountKobo": zod.number(),
+  "status": zod.enum(['due', 'pending', 'paid']),
+  "itemKey": zod.string()
+}),zod.null()]),
+  "account": zod.union([zod.object({
+  "bankName": zod.string(),
+  "accountName": zod.string(),
+  "accountNumber": zod.string()
+}),zod.null()]),
+  "student": zod.object({
+  "name": zod.string(),
+  "studentId": zod.string(),
+  "className": zod.string()
+})
+})
+
+
+/**
+ * Save the form as a draft, or submit it (only once the fee is confirmed)
+ */
+export const saveMyExamRegistrationBodyOneSurnameMax = 60;
+
+export const saveMyExamRegistrationBodyOneFirstNameMax = 60;
+
+export const saveMyExamRegistrationBodyOneMiddleNameMax = 60;
+
+export const saveMyExamRegistrationBodyOneDateOfBirthMax = 10;
+
+export const saveMyExamRegistrationBodyOneStateOfOriginMax = 40;
+
+export const saveMyExamRegistrationBodyOneLgaMax = 60;
+
+export const saveMyExamRegistrationBodyOneGenderMax = 10;
+
+export const saveMyExamRegistrationBodyOneNinMax = 11;
+
+export const saveMyExamRegistrationBodyOneSubjectsItemMax = 60;
+
+export const saveMyExamRegistrationBodyOneSubjectsMax = 15;
+
+export const saveMyExamRegistrationBodyOnePhoneMax = 20;
+
+export const saveMyExamRegistrationBodyOneEmailMax = 120;
+
+export const saveMyExamRegistrationBodyOneSignatureNameMax = 120;
+
+
+
+export const SaveMyExamRegistrationBody = zod.object({
+  "surname": zod.string().max(saveMyExamRegistrationBodyOneSurnameMax),
+  "firstName": zod.string().max(saveMyExamRegistrationBodyOneFirstNameMax),
+  "middleName": zod.string().max(saveMyExamRegistrationBodyOneMiddleNameMax),
+  "dateOfBirth": zod.string().max(saveMyExamRegistrationBodyOneDateOfBirthMax),
+  "stateOfOrigin": zod.string().max(saveMyExamRegistrationBodyOneStateOfOriginMax),
+  "lga": zod.string().max(saveMyExamRegistrationBodyOneLgaMax),
+  "gender": zod.string().max(saveMyExamRegistrationBodyOneGenderMax),
+  "nin": zod.string().max(saveMyExamRegistrationBodyOneNinMax),
+  "subjects": zod.array(zod.string().max(saveMyExamRegistrationBodyOneSubjectsItemMax)).max(saveMyExamRegistrationBodyOneSubjectsMax),
+  "phone": zod.string().max(saveMyExamRegistrationBodyOnePhoneMax),
+  "email": zod.string().max(saveMyExamRegistrationBodyOneEmailMax),
+  "signatureName": zod.string().max(saveMyExamRegistrationBodyOneSignatureNameMax)
+}).and(zod.object({
+  "submit": zod.boolean().describe('true to submit; false saves a draft')
+}))
+
+export const saveMyExamRegistrationResponseSettingsOneAcademicYearMax = 20;
+
+export const saveMyExamRegistrationResponseSettingsOneTitleMax = 120;
+
+export const saveMyExamRegistrationResponseSettingsOneFeeKoboMin = 0;
+export const saveMyExamRegistrationResponseSettingsOneFeeKoboMax = 100000000;
+
+export const saveMyExamRegistrationResponseSettingsOneCompulsorySubjectsItemMax = 60;
+
+export const saveMyExamRegistrationResponseSettingsOneCompulsorySubjectsMax = 15;
+
+export const saveMyExamRegistrationResponseSettingsOneOptionalSubjectsItemMax = 60;
+
+export const saveMyExamRegistrationResponseSettingsOneOptionalSubjectsMax = 60;
+
+export const saveMyExamRegistrationResponseSettingsOneMaxSubjectsMax = 15;
+
+export const saveMyExamRegistrationResponseSettingsOneClassIdsMax = 50;
+
+export const saveMyExamRegistrationResponseSettingsOneDeadlineMax = 10;
+
+export const saveMyExamRegistrationResponseFormOneOneSurnameMax = 60;
+
+export const saveMyExamRegistrationResponseFormOneOneFirstNameMax = 60;
+
+export const saveMyExamRegistrationResponseFormOneOneMiddleNameMax = 60;
+
+export const saveMyExamRegistrationResponseFormOneOneDateOfBirthMax = 10;
+
+export const saveMyExamRegistrationResponseFormOneOneStateOfOriginMax = 40;
+
+export const saveMyExamRegistrationResponseFormOneOneLgaMax = 60;
+
+export const saveMyExamRegistrationResponseFormOneOneGenderMax = 10;
+
+export const saveMyExamRegistrationResponseFormOneOneNinMax = 11;
+
+export const saveMyExamRegistrationResponseFormOneOneSubjectsItemMax = 60;
+
+export const saveMyExamRegistrationResponseFormOneOneSubjectsMax = 15;
+
+export const saveMyExamRegistrationResponseFormOneOnePhoneMax = 20;
+
+export const saveMyExamRegistrationResponseFormOneOneEmailMax = 120;
+
+export const saveMyExamRegistrationResponseFormOneOneSignatureNameMax = 120;
+
+
+
+export const SaveMyExamRegistrationResponse = zod.object({
+  "settings": zod.union([zod.object({
+  "academicYear": zod.string().max(saveMyExamRegistrationResponseSettingsOneAcademicYearMax),
+  "title": zod.string().max(saveMyExamRegistrationResponseSettingsOneTitleMax),
+  "open": zod.boolean(),
+  "feeKobo": zod.number().min(saveMyExamRegistrationResponseSettingsOneFeeKoboMin).max(saveMyExamRegistrationResponseSettingsOneFeeKoboMax),
+  "compulsorySubjects": zod.array(zod.string().max(saveMyExamRegistrationResponseSettingsOneCompulsorySubjectsItemMax)).max(saveMyExamRegistrationResponseSettingsOneCompulsorySubjectsMax),
+  "optionalSubjects": zod.array(zod.string().max(saveMyExamRegistrationResponseSettingsOneOptionalSubjectsItemMax)).max(saveMyExamRegistrationResponseSettingsOneOptionalSubjectsMax),
+  "maxSubjects": zod.number().min(1).max(saveMyExamRegistrationResponseSettingsOneMaxSubjectsMax),
+  "classIds": zod.array(zod.number()).max(saveMyExamRegistrationResponseSettingsOneClassIdsMax),
+  "deadline": zod.string().max(saveMyExamRegistrationResponseSettingsOneDeadlineMax)
+}),zod.null()]),
+  "eligible": zod.boolean(),
+  "form": zod.union([zod.object({
+  "surname": zod.string().max(saveMyExamRegistrationResponseFormOneOneSurnameMax),
+  "firstName": zod.string().max(saveMyExamRegistrationResponseFormOneOneFirstNameMax),
+  "middleName": zod.string().max(saveMyExamRegistrationResponseFormOneOneMiddleNameMax),
+  "dateOfBirth": zod.string().max(saveMyExamRegistrationResponseFormOneOneDateOfBirthMax),
+  "stateOfOrigin": zod.string().max(saveMyExamRegistrationResponseFormOneOneStateOfOriginMax),
+  "lga": zod.string().max(saveMyExamRegistrationResponseFormOneOneLgaMax),
+  "gender": zod.string().max(saveMyExamRegistrationResponseFormOneOneGenderMax),
+  "nin": zod.string().max(saveMyExamRegistrationResponseFormOneOneNinMax),
+  "subjects": zod.array(zod.string().max(saveMyExamRegistrationResponseFormOneOneSubjectsItemMax)).max(saveMyExamRegistrationResponseFormOneOneSubjectsMax),
+  "phone": zod.string().max(saveMyExamRegistrationResponseFormOneOnePhoneMax),
+  "email": zod.string().max(saveMyExamRegistrationResponseFormOneOneEmailMax),
+  "signatureName": zod.string().max(saveMyExamRegistrationResponseFormOneOneSignatureNameMax)
+}).and(zod.object({
+  "id": zod.number(),
+  "academicYear": zod.string(),
+  "status": zod.enum(['draft', 'submitted', 'returned']),
+  "officeNote": zod.string(),
+  "submittedAt": zod.coerce.date().nullable(),
+  "updatedAt": zod.coerce.date()
+})),zod.null()]),
+  "fee": zod.union([zod.object({
+  "amountKobo": zod.number(),
+  "status": zod.enum(['due', 'pending', 'paid']),
+  "itemKey": zod.string()
+}),zod.null()]),
+  "account": zod.union([zod.object({
+  "bankName": zod.string(),
+  "accountName": zod.string(),
+  "accountNumber": zod.string()
+}),zod.null()]),
+  "student": zod.object({
+  "name": zod.string(),
+  "studentId": zod.string(),
+  "className": zod.string()
+})
+})
+
+
+/**
+ * The Chairman's read-only board of students, staff, attendance, learning and results across the school (no money, nothing can be sent or changed)
+ */
+export const GetChairmanBoardQueryParams = zod.object({
+  "days": zod.coerce.number().optional()
+})
+
+export const GetChairmanBoardResponse = zod.object({
+  "days": zod.number(),
+  "from": zod.coerce.date(),
+  "to": zod.coerce.date(),
+  "generatedAt": zod.coerce.date(),
+  "totals": zod.object({
+  "students": zod.number(),
+  "teachers": zod.number(),
+  "classes": zod.number(),
+  "attendanceRate": zod.number().nullable(),
+  "absentToday": zod.number(),
+  "averageScore": zod.number().nullable()
+}),
+  "sections": zod.array(zod.object({
+  "section": zod.enum(['primary', 'secondary', 'other']),
+  "students": zod.number(),
+  "classes": zod.number(),
+  "attendanceRate": zod.number().nullable(),
+  "averageScore": zod.number().nullable()
+})),
+  "classes": zod.array(zod.object({
+  "className": zod.string(),
+  "section": zod.enum(['primary', 'secondary', 'other']),
+  "students": zod.number(),
+  "attendanceRate": zod.number().nullable(),
+  "recorded": zod.number(),
+  "averageScore": zod.number().nullable(),
+  "results": zod.number()
+})),
+  "attendanceTrend": zod.array(zod.object({
+  "date": zod.string(),
+  "rate": zod.number().nullable(),
+  "recorded": zod.number()
+})),
+  "learning": zod.array(zod.object({
+  "label": zod.string(),
+  "value": zod.number()
+})),
+  "admissions": zod.array(zod.object({
+  "label": zod.string(),
+  "value": zod.number()
+})),
+  "highlights": zod.array(zod.string()),
+  "waec": zod.union([zod.object({
+  "academicYear": zod.string(),
+  "open": zod.boolean(),
+  "candidates": zod.number(),
+  "submitted": zod.number()
+}),zod.null()])
+})
 
 
 export const GetMyMessagesResponse = zod.object({

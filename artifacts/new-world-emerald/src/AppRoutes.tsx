@@ -20,6 +20,7 @@ const ActivateAccount = lazy(() => import("@/pages/ActivateAccount"));
 const ParentPortal = lazy(() => import("@/pages/ParentPortal"));
 const Principal = lazy(() => import("@/pages/Principal"));
 const ExamOfficer = lazy(() => import("@/pages/ExamOfficer"));
+const Chairman = lazy(() => import("@/pages/Chairman"));
 const HeadOfSchool = lazy(() => import("@/pages/HeadOfSchool"));
 const NotFound = lazy(() => import("@/pages/not-found"));
 
@@ -63,6 +64,7 @@ export function AppRoutes() {
         <Route path="/principal/primary">{() => <Principal section="primary" />}</Route>
         {/* The exam officer: publishes every exam to students and sees exam activity. */}
         <Route path="/exam-officer" component={ExamOfficer} />
+        <Route path="/chairman" component={Chairman} />
         {/* The Head of School: every portal, private emails to teachers and parents, parents and children. */}
         <Route path="/head" component={HeadOfSchool} />
         <Route component={NotFound} />

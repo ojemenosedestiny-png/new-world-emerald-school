@@ -37,6 +37,7 @@ import type {
   AttendanceSheet,
   AttendanceSummary,
   AuditPage,
+  ChairmanBoard,
   ClassFeeSchedule,
   ClassFeeScheduleInput,
   ClassFeeScheduleUpdate,
@@ -57,6 +58,10 @@ import type {
   ExamOfficerCommand,
   ExamOfficerOverview,
   ExamOfficerPaper,
+  ExamRegistrationAdmin,
+  ExamRegistrationFormInput,
+  ExamRegistrationReview,
+  ExamRegistrationSettings,
   Facilities,
   FacilitiesCommand,
   FeePaymentReport,
@@ -64,13 +69,18 @@ import type {
   FeePaymentReportReceipt,
   FeePaymentReportUpdate,
   FeeStatement,
+  FeeTransfer,
+  FeeTransferReview,
+  FeeTransferWorkspace,
   ForgotPasswordInput,
   GetAttendanceSheetParams,
   GetAttendanceSummaryParams,
   GetAuditLogParams,
+  GetChairmanBoardParams,
   GetDirectorOverviewParams,
   GetExamOfficerActivityParams,
   GetExamOfficerOverviewParams,
+  GetExamRegistrationAdminParams,
   GetLocalAccount200,
   GetPrincipalActivityParams,
   GetPrincipalDashboardParams,
@@ -99,6 +109,7 @@ import type {
   MessageReadInput,
   MessageThreadSummary,
   MyAttendance,
+  MyExamRegistration,
   MyFacilities,
   MyMessages,
   MyPhoto,
@@ -110,7 +121,10 @@ import type {
   ParentPaymentRequest,
   ParentPaymentStart,
   ParentPaymentsOffice,
+  ParentTransferInput,
   ParentWalletAdjustment,
+  PaymentAccountCommand,
+  PaymentAccountWorkspace,
   PaymentProof,
   PaymentProofAttach,
   PaymentProofAttached,
@@ -6658,6 +6672,800 @@ export function useListMyTimetables<TData = Awaited<ReturnType<typeof listMyTime
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getListMyTimetablesQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getListPaymentAccountsUrl = () => {
+
+
+
+
+  return `/api/portal/payment-accounts`
+}
+
+/**
+ * The school's bank accounts for school fees and WAEC/NECO, per academic session (the office and the Head of School)
+ */
+export const listPaymentAccounts = async ( options?: RequestInit): Promise<PaymentAccountWorkspace> => {
+
+  return customFetch<PaymentAccountWorkspace>(getListPaymentAccountsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListPaymentAccountsQueryKey = () => {
+    return [
+    `/api/portal/payment-accounts`
+    ] as const;
+    }
+
+
+export const getListPaymentAccountsQueryOptions = <TData = Awaited<ReturnType<typeof listPaymentAccounts>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listPaymentAccounts>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListPaymentAccountsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listPaymentAccounts>>> = ({ signal }) => listPaymentAccounts({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listPaymentAccounts>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListPaymentAccountsQueryResult = NonNullable<Awaited<ReturnType<typeof listPaymentAccounts>>>
+export type ListPaymentAccountsQueryError = ErrorType<unknown>
+
+
+
+export function useListPaymentAccounts<TData = Awaited<ReturnType<typeof listPaymentAccounts>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listPaymentAccounts>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListPaymentAccountsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getManagePaymentAccountsUrl = () => {
+
+
+
+
+  return `/api/portal/payment-accounts`
+}
+
+/**
+ * Add, change or remove a bank account
+ */
+export const managePaymentAccounts = async (paymentAccountCommand: PaymentAccountCommand, options?: RequestInit): Promise<PortalMessage> => {
+
+  return customFetch<PortalMessage>(getManagePaymentAccountsUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(paymentAccountCommand)
+  }
+);}
+
+
+
+
+
+export const getManagePaymentAccountsMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof managePaymentAccounts>>, TError,{data: BodyType<PaymentAccountCommand>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof managePaymentAccounts>>, TError,{data: BodyType<PaymentAccountCommand>}, TContext> => {
+
+const mutationKey = ['managePaymentAccounts'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof managePaymentAccounts>>, {data: BodyType<PaymentAccountCommand>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  managePaymentAccounts(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ManagePaymentAccountsMutationResult = NonNullable<Awaited<ReturnType<typeof managePaymentAccounts>>>
+    export type ManagePaymentAccountsMutationBody = BodyType<PaymentAccountCommand>
+    export type ManagePaymentAccountsMutationError = ErrorType<unknown>
+
+    export const useManagePaymentAccounts = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof managePaymentAccounts>>, TError,{data: BodyType<PaymentAccountCommand>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof managePaymentAccounts>>,
+        TError,
+        {data: BodyType<PaymentAccountCommand>},
+        TContext
+      > => {
+      return useMutation(getManagePaymentAccountsMutationOptions(options));
+    }
+
+export const getReportParentTransferUrl = () => {
+
+
+
+
+  return `/api/portal/parent/transfers`
+}
+
+/**
+ * A parent tells the school they paid a fee by bank transfer, with a screenshot of the payment
+ */
+export const reportParentTransfer = async (parentTransferInput: ParentTransferInput, options?: RequestInit): Promise<FeeTransfer> => {
+
+  return customFetch<FeeTransfer>(getReportParentTransferUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(parentTransferInput)
+  }
+);}
+
+
+
+
+
+export const getReportParentTransferMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reportParentTransfer>>, TError,{data: BodyType<ParentTransferInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof reportParentTransfer>>, TError,{data: BodyType<ParentTransferInput>}, TContext> => {
+
+const mutationKey = ['reportParentTransfer'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof reportParentTransfer>>, {data: BodyType<ParentTransferInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  reportParentTransfer(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ReportParentTransferMutationResult = NonNullable<Awaited<ReturnType<typeof reportParentTransfer>>>
+    export type ReportParentTransferMutationBody = BodyType<ParentTransferInput>
+    export type ReportParentTransferMutationError = ErrorType<unknown>
+
+    export const useReportParentTransfer = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reportParentTransfer>>, TError,{data: BodyType<ParentTransferInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof reportParentTransfer>>,
+        TError,
+        {data: BodyType<ParentTransferInput>},
+        TContext
+      > => {
+      return useMutation(getReportParentTransferMutationOptions(options));
+    }
+
+export const getListFeeTransfersUrl = () => {
+
+
+
+
+  return `/api/portal/fee-transfers`
+}
+
+/**
+ * Bank transfers reported by parents, newest first (the office and the Head of School)
+ */
+export const listFeeTransfers = async ( options?: RequestInit): Promise<FeeTransferWorkspace> => {
+
+  return customFetch<FeeTransferWorkspace>(getListFeeTransfersUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListFeeTransfersQueryKey = () => {
+    return [
+    `/api/portal/fee-transfers`
+    ] as const;
+    }
+
+
+export const getListFeeTransfersQueryOptions = <TData = Awaited<ReturnType<typeof listFeeTransfers>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listFeeTransfers>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListFeeTransfersQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listFeeTransfers>>> = ({ signal }) => listFeeTransfers({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listFeeTransfers>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListFeeTransfersQueryResult = NonNullable<Awaited<ReturnType<typeof listFeeTransfers>>>
+export type ListFeeTransfersQueryError = ErrorType<unknown>
+
+
+
+export function useListFeeTransfers<TData = Awaited<ReturnType<typeof listFeeTransfers>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listFeeTransfers>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListFeeTransfersQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getReviewFeeTransferUrl = (id: number,) => {
+
+
+
+
+  return `/api/portal/fee-transfers/${id}`
+}
+
+/**
+ * Confirm a transfer (a receipt is issued to the parent) or say it was not received
+ */
+export const reviewFeeTransfer = async (id: number,
+    feeTransferReview: FeeTransferReview, options?: RequestInit): Promise<FeeTransfer> => {
+
+  return customFetch<FeeTransfer>(getReviewFeeTransferUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(feeTransferReview)
+  }
+);}
+
+
+
+
+
+export const getReviewFeeTransferMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reviewFeeTransfer>>, TError,{id: number;data: BodyType<FeeTransferReview>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof reviewFeeTransfer>>, TError,{id: number;data: BodyType<FeeTransferReview>}, TContext> => {
+
+const mutationKey = ['reviewFeeTransfer'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof reviewFeeTransfer>>, {id: number;data: BodyType<FeeTransferReview>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  reviewFeeTransfer(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ReviewFeeTransferMutationResult = NonNullable<Awaited<ReturnType<typeof reviewFeeTransfer>>>
+    export type ReviewFeeTransferMutationBody = BodyType<FeeTransferReview>
+    export type ReviewFeeTransferMutationError = ErrorType<unknown>
+
+    export const useReviewFeeTransfer = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reviewFeeTransfer>>, TError,{id: number;data: BodyType<FeeTransferReview>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof reviewFeeTransfer>>,
+        TError,
+        {id: number;data: BodyType<FeeTransferReview>},
+        TContext
+      > => {
+      return useMutation(getReviewFeeTransferMutationOptions(options));
+    }
+
+export const getGetExamRegistrationAdminUrl = (params?: GetExamRegistrationAdminParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/portal/exam-registration?${stringifiedParams}` : `/api/portal/exam-registration`
+}
+
+/**
+ * WAEC/NECO registration for one session (newest when none is given) with every form (the office and the Head of School)
+ */
+export const getExamRegistrationAdmin = async (params?: GetExamRegistrationAdminParams, options?: RequestInit): Promise<ExamRegistrationAdmin> => {
+
+  return customFetch<ExamRegistrationAdmin>(getGetExamRegistrationAdminUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetExamRegistrationAdminQueryKey = (params?: GetExamRegistrationAdminParams,) => {
+    return [
+    `/api/portal/exam-registration`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetExamRegistrationAdminQueryOptions = <TData = Awaited<ReturnType<typeof getExamRegistrationAdmin>>, TError = ErrorType<unknown>>(params?: GetExamRegistrationAdminParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getExamRegistrationAdmin>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetExamRegistrationAdminQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getExamRegistrationAdmin>>> = ({ signal }) => getExamRegistrationAdmin(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getExamRegistrationAdmin>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetExamRegistrationAdminQueryResult = NonNullable<Awaited<ReturnType<typeof getExamRegistrationAdmin>>>
+export type GetExamRegistrationAdminQueryError = ErrorType<unknown>
+
+
+
+export function useGetExamRegistrationAdmin<TData = Awaited<ReturnType<typeof getExamRegistrationAdmin>>, TError = ErrorType<unknown>>(
+ params?: GetExamRegistrationAdminParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getExamRegistrationAdmin>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetExamRegistrationAdminQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getSaveExamRegistrationSettingsUrl = () => {
+
+
+
+
+  return `/api/portal/exam-registration`
+}
+
+/**
+ * Open or close registration, set the fee, subjects and classes for a session
+ */
+export const saveExamRegistrationSettings = async (examRegistrationSettings: ExamRegistrationSettings, options?: RequestInit): Promise<PortalMessage> => {
+
+  return customFetch<PortalMessage>(getSaveExamRegistrationSettingsUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(examRegistrationSettings)
+  }
+);}
+
+
+
+
+
+export const getSaveExamRegistrationSettingsMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof saveExamRegistrationSettings>>, TError,{data: BodyType<ExamRegistrationSettings>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof saveExamRegistrationSettings>>, TError,{data: BodyType<ExamRegistrationSettings>}, TContext> => {
+
+const mutationKey = ['saveExamRegistrationSettings'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof saveExamRegistrationSettings>>, {data: BodyType<ExamRegistrationSettings>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  saveExamRegistrationSettings(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SaveExamRegistrationSettingsMutationResult = NonNullable<Awaited<ReturnType<typeof saveExamRegistrationSettings>>>
+    export type SaveExamRegistrationSettingsMutationBody = BodyType<ExamRegistrationSettings>
+    export type SaveExamRegistrationSettingsMutationError = ErrorType<unknown>
+
+    export const useSaveExamRegistrationSettings = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof saveExamRegistrationSettings>>, TError,{data: BodyType<ExamRegistrationSettings>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof saveExamRegistrationSettings>>,
+        TError,
+        {data: BodyType<ExamRegistrationSettings>},
+        TContext
+      > => {
+      return useMutation(getSaveExamRegistrationSettingsMutationOptions(options));
+    }
+
+export const getReviewExamRegistrationUrl = (id: number,) => {
+
+
+
+
+  return `/api/portal/exam-registration/${id}`
+}
+
+/**
+ * Send a submitted form back to the student for a correction
+ */
+export const reviewExamRegistration = async (id: number,
+    examRegistrationReview: ExamRegistrationReview, options?: RequestInit): Promise<PortalMessage> => {
+
+  return customFetch<PortalMessage>(getReviewExamRegistrationUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(examRegistrationReview)
+  }
+);}
+
+
+
+
+
+export const getReviewExamRegistrationMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reviewExamRegistration>>, TError,{id: number;data: BodyType<ExamRegistrationReview>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof reviewExamRegistration>>, TError,{id: number;data: BodyType<ExamRegistrationReview>}, TContext> => {
+
+const mutationKey = ['reviewExamRegistration'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof reviewExamRegistration>>, {id: number;data: BodyType<ExamRegistrationReview>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  reviewExamRegistration(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ReviewExamRegistrationMutationResult = NonNullable<Awaited<ReturnType<typeof reviewExamRegistration>>>
+    export type ReviewExamRegistrationMutationBody = BodyType<ExamRegistrationReview>
+    export type ReviewExamRegistrationMutationError = ErrorType<unknown>
+
+    export const useReviewExamRegistration = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reviewExamRegistration>>, TError,{id: number;data: BodyType<ExamRegistrationReview>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof reviewExamRegistration>>,
+        TError,
+        {id: number;data: BodyType<ExamRegistrationReview>},
+        TContext
+      > => {
+      return useMutation(getReviewExamRegistrationMutationOptions(options));
+    }
+
+export const getGetMyExamRegistrationUrl = () => {
+
+
+
+
+  return `/api/portal/my-exam-registration`
+}
+
+/**
+ * The signed-in student's WAEC/NECO registration form, the fee and whether it is paid
+ */
+export const getMyExamRegistration = async ( options?: RequestInit): Promise<MyExamRegistration> => {
+
+  return customFetch<MyExamRegistration>(getGetMyExamRegistrationUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetMyExamRegistrationQueryKey = () => {
+    return [
+    `/api/portal/my-exam-registration`
+    ] as const;
+    }
+
+
+export const getGetMyExamRegistrationQueryOptions = <TData = Awaited<ReturnType<typeof getMyExamRegistration>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMyExamRegistration>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetMyExamRegistrationQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMyExamRegistration>>> = ({ signal }) => getMyExamRegistration({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMyExamRegistration>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetMyExamRegistrationQueryResult = NonNullable<Awaited<ReturnType<typeof getMyExamRegistration>>>
+export type GetMyExamRegistrationQueryError = ErrorType<unknown>
+
+
+
+export function useGetMyExamRegistration<TData = Awaited<ReturnType<typeof getMyExamRegistration>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMyExamRegistration>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetMyExamRegistrationQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getSaveMyExamRegistrationUrl = () => {
+
+
+
+
+  return `/api/portal/my-exam-registration`
+}
+
+/**
+ * Save the form as a draft, or submit it (only once the fee is confirmed)
+ */
+export const saveMyExamRegistration = async (examRegistrationFormInput: ExamRegistrationFormInput, options?: RequestInit): Promise<MyExamRegistration> => {
+
+  return customFetch<MyExamRegistration>(getSaveMyExamRegistrationUrl(),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(examRegistrationFormInput)
+  }
+);}
+
+
+
+
+
+export const getSaveMyExamRegistrationMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof saveMyExamRegistration>>, TError,{data: BodyType<ExamRegistrationFormInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof saveMyExamRegistration>>, TError,{data: BodyType<ExamRegistrationFormInput>}, TContext> => {
+
+const mutationKey = ['saveMyExamRegistration'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof saveMyExamRegistration>>, {data: BodyType<ExamRegistrationFormInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  saveMyExamRegistration(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SaveMyExamRegistrationMutationResult = NonNullable<Awaited<ReturnType<typeof saveMyExamRegistration>>>
+    export type SaveMyExamRegistrationMutationBody = BodyType<ExamRegistrationFormInput>
+    export type SaveMyExamRegistrationMutationError = ErrorType<unknown>
+
+    export const useSaveMyExamRegistration = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof saveMyExamRegistration>>, TError,{data: BodyType<ExamRegistrationFormInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof saveMyExamRegistration>>,
+        TError,
+        {data: BodyType<ExamRegistrationFormInput>},
+        TContext
+      > => {
+      return useMutation(getSaveMyExamRegistrationMutationOptions(options));
+    }
+
+export const getGetChairmanBoardUrl = (params?: GetChairmanBoardParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/chairman/board?${stringifiedParams}` : `/api/chairman/board`
+}
+
+/**
+ * The Chairman's read-only board of students, staff, attendance, learning and results across the school (no money, nothing can be sent or changed)
+ */
+export const getChairmanBoard = async (params?: GetChairmanBoardParams, options?: RequestInit): Promise<ChairmanBoard> => {
+
+  return customFetch<ChairmanBoard>(getGetChairmanBoardUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetChairmanBoardQueryKey = (params?: GetChairmanBoardParams,) => {
+    return [
+    `/api/chairman/board`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetChairmanBoardQueryOptions = <TData = Awaited<ReturnType<typeof getChairmanBoard>>, TError = ErrorType<unknown>>(params?: GetChairmanBoardParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getChairmanBoard>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetChairmanBoardQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getChairmanBoard>>> = ({ signal }) => getChairmanBoard(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getChairmanBoard>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetChairmanBoardQueryResult = NonNullable<Awaited<ReturnType<typeof getChairmanBoard>>>
+export type GetChairmanBoardQueryError = ErrorType<unknown>
+
+
+
+export function useGetChairmanBoard<TData = Awaited<ReturnType<typeof getChairmanBoard>>, TError = ErrorType<unknown>>(
+ params?: GetChairmanBoardParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getChairmanBoard>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetChairmanBoardQueryOptions(params,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

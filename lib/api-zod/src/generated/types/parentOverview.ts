@@ -5,10 +5,13 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { FeeTransfer } from './feeTransfer';
 import type { ParentChild } from './parentChild';
+import type { ParentExamFee } from './parentExamFee';
 import type { ParentOutstandingItem } from './parentOutstandingItem';
 import type { ParentOverviewWallet } from './parentOverviewWallet';
 import type { ParentPayment } from './parentPayment';
+import type { PaymentAccount } from './paymentAccount';
 
 export interface ParentOverview {
   email: string;
@@ -18,4 +21,10 @@ export interface ParentOverview {
   children: ParentChild[];
   outstanding: ParentOutstandingItem[];
   payments: ParentPayment[];
+  /** The school's active bank accounts for fees and WAEC/NECO */
+  accounts: PaymentAccount[];
+  /** Bank transfers reported for this family, newest first */
+  transfers: FeeTransfer[];
+  /** WAEC/NECO registration fees for children in an open registration */
+  examFees: ParentExamFee[];
 }

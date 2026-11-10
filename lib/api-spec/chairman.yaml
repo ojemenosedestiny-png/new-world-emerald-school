@@ -1,0 +1,80 @@
+paths:
+  board:
+    get:
+      operationId: getChairmanBoard
+      description: "The Chairman's read-only board of students, staff, attendance, learning and results across the school (no money, nothing can be sent or changed)"
+      parameters:
+        - { name: days, in: query, required: false, schema: { type: integer } }
+      responses:
+        "200":
+          description: The board
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ChairmanBoard" }
+schemas:
+  ChairmanCount:
+    type: object
+    required: [label, value]
+    properties:
+      label: { type: string }
+      value: { type: integer }
+  ChairmanSection:
+    type: object
+    required: [section, students, classes, attendanceRate, averageScore]
+    properties:
+      section: { type: string, enum: [primary, secondary, other] }
+      students: { type: integer }
+      classes: { type: integer }
+      attendanceRate: { type: ["integer", "null"] }
+      averageScore: { type: ["integer", "null"] }
+  ChairmanClass:
+    type: object
+    required: [className, section, students, attendanceRate, recorded, averageScore, results]
+    properties:
+      className: { type: string }
+      section: { type: string, enum: [primary, secondary, other] }
+      students: { type: integer }
+      attendanceRate: { type: ["integer", "null"] }
+      recorded: { type: integer }
+      averageScore: { type: ["integer", "null"] }
+      results: { type: integer }
+  ChairmanDay:
+    type: object
+    required: [date, rate, recorded]
+    properties:
+      date: { type: string }
+      rate: { type: ["integer", "null"] }
+      recorded: { type: integer }
+  ChairmanWaec:
+    type: object
+    required: [academicYear, open, candidates, submitted]
+    properties:
+      academicYear: { type: string }
+      open: { type: boolean }
+      candidates: { type: integer }
+      submitted: { type: integer }
+  ChairmanBoard:
+    type: object
+    required: [days, from, to, generatedAt, totals, sections, classes, attendanceTrend, learning, admissions, highlights, waec]
+    properties:
+      days: { type: integer }
+      from: { type: string, format: date-time }
+      to: { type: string, format: date-time }
+      generatedAt: { type: string, format: date-time }
+      totals:
+        type: object
+        required: [students, teachers, classes, attendanceRate, absentToday, averageScore]
+        properties:
+          students: { type: integer }
+          teachers: { type: integer }
+          classes: { type: integer }
+          attendanceRate: { type: ["integer", "null"] }
+          absentToday: { type: integer }
+          averageScore: { type: ["integer", "null"] }
+      sections: { type: array, items: { $ref: "#/components/schemas/ChairmanSection" } }
+      classes: { type: array, items: { $ref: "#/components/schemas/ChairmanClass" } }
+      attendanceTrend: { type: array, items: { $ref: "#/components/schemas/ChairmanDay" } }
+      learning: { type: array, items: { $ref: "#/components/schemas/ChairmanCount" } }
+      admissions: { type: array, items: { $ref: "#/components/schemas/ChairmanCount" } }
+      highlights: { type: array, items: { type: string } }
+      waec: { oneOf: [{ $ref: "#/components/schemas/ChairmanWaec" }, { type: "null" }] }

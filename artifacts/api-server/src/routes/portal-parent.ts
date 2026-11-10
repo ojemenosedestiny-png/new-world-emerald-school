@@ -14,6 +14,8 @@ import { initializePayment, paystackConfigured, PaystackError, verifyPayment, ty
 import { siteOrigin } from "../lib/seo";
 import { emailConfigured, feeReceiptEmail, sendEmail } from "../lib/email";
 import { recordAudit, clientIp } from "../lib/audit";
+import { examFeesFor, familyTransfers } from "../lib/payment-accounts";
+import { activeAccounts } from "./portal-payments";
 
 export const portalParentRouter = Router();
 type Log = { warn: (o: object, m: string) => void; error: (o: object, m: string) => void };
@@ -138,12 +140,14 @@ portalParentRouter.get("/parent", async (req, res) => {
     db.select().from(parentWalletEntries).where(eq(parentWalletEntries.email, email)).orderBy(desc(parentWalletEntries.createdAt)).limit(30),
     db.select().from(parentPayments).where(eq(parentPayments.parentEmail, email)).orderBy(desc(parentPayments.createdAt)).limit(30),
   ]);
-  const classIds = [...new Set((await childrenOf(db, email)).map((k) => k.classId))];
+  const kids = await childrenOf(db, email);
+  const classIds = [...new Set(kids.map((k) => k.classId))];
+  const [accounts, transfers, examFees] = await Promise.all([activeAccounts(), familyTransfers(email, kids), examFeesFor(kids)]);
   const classes = classIds.length ? await db.select({ id: portalClasses.id, name: portalClasses.name }).from(portalClasses).where(inArray(portalClasses.id, classIds)) : [];
   res.json({
     email, paystackReady: paystackConfigured(), classCount: classes.length,
     wallet: { balanceKobo, entries: entries.map((e) => ({ amountKobo: e.amountKobo, balanceAfterKobo: e.balanceAfterKobo, kind: e.kind, paymentReference: e.paymentReference, note: e.note, createdAt: e.createdAt.toISOString() })) },
-    children, outstanding, payments: payments.map(view),
+    children, outstanding, payments: payments.map(view), accounts, transfers, examFees,
   });
 });
 
@@ -174,6 +178,8 @@ portalParentRouter.post("/parent/payments", async (req, res) => {
   const reference = newPaymentReference();
   await db.insert(parentPayments).values({ reference, parentEmail: email, cardKobo: body.amountKobo, selection });
   await recordAudit({ actorKind: "parent", actorId: email, actorLabel: email, action: "parent.payment_started", targetType: "parent_payment", targetId: reference, after: { amountKobo: body.amountKobo, items: selection.length }, ip: clientIp(req), userAgent: req.headers["user-agent"] ?? null });
+  // Card payments (Paystack) are switched off: fees are paid by bank transfer with a screenshot.
+  check(body.amountKobo === 0, "Card payment is no longer available. Pay by bank transfer into the school account and upload the screenshot.", 410);
   if (body.amountKobo === 0) {
     // Paid entirely from the wallet: nothing goes to Paystack.
     const payment = await settlePayment(reference, null, req.log);

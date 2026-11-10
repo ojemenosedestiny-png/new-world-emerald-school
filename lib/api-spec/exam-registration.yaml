@@ -1,0 +1,170 @@
+paths:
+  admin:
+    get:
+      operationId: getExamRegistrationAdmin
+      description: WAEC/NECO registration for one session (newest when none is given) with every form (the office and the Head of School)
+      parameters:
+        - { name: academicYear, in: query, required: false, schema: { type: string } }
+      responses:
+        "200":
+          description: Registration
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ExamRegistrationAdmin" }
+    post:
+      operationId: saveExamRegistrationSettings
+      description: Open or close registration, set the fee, subjects and classes for a session
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ExamRegistrationSettings" }
+      responses:
+        "200":
+          description: Saved
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PortalMessage" }
+  review:
+    post:
+      operationId: reviewExamRegistration
+      description: Send a submitted form back to the student for a correction
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ExamRegistrationReview" }
+      responses:
+        "200":
+          description: Done
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PortalMessage" }
+  mine:
+    get:
+      operationId: getMyExamRegistration
+      description: The signed-in student's WAEC/NECO registration form, the fee and whether it is paid
+      responses:
+        "200":
+          description: Registration
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MyExamRegistration" }
+    put:
+      operationId: saveMyExamRegistration
+      description: Save the form as a draft, or submit it (only once the fee is confirmed)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ExamRegistrationFormInput" }
+      responses:
+        "200":
+          description: Saved
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MyExamRegistration" }
+schemas:
+  ExamRegistrationSettings:
+    type: object
+    required: [academicYear, title, open, feeKobo, compulsorySubjects, optionalSubjects, maxSubjects, classIds, deadline]
+    properties:
+      academicYear: { type: string, maxLength: 20 }
+      title: { type: string, maxLength: 120 }
+      open: { type: boolean }
+      feeKobo: { type: integer, minimum: 0, maximum: 100000000 }
+      compulsorySubjects: { type: array, items: { type: string, maxLength: 60 }, maxItems: 15 }
+      optionalSubjects: { type: array, items: { type: string, maxLength: 60 }, maxItems: 60 }
+      maxSubjects: { type: integer, minimum: 1, maximum: 15 }
+      classIds: { type: array, items: { type: integer }, maxItems: 50 }
+      deadline: { type: string, maxLength: 10 }
+  ExamRegistrationFormFields:
+    type: object
+    required: [surname, firstName, middleName, dateOfBirth, stateOfOrigin, lga, gender, nin, subjects, phone, email, signatureName]
+    properties:
+      surname: { type: string, maxLength: 60 }
+      firstName: { type: string, maxLength: 60 }
+      middleName: { type: string, maxLength: 60 }
+      dateOfBirth: { type: string, maxLength: 10 }
+      stateOfOrigin: { type: string, maxLength: 40 }
+      lga: { type: string, maxLength: 60 }
+      gender: { type: string, maxLength: 10 }
+      nin: { type: string, maxLength: 11 }
+      subjects: { type: array, items: { type: string, maxLength: 60 }, maxItems: 15 }
+      phone: { type: string, maxLength: 20 }
+      email: { type: string, maxLength: 120 }
+      signatureName: { type: string, maxLength: 120 }
+  ExamRegistrationFormInput:
+    allOf:
+      - { $ref: "#/components/schemas/ExamRegistrationFormFields" }
+      - type: object
+        required: [submit]
+        properties:
+          submit: { type: boolean, description: "true to submit; false saves a draft" }
+  ExamRegistrationForm:
+    allOf:
+      - { $ref: "#/components/schemas/ExamRegistrationFormFields" }
+      - type: object
+        required: [id, academicYear, status, officeNote, submittedAt, updatedAt]
+        properties:
+          id: { type: integer }
+          academicYear: { type: string }
+          status: { type: string, enum: [draft, submitted, returned] }
+          officeNote: { type: string }
+          submittedAt: { type: ["string", "null"], format: date-time }
+          updatedAt: { type: string, format: date-time }
+  ExamRegistrationFee:
+    type: object
+    required: [amountKobo, status, itemKey]
+    properties:
+      amountKobo: { type: integer }
+      status: { type: string, enum: [due, pending, paid] }
+      itemKey: { type: string }
+  MyExamRegistration:
+    type: object
+    required: [settings, eligible, form, fee, account, student]
+    properties:
+      settings: { oneOf: [{ $ref: "#/components/schemas/ExamRegistrationSettings" }, { type: "null" }] }
+      eligible: { type: boolean }
+      form: { oneOf: [{ $ref: "#/components/schemas/ExamRegistrationForm" }, { type: "null" }] }
+      fee: { oneOf: [{ $ref: "#/components/schemas/ExamRegistrationFee" }, { type: "null" }] }
+      account: { oneOf: [{ $ref: "#/components/schemas/FeeTransferAccount" }, { type: "null" }] }
+      student:
+        type: object
+        required: [name, studentId, className]
+        properties:
+          name: { type: string }
+          studentId: { type: string }
+          className: { type: string }
+  ExamRegistrationRow:
+    type: object
+    required: [studentId, studentName, studentCode, className, feeStatus, form]
+    properties:
+      studentId: { type: integer }
+      studentName: { type: string }
+      studentCode: { type: string }
+      className: { type: string }
+      feeStatus: { type: string, enum: [due, pending, paid] }
+      form: { oneOf: [{ $ref: "#/components/schemas/ExamRegistrationForm" }, { type: "null" }] }
+  ExamRegistrationClass:
+    type: object
+    required: [id, name]
+    properties:
+      id: { type: integer }
+      name: { type: string }
+  ExamRegistrationAdmin:
+    type: object
+    required: [settings, sessions, classes, rows]
+    properties:
+      settings: { oneOf: [{ $ref: "#/components/schemas/ExamRegistrationSettings" }, { type: "null" }] }
+      sessions: { type: array, items: { type: string } }
+      classes: { type: array, items: { $ref: "#/components/schemas/ExamRegistrationClass" } }
+      rows: { type: array, items: { $ref: "#/components/schemas/ExamRegistrationRow" } }
+  ExamRegistrationReview:
+    type: object
+    required: [action, note]
+    properties:
+      action: { type: string, enum: [return] }
+      note: { type: string, maxLength: 300 }
