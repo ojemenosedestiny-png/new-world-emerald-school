@@ -39,7 +39,8 @@
     "test:portal-transfers": "node ./test-portal.mjs portal-transfers",
     "test:school-accounts": "node ./test-portal.mjs school-accounts",
     "test:portal-class-delete": "node ./test-portal.mjs portal-class-delete",
-    "test:portal-signatures": "node ./test-portal.mjs portal-signatures"
+    "test:portal-signatures": "node ./test-portal.mjs portal-signatures",
+    "test:school-export": "node ./test-portal.mjs school-export"
   },
   "dependencies": {
     "@clerk/express": "^2.1.75",

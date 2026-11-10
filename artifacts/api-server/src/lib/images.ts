@@ -25,6 +25,7 @@ type ImageStore = {
   save(name: string, body: Buffer, contentType: string): Promise<void>;
   remove(name: string): Promise<void>;
   serve(req: Request, res: Response, name: string, contentType: string): Promise<void>;
+  read(name: string, contentType: string): Promise<Buffer>;
 };
 
 const storage = new ObjectStorageService();
@@ -38,6 +39,7 @@ const cloudStore: ImageStore = {
   save: async (name, body, contentType) => { await bucketFile(name).save(body, { contentType, resumable: false, metadata: { cacheControl: "private, max-age=86400" } }); },
   remove: async (name) => { await bucketFile(name).delete({ ignoreNotFound: true }); },
   serve: (req, res, name) => serveObject(req, res, storage, async () => bucketFile(name)),
+  read: async (name) => (await bucketFile(name).download())[0],
 };
 // Cloudinary keeps portal photos private ("authenticated"); they are only served through mayView checks.
 // Their stored object names start with "cloudinary:" so older bucket photos keep working after the switch.
@@ -52,6 +54,11 @@ const cloudinaryStore: ImageStore = {
   },
   remove: async (name) => { await deleteFromCloudinary(cloudinaryPublicId(name), "image", "private"); },
   serve: (_req, res, name, contentType) => pipeFromCloudinary(res, downloadUrl(cloudinaryPublicId(name), "image", "private", contentType), { "Content-Type": contentType }),
+  read: async (name, contentType) => {
+    const r = await fetch(downloadUrl(cloudinaryPublicId(name), "image", "private", contentType));
+    if (!r.ok) throw new Error(`Photo download failed (${r.status})`);
+    return Buffer.from(await r.arrayBuffer());
+  },
 };
 let testStore: ImageStore | null = null;
 /** New photos go to Cloudinary when CLOUDINARY_URL is set, otherwise the bucket; tests use memory. */
@@ -72,6 +79,7 @@ export function useMemoryImageStore() {
       res.setHeader("Content-Type", contentType);
       res.end(body);
     },
+    read: async (name) => { const body = files.get(name); if (!body) throw new Error("Photo not found."); return body; },
   };
   return files;
 }
@@ -107,4 +115,9 @@ export async function serveImage(req: Request, res: Response, row: { objectName:
   res.setHeader("Content-Disposition", "inline");
   res.type(row.contentType);
   await storeFor(row.objectName).serve(req, res, row.objectName, row.contentType);
+}
+
+/** A stored photo's bytes (for the school owner's full export). */
+export async function readImage(row: { objectName: string; contentType: string }) {
+  return storeFor(row.objectName).read(row.objectName, row.contentType);
 }
