@@ -185,6 +185,12 @@ paths:
     $ref: "./school-accounts.yaml#/paths/receipt"
   /portal/signatures:
     $ref: "./reports.yaml#/paths/signatures"
+  /portal/students/{id}/profile:
+    $ref: "./student-profiles.yaml#/paths/staffProfile"
+  /portal/me/profile:
+    $ref: "./student-profiles.yaml#/paths/myProfile"
+  /portal/parent/children/{id}/profile:
+    $ref: "./student-profiles.yaml#/paths/childProfile"
   /chairman/board:
     $ref: "./chairman.yaml#/paths/board"
   /portal/my-messages:
@@ -1317,6 +1323,10 @@ components:
       $ref: "./reports.yaml#/schemas/SignatureSet"
     SignatureInput:
       $ref: "./reports.yaml#/schemas/SignatureInput"
+    StudentProfileFields:
+      $ref: "./student-profiles.yaml#/schemas/StudentProfileFields"
+    StudentProfileView:
+      $ref: "./student-profiles.yaml#/schemas/StudentProfileView"
     ChairmanCount:
       $ref: "./chairman.yaml#/schemas/ChairmanCount"
     ChairmanSection:

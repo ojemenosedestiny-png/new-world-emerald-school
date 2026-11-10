@@ -6,6 +6,7 @@ import { useToast } from "@/hooks/use-toast";
 import { PasswordChange } from "./PasswordChange";
 import { errorMessage } from "./lib";
 import { Avatar, preparePhoto } from "./photos";
+import { MyProfile } from "./profile/StudentProfile";
 
 /** The student's own details, profile photo (approved by staff) and password. */
 export function StudentProfile({ session, className }: { session: PortalSession; className: string }) {
@@ -58,6 +59,10 @@ export function StudentProfile({ session, className }: { session: PortalSession;
           ))}
         </dl>
         <p className="border-t border-[hsl(var(--p-line))] px-6 py-3 text-xs text-[hsl(var(--p-ink)/0.55)]">To correct your name or class, contact the school office.</p>
+      </section>
+      <section className="portal-card p-6" aria-labelledby="details-heading">
+        <h2 id="details-heading" className="mb-4 text-lg font-semibold">My details</h2>
+        <MyProfile />
       </section>
       <section className="portal-card p-6" aria-labelledby="pw-heading">
         <h2 id="pw-heading" className="mb-4 flex items-center gap-2 text-lg font-semibold"><KeyRound size={18} className="text-[hsl(var(--p-emerald))]" /> Change password</h2>

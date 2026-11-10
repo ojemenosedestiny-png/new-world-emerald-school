@@ -40,7 +40,8 @@
     "test:school-accounts": "node ./test-portal.mjs school-accounts",
     "test:portal-class-delete": "node ./test-portal.mjs portal-class-delete",
     "test:portal-signatures": "node ./test-portal.mjs portal-signatures",
-    "test:school-export": "node ./test-portal.mjs school-export"
+    "test:school-export": "node ./test-portal.mjs school-export",
+    "test:student-profiles": "node ./test-portal.mjs student-profiles"
   },
   "dependencies": {
     "@clerk/express": "^2.1.75",

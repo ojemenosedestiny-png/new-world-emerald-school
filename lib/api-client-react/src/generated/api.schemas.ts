@@ -2079,6 +2079,76 @@ export interface SignatureInput {
   signature: string | null;
 }
 
+export interface StudentProfileFields {
+  /** @maxLength 10 */
+  dateOfBirth?: string;
+  /** @maxLength 10 */
+  gender?: string;
+  /** @maxLength 40 */
+  phone?: string;
+  /** @maxLength 300 */
+  address?: string;
+  /** @maxLength 80 */
+  city?: string;
+  /** @maxLength 60 */
+  stateOfOrigin?: string;
+  /** @maxLength 80 */
+  lga?: string;
+  /** @maxLength 60 */
+  nationality?: string;
+  /** @maxLength 60 */
+  religion?: string;
+  /** @maxLength 5 */
+  bloodGroup?: string;
+  /** @maxLength 5 */
+  genotype?: string;
+  /** @maxLength 1000 */
+  medicalNotes?: string;
+  /** @maxLength 10 */
+  admissionDate?: string;
+  /** @maxLength 150 */
+  previousSchool?: string;
+  /** @maxLength 120 */
+  parent1Name?: string;
+  /** @maxLength 40 */
+  parent1Relationship?: string;
+  /** @maxLength 40 */
+  parent1Phone?: string;
+  /** @maxLength 80 */
+  parent1Occupation?: string;
+  /** @maxLength 120 */
+  parent2Name?: string;
+  /** @maxLength 40 */
+  parent2Relationship?: string;
+  /** @maxLength 40 */
+  parent2Phone?: string;
+  /** @maxLength 80 */
+  parent2Occupation?: string;
+  /** @maxLength 120 */
+  emergencyName?: string;
+  /** @maxLength 40 */
+  emergencyPhone?: string;
+}
+
+export interface StudentProfileView {
+  id: number;
+  studentId: string;
+  name: string;
+  className: string;
+  active: boolean;
+  /** @nullable */
+  photoImageId: string | null;
+  /** @nullable */
+  guardianEmail: string | null;
+  /** @nullable */
+  secondGuardianEmail: string | null;
+  profile: StudentProfileFields;
+  /** @nullable */
+  updatedAt: string | null;
+  updatedBy: string;
+  canEdit: boolean;
+}
+
 export interface ChairmanCount {
   label: string;
   value: number;

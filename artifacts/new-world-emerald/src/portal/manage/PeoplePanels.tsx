@@ -1,7 +1,7 @@
 import { useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useSetTeacherPhoto, useRemoveTeacherPhoto, getGetPortalManagementQueryKey, type PortalManagement, type PortalManagementStudentsItem, type PortalManagementTeachersItem } from "@workspace/api-client-react";
-import { Activity, ArrowRightLeft, Camera, Copy, GraduationCap, KeyRound, Link2, ListPlus, Mail, Pencil, Plus, Printer, School, Trash2, UserCheck, Users, Wallet } from "lucide-react";
+import { Activity, ArrowRightLeft, Camera, IdCard, Copy, GraduationCap, KeyRound, Link2, ListPlus, Mail, Pencil, Plus, Printer, School, Trash2, UserCheck, Users, Wallet } from "lucide-react";
 import type { AccountLinkResult } from "@workspace/api-client-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
@@ -16,6 +16,7 @@ import { StudentActivityDialogBody } from "../security/SecurityPanels";
 import { OfficeFeeStatement } from "../FeeStatement";
 import { AccountLinkDialog, EnrolStudentDialog, useAccountLink } from "./accounts";
 import { MoveStudentDialog } from "./MoveStudent";
+import { StudentProfileDialog } from "../profile/StudentProfile";
 import { GROUP_LABEL, teacherGroup, type TeacherGroup } from "./sections";
 
 export const SECONDARY_CLASSES = ["JSS 1", "JSS 2", "JSS 3", "SS 1", "SS 2", "SS 3"];
@@ -110,6 +111,7 @@ export function StudentsPanel({ data, isAdmin = true }: { data: PortalManagement
   const [activity, setActivity] = useState<{ id: number; name: string } | null>(null);
   const [fees, setFees] = useState<{ id: number; name: string } | null>(null);
   const [moving, setMoving] = useState<{ id: number; name: string; classId: number } | null>(null);
+  const [profile, setProfile] = useState<number | null>(null);
   const [enrolling, setEnrolling] = useState(false);
   const [link, setLink] = useState<{ result: AccountLinkResult; purpose: "activate" | "reset" } | null>(null);
   const accountLink = useAccountLink();
@@ -154,6 +156,7 @@ export function StudentsPanel({ data, isAdmin = true }: { data: PortalManagement
                 <p className="text-xs text-[hsl(var(--p-ink)/0.55)]"><span className="font-mono">{s.studentId}</span> / {className(data.classes, s.classId)}{s.guardianEmail ? <> / <Mail size={11} className="inline" /> {s.guardianEmail}</> : ""}</p>
               </div>
               <div className="flex flex-wrap gap-2">
+                <button className="portal-btn-ghost" onClick={() => setProfile(s.id as number)} data-testid={"button-profile-student-" + s.id}><IdCard size={13} /> Profile</button>
                 <button className="portal-btn-ghost" onClick={() => setForm({ ...s })} data-testid={"button-edit-student-" + s.id}><Pencil size={13} /> {isAdmin ? "Edit" : "Correct name"}</button>
                 {isAdmin && <button className="portal-btn-ghost" onClick={() => setMoving({ id: s.id as number, name: s.name, classId: s.classId })} data-testid={"button-move-student-" + s.id}><ArrowRightLeft size={13} /> Move class</button>}
                 {isAdmin && <button className="portal-btn-ghost" onClick={() => setActivity({ id: s.id as number, name: s.name })} data-testid={"button-activity-student-" + s.id}><Activity size={13} /> Activity</button>}
@@ -186,6 +189,7 @@ export function StudentsPanel({ data, isAdmin = true }: { data: PortalManagement
       {bulk && <BulkEnrol data={data} onClose={() => setBulk(false)} />}
       {enrolling && <EnrolStudentDialog data={data} onClose={() => setEnrolling(false)} onDone={(result) => { setEnrolling(false); setLink({ result, purpose: "activate" }); }} />}
       {link && <AccountLinkDialog result={link.result} purpose={link.purpose} onClose={() => setLink(null)} />}
+      <StudentProfileDialog studentId={profile} onClose={() => setProfile(null)} />
       <MoveStudentDialog student={moving} classes={data.classes} pending={cmd.pending} onClose={() => setMoving(null)}
         onMove={(toClassId) => cmd.run({ action: "moveStudent", target: { id: moving!.id }, toClassId }, "Student moved")} />
       <Dialog open={!!activity} onOpenChange={(o) => !o && setActivity(null)}>

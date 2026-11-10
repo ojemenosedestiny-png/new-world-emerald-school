@@ -4814,6 +4814,471 @@ export const SaveMySignatureResponse = zod.object({
 
 
 /**
+ * A student's full profile (the office, or a teacher of the student's class)
+ */
+export const GetStudentProfileParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const getStudentProfileResponseProfileDateOfBirthMax = 10;
+
+export const getStudentProfileResponseProfileGenderMax = 10;
+
+export const getStudentProfileResponseProfilePhoneMax = 40;
+
+export const getStudentProfileResponseProfileAddressMax = 300;
+
+export const getStudentProfileResponseProfileCityMax = 80;
+
+export const getStudentProfileResponseProfileStateOfOriginMax = 60;
+
+export const getStudentProfileResponseProfileLgaMax = 80;
+
+export const getStudentProfileResponseProfileNationalityMax = 60;
+
+export const getStudentProfileResponseProfileReligionMax = 60;
+
+export const getStudentProfileResponseProfileBloodGroupMax = 5;
+
+export const getStudentProfileResponseProfileGenotypeMax = 5;
+
+export const getStudentProfileResponseProfileMedicalNotesMax = 1000;
+
+export const getStudentProfileResponseProfileAdmissionDateMax = 10;
+
+export const getStudentProfileResponseProfilePreviousSchoolMax = 150;
+
+export const getStudentProfileResponseProfileParent1NameMax = 120;
+
+export const getStudentProfileResponseProfileParent1RelationshipMax = 40;
+
+export const getStudentProfileResponseProfileParent1PhoneMax = 40;
+
+export const getStudentProfileResponseProfileParent1OccupationMax = 80;
+
+export const getStudentProfileResponseProfileParent2NameMax = 120;
+
+export const getStudentProfileResponseProfileParent2RelationshipMax = 40;
+
+export const getStudentProfileResponseProfileParent2PhoneMax = 40;
+
+export const getStudentProfileResponseProfileParent2OccupationMax = 80;
+
+export const getStudentProfileResponseProfileEmergencyNameMax = 120;
+
+export const getStudentProfileResponseProfileEmergencyPhoneMax = 40;
+
+
+
+export const GetStudentProfileResponse = zod.object({
+  "id": zod.number(),
+  "studentId": zod.string(),
+  "name": zod.string(),
+  "className": zod.string(),
+  "active": zod.boolean(),
+  "photoImageId": zod.string().nullable(),
+  "guardianEmail": zod.string().nullable(),
+  "secondGuardianEmail": zod.string().nullable(),
+  "profile": zod.object({
+  "dateOfBirth": zod.string().max(getStudentProfileResponseProfileDateOfBirthMax).optional(),
+  "gender": zod.string().max(getStudentProfileResponseProfileGenderMax).optional(),
+  "phone": zod.string().max(getStudentProfileResponseProfilePhoneMax).optional(),
+  "address": zod.string().max(getStudentProfileResponseProfileAddressMax).optional(),
+  "city": zod.string().max(getStudentProfileResponseProfileCityMax).optional(),
+  "stateOfOrigin": zod.string().max(getStudentProfileResponseProfileStateOfOriginMax).optional(),
+  "lga": zod.string().max(getStudentProfileResponseProfileLgaMax).optional(),
+  "nationality": zod.string().max(getStudentProfileResponseProfileNationalityMax).optional(),
+  "religion": zod.string().max(getStudentProfileResponseProfileReligionMax).optional(),
+  "bloodGroup": zod.string().max(getStudentProfileResponseProfileBloodGroupMax).optional(),
+  "genotype": zod.string().max(getStudentProfileResponseProfileGenotypeMax).optional(),
+  "medicalNotes": zod.string().max(getStudentProfileResponseProfileMedicalNotesMax).optional(),
+  "admissionDate": zod.string().max(getStudentProfileResponseProfileAdmissionDateMax).optional(),
+  "previousSchool": zod.string().max(getStudentProfileResponseProfilePreviousSchoolMax).optional(),
+  "parent1Name": zod.string().max(getStudentProfileResponseProfileParent1NameMax).optional(),
+  "parent1Relationship": zod.string().max(getStudentProfileResponseProfileParent1RelationshipMax).optional(),
+  "parent1Phone": zod.string().max(getStudentProfileResponseProfileParent1PhoneMax).optional(),
+  "parent1Occupation": zod.string().max(getStudentProfileResponseProfileParent1OccupationMax).optional(),
+  "parent2Name": zod.string().max(getStudentProfileResponseProfileParent2NameMax).optional(),
+  "parent2Relationship": zod.string().max(getStudentProfileResponseProfileParent2RelationshipMax).optional(),
+  "parent2Phone": zod.string().max(getStudentProfileResponseProfileParent2PhoneMax).optional(),
+  "parent2Occupation": zod.string().max(getStudentProfileResponseProfileParent2OccupationMax).optional(),
+  "emergencyName": zod.string().max(getStudentProfileResponseProfileEmergencyNameMax).optional(),
+  "emergencyPhone": zod.string().max(getStudentProfileResponseProfileEmergencyPhoneMax).optional()
+}),
+  "updatedAt": zod.coerce.date().nullable(),
+  "updatedBy": zod.string(),
+  "canEdit": zod.boolean()
+})
+
+
+/**
+ * Save a student's profile details (the office, or a teacher of the student's class)
+ */
+export const SaveStudentProfileParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const saveStudentProfileBodyDateOfBirthMax = 10;
+
+export const saveStudentProfileBodyGenderMax = 10;
+
+export const saveStudentProfileBodyPhoneMax = 40;
+
+export const saveStudentProfileBodyAddressMax = 300;
+
+export const saveStudentProfileBodyCityMax = 80;
+
+export const saveStudentProfileBodyStateOfOriginMax = 60;
+
+export const saveStudentProfileBodyLgaMax = 80;
+
+export const saveStudentProfileBodyNationalityMax = 60;
+
+export const saveStudentProfileBodyReligionMax = 60;
+
+export const saveStudentProfileBodyBloodGroupMax = 5;
+
+export const saveStudentProfileBodyGenotypeMax = 5;
+
+export const saveStudentProfileBodyMedicalNotesMax = 1000;
+
+export const saveStudentProfileBodyAdmissionDateMax = 10;
+
+export const saveStudentProfileBodyPreviousSchoolMax = 150;
+
+export const saveStudentProfileBodyParent1NameMax = 120;
+
+export const saveStudentProfileBodyParent1RelationshipMax = 40;
+
+export const saveStudentProfileBodyParent1PhoneMax = 40;
+
+export const saveStudentProfileBodyParent1OccupationMax = 80;
+
+export const saveStudentProfileBodyParent2NameMax = 120;
+
+export const saveStudentProfileBodyParent2RelationshipMax = 40;
+
+export const saveStudentProfileBodyParent2PhoneMax = 40;
+
+export const saveStudentProfileBodyParent2OccupationMax = 80;
+
+export const saveStudentProfileBodyEmergencyNameMax = 120;
+
+export const saveStudentProfileBodyEmergencyPhoneMax = 40;
+
+
+
+export const SaveStudentProfileBody = zod.object({
+  "dateOfBirth": zod.string().max(saveStudentProfileBodyDateOfBirthMax).optional(),
+  "gender": zod.string().max(saveStudentProfileBodyGenderMax).optional(),
+  "phone": zod.string().max(saveStudentProfileBodyPhoneMax).optional(),
+  "address": zod.string().max(saveStudentProfileBodyAddressMax).optional(),
+  "city": zod.string().max(saveStudentProfileBodyCityMax).optional(),
+  "stateOfOrigin": zod.string().max(saveStudentProfileBodyStateOfOriginMax).optional(),
+  "lga": zod.string().max(saveStudentProfileBodyLgaMax).optional(),
+  "nationality": zod.string().max(saveStudentProfileBodyNationalityMax).optional(),
+  "religion": zod.string().max(saveStudentProfileBodyReligionMax).optional(),
+  "bloodGroup": zod.string().max(saveStudentProfileBodyBloodGroupMax).optional(),
+  "genotype": zod.string().max(saveStudentProfileBodyGenotypeMax).optional(),
+  "medicalNotes": zod.string().max(saveStudentProfileBodyMedicalNotesMax).optional(),
+  "admissionDate": zod.string().max(saveStudentProfileBodyAdmissionDateMax).optional(),
+  "previousSchool": zod.string().max(saveStudentProfileBodyPreviousSchoolMax).optional(),
+  "parent1Name": zod.string().max(saveStudentProfileBodyParent1NameMax).optional(),
+  "parent1Relationship": zod.string().max(saveStudentProfileBodyParent1RelationshipMax).optional(),
+  "parent1Phone": zod.string().max(saveStudentProfileBodyParent1PhoneMax).optional(),
+  "parent1Occupation": zod.string().max(saveStudentProfileBodyParent1OccupationMax).optional(),
+  "parent2Name": zod.string().max(saveStudentProfileBodyParent2NameMax).optional(),
+  "parent2Relationship": zod.string().max(saveStudentProfileBodyParent2RelationshipMax).optional(),
+  "parent2Phone": zod.string().max(saveStudentProfileBodyParent2PhoneMax).optional(),
+  "parent2Occupation": zod.string().max(saveStudentProfileBodyParent2OccupationMax).optional(),
+  "emergencyName": zod.string().max(saveStudentProfileBodyEmergencyNameMax).optional(),
+  "emergencyPhone": zod.string().max(saveStudentProfileBodyEmergencyPhoneMax).optional()
+})
+
+export const saveStudentProfileResponseProfileDateOfBirthMax = 10;
+
+export const saveStudentProfileResponseProfileGenderMax = 10;
+
+export const saveStudentProfileResponseProfilePhoneMax = 40;
+
+export const saveStudentProfileResponseProfileAddressMax = 300;
+
+export const saveStudentProfileResponseProfileCityMax = 80;
+
+export const saveStudentProfileResponseProfileStateOfOriginMax = 60;
+
+export const saveStudentProfileResponseProfileLgaMax = 80;
+
+export const saveStudentProfileResponseProfileNationalityMax = 60;
+
+export const saveStudentProfileResponseProfileReligionMax = 60;
+
+export const saveStudentProfileResponseProfileBloodGroupMax = 5;
+
+export const saveStudentProfileResponseProfileGenotypeMax = 5;
+
+export const saveStudentProfileResponseProfileMedicalNotesMax = 1000;
+
+export const saveStudentProfileResponseProfileAdmissionDateMax = 10;
+
+export const saveStudentProfileResponseProfilePreviousSchoolMax = 150;
+
+export const saveStudentProfileResponseProfileParent1NameMax = 120;
+
+export const saveStudentProfileResponseProfileParent1RelationshipMax = 40;
+
+export const saveStudentProfileResponseProfileParent1PhoneMax = 40;
+
+export const saveStudentProfileResponseProfileParent1OccupationMax = 80;
+
+export const saveStudentProfileResponseProfileParent2NameMax = 120;
+
+export const saveStudentProfileResponseProfileParent2RelationshipMax = 40;
+
+export const saveStudentProfileResponseProfileParent2PhoneMax = 40;
+
+export const saveStudentProfileResponseProfileParent2OccupationMax = 80;
+
+export const saveStudentProfileResponseProfileEmergencyNameMax = 120;
+
+export const saveStudentProfileResponseProfileEmergencyPhoneMax = 40;
+
+
+
+export const SaveStudentProfileResponse = zod.object({
+  "id": zod.number(),
+  "studentId": zod.string(),
+  "name": zod.string(),
+  "className": zod.string(),
+  "active": zod.boolean(),
+  "photoImageId": zod.string().nullable(),
+  "guardianEmail": zod.string().nullable(),
+  "secondGuardianEmail": zod.string().nullable(),
+  "profile": zod.object({
+  "dateOfBirth": zod.string().max(saveStudentProfileResponseProfileDateOfBirthMax).optional(),
+  "gender": zod.string().max(saveStudentProfileResponseProfileGenderMax).optional(),
+  "phone": zod.string().max(saveStudentProfileResponseProfilePhoneMax).optional(),
+  "address": zod.string().max(saveStudentProfileResponseProfileAddressMax).optional(),
+  "city": zod.string().max(saveStudentProfileResponseProfileCityMax).optional(),
+  "stateOfOrigin": zod.string().max(saveStudentProfileResponseProfileStateOfOriginMax).optional(),
+  "lga": zod.string().max(saveStudentProfileResponseProfileLgaMax).optional(),
+  "nationality": zod.string().max(saveStudentProfileResponseProfileNationalityMax).optional(),
+  "religion": zod.string().max(saveStudentProfileResponseProfileReligionMax).optional(),
+  "bloodGroup": zod.string().max(saveStudentProfileResponseProfileBloodGroupMax).optional(),
+  "genotype": zod.string().max(saveStudentProfileResponseProfileGenotypeMax).optional(),
+  "medicalNotes": zod.string().max(saveStudentProfileResponseProfileMedicalNotesMax).optional(),
+  "admissionDate": zod.string().max(saveStudentProfileResponseProfileAdmissionDateMax).optional(),
+  "previousSchool": zod.string().max(saveStudentProfileResponseProfilePreviousSchoolMax).optional(),
+  "parent1Name": zod.string().max(saveStudentProfileResponseProfileParent1NameMax).optional(),
+  "parent1Relationship": zod.string().max(saveStudentProfileResponseProfileParent1RelationshipMax).optional(),
+  "parent1Phone": zod.string().max(saveStudentProfileResponseProfileParent1PhoneMax).optional(),
+  "parent1Occupation": zod.string().max(saveStudentProfileResponseProfileParent1OccupationMax).optional(),
+  "parent2Name": zod.string().max(saveStudentProfileResponseProfileParent2NameMax).optional(),
+  "parent2Relationship": zod.string().max(saveStudentProfileResponseProfileParent2RelationshipMax).optional(),
+  "parent2Phone": zod.string().max(saveStudentProfileResponseProfileParent2PhoneMax).optional(),
+  "parent2Occupation": zod.string().max(saveStudentProfileResponseProfileParent2OccupationMax).optional(),
+  "emergencyName": zod.string().max(saveStudentProfileResponseProfileEmergencyNameMax).optional(),
+  "emergencyPhone": zod.string().max(saveStudentProfileResponseProfileEmergencyPhoneMax).optional()
+}),
+  "updatedAt": zod.coerce.date().nullable(),
+  "updatedBy": zod.string(),
+  "canEdit": zod.boolean()
+})
+
+
+/**
+ * The signed-in student's own profile
+ */
+export const getMyStudentProfileResponseProfileDateOfBirthMax = 10;
+
+export const getMyStudentProfileResponseProfileGenderMax = 10;
+
+export const getMyStudentProfileResponseProfilePhoneMax = 40;
+
+export const getMyStudentProfileResponseProfileAddressMax = 300;
+
+export const getMyStudentProfileResponseProfileCityMax = 80;
+
+export const getMyStudentProfileResponseProfileStateOfOriginMax = 60;
+
+export const getMyStudentProfileResponseProfileLgaMax = 80;
+
+export const getMyStudentProfileResponseProfileNationalityMax = 60;
+
+export const getMyStudentProfileResponseProfileReligionMax = 60;
+
+export const getMyStudentProfileResponseProfileBloodGroupMax = 5;
+
+export const getMyStudentProfileResponseProfileGenotypeMax = 5;
+
+export const getMyStudentProfileResponseProfileMedicalNotesMax = 1000;
+
+export const getMyStudentProfileResponseProfileAdmissionDateMax = 10;
+
+export const getMyStudentProfileResponseProfilePreviousSchoolMax = 150;
+
+export const getMyStudentProfileResponseProfileParent1NameMax = 120;
+
+export const getMyStudentProfileResponseProfileParent1RelationshipMax = 40;
+
+export const getMyStudentProfileResponseProfileParent1PhoneMax = 40;
+
+export const getMyStudentProfileResponseProfileParent1OccupationMax = 80;
+
+export const getMyStudentProfileResponseProfileParent2NameMax = 120;
+
+export const getMyStudentProfileResponseProfileParent2RelationshipMax = 40;
+
+export const getMyStudentProfileResponseProfileParent2PhoneMax = 40;
+
+export const getMyStudentProfileResponseProfileParent2OccupationMax = 80;
+
+export const getMyStudentProfileResponseProfileEmergencyNameMax = 120;
+
+export const getMyStudentProfileResponseProfileEmergencyPhoneMax = 40;
+
+
+
+export const GetMyStudentProfileResponse = zod.object({
+  "id": zod.number(),
+  "studentId": zod.string(),
+  "name": zod.string(),
+  "className": zod.string(),
+  "active": zod.boolean(),
+  "photoImageId": zod.string().nullable(),
+  "guardianEmail": zod.string().nullable(),
+  "secondGuardianEmail": zod.string().nullable(),
+  "profile": zod.object({
+  "dateOfBirth": zod.string().max(getMyStudentProfileResponseProfileDateOfBirthMax).optional(),
+  "gender": zod.string().max(getMyStudentProfileResponseProfileGenderMax).optional(),
+  "phone": zod.string().max(getMyStudentProfileResponseProfilePhoneMax).optional(),
+  "address": zod.string().max(getMyStudentProfileResponseProfileAddressMax).optional(),
+  "city": zod.string().max(getMyStudentProfileResponseProfileCityMax).optional(),
+  "stateOfOrigin": zod.string().max(getMyStudentProfileResponseProfileStateOfOriginMax).optional(),
+  "lga": zod.string().max(getMyStudentProfileResponseProfileLgaMax).optional(),
+  "nationality": zod.string().max(getMyStudentProfileResponseProfileNationalityMax).optional(),
+  "religion": zod.string().max(getMyStudentProfileResponseProfileReligionMax).optional(),
+  "bloodGroup": zod.string().max(getMyStudentProfileResponseProfileBloodGroupMax).optional(),
+  "genotype": zod.string().max(getMyStudentProfileResponseProfileGenotypeMax).optional(),
+  "medicalNotes": zod.string().max(getMyStudentProfileResponseProfileMedicalNotesMax).optional(),
+  "admissionDate": zod.string().max(getMyStudentProfileResponseProfileAdmissionDateMax).optional(),
+  "previousSchool": zod.string().max(getMyStudentProfileResponseProfilePreviousSchoolMax).optional(),
+  "parent1Name": zod.string().max(getMyStudentProfileResponseProfileParent1NameMax).optional(),
+  "parent1Relationship": zod.string().max(getMyStudentProfileResponseProfileParent1RelationshipMax).optional(),
+  "parent1Phone": zod.string().max(getMyStudentProfileResponseProfileParent1PhoneMax).optional(),
+  "parent1Occupation": zod.string().max(getMyStudentProfileResponseProfileParent1OccupationMax).optional(),
+  "parent2Name": zod.string().max(getMyStudentProfileResponseProfileParent2NameMax).optional(),
+  "parent2Relationship": zod.string().max(getMyStudentProfileResponseProfileParent2RelationshipMax).optional(),
+  "parent2Phone": zod.string().max(getMyStudentProfileResponseProfileParent2PhoneMax).optional(),
+  "parent2Occupation": zod.string().max(getMyStudentProfileResponseProfileParent2OccupationMax).optional(),
+  "emergencyName": zod.string().max(getMyStudentProfileResponseProfileEmergencyNameMax).optional(),
+  "emergencyPhone": zod.string().max(getMyStudentProfileResponseProfileEmergencyPhoneMax).optional()
+}),
+  "updatedAt": zod.coerce.date().nullable(),
+  "updatedBy": zod.string(),
+  "canEdit": zod.boolean()
+})
+
+
+/**
+ * A linked child's profile, for their parent
+ */
+export const GetChildProfileParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const getChildProfileResponseProfileDateOfBirthMax = 10;
+
+export const getChildProfileResponseProfileGenderMax = 10;
+
+export const getChildProfileResponseProfilePhoneMax = 40;
+
+export const getChildProfileResponseProfileAddressMax = 300;
+
+export const getChildProfileResponseProfileCityMax = 80;
+
+export const getChildProfileResponseProfileStateOfOriginMax = 60;
+
+export const getChildProfileResponseProfileLgaMax = 80;
+
+export const getChildProfileResponseProfileNationalityMax = 60;
+
+export const getChildProfileResponseProfileReligionMax = 60;
+
+export const getChildProfileResponseProfileBloodGroupMax = 5;
+
+export const getChildProfileResponseProfileGenotypeMax = 5;
+
+export const getChildProfileResponseProfileMedicalNotesMax = 1000;
+
+export const getChildProfileResponseProfileAdmissionDateMax = 10;
+
+export const getChildProfileResponseProfilePreviousSchoolMax = 150;
+
+export const getChildProfileResponseProfileParent1NameMax = 120;
+
+export const getChildProfileResponseProfileParent1RelationshipMax = 40;
+
+export const getChildProfileResponseProfileParent1PhoneMax = 40;
+
+export const getChildProfileResponseProfileParent1OccupationMax = 80;
+
+export const getChildProfileResponseProfileParent2NameMax = 120;
+
+export const getChildProfileResponseProfileParent2RelationshipMax = 40;
+
+export const getChildProfileResponseProfileParent2PhoneMax = 40;
+
+export const getChildProfileResponseProfileParent2OccupationMax = 80;
+
+export const getChildProfileResponseProfileEmergencyNameMax = 120;
+
+export const getChildProfileResponseProfileEmergencyPhoneMax = 40;
+
+
+
+export const GetChildProfileResponse = zod.object({
+  "id": zod.number(),
+  "studentId": zod.string(),
+  "name": zod.string(),
+  "className": zod.string(),
+  "active": zod.boolean(),
+  "photoImageId": zod.string().nullable(),
+  "guardianEmail": zod.string().nullable(),
+  "secondGuardianEmail": zod.string().nullable(),
+  "profile": zod.object({
+  "dateOfBirth": zod.string().max(getChildProfileResponseProfileDateOfBirthMax).optional(),
+  "gender": zod.string().max(getChildProfileResponseProfileGenderMax).optional(),
+  "phone": zod.string().max(getChildProfileResponseProfilePhoneMax).optional(),
+  "address": zod.string().max(getChildProfileResponseProfileAddressMax).optional(),
+  "city": zod.string().max(getChildProfileResponseProfileCityMax).optional(),
+  "stateOfOrigin": zod.string().max(getChildProfileResponseProfileStateOfOriginMax).optional(),
+  "lga": zod.string().max(getChildProfileResponseProfileLgaMax).optional(),
+  "nationality": zod.string().max(getChildProfileResponseProfileNationalityMax).optional(),
+  "religion": zod.string().max(getChildProfileResponseProfileReligionMax).optional(),
+  "bloodGroup": zod.string().max(getChildProfileResponseProfileBloodGroupMax).optional(),
+  "genotype": zod.string().max(getChildProfileResponseProfileGenotypeMax).optional(),
+  "medicalNotes": zod.string().max(getChildProfileResponseProfileMedicalNotesMax).optional(),
+  "admissionDate": zod.string().max(getChildProfileResponseProfileAdmissionDateMax).optional(),
+  "previousSchool": zod.string().max(getChildProfileResponseProfilePreviousSchoolMax).optional(),
+  "parent1Name": zod.string().max(getChildProfileResponseProfileParent1NameMax).optional(),
+  "parent1Relationship": zod.string().max(getChildProfileResponseProfileParent1RelationshipMax).optional(),
+  "parent1Phone": zod.string().max(getChildProfileResponseProfileParent1PhoneMax).optional(),
+  "parent1Occupation": zod.string().max(getChildProfileResponseProfileParent1OccupationMax).optional(),
+  "parent2Name": zod.string().max(getChildProfileResponseProfileParent2NameMax).optional(),
+  "parent2Relationship": zod.string().max(getChildProfileResponseProfileParent2RelationshipMax).optional(),
+  "parent2Phone": zod.string().max(getChildProfileResponseProfileParent2PhoneMax).optional(),
+  "parent2Occupation": zod.string().max(getChildProfileResponseProfileParent2OccupationMax).optional(),
+  "emergencyName": zod.string().max(getChildProfileResponseProfileEmergencyNameMax).optional(),
+  "emergencyPhone": zod.string().max(getChildProfileResponseProfileEmergencyPhoneMax).optional()
+}),
+  "updatedAt": zod.coerce.date().nullable(),
+  "updatedBy": zod.string(),
+  "canEdit": zod.boolean()
+})
+
+
+/**
  * The Chairman's read-only board of students, staff, attendance, learning and results across the school (no money, nothing can be sent or changed)
  */
 export const GetChairmanBoardQueryParams = zod.object({

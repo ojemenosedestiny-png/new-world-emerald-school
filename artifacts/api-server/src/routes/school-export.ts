@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { asc, inArray } from "drizzle-orm";
 import {
-  db, portalAttempts, portalClasses, portalExams, portalImages, portalScores, portalStudents, portalSubjects, portalTeachers, portalTerms,
+  db, studentProfiles, portalAttempts, portalClasses, portalExams, portalImages, portalScores, portalStudents, portalSubjects, portalTeachers, portalTerms,
 } from "@workspace/db";
 import { check } from "../lib/portal-auth";
 import { isSuperAdmin } from "../lib/website-admin";
@@ -12,6 +12,7 @@ import { classSection } from "../lib/principal";
 import { readImage } from "../lib/images";
 import { recordAudit, clientIp } from "../lib/audit";
 import { csv, ZipStream } from "../lib/zip-stream";
+import { PROFILE_FIELDS } from "./student-profiles";
 
 /**
  * The school owner's full download: one ZIP with spreadsheets (CSV, opens in Excel) of every student, teacher,
@@ -27,7 +28,7 @@ schoolExportRouter.get("/export/everything", async (req, res) => {
   check(isSuperAdmin(req), "Only the school owner can download all the school's data.", 403);
   const by = req.identity!.email ?? "school owner";
 
-  const [classes, students, teachers, subjects, terms, scores, exams, attempts] = await Promise.all([
+  const [classes, students, teachers, subjects, terms, scores, exams, attempts, profiles] = await Promise.all([
     db.select().from(portalClasses).orderBy(asc(portalClasses.name)),
     db.select().from(portalStudents).orderBy(asc(portalStudents.name)),
     db.select().from(portalTeachers).orderBy(asc(portalTeachers.name)),
@@ -36,7 +37,9 @@ schoolExportRouter.get("/export/everything", async (req, res) => {
     db.select().from(portalScores),
     db.select({ id: portalExams.id, title: portalExams.title, subject: portalExams.subject, classId: portalExams.classId, startsAt: portalExams.startsAt }).from(portalExams),
     db.select({ examId: portalAttempts.examId, studentId: portalAttempts.studentId, status: portalAttempts.status, questions: portalAttempts.questions, marks: portalAttempts.marks, savedAt: portalAttempts.savedAt }).from(portalAttempts),
+    db.select().from(studentProfiles),
   ]);
+  const profileOf = new Map(profiles.map((p) => [p.studentId, p]));
   const photoIds = [...students.map((s) => s.photoImageId), ...teachers.map((t) => t.photoFileId)].filter((id): id is string => !!id);
   const photos = photoIds.length ? await db.select().from(portalImages).where(inArray(portalImages.id, photoIds)) : [];
   const photoRow = new Map(photos.map((p) => [p.id, p]));
@@ -62,8 +65,11 @@ schoolExportRouter.get("/export/everything", async (req, res) => {
   const zip = new ZipStream(res);
 
   await zip.add("students.csv", csv(
-    ["Student ID (login)", "Full name", "Class", "School", "Active", "Account status", "Activated on", "Parent email 1", "Parent email 2", "Photo file"],
-    students.map((s) => [s.studentId, s.name, className.get(s.classId) ?? "", section(s.classId), s.active ? "Yes" : "No", s.accountStatus, day(s.activatedAt), s.guardianEmail ?? "", s.secondGuardianEmail ?? "", studentPhoto(s)]),
+    ["Student ID (login)", "Full name", "Class", "School", "Active", "Account status", "Activated on", "Parent email 1", "Parent email 2", "Photo file",
+      "Date of birth", "Gender", "Phone", "Home address", "Town / city", "State of origin", "LGA", "Nationality", "Religion", "Blood group", "Genotype", "Medical notes / allergies",
+      "Admission date", "Previous school", "Parent 1 name", "Parent 1 relationship", "Parent 1 phone", "Parent 1 occupation", "Parent 2 name", "Parent 2 relationship",
+      "Parent 2 phone", "Parent 2 occupation", "Emergency contact", "Emergency phone"],
+    students.map((s) => { const p = profileOf.get(s.id); return [s.studentId, s.name, className.get(s.classId) ?? "", section(s.classId), s.active ? "Yes" : "No", s.accountStatus, day(s.activatedAt), s.guardianEmail ?? "", s.secondGuardianEmail ?? "", studentPhoto(s), ...PROFILE_FIELDS.map((f) => p?.[f] ?? "")]; }),
   ));
   await zip.add("teachers.csv", csv(
     ["Teacher no.", "Full name", "Email (login)", "Role / title", "Subjects", "Classes", "School", "Active", "In staff directory", "Photo file"],

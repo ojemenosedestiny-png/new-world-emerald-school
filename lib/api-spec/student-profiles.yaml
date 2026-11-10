@@ -1,0 +1,95 @@
+paths:
+  staffProfile:
+    get:
+      operationId: getStudentProfile
+      description: "A student's full profile (the office, or a teacher of the student's class)"
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      responses:
+        "200":
+          description: The profile
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/StudentProfileView" }
+    put:
+      operationId: saveStudentProfile
+      description: "Save a student's profile details (the office, or a teacher of the student's class)"
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/StudentProfileFields" }
+      responses:
+        "200":
+          description: The saved profile
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/StudentProfileView" }
+  myProfile:
+    get:
+      operationId: getMyStudentProfile
+      description: The signed-in student's own profile
+      responses:
+        "200":
+          description: The profile
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/StudentProfileView" }
+  childProfile:
+    get:
+      operationId: getChildProfile
+      description: "A linked child's profile, for their parent"
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      responses:
+        "200":
+          description: The profile
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/StudentProfileView" }
+schemas:
+  StudentProfileFields:
+    type: object
+    properties:
+      dateOfBirth: { type: string, maxLength: 10 }
+      gender: { type: string, maxLength: 10 }
+      phone: { type: string, maxLength: 40 }
+      address: { type: string, maxLength: 300 }
+      city: { type: string, maxLength: 80 }
+      stateOfOrigin: { type: string, maxLength: 60 }
+      lga: { type: string, maxLength: 80 }
+      nationality: { type: string, maxLength: 60 }
+      religion: { type: string, maxLength: 60 }
+      bloodGroup: { type: string, maxLength: 5 }
+      genotype: { type: string, maxLength: 5 }
+      medicalNotes: { type: string, maxLength: 1000 }
+      admissionDate: { type: string, maxLength: 10 }
+      previousSchool: { type: string, maxLength: 150 }
+      parent1Name: { type: string, maxLength: 120 }
+      parent1Relationship: { type: string, maxLength: 40 }
+      parent1Phone: { type: string, maxLength: 40 }
+      parent1Occupation: { type: string, maxLength: 80 }
+      parent2Name: { type: string, maxLength: 120 }
+      parent2Relationship: { type: string, maxLength: 40 }
+      parent2Phone: { type: string, maxLength: 40 }
+      parent2Occupation: { type: string, maxLength: 80 }
+      emergencyName: { type: string, maxLength: 120 }
+      emergencyPhone: { type: string, maxLength: 40 }
+  StudentProfileView:
+    type: object
+    required: [id, studentId, name, className, active, photoImageId, guardianEmail, secondGuardianEmail, profile, updatedAt, updatedBy, canEdit]
+    properties:
+      id: { type: integer }
+      studentId: { type: string }
+      name: { type: string }
+      className: { type: string }
+      active: { type: boolean }
+      photoImageId: { type: ["string", "null"] }
+      guardianEmail: { type: ["string", "null"] }
+      secondGuardianEmail: { type: ["string", "null"] }
+      profile: { $ref: "#/components/schemas/StudentProfileFields" }
+      updatedAt: { type: ["string", "null"], format: date-time }
+      updatedBy: { type: string }
+      canEdit: { type: boolean }

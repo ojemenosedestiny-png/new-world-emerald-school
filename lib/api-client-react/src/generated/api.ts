@@ -193,6 +193,8 @@ import type {
   StudentActivity,
   StudentAssignment,
   StudentMessageInput,
+  StudentProfileFields,
+  StudentProfileView,
   StudentReports,
   SubmissionInput,
   SubmissionMark,
@@ -7834,6 +7836,297 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       > => {
       return useMutation(getSaveMySignatureMutationOptions(options));
     }
+
+export const getGetStudentProfileUrl = (id: number,) => {
+
+
+
+
+  return `/api/portal/students/${id}/profile`
+}
+
+/**
+ * A student's full profile (the office, or a teacher of the student's class)
+ */
+export const getStudentProfile = async (id: number, options?: RequestInit): Promise<StudentProfileView> => {
+
+  return customFetch<StudentProfileView>(getGetStudentProfileUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetStudentProfileQueryKey = (id: number,) => {
+    return [
+    `/api/portal/students/${id}/profile`
+    ] as const;
+    }
+
+
+export const getGetStudentProfileQueryOptions = <TData = Awaited<ReturnType<typeof getStudentProfile>>, TError = ErrorType<unknown>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getStudentProfile>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetStudentProfileQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getStudentProfile>>> = ({ signal }) => getStudentProfile(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getStudentProfile>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetStudentProfileQueryResult = NonNullable<Awaited<ReturnType<typeof getStudentProfile>>>
+export type GetStudentProfileQueryError = ErrorType<unknown>
+
+
+
+export function useGetStudentProfile<TData = Awaited<ReturnType<typeof getStudentProfile>>, TError = ErrorType<unknown>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getStudentProfile>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetStudentProfileQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getSaveStudentProfileUrl = (id: number,) => {
+
+
+
+
+  return `/api/portal/students/${id}/profile`
+}
+
+/**
+ * Save a student's profile details (the office, or a teacher of the student's class)
+ */
+export const saveStudentProfile = async (id: number,
+    studentProfileFields: StudentProfileFields, options?: RequestInit): Promise<StudentProfileView> => {
+
+  return customFetch<StudentProfileView>(getSaveStudentProfileUrl(id),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(studentProfileFields)
+  }
+);}
+
+
+
+
+
+export const getSaveStudentProfileMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof saveStudentProfile>>, TError,{id: number;data: BodyType<StudentProfileFields>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof saveStudentProfile>>, TError,{id: number;data: BodyType<StudentProfileFields>}, TContext> => {
+
+const mutationKey = ['saveStudentProfile'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof saveStudentProfile>>, {id: number;data: BodyType<StudentProfileFields>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  saveStudentProfile(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SaveStudentProfileMutationResult = NonNullable<Awaited<ReturnType<typeof saveStudentProfile>>>
+    export type SaveStudentProfileMutationBody = BodyType<StudentProfileFields>
+    export type SaveStudentProfileMutationError = ErrorType<unknown>
+
+    export const useSaveStudentProfile = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof saveStudentProfile>>, TError,{id: number;data: BodyType<StudentProfileFields>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof saveStudentProfile>>,
+        TError,
+        {id: number;data: BodyType<StudentProfileFields>},
+        TContext
+      > => {
+      return useMutation(getSaveStudentProfileMutationOptions(options));
+    }
+
+export const getGetMyStudentProfileUrl = () => {
+
+
+
+
+  return `/api/portal/me/profile`
+}
+
+/**
+ * The signed-in student's own profile
+ */
+export const getMyStudentProfile = async ( options?: RequestInit): Promise<StudentProfileView> => {
+
+  return customFetch<StudentProfileView>(getGetMyStudentProfileUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetMyStudentProfileQueryKey = () => {
+    return [
+    `/api/portal/me/profile`
+    ] as const;
+    }
+
+
+export const getGetMyStudentProfileQueryOptions = <TData = Awaited<ReturnType<typeof getMyStudentProfile>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMyStudentProfile>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetMyStudentProfileQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMyStudentProfile>>> = ({ signal }) => getMyStudentProfile({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMyStudentProfile>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetMyStudentProfileQueryResult = NonNullable<Awaited<ReturnType<typeof getMyStudentProfile>>>
+export type GetMyStudentProfileQueryError = ErrorType<unknown>
+
+
+
+export function useGetMyStudentProfile<TData = Awaited<ReturnType<typeof getMyStudentProfile>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMyStudentProfile>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetMyStudentProfileQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetChildProfileUrl = (id: number,) => {
+
+
+
+
+  return `/api/portal/parent/children/${id}/profile`
+}
+
+/**
+ * A linked child's profile, for their parent
+ */
+export const getChildProfile = async (id: number, options?: RequestInit): Promise<StudentProfileView> => {
+
+  return customFetch<StudentProfileView>(getGetChildProfileUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetChildProfileQueryKey = (id: number,) => {
+    return [
+    `/api/portal/parent/children/${id}/profile`
+    ] as const;
+    }
+
+
+export const getGetChildProfileQueryOptions = <TData = Awaited<ReturnType<typeof getChildProfile>>, TError = ErrorType<unknown>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getChildProfile>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetChildProfileQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getChildProfile>>> = ({ signal }) => getChildProfile(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getChildProfile>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetChildProfileQueryResult = NonNullable<Awaited<ReturnType<typeof getChildProfile>>>
+export type GetChildProfileQueryError = ErrorType<unknown>
+
+
+
+export function useGetChildProfile<TData = Awaited<ReturnType<typeof getChildProfile>>, TError = ErrorType<unknown>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getChildProfile>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetChildProfileQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 
 export const getGetChairmanBoardUrl = (params?: GetChairmanBoardParams,) => {
   const normalizedParams = new URLSearchParams();

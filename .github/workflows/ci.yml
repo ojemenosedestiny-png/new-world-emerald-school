@@ -98,6 +98,7 @@ jobs:
           pnpm --filter @workspace/api-server run test:portal-class-delete
           pnpm --filter @workspace/api-server run test:portal-signatures
           pnpm --filter @workspace/api-server run test:school-export
+          pnpm --filter @workspace/api-server run test:student-profiles
 
       - name: Backup and restore round trip (disposable Postgres)
         env:

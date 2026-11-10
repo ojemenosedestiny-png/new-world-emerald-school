@@ -1,3 +1,4 @@
+import { ChildProfile } from "../profile/StudentProfile";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
@@ -5,7 +6,7 @@ import {
   useStartParentPayment, getGetParentOverviewQueryKey,
   type ParentOverview, type ParentPayment, type ParentChild,
 } from "@workspace/api-client-react";
-import { ArrowRight, Check, Copy, CreditCard, LineChart, Loader2, Lock, Printer, Receipt, ShieldCheck, Wallet } from "lucide-react";
+import { ArrowRight, Check, Copy, CreditCard, IdCard, LineChart, Loader2, Lock, Printer, Receipt, ShieldCheck, Wallet } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { EmptyState, StatusPill } from "../ui";
@@ -216,6 +217,7 @@ export function PayFees({ data, onPaid }: { data: ParentOverview; onPaid: (p: Pa
 
 /** Each child: name, class, ID, how much is paid, and every fee on their statement. */
 export function ChildrenView({ children, onProgress }: { children: ParentChild[]; onProgress?: (id: number) => void }) {
+  const [open, setOpen] = useState<number | null>(null);
   return (
     <div className="grid gap-4 md:grid-cols-2">
       {children.map((c) => {
@@ -230,6 +232,8 @@ export function ChildrenView({ children, onProgress }: { children: ParentChild[]
               </div>
               <div className="text-right"><p className={"text-[11px] uppercase tracking-wider " + MUTED}>Student ID</p><CopyId id={c.studentId} /></div>
             </header>
+            <button type="button" className="portal-btn-ghost w-full justify-center" aria-expanded={open === c.id} onClick={() => setOpen(open === c.id ? null : c.id)} data-testid={`button-child-profile-${c.id}`}><IdCard size={15} aria-hidden="true" /> {open === c.id ? "Hide profile" : "Full profile: address, phone, parents, health"}</button>
+            {open === c.id && <ChildProfile studentId={c.id} />}
             {onProgress && <button type="button" className="portal-btn-ghost w-full justify-center" onClick={() => onProgress(c.id)} data-testid={`button-child-progress-${c.id}`}><LineChart size={15} aria-hidden="true" /> Report cards, results, attendance and homework</button>}
             <Progress paid={t.paidKobo} total={t.totalKobo} />
             <div className="flex items-baseline justify-between rounded-xl bg-[hsl(var(--p-paper-2))] px-4 py-3">

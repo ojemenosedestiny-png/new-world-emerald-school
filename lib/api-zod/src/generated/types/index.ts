@@ -505,6 +505,8 @@ export * from './studentActivity';
 export * from './studentActivityLoginsItem';
 export * from './studentAssignment';
 export * from './studentMessageInput';
+export * from './studentProfileFields';
+export * from './studentProfileView';
 export * from './studentReports';
 export * from './studentReportsReportsItem';
 export * from './studentReportsReportsItemCard';
