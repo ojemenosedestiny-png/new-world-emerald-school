@@ -2149,6 +2149,43 @@ export interface StudentProfileView {
   canEdit: boolean;
 }
 
+export interface AssistantConversationSummary {
+  id: number;
+  title: string;
+  updatedAt: string;
+}
+
+export type AssistantMessageRole = typeof AssistantMessageRole[keyof typeof AssistantMessageRole];
+
+
+export const AssistantMessageRole = {
+  user: 'user',
+  assistant: 'assistant',
+} as const;
+
+export interface AssistantMessage {
+  id: number;
+  role: AssistantMessageRole;
+  content: string;
+  createdAt: string;
+}
+
+export interface AssistantConversation {
+  id: number;
+  title: string;
+  messages: AssistantMessage[];
+}
+
+export interface AssistantHome {
+  /** False until the AI key is set on the server */
+  enabled: boolean;
+  /** The signed-in person is staff, a teacher, a principal, the Director or the office */
+  allowed: boolean;
+  dailyLimit: number;
+  usedToday: number;
+  conversations: AssistantConversationSummary[];
+}
+
 export interface ChairmanCount {
   label: string;
   value: number;

@@ -41,9 +41,11 @@
     "test:portal-class-delete": "node ./test-portal.mjs portal-class-delete",
     "test:portal-signatures": "node ./test-portal.mjs portal-signatures",
     "test:school-export": "node ./test-portal.mjs school-export",
-    "test:student-profiles": "node ./test-portal.mjs student-profiles"
+    "test:student-profiles": "node ./test-portal.mjs student-profiles",
+    "test:assistant": "node ./test-portal.mjs assistant"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "1.2.0",
     "@clerk/express": "^2.1.75",
     "@clerk/shared": "^4.38.0",
     "@google-cloud/storage": "^8.1.0",

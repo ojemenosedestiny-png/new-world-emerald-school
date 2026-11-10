@@ -5279,6 +5279,55 @@ export const GetChildProfileResponse = zod.object({
 
 
 /**
+ * The staff AI assistant: whether it is switched on for the signed-in person, how many questions are left today, and their conversations
+ */
+export const GetAssistantResponse = zod.object({
+  "enabled": zod.boolean().describe('False until the AI key is set on the server'),
+  "allowed": zod.boolean().describe('The signed-in person is staff, a teacher, a principal, the Director or the office'),
+  "dailyLimit": zod.number(),
+  "usedToday": zod.number(),
+  "conversations": zod.array(zod.object({
+  "id": zod.number(),
+  "title": zod.string(),
+  "updatedAt": zod.coerce.date()
+}))
+})
+
+
+export const GetAssistantConversationParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const GetAssistantConversationResponse = zod.object({
+  "id": zod.number(),
+  "title": zod.string(),
+  "messages": zod.array(zod.object({
+  "id": zod.number(),
+  "role": zod.enum(['user', 'assistant']),
+  "content": zod.string(),
+  "createdAt": zod.coerce.date()
+}))
+})
+
+
+export const DeleteAssistantConversationParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const DeleteAssistantConversationResponse = zod.object({
+  "enabled": zod.boolean().describe('False until the AI key is set on the server'),
+  "allowed": zod.boolean().describe('The signed-in person is staff, a teacher, a principal, the Director or the office'),
+  "dailyLimit": zod.number(),
+  "usedToday": zod.number(),
+  "conversations": zod.array(zod.object({
+  "id": zod.number(),
+  "title": zod.string(),
+  "updatedAt": zod.coerce.date()
+}))
+})
+
+
+/**
  * The Chairman's read-only board of students, staff, attendance, learning and results across the school (no money, nothing can be sent or changed)
  */
 export const GetChairmanBoardQueryParams = zod.object({

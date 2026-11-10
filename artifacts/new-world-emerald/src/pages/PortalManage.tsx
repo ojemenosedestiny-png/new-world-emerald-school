@@ -2,7 +2,8 @@ import { useState, type ReactNode } from "react";
 import { Link } from "wouter";
 import { useAuth, useClerk, useUser } from "@clerk/react";
 import { useGetPortalSession, getGetPortalSessionQueryKey, useGetPortalManagement, getGetPortalManagementQueryKey, useListPhotoReviews, getListPhotoReviewsQueryKey, useListMessageThreads, getListMessageThreadsQueryKey } from "@workspace/api-client-react";
-import { ArrowRight, BedDouble, Download, CreditCard, BookOpen, Boxes, Bus, FileUp, CalendarCheck, CalendarRange, CalendarDays, Camera, CheckSquare, Images, NotebookPen, ClipboardList, FileBarChart, Globe, GraduationCap, LayoutDashboard, Megaphone, MessagesSquare, MonitorSmartphone, School, ScrollText, ShieldAlert, Users } from "lucide-react";
+import { ArrowRight, BedDouble, Download, Sparkles, CreditCard, BookOpen, Boxes, Bus, FileUp, CalendarCheck, CalendarRange, CalendarDays, Camera, CheckSquare, Images, NotebookPen, ClipboardList, FileBarChart, Globe, GraduationCap, LayoutDashboard, Megaphone, MessagesSquare, MonitorSmartphone, School, ScrollText, ShieldAlert, Users } from "lucide-react";
+import { AssistantPanel } from "@/portal/assistant/AssistantPanel";
 import { ExportEverything } from "@/portal/security/ExportEverything";
 import "@/portal/portal.css";
 import { BackToWebsite, ErrorPanel, Skeleton } from "@/portal/ui";
@@ -46,10 +47,10 @@ function Gate({ title, body, children }: { title: string; body: string; children
   );
 }
 
-type Section = "overview" | "messages" | "attendance" | "assignments" | "timetables" | "exams" | "marking" | "reports" | "revision" | "notices" | "events" | "gallery" | "photos" | "inventory" | "importResults" | "hostel" | "transport" | "payments" | "waec" | "parents" | "students" | "teachers" | "classes" | "sessions" | "audit" | "export";
+type Section = "overview" | "messages" | "attendance" | "assignments" | "timetables" | "exams" | "marking" | "reports" | "revision" | "notices" | "events" | "gallery" | "photos" | "inventory" | "importResults" | "hostel" | "transport" | "payments" | "waec" | "parents" | "students" | "teachers" | "classes" | "sessions" | "audit" | "export" | "assistant";
 const TITLES: Record<Section, string> = {
   overview: "Dashboard", messages: "Messages", attendance: "Attendance", assignments: "Assignments", timetables: "Timetables", exams: "Exams", marking: "Marking", reports: "Report cards", revision: "Revision notes",
-  notices: "Announcements", events: "Events calendar", gallery: "Gallery", photos: "Photo approvals", inventory: "Inventory", importResults: "Import old results", payments: "Fee payments", waec: "WAEC / NECO registration", parents: "Parents and children", hostel: "Hostel rooms", transport: "Transport routes", students: "Students", teachers: "Teachers", classes: "Classes", sessions: "Sessions", audit: "Audit log", export: "Download all data",
+  notices: "Announcements", events: "Events calendar", gallery: "Gallery", photos: "Photo approvals", inventory: "Inventory", importResults: "Import old results", payments: "Fee payments", waec: "WAEC / NECO registration", parents: "Parents and children", hostel: "Hostel rooms", transport: "Transport routes", students: "Students", teachers: "Teachers", classes: "Classes", sessions: "Sessions", audit: "Audit log", export: "Download all data", assistant: "AI assistant",
 };
 
 export default function PortalManage() {
@@ -82,6 +83,7 @@ export default function PortalManage() {
   const groups: NavGroup<Section>[] = [
     { items: [{ key: "overview", label: "Dashboard", icon: LayoutDashboard, testId: "tab-manage-overview" }] },
     { label: "Teaching", items: [
+      { key: "assistant", label: "AI assistant", icon: Sparkles, testId: "tab-manage-assistant" },
       { key: "messages", label: "Messages", icon: MessagesSquare, badge: (threads.data ?? []).reduce((n, t) => n + t.unread, 0), testId: "tab-manage-messages" },
       ...(isAdmin ? [] : [{ key: "students" as const, label: "My students", icon: GraduationCap, testId: "tab-manage-my-students" }]),
       { key: "attendance", label: "Attendance", icon: CalendarCheck, testId: "tab-manage-attendance" },
@@ -166,6 +168,7 @@ export default function PortalManage() {
             {isAdmin && section === "sessions" && <SessionsPanel />}
             {isAdmin && session.data?.superAdmin && section === "audit" && <AuditLogPanel />}
             {isAdmin && session.data?.superAdmin && section === "export" && <ExportEverything />}
+            {section === "assistant" && <AssistantPanel />}
           </div>
         )}
     </AppShell>

@@ -34,6 +34,8 @@ import type {
   AdmissionApplicationStatusUpdate,
   AssignmentImage,
   AssignmentInput,
+  AssistantConversation,
+  AssistantHome,
   AttendanceSave,
   AttendanceSheet,
   AttendanceSummary,
@@ -8127,6 +8129,216 @@ export function useGetChildProfile<TData = Awaited<ReturnType<typeof getChildPro
 
 
 
+
+export const getGetAssistantUrl = () => {
+
+
+
+
+  return `/api/portal/assistant`
+}
+
+/**
+ * The staff AI assistant: whether it is switched on for the signed-in person, how many questions are left today, and their conversations
+ */
+export const getAssistant = async ( options?: RequestInit): Promise<AssistantHome> => {
+
+  return customFetch<AssistantHome>(getGetAssistantUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetAssistantQueryKey = () => {
+    return [
+    `/api/portal/assistant`
+    ] as const;
+    }
+
+
+export const getGetAssistantQueryOptions = <TData = Awaited<ReturnType<typeof getAssistant>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAssistant>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetAssistantQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAssistant>>> = ({ signal }) => getAssistant({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAssistant>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetAssistantQueryResult = NonNullable<Awaited<ReturnType<typeof getAssistant>>>
+export type GetAssistantQueryError = ErrorType<unknown>
+
+
+
+export function useGetAssistant<TData = Awaited<ReturnType<typeof getAssistant>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAssistant>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetAssistantQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetAssistantConversationUrl = (id: number,) => {
+
+
+
+
+  return `/api/portal/assistant/conversations/${id}`
+}
+
+export const getAssistantConversation = async (id: number, options?: RequestInit): Promise<AssistantConversation> => {
+
+  return customFetch<AssistantConversation>(getGetAssistantConversationUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetAssistantConversationQueryKey = (id: number,) => {
+    return [
+    `/api/portal/assistant/conversations/${id}`
+    ] as const;
+    }
+
+
+export const getGetAssistantConversationQueryOptions = <TData = Awaited<ReturnType<typeof getAssistantConversation>>, TError = ErrorType<unknown>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAssistantConversation>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetAssistantConversationQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAssistantConversation>>> = ({ signal }) => getAssistantConversation(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAssistantConversation>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetAssistantConversationQueryResult = NonNullable<Awaited<ReturnType<typeof getAssistantConversation>>>
+export type GetAssistantConversationQueryError = ErrorType<unknown>
+
+
+
+export function useGetAssistantConversation<TData = Awaited<ReturnType<typeof getAssistantConversation>>, TError = ErrorType<unknown>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAssistantConversation>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetAssistantConversationQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getDeleteAssistantConversationUrl = (id: number,) => {
+
+
+
+
+  return `/api/portal/assistant/conversations/${id}`
+}
+
+export const deleteAssistantConversation = async (id: number, options?: RequestInit): Promise<AssistantHome> => {
+
+  return customFetch<AssistantHome>(getDeleteAssistantConversationUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getDeleteAssistantConversationMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteAssistantConversation>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteAssistantConversation>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['deleteAssistantConversation'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteAssistantConversation>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteAssistantConversation(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteAssistantConversationMutationResult = NonNullable<Awaited<ReturnType<typeof deleteAssistantConversation>>>
+
+    export type DeleteAssistantConversationMutationError = ErrorType<unknown>
+
+    export const useDeleteAssistantConversation = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteAssistantConversation>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteAssistantConversation>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getDeleteAssistantConversationMutationOptions(options));
+    }
 
 export const getGetChairmanBoardUrl = (params?: GetChairmanBoardParams,) => {
   const normalizedParams = new URLSearchParams();

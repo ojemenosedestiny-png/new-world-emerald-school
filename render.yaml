@@ -43,6 +43,12 @@ services:
       # The bursar's email: opens /accounts to record school income and spending. Spending waits for the school owner's approval.
       - key: SCHOOL_BURSAR_EMAILS
         sync: false
+      # The staff AI assistant (Claude). Create a key at console.anthropic.com; the assistant stays off until it is set.
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      # Optional: questions each staff member may ask the assistant per day (default 40), to keep the AI bill predictable.
+      - key: ASSISTANT_DAILY_LIMIT
+        sync: false
       # The Head of School's email: opens /head and every portal (counts as an administrator), and emails teachers and parents.
       - key: SCHOOL_HEAD_EMAILS
         sync: false

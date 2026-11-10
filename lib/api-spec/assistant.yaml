@@ -1,0 +1,64 @@
+paths:
+  assistant:
+    get:
+      operationId: getAssistant
+      description: "The staff AI assistant: whether it is switched on for the signed-in person, how many questions are left today, and their conversations"
+      responses:
+        "200":
+          description: Status and conversations
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AssistantHome" }
+  conversation:
+    get:
+      operationId: getAssistantConversation
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      responses:
+        "200":
+          description: One of the signed-in person's conversations, with every message
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AssistantConversation" }
+    delete:
+      operationId: deleteAssistantConversation
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AssistantHome" }
+schemas:
+  AssistantConversationSummary:
+    type: object
+    required: [id, title, updatedAt]
+    properties:
+      id: { type: integer }
+      title: { type: string }
+      updatedAt: { type: string, format: date-time }
+  AssistantMessage:
+    type: object
+    required: [id, role, content, createdAt]
+    properties:
+      id: { type: integer }
+      role: { type: string, enum: [user, assistant] }
+      content: { type: string }
+      createdAt: { type: string, format: date-time }
+  AssistantConversation:
+    type: object
+    required: [id, title, messages]
+    properties:
+      id: { type: integer }
+      title: { type: string }
+      messages: { type: array, items: { $ref: "#/components/schemas/AssistantMessage" } }
+  AssistantHome:
+    type: object
+    required: [enabled, allowed, dailyLimit, usedToday, conversations]
+    properties:
+      enabled: { type: boolean, description: "False until the AI key is set on the server" }
+      allowed: { type: boolean, description: "The signed-in person is staff, a teacher, a principal, the Director or the office" }
+      dailyLimit: { type: integer }
+      usedToday: { type: integer }
+      conversations: { type: array, items: { $ref: "#/components/schemas/AssistantConversationSummary" } }

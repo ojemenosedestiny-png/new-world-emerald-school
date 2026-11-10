@@ -18,7 +18,7 @@ import { printableFor } from "../reports/RemarksBroadsheet";
 import { printReportCards } from "../reports/reportCard";
 
 type SchoolSection = GetPrincipalDashboardSection;
-export type PrincipalTab = "overview" | "classes" | "exams" | "results" | "teachers" | "activity";
+export type PrincipalTab = "overview" | "classes" | "exams" | "results" | "teachers" | "activity" | "assistant";
 
 const MUTED = "text-[hsl(var(--p-ink)/0.62)]";
 const lagos = (iso: string, opts: Intl.DateTimeFormatOptions) => new Intl.DateTimeFormat("en-GB", { timeZone: "Africa/Lagos", ...opts }).format(new Date(iso));

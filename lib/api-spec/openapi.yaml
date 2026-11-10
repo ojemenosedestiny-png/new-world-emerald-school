@@ -191,6 +191,10 @@ paths:
     $ref: "./student-profiles.yaml#/paths/myProfile"
   /portal/parent/children/{id}/profile:
     $ref: "./student-profiles.yaml#/paths/childProfile"
+  /portal/assistant:
+    $ref: "./assistant.yaml#/paths/assistant"
+  /portal/assistant/conversations/{id}:
+    $ref: "./assistant.yaml#/paths/conversation"
   /chairman/board:
     $ref: "./chairman.yaml#/paths/board"
   /portal/my-messages:
@@ -1327,6 +1331,14 @@ components:
       $ref: "./student-profiles.yaml#/schemas/StudentProfileFields"
     StudentProfileView:
       $ref: "./student-profiles.yaml#/schemas/StudentProfileView"
+    AssistantConversationSummary:
+      $ref: "./assistant.yaml#/schemas/AssistantConversationSummary"
+    AssistantMessage:
+      $ref: "./assistant.yaml#/schemas/AssistantMessage"
+    AssistantConversation:
+      $ref: "./assistant.yaml#/schemas/AssistantConversation"
+    AssistantHome:
+      $ref: "./assistant.yaml#/schemas/AssistantHome"
     ChairmanCount:
       $ref: "./chairman.yaml#/schemas/ChairmanCount"
     ChairmanSection:
