@@ -1,6 +1,6 @@
 import express, { Router, type IRouter, type NextFunction, type Request, type Response } from "express";
 import { and, eq, or } from "drizzle-orm";
-import { db, feePaymentReportsTable, portalImages, storeOrdersTable } from "@workspace/db";
+import { db, feePaymentReportsTable, portalImages, schoolTransactions, storeOrdersTable } from "@workspace/db";
 import { AttachPaymentProofBody } from "@workspace/api-zod";
 import { MAX_IMAGE_BYTES, saveImage } from "../lib/images";
 import { clientIp } from "../lib/audit";
@@ -25,7 +25,7 @@ function rateLimited(ip: string, now = Date.now()) {
   return false;
 }
 
-/** A screenshot id that exists, is a payment proof, and is not already attached to an order or report. */
+/** A screenshot id that exists, is a payment proof, and is not already attached to an order, report or accounts entry. */
 export async function usablePaymentProof(proofId: string | null | undefined): Promise<{ id: string | null } | { error: string }> {
   const id = proofId?.trim();
   if (!id) return { id: null };
@@ -34,7 +34,8 @@ export async function usablePaymentProof(proofId: string | null | undefined): Pr
   if (!image) return { error: "The payment screenshot could not be found. Please upload it again." };
   const [order] = await db.select({ id: storeOrdersTable.id }).from(storeOrdersTable).where(eq(storeOrdersTable.proofImageId, id));
   const [report] = await db.select({ id: feePaymentReportsTable.id }).from(feePaymentReportsTable).where(eq(feePaymentReportsTable.proofImageId, id));
-  if (order || report) return { error: "That screenshot is already attached to another payment. Please upload it again." };
+  const [entry] = await db.select({ id: schoolTransactions.id }).from(schoolTransactions).where(eq(schoolTransactions.receiptImageId, id));
+  if (order || report || entry) return { error: "That screenshot is already attached to another payment. Please upload it again." };
   return { id };
 }
 

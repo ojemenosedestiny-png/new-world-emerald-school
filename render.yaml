@@ -40,6 +40,9 @@ services:
       # The Chairman's email: opens /chairman, a read-only board of the whole school (no money, cannot send or change anything).
       - key: SCHOOL_CHAIRMAN_EMAILS
         sync: false
+      # The bursar's email: opens /accounts to record school income and spending. Spending waits for the school owner's approval.
+      - key: SCHOOL_BURSAR_EMAILS
+        sync: false
       # The Head of School's email: opens /head and every portal (counts as an administrator), and emails teachers and parents.
       - key: SCHOOL_HEAD_EMAILS
         sync: false

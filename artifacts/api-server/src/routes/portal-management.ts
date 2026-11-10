@@ -2,8 +2,10 @@ import { Router } from "express";
 import { and, asc, eq, inArray, sql } from "drizzle-orm";
 import {
   db, portalClasses, portalStudents, portalTeachers, portalSessions, portalExams, portalAttempts,
-  portalMaterials, portalNotices, portalFiles, portalSubjects, portalTeacherPresence,
+  portalMaterials, portalNotices, portalFiles, portalSubjects, portalTeacherPresence, portalScores, portalReportReleases,
+  portalReportWorkflow, portalTimetables, examRegistrationSettings,
 } from "@workspace/db";
+import { randomUUID } from "node:crypto";
 import { ManagePortalBody } from "@workspace/api-zod";
 import { check, portalActor, staffOnly, classAllowed, hashPassword, type PortalActor } from "../lib/portal-auth";
 import { automaticMarks, attemptView, finalizeExpired, validateQuestions } from "../lib/portal-assessment";
@@ -103,7 +105,7 @@ portalManagementRouter.post("/manage", async (req, res) => {
   const actor = await portalActor(req);
   staffOnly(actor);
   const body = ManagePortalBody.parse(req.body);
-  if (["saveClass", "saveTeacher", "addPracticeExams", "inviteTeacher"].includes(body.action)) check(actor.role === "admin", "Only school administrators can manage enrolments and staff access.", 403);
+  if (["saveClass", "saveTeacher", "addPracticeExams", "inviteTeacher", "deleteClass", "deleteTeacher"].includes(body.action)) check(actor.role === "admin", "Only school administrators can manage enrolments and staff access.", 403);
   if (body.action === "resetAttempt") check(actor.role === "admin", "Only school administrators can reset a student's attempt.", 403);
   switch (body.action) {
     case "saveClass": {
@@ -198,6 +200,10 @@ portalManagementRouter.post("/manage", async (req, res) => {
       check(!paperProblem, paperProblem ?? "");
       // The exam officer's review is set only here, never taken from what was sent.
       const { id, reviewStatus: _review, reviewNote: _note, ...rest } = data;
+      // A new exam may also go to other classes (for example every Year 11 class): one copy per class.
+      const others = id ? [] : [...new Set(body.alsoClassIds ?? [])].filter((c) => c !== data.classId);
+      check(others.length <= 40, "Choose at most 40 extra classes.");
+      for (const c of others) await validClass(actor, c);
       const values = { ...rest, ...paper, lockdown: data.lockdown ?? false, instantResults: data.instantResults ?? true, title: data.title.trim(), subject: data.subject.trim(), startsAt, endsAt, fileId: data.fileId || null };
       const gate = examOfficerEmails().length > 0;
       const by = actor.name || req.identity?.email || "";
@@ -214,8 +220,22 @@ portalManagementRouter.post("/manage", async (req, res) => {
           const [attempt] = await tx.select({ id: portalAttempts.id }).from(portalAttempts).where(eq(portalAttempts.examId, id)).limit(1);
           check(!attempt, "Students have started this exam. Its content is locked; use publish and result controls instead.", 409);
           await tx.update(portalExams).set({ ...values, ...review }).where(eq(portalExams.id, id));
-        } else await tx.insert(portalExams).values({ ...values, ...review, createdBy: by });
+        } else {
+          await tx.insert(portalExams).values({ ...values, ...review, createdBy: by });
+          for (const classId of others) {
+            // The PDF and diagrams were uploaded for the first class; each copy gets its own record of the same file.
+            const ids = [...new Set([values.fileId, ...data.questions.map((q) => q.diagramFileId)].filter((f): f is string => !!f))];
+            const map = new Map<string, string>();
+            if (ids.length) {
+              const files = await tx.select().from(portalFiles).where(inArray(portalFiles.id, ids));
+              for (const f of files) { const copy = randomUUID(); map.set(f.id, copy); await tx.insert(portalFiles).values({ id: copy, classId, objectName: f.objectName }); }
+            }
+            const questions = values.questions.map((q) => (q.diagramFileId ? { ...q, diagramFileId: map.get(q.diagramFileId) ?? null } : q));
+            await tx.insert(portalExams).values({ ...values, ...review, classId, questions, fileId: values.fileId ? map.get(values.fileId) ?? null : null, createdBy: by });
+          }
+        }
       });
+      if (others.length) { res.json({ message: `Saved for ${others.length + 1} classes.${decision.submitted ? " Sent to the exam officer to publish." : ""}` }); return; }
       if (decision.submitted) { res.json({ message: "Saved and sent to the exam officer to publish." }); return; }
       break;
     }
@@ -305,6 +325,50 @@ portalManagementRouter.post("/manage", async (req, res) => {
       const officer = examOfficerEmails().length > 0 ? { published: false, reviewStatus: "submitted", submittedBy: req.identity?.email || actor.name, submittedAt: new Date() } : {};
       if (missing.length) await db.insert(portalExams).values(missing.map((c) => ({ ...practiceExam(c.id), ...officer })));
       res.json({ message: missing.length ? `Practice CBT added to ${missing.length} ${missing.length === 1 ? "class" : "classes"}.` : "Every class already has the practice CBT." });
+      return;
+    }
+    case "deleteClass": {
+      const data = body.target;
+      check(data, "Class required.");
+      await db.transaction(async (tx) => {
+        const [cls] = await tx.select().from(portalClasses).where(eq(portalClasses.id, data.id)).for("update");
+        check(cls, "Class not found.", 404);
+        const [students] = await tx.select({ c: sql<number>`count(*)::int` }).from(portalStudents).where(eq(portalStudents.classId, cls.id));
+        check(!students?.c, `${cls.name} still has ${students?.c} ${students?.c === 1 ? "student" : "students"} (including any deactivated). Move or remove them first.`, 409);
+        const exams = await tx.select({ id: portalExams.id }).from(portalExams).where(eq(portalExams.classId, cls.id));
+        if (exams.length) {
+          const [taken] = await tx.select({ id: portalAttempts.id }).from(portalAttempts).where(inArray(portalAttempts.examId, exams.map((e) => e.id))).limit(1);
+          check(!taken, `Students have taken exams in ${cls.name}, so it cannot be deleted.`, 409);
+        }
+        const subjects = await tx.select({ id: portalSubjects.id }).from(portalSubjects).where(eq(portalSubjects.classId, cls.id));
+        if (subjects.length) {
+          const [scored] = await tx.select({ id: portalScores.id }).from(portalScores).where(inArray(portalScores.subjectId, subjects.map((s) => s.id))).limit(1);
+          check(!scored, `${cls.name} has saved results, so it cannot be deleted.`, 409);
+        }
+        // Nothing real is lost: only the empty class's own set-up goes with it.
+        await tx.delete(portalExams).where(eq(portalExams.classId, cls.id));
+        await tx.delete(portalMaterials).where(eq(portalMaterials.classId, cls.id));
+        await tx.delete(portalNotices).where(eq(portalNotices.classId, cls.id));
+        await tx.delete(portalReportReleases).where(eq(portalReportReleases.classId, cls.id));
+        await tx.delete(portalReportWorkflow).where(eq(portalReportWorkflow.classId, cls.id));
+        await tx.delete(portalSubjects).where(eq(portalSubjects.classId, cls.id));
+        await tx.delete(portalFiles).where(eq(portalFiles.classId, cls.id));
+        await tx.update(portalTeachers).set({ classIds: sql`array_remove(${portalTeachers.classIds}, ${cls.id})` }).where(sql`${cls.id} = any(${portalTeachers.classIds})`);
+        await tx.update(portalTimetables).set({ classIds: sql`array_remove(${portalTimetables.classIds}, ${cls.id})` }).where(sql`${cls.id} = any(${portalTimetables.classIds})`);
+        await tx.update(examRegistrationSettings).set({ classIds: sql`array_remove(${examRegistrationSettings.classIds}, ${cls.id})` }).where(sql`${cls.id} = any(${examRegistrationSettings.classIds})`);
+        await tx.delete(portalClasses).where(eq(portalClasses.id, cls.id));
+      });
+      res.json({ message: "Class deleted." });
+      return;
+    }
+    case "deleteTeacher": {
+      const data = body.target;
+      check(data, "Teacher required.");
+      const [gone] = await db.delete(portalTeachers).where(eq(portalTeachers.id, data.id)).returning();
+      check(gone, "Teacher not found.", 404);
+      // Subjects they taught go back to the class teacher.
+      await db.update(portalSubjects).set({ teacherId: null }).where(eq(portalSubjects.teacherId, gone.id));
+      res.json({ message: `${gone.name} removed. They can no longer sign in to the staff portal.` });
       return;
     }
     case "deleteExam": {

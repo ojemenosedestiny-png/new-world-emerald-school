@@ -1,0 +1,138 @@
+paths:
+  accounts:
+    get:
+      operationId: getSchoolAccounts
+      description: "The school accounts for a period: money in (fee transfers, card payments, store orders and other income) and money out, with spending waiting for approval"
+      parameters:
+        - { name: from, in: query, required: false, schema: { type: string } }
+        - { name: to, in: query, required: false, schema: { type: string } }
+      responses:
+        "200":
+          description: The accounts
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SchoolAccounts" }
+  transactions:
+    post:
+      operationId: recordSchoolTransaction
+      description: "Record other income or spending (spending waits for the school owner's approval)"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SchoolTransactionInput" }
+      responses:
+        "200":
+          description: The recorded entry
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AccountEntry" }
+  transaction:
+    post:
+      operationId: decideSchoolTransaction
+      description: "Approve or reject spending (school owner), void an entry (school owner) or cancel your own waiting entry"
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SchoolTransactionDecision" }
+      responses:
+        "200":
+          description: The entry after the decision
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AccountEntry" }
+  receipt:
+    get:
+      operationId: getAccountsReceipt
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: A receipt photo attached to an entry in the accounts
+          content:
+            image/jpeg:
+              schema: { type: string, format: binary }
+schemas:
+  AccountEntry:
+    type: object
+    required: [key, source, id, direction, category, description, counterparty, amountKobo, date, method, reference, receiptId, status, recordedBy, decidedBy, decidedAt, note]
+    properties:
+      key: { type: string }
+      source: { type: string, enum: [manual, fee_transfer, card, store] }
+      id: { type: ["integer", "null"] }
+      direction: { type: string, enum: [in, out] }
+      category: { type: string }
+      description: { type: string }
+      counterparty: { type: string }
+      amountKobo: { type: integer }
+      date: { type: string }
+      method: { type: string }
+      reference: { type: string }
+      receiptId: { type: ["string", "null"] }
+      status: { type: string, enum: [pending, approved, rejected, void] }
+      recordedBy: { type: string }
+      decidedBy: { type: ["string", "null"] }
+      decidedAt: { type: ["string", "null"], format: date-time }
+      note: { type: string }
+  AccountCategoryTotal:
+    type: object
+    required: [direction, category, amountKobo, count]
+    properties:
+      direction: { type: string, enum: [in, out] }
+      category: { type: string }
+      amountKobo: { type: integer }
+      count: { type: integer }
+  AccountMonth:
+    type: object
+    required: [month, inKobo, outKobo]
+    properties:
+      month: { type: string }
+      inKobo: { type: integer }
+      outKobo: { type: integer }
+  SchoolAccounts:
+    type: object
+    required: [role, canApprove, from, to, generatedAt, totals, months, categories, entries, pending, incomeCategories, expenseCategories]
+    properties:
+      role: { type: string, enum: [bursar, owner] }
+      canApprove: { type: boolean }
+      from: { type: string }
+      to: { type: string }
+      generatedAt: { type: string, format: date-time }
+      totals:
+        type: object
+        required: [inKobo, outKobo, netKobo, pendingKobo, pendingCount, balanceKobo]
+        properties:
+          inKobo: { type: integer }
+          outKobo: { type: integer }
+          netKobo: { type: integer }
+          pendingKobo: { type: integer }
+          pendingCount: { type: integer }
+          balanceKobo: { type: integer }
+      months: { type: array, items: { $ref: "#/components/schemas/AccountMonth" } }
+      categories: { type: array, items: { $ref: "#/components/schemas/AccountCategoryTotal" } }
+      entries: { type: array, items: { $ref: "#/components/schemas/AccountEntry" } }
+      pending: { type: array, items: { $ref: "#/components/schemas/AccountEntry" } }
+      incomeCategories: { type: array, items: { type: string } }
+      expenseCategories: { type: array, items: { type: string } }
+  SchoolTransactionInput:
+    type: object
+    required: [direction, category, description, amountKobo, date, method]
+    properties:
+      direction: { type: string, enum: [in, out] }
+      category: { type: string }
+      description: { type: string }
+      counterparty: { type: string }
+      amountKobo: { type: integer }
+      date: { type: string }
+      method: { type: string, enum: [transfer, cash, pos, cheque] }
+      reference: { type: string }
+      receiptId: { type: string }
+  SchoolTransactionDecision:
+    type: object
+    required: [action]
+    properties:
+      action: { type: string, enum: [approve, reject, void, cancel] }
+      note: { type: string }

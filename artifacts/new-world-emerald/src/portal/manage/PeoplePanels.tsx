@@ -21,6 +21,8 @@ export const SECONDARY_CLASSES = ["JSS 1", "JSS 2", "JSS 3", "SS 1", "SS 2", "SS
 export function ClassesPanel({ data }: { data: PortalManagement }) {
   const cmd = useCommand();
   const [editing, setEditing] = useState<{ id?: number; name: string } | null>(null);
+  const [removing, setRemoving] = useState<{ id: number; name: string } | null>(null);
+  const studentsIn = (id: number) => data.students.filter((s) => s.classId === id).length;
   const save = async () => {
     if (!editing || !editing.name.trim()) return;
     if (await cmd.run({ action: "saveClass", schoolClass: { ...editing, name: editing.name.trim() } }, editing.id ? "Class renamed" : "Class created")) setEditing(null);
@@ -43,7 +45,10 @@ export function ClassesPanel({ data }: { data: PortalManagement }) {
             <div key={c.id} className="portal-card flex items-center justify-between p-5" data-testid={"card-class-" + c.id}>
               <div><p className="font-serif text-lg font-semibold">{c.name}</p>
                 <p className="text-xs text-[hsl(var(--p-ink)/0.55)]">{data.students.filter((s) => s.classId === c.id && s.active).length} active students</p></div>
-              <button className="portal-btn-ghost" onClick={() => setEditing({ id: c.id, name: c.name })} aria-label={"Rename " + c.name} data-testid={"button-edit-class-" + c.id}><Pencil size={14} /></button>
+              <div className="flex gap-1">
+                <button className="portal-btn-ghost" onClick={() => setEditing({ id: c.id, name: c.name })} aria-label={"Rename " + c.name} data-testid={"button-edit-class-" + c.id}><Pencil size={14} /></button>
+                <button className="portal-btn-ghost" onClick={() => setRemoving({ id: c.id as number, name: c.name })} aria-label={"Delete " + c.name} data-testid={"button-delete-class-" + c.id}><Trash2 size={14} /></button>
+              </div>
             </div>
           ))}
         </div>
@@ -53,6 +58,18 @@ export function ClassesPanel({ data }: { data: PortalManagement }) {
           <DialogHeader><DialogTitle className="font-serif text-2xl">{editing?.id ? "Rename class" : "New class"}</DialogTitle></DialogHeader>
           <Field label="Class name" htmlFor="class-name"><input id="class-name" className="portal-input" maxLength={100} value={editing?.name ?? ""} onChange={(e) => setEditing((p) => p && { ...p, name: e.target.value })} placeholder="e.g. Primary 4 Emerald" data-testid="input-class-name" /></Field>
           <DialogFooter><button className="portal-btn" onClick={save} disabled={cmd.pending || !editing?.name.trim()} data-testid="button-save-class">{cmd.pending ? "Saving..." : "Save class"}</button></DialogFooter>
+        </DialogContent>
+      </Dialog>
+      <Dialog open={!!removing} onOpenChange={(o) => !o && setRemoving(null)}>
+        <DialogContent className="portal !min-h-0 max-w-md rounded-2xl">
+          <DialogHeader><DialogTitle className="font-serif text-2xl">Delete {removing?.name}?</DialogTitle>
+            <DialogDescription>{removing && studentsIn(removing.id) > 0
+              ? `This class still has ${studentsIn(removing.id)} ${studentsIn(removing.id) === 1 ? "student" : "students"}. Move them to another class (or remove them) first.`
+              : "The class, its unused exams, notes, announcements and subject list are removed. A class with students, exam attempts or saved results cannot be deleted."}</DialogDescription></DialogHeader>
+          <DialogFooter className="gap-2">
+            <button className="portal-btn-ghost" onClick={() => setRemoving(null)}>Keep it</button>
+            <button className="portal-btn" disabled={cmd.pending || !removing || studentsIn(removing.id) > 0} onClick={async () => { if (removing && await cmd.run({ action: "deleteClass", target: { id: removing.id } }, "Class deleted")) setRemoving(null); }} data-testid="button-confirm-delete-class">{cmd.pending ? "Deleting..." : "Delete class"}</button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
@@ -231,6 +248,7 @@ export function TeachersPanel({ data }: { data: PortalManagement }) {
   const cmd = useCommand();
   const [form, setFormState] = useState<PortalManagementTeachersItem | null>(null);
   const [subjectsText, setSubjectsText] = useState("");
+  const [removing, setRemoving] = useState<{ id: number; name: string } | null>(null);
   const setForm = (next: PortalManagementTeachersItem | null) => {
     // Opening the dialog (or switching teacher) loads that teacher's subjects into the text box.
     if (next && (!form || next.id !== form.id)) setSubjectsText((next.subjects ?? []).join(", "));
@@ -265,6 +283,7 @@ export function TeachersPanel({ data }: { data: PortalManagement }) {
                 <button className="portal-btn-ghost" onClick={() => setForm({ ...t })} data-testid={"button-edit-teacher-" + t.id}><Pencil size={13} /> Edit</button>
                 {t.active && <button className="portal-btn-ghost" disabled={cmd.pending} onClick={() => void cmd.run({ action: "inviteTeacher", target: { id: t.id as number } }, "Invitation")} data-testid={"button-invite-teacher-" + t.id}><Mail size={13} /> Send invite</button>}
                 <button className="portal-btn-ghost" disabled={cmd.pending} onClick={() => cmd.run({ action: "saveTeacher", teacher: { ...t, active: !t.active } }, t.active ? "Teacher deactivated" : "Teacher reactivated")} data-testid={"button-toggle-teacher-" + t.id}>{t.active ? "Deactivate" : "Reactivate"}</button>
+                <button className="portal-btn-ghost" disabled={cmd.pending} onClick={() => setRemoving({ id: t.id as number, name: t.name })} aria-label={"Delete " + t.name} data-testid={"button-delete-teacher-" + t.id}><Trash2 size={13} /></button>
               </div>
             </div>
           ))}
@@ -288,6 +307,16 @@ export function TeachersPanel({ data }: { data: PortalManagement }) {
             <label className="flex items-start gap-2 text-sm"><input type="checkbox" className="mt-0.5" checked={form.showInDirectory !== false} onChange={(e) => setForm({ ...form, showInDirectory: e.target.checked })} data-testid="checkbox-teacher-directory" /> <span>Show in the student staff directory <span className="block text-xs text-[hsl(var(--p-ink)/0.55)]">Students see the name, role, subjects and classes. Never the email.</span></span></label>
           </div>}
           <DialogFooter><button className="portal-btn" onClick={save} disabled={cmd.pending || !form || form.email.trim().length < 3 || !form.name.trim()} data-testid="button-save-teacher">{cmd.pending ? "Saving..." : "Save teacher"}</button></DialogFooter>
+        </DialogContent>
+      </Dialog>
+      <Dialog open={!!removing} onOpenChange={(o) => !o && setRemoving(null)}>
+        <DialogContent className="portal !min-h-0 max-w-md rounded-2xl">
+          <DialogHeader><DialogTitle className="font-serif text-2xl">Delete {removing?.name}?</DialogTitle>
+            <DialogDescription>They lose access to the staff portal straight away and leave the staff directory. Exams, marks and results they entered stay. To pause access instead, use Deactivate.</DialogDescription></DialogHeader>
+          <DialogFooter className="gap-2">
+            <button className="portal-btn-ghost" onClick={() => setRemoving(null)}>Keep</button>
+            <button className="portal-btn" disabled={cmd.pending} onClick={async () => { if (removing && await cmd.run({ action: "deleteTeacher", target: { id: removing.id } }, "Teacher deleted")) setRemoving(null); }} data-testid="button-confirm-delete-teacher">{cmd.pending ? "Deleting..." : "Delete teacher"}</button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

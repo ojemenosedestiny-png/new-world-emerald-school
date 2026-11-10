@@ -286,3 +286,23 @@ export function feeReceiptEmail(p: {
     `Added to wallet: ${ng(p.walletCreditKobo)}`, `Wallet balance now: ${ng(p.balanceAfterKobo)}`, "", p.portalUrl].join("\n");
   return { subject, html, text };
 }
+
+/** School accounts: spending waiting for the owner's approval, or the owner's decision sent back to the bursar. */
+export function spendingEmail(p: {
+  kind: "waiting" | "approved" | "rejected" | "voided"; description: string; category: string; counterparty: string; amountKobo: number;
+  date: string; recordedBy: string; note: string; url: string;
+}) {
+  const ng = `NGN ${(p.amountKobo / 100).toLocaleString("en-NG", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  const what = `${p.description} (${p.category}${p.counterparty ? `, paid to ${p.counterparty}` : ""}) on ${p.date}`;
+  const title = { waiting: "Spending waiting for your approval", approved: "Spending approved", rejected: "Spending not approved", voided: "Entry cancelled in the accounts" }[p.kind];
+  const lead = {
+    waiting: `${p.recordedBy} recorded spending of <b>${esc(ng)}</b> for ${esc(what)}. It does not count in the accounts until you approve it.`,
+    approved: `The school owner approved spending of <b>${esc(ng)}</b> for ${esc(what)}.`,
+    rejected: `The school owner did not approve spending of <b>${esc(ng)}</b> for ${esc(what)}.`,
+    voided: `The school owner cancelled the entry of <b>${esc(ng)}</b> for ${esc(what)}. It no longer counts in the accounts.`,
+  }[p.kind];
+  const html = layout(title, `<p style="margin:0 0 10px;line-height:1.6">${lead}</p>${p.note ? `<p style="margin:0;line-height:1.6"><b>Note:</b> ${esc(p.note)}</p>` : ""}`,
+    { label: p.kind === "waiting" ? "Review it" : "Open the accounts", url: p.url }, "You receive this because you keep or approve the school accounts.", "School accounts");
+  const text = `${title}\n\n${lead.replace(/<[^>]+>/g, "")}${p.note ? `\nNote: ${p.note}` : ""}\n\n${p.url}`;
+  return { subject: `${title}: ${ng}`, html, text };
+}

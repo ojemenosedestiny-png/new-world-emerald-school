@@ -772,7 +772,7 @@ export const managePortalBodyAttemptControlMinutesMax = 240;
 
 
 export const ManagePortalBody = zod.object({
-  "action": zod.enum(['saveClass', 'saveStudent', 'saveTeacher', 'saveExam', 'saveMaterial', 'saveNotice', 'grade', 'examStatus', 'deleteExam', 'deleteMaterial', 'deleteNotice', 'extendAttempt', 'resetAttempt', 'addPracticeExams', 'inviteTeacher']),
+  "action": zod.enum(['saveClass', 'saveStudent', 'saveTeacher', 'saveExam', 'saveMaterial', 'saveNotice', 'grade', 'examStatus', 'deleteExam', 'deleteMaterial', 'deleteNotice', 'extendAttempt', 'resetAttempt', 'addPracticeExams', 'inviteTeacher', 'deleteClass', 'deleteTeacher']),
   "schoolClass": zod.object({
   "id": zod.number().optional(),
   "name": zod.string().min(1).max(managePortalBodySchoolClassNameMax)
@@ -868,7 +868,8 @@ export const ManagePortalBody = zod.object({
   "attemptId": zod.number(),
   "minutes": zod.number().min(1).max(managePortalBodyAttemptControlMinutesMax).optional()
 }).optional(),
-  "withAttempts": zod.boolean().optional().describe('deleteExam only: also delete every student\'s attempt and score for the exam (the school owner only, for clearing test exams)')
+  "withAttempts": zod.boolean().optional().describe('deleteExam only: also delete every student\'s attempt and score for the exam (the school owner only, for clearing test exams)'),
+  "alsoClassIds": zod.array(zod.number()).optional().describe('saveExam (a new exam) only: also set the same exam for these classes, for example every Year 11 class')
 })
 
 export const ManagePortalResponse = zod.object({
@@ -4604,6 +4605,158 @@ export const SaveMyExamRegistrationResponse = zod.object({
   "className": zod.string()
 })
 })
+
+
+/**
+ * The school accounts for a period: money in (fee transfers, card payments, store orders and other income) and money out, with spending waiting for approval
+ */
+export const GetSchoolAccountsQueryParams = zod.object({
+  "from": zod.coerce.string().optional(),
+  "to": zod.coerce.string().optional()
+})
+
+export const GetSchoolAccountsResponse = zod.object({
+  "role": zod.enum(['bursar', 'owner']),
+  "canApprove": zod.boolean(),
+  "from": zod.string(),
+  "to": zod.string(),
+  "generatedAt": zod.coerce.date(),
+  "totals": zod.object({
+  "inKobo": zod.number(),
+  "outKobo": zod.number(),
+  "netKobo": zod.number(),
+  "pendingKobo": zod.number(),
+  "pendingCount": zod.number(),
+  "balanceKobo": zod.number()
+}),
+  "months": zod.array(zod.object({
+  "month": zod.string(),
+  "inKobo": zod.number(),
+  "outKobo": zod.number()
+})),
+  "categories": zod.array(zod.object({
+  "direction": zod.enum(['in', 'out']),
+  "category": zod.string(),
+  "amountKobo": zod.number(),
+  "count": zod.number()
+})),
+  "entries": zod.array(zod.object({
+  "key": zod.string(),
+  "source": zod.enum(['manual', 'fee_transfer', 'card', 'store']),
+  "id": zod.number().nullable(),
+  "direction": zod.enum(['in', 'out']),
+  "category": zod.string(),
+  "description": zod.string(),
+  "counterparty": zod.string(),
+  "amountKobo": zod.number(),
+  "date": zod.string(),
+  "method": zod.string(),
+  "reference": zod.string(),
+  "receiptId": zod.string().nullable(),
+  "status": zod.enum(['pending', 'approved', 'rejected', 'void']),
+  "recordedBy": zod.string(),
+  "decidedBy": zod.string().nullable(),
+  "decidedAt": zod.coerce.date().nullable(),
+  "note": zod.string()
+})),
+  "pending": zod.array(zod.object({
+  "key": zod.string(),
+  "source": zod.enum(['manual', 'fee_transfer', 'card', 'store']),
+  "id": zod.number().nullable(),
+  "direction": zod.enum(['in', 'out']),
+  "category": zod.string(),
+  "description": zod.string(),
+  "counterparty": zod.string(),
+  "amountKobo": zod.number(),
+  "date": zod.string(),
+  "method": zod.string(),
+  "reference": zod.string(),
+  "receiptId": zod.string().nullable(),
+  "status": zod.enum(['pending', 'approved', 'rejected', 'void']),
+  "recordedBy": zod.string(),
+  "decidedBy": zod.string().nullable(),
+  "decidedAt": zod.coerce.date().nullable(),
+  "note": zod.string()
+})),
+  "incomeCategories": zod.array(zod.string()),
+  "expenseCategories": zod.array(zod.string())
+})
+
+
+/**
+ * Record other income or spending (spending waits for the school owner's approval)
+ */
+export const RecordSchoolTransactionBody = zod.object({
+  "direction": zod.enum(['in', 'out']),
+  "category": zod.string(),
+  "description": zod.string(),
+  "counterparty": zod.string().optional(),
+  "amountKobo": zod.number(),
+  "date": zod.string(),
+  "method": zod.enum(['transfer', 'cash', 'pos', 'cheque']),
+  "reference": zod.string().optional(),
+  "receiptId": zod.string().optional()
+})
+
+export const RecordSchoolTransactionResponse = zod.object({
+  "key": zod.string(),
+  "source": zod.enum(['manual', 'fee_transfer', 'card', 'store']),
+  "id": zod.number().nullable(),
+  "direction": zod.enum(['in', 'out']),
+  "category": zod.string(),
+  "description": zod.string(),
+  "counterparty": zod.string(),
+  "amountKobo": zod.number(),
+  "date": zod.string(),
+  "method": zod.string(),
+  "reference": zod.string(),
+  "receiptId": zod.string().nullable(),
+  "status": zod.enum(['pending', 'approved', 'rejected', 'void']),
+  "recordedBy": zod.string(),
+  "decidedBy": zod.string().nullable(),
+  "decidedAt": zod.coerce.date().nullable(),
+  "note": zod.string()
+})
+
+
+/**
+ * Approve or reject spending (school owner), void an entry (school owner) or cancel your own waiting entry
+ */
+export const DecideSchoolTransactionParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const DecideSchoolTransactionBody = zod.object({
+  "action": zod.enum(['approve', 'reject', 'void', 'cancel']),
+  "note": zod.string().optional()
+})
+
+export const DecideSchoolTransactionResponse = zod.object({
+  "key": zod.string(),
+  "source": zod.enum(['manual', 'fee_transfer', 'card', 'store']),
+  "id": zod.number().nullable(),
+  "direction": zod.enum(['in', 'out']),
+  "category": zod.string(),
+  "description": zod.string(),
+  "counterparty": zod.string(),
+  "amountKobo": zod.number(),
+  "date": zod.string(),
+  "method": zod.string(),
+  "reference": zod.string(),
+  "receiptId": zod.string().nullable(),
+  "status": zod.enum(['pending', 'approved', 'rejected', 'void']),
+  "recordedBy": zod.string(),
+  "decidedBy": zod.string().nullable(),
+  "decidedAt": zod.coerce.date().nullable(),
+  "note": zod.string()
+})
+
+
+export const GetAccountsReceiptParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const GetAccountsReceiptResponse = zod.unknown()
 
 
 /**

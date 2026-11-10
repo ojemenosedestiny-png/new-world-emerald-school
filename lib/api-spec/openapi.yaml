@@ -175,6 +175,14 @@ paths:
     $ref: "./exam-registration.yaml#/paths/review"
   /portal/my-exam-registration:
     $ref: "./exam-registration.yaml#/paths/mine"
+  /portal/accounts:
+    $ref: "./school-accounts.yaml#/paths/accounts"
+  /portal/accounts/transactions:
+    $ref: "./school-accounts.yaml#/paths/transactions"
+  /portal/accounts/transactions/{id}:
+    $ref: "./school-accounts.yaml#/paths/transaction"
+  /portal/accounts/receipts/{id}:
+    $ref: "./school-accounts.yaml#/paths/receipt"
   /chairman/board:
     $ref: "./chairman.yaml#/paths/board"
   /portal/my-messages:
@@ -1289,6 +1297,18 @@ components:
       $ref: "./timetables.yaml#/schemas/TimetableInput"
     TimetableCommand:
       $ref: "./timetables.yaml#/schemas/TimetableCommand"
+    AccountEntry:
+      $ref: "./school-accounts.yaml#/schemas/AccountEntry"
+    AccountCategoryTotal:
+      $ref: "./school-accounts.yaml#/schemas/AccountCategoryTotal"
+    AccountMonth:
+      $ref: "./school-accounts.yaml#/schemas/AccountMonth"
+    SchoolAccounts:
+      $ref: "./school-accounts.yaml#/schemas/SchoolAccounts"
+    SchoolTransactionInput:
+      $ref: "./school-accounts.yaml#/schemas/SchoolTransactionInput"
+    SchoolTransactionDecision:
+      $ref: "./school-accounts.yaml#/schemas/SchoolTransactionDecision"
     ChairmanCount:
       $ref: "./chairman.yaml#/schemas/ChairmanCount"
     ChairmanSection:

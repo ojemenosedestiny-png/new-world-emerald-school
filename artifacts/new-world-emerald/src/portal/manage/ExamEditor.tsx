@@ -12,6 +12,12 @@ import { DiagramField, PassageEditor } from "./QuestionExtras";
 type Q = PortalExamQuestionsItem;
 const MAX_PDF = 15 * 1024 * 1024;
 
+/** The year group of a class: "Year 11 Gold" and "Year 11 B" are both "Year 11"; "SS 3 Amber" is "SS 3". */
+export function yearGroup(name: string) {
+  const m = /^(.*?\d+)/.exec(name.trim());
+  return (m ? m[1] : name).replace(/\s+/g, " ").trim().toLowerCase();
+}
+
 export function blankExam(classId: number): PortalExam {
   const start = new Date(Date.now() + 86400000); start.setMinutes(0, 0, 0);
   const end = new Date(start.getTime() + 3 * 3600000);
@@ -98,6 +104,8 @@ export function ExamEditor({ data, initial, onClose }: { data: PortalManagement;
   const fileRef = useRef<HTMLInputElement>(null);
   const [exam, setExam] = useState<PortalExam>(initial);
   const [noKeyConfirmed, setNoKeyConfirmed] = useState(false);
+  // A new exam can go to more classes at once, such as every Year 11 class.
+  const [also, setAlso] = useState<number[]>([]);
   const [importNote, setImportNote] = useState<{ warning: string; extractedText: string; found: number; applied: boolean; attached: string[]; general: string[] } | null>(null);
   // Review notes from the PDF import, keyed by question id (diagrams attached or not imported).
   const [notes, setNotes] = useState<Record<string, string[]>>({});
@@ -166,7 +174,8 @@ export function ExamEditor({ data, initial, onClose }: { data: PortalManagement;
     if (errors.length || needsKeyConfirm) return;
     const questions = exam.questions.map(({ passage, ...q }) => (passage?.trim() ? { ...q, passage } : q));
     const payload = { ...exam, questions, title: exam.title.trim(), subject: exam.subject.trim(), durationMinutes: Number(exam.durationMinutes) };
-    if (await cmd.run({ action: "saveExam", exam: payload }, data.examOfficer && exam.published ? "Saved and sent to the exam officer" : exam.id ? "Exam updated" : "Exam saved")) onClose();
+    const extra = exam.id ? [] : also.filter((c) => c !== exam.classId);
+    if (await cmd.run({ action: "saveExam", exam: payload, ...(extra.length ? { alsoClassIds: extra } : {}) }, data.examOfficer && exam.published ? "Saved and sent to the exam officer" : exam.id ? "Exam updated" : "Exam saved")) onClose();
   };
 
   return (
@@ -183,6 +192,25 @@ export function ExamEditor({ data, initial, onClose }: { data: PortalManagement;
             <Field label="Opens" htmlFor="e-start"><input id="e-start" type="datetime-local" className="portal-input" value={toLocalInput(exam.startsAt)} onChange={(e) => set({ startsAt: fromLocalInput(e.target.value) })} data-testid="input-exam-start" /></Field>
             <Field label="Closes" htmlFor="e-end"><input id="e-end" type="datetime-local" className="portal-input" value={toLocalInput(exam.endsAt)} onChange={(e) => set({ endsAt: fromLocalInput(e.target.value) })} data-testid="input-exam-end" /></Field>
           </div>
+          {!exam.id && data.classes.length > 1 && (() => {
+            const others = data.classes.filter((c) => c.id !== exam.classId);
+            const group = exam.classId ? yearGroup(data.classes.find((c) => c.id === exam.classId)?.name ?? "") : "";
+            const sameGroup = others.filter((c) => group && yearGroup(c.name) === group).map((c) => c.id as number);
+            const label = data.classes.find((c) => c.id === exam.classId)?.name.match(/^(.*?\d+)/)?.[1] ?? "";
+            return (
+              <fieldset className="rounded-xl border border-[hsl(var(--p-line))] p-4" data-testid="fieldset-also-classes">
+                <legend className="portal-label px-1">Also set this exam for</legend>
+                <p className="mb-3 text-xs text-[hsl(var(--p-ink)/0.6)]">The same questions, times and settings go to each class you tick, as its own copy. Students only see their own class's copy.</p>
+                {sameGroup.length > 0 && <button type="button" className="portal-btn-ghost mb-3 !py-1 text-xs" onClick={() => setAlso((a) => [...new Set([...a, ...sameGroup])])} data-testid="button-also-year-group">Tick every {label} class ({sameGroup.length})</button>}
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">{others.map((c) => (
+                  <label key={c.id} className="flex items-center gap-2 rounded-lg border border-[hsl(var(--p-line))] px-3 py-2 text-sm">
+                    <input type="checkbox" checked={also.includes(c.id as number)} onChange={() => setAlso((a) => a.includes(c.id as number) ? a.filter((x) => x !== c.id) : [...a, c.id as number])} data-testid={"checkbox-also-class-" + c.id} />{c.name}
+                  </label>
+                ))}</div>
+                {also.filter((c) => c !== exam.classId).length > 0 && <p className="mt-2 text-xs font-semibold text-[hsl(var(--p-emerald))]">Will be set for {also.filter((c) => c !== exam.classId).length + 1} classes.</p>}
+              </fieldset>
+            );
+          })()}
           <Field label="Instructions for students" htmlFor="e-ins"><textarea id="e-ins" className="portal-input min-h-[70px]" maxLength={5000} value={exam.instructions} onChange={(e) => set({ instructions: e.target.value })} data-testid="input-exam-instructions" /></Field>
 
           <fieldset className="rounded-2xl bg-[hsl(var(--p-paper-2)/0.7)] p-4">

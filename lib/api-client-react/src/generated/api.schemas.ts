@@ -1867,6 +1867,156 @@ export interface TimetableCommand {
   id?: number;
 }
 
+export type AccountEntrySource = typeof AccountEntrySource[keyof typeof AccountEntrySource];
+
+
+export const AccountEntrySource = {
+  manual: 'manual',
+  fee_transfer: 'fee_transfer',
+  card: 'card',
+  store: 'store',
+} as const;
+
+export type AccountEntryDirection = typeof AccountEntryDirection[keyof typeof AccountEntryDirection];
+
+
+export const AccountEntryDirection = {
+  in: 'in',
+  out: 'out',
+} as const;
+
+export type AccountEntryStatus = typeof AccountEntryStatus[keyof typeof AccountEntryStatus];
+
+
+export const AccountEntryStatus = {
+  pending: 'pending',
+  approved: 'approved',
+  rejected: 'rejected',
+  void: 'void',
+} as const;
+
+export interface AccountEntry {
+  key: string;
+  source: AccountEntrySource;
+  /** @nullable */
+  id: number | null;
+  direction: AccountEntryDirection;
+  category: string;
+  description: string;
+  counterparty: string;
+  amountKobo: number;
+  date: string;
+  method: string;
+  reference: string;
+  /** @nullable */
+  receiptId: string | null;
+  status: AccountEntryStatus;
+  recordedBy: string;
+  /** @nullable */
+  decidedBy: string | null;
+  /** @nullable */
+  decidedAt: string | null;
+  note: string;
+}
+
+export type AccountCategoryTotalDirection = typeof AccountCategoryTotalDirection[keyof typeof AccountCategoryTotalDirection];
+
+
+export const AccountCategoryTotalDirection = {
+  in: 'in',
+  out: 'out',
+} as const;
+
+export interface AccountCategoryTotal {
+  direction: AccountCategoryTotalDirection;
+  category: string;
+  amountKobo: number;
+  count: number;
+}
+
+export interface AccountMonth {
+  month: string;
+  inKobo: number;
+  outKobo: number;
+}
+
+export type SchoolAccountsRole = typeof SchoolAccountsRole[keyof typeof SchoolAccountsRole];
+
+
+export const SchoolAccountsRole = {
+  bursar: 'bursar',
+  owner: 'owner',
+} as const;
+
+export type SchoolAccountsTotals = {
+  inKobo: number;
+  outKobo: number;
+  netKobo: number;
+  pendingKobo: number;
+  pendingCount: number;
+  balanceKobo: number;
+};
+
+export interface SchoolAccounts {
+  role: SchoolAccountsRole;
+  canApprove: boolean;
+  from: string;
+  to: string;
+  generatedAt: string;
+  totals: SchoolAccountsTotals;
+  months: AccountMonth[];
+  categories: AccountCategoryTotal[];
+  entries: AccountEntry[];
+  pending: AccountEntry[];
+  incomeCategories: string[];
+  expenseCategories: string[];
+}
+
+export type SchoolTransactionInputDirection = typeof SchoolTransactionInputDirection[keyof typeof SchoolTransactionInputDirection];
+
+
+export const SchoolTransactionInputDirection = {
+  in: 'in',
+  out: 'out',
+} as const;
+
+export type SchoolTransactionInputMethod = typeof SchoolTransactionInputMethod[keyof typeof SchoolTransactionInputMethod];
+
+
+export const SchoolTransactionInputMethod = {
+  transfer: 'transfer',
+  cash: 'cash',
+  pos: 'pos',
+  cheque: 'cheque',
+} as const;
+
+export interface SchoolTransactionInput {
+  direction: SchoolTransactionInputDirection;
+  category: string;
+  description: string;
+  counterparty?: string;
+  amountKobo: number;
+  date: string;
+  method: SchoolTransactionInputMethod;
+  reference?: string;
+  receiptId?: string;
+}
+
+export type SchoolTransactionDecisionAction = typeof SchoolTransactionDecisionAction[keyof typeof SchoolTransactionDecisionAction];
+
+
+export const SchoolTransactionDecisionAction = {
+  approve: 'approve',
+  reject: 'reject',
+  void: 'void',
+  cancel: 'cancel',
+} as const;
+
+export interface SchoolTransactionDecision {
+  action: SchoolTransactionDecisionAction;
+  note?: string;
+}
+
 export interface ChairmanCount {
   label: string;
   value: number;
@@ -4973,6 +5123,8 @@ export const PortalCommandAction = {
   resetAttempt: 'resetAttempt',
   addPracticeExams: 'addPracticeExams',
   inviteTeacher: 'inviteTeacher',
+  deleteClass: 'deleteClass',
+  deleteTeacher: 'deleteTeacher',
 } as const;
 
 export type PortalCommandSchoolClass = {
@@ -5232,6 +5384,8 @@ export interface PortalCommand {
   attemptControl?: PortalCommandAttemptControl;
   /** deleteExam only: also delete every student's attempt and score for the exam (the school owner only, for clearing test exams) */
   withAttempts?: boolean;
+  /** saveExam (a new exam) only: also set the same exam for these classes, for example every Year 11 class */
+  alsoClassIds?: number[];
 }
 
 export interface PortalTarget {
@@ -6214,6 +6368,11 @@ to?: string;
 
 export type GetExamRegistrationAdminParams = {
 academicYear?: string;
+};
+
+export type GetSchoolAccountsParams = {
+from?: string;
+to?: string;
 };
 
 export type GetChairmanBoardParams = {

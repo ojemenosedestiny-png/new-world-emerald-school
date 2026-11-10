@@ -52,7 +52,7 @@ export const PUBLIC_PAGES: { path: string; title: string; description: string }[
 // Signed-in areas and sign-in screens: served to people, never indexed.
 const PRIVATE_ROUTES = [
   /^\/sign-in(\/|$)/, /^\/sign-up(\/|$)/, /^\/account$/, /^\/admin$/, /^\/director$/, /^\/teacher$/,
-  /^\/portal$/, /^\/portal\/manage$/, /^\/parents$/, /^\/principal(\/primary)?$/, /^\/exam-officer$/, /^\/head$/, /^\/chairman$/, /^\/portal\/activate$/, /^\/portal\/exam\/[^/]+$/,
+  /^\/portal$/, /^\/portal\/manage$/, /^\/parents$/, /^\/principal(\/primary)?$/, /^\/exam-officer$/, /^\/head$/, /^\/chairman$/, /^\/accounts$/, /^\/portal\/activate$/, /^\/portal\/exam\/[^/]+$/,
 ];
 
 /** How an address of the website app is presented to search engines. */

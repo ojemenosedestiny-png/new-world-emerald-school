@@ -22,6 +22,7 @@ import type {
 import type {
   AcademicCalendar,
   AcademicCalendarInput,
+  AccountEntry,
   AccountLinkRequest,
   AccountLinkResult,
   AccountTokenComplete,
@@ -89,6 +90,7 @@ import type {
   GetPrincipalReportCardsParams,
   GetPrincipalResultsParams,
   GetReportWorkspaceParams,
+  GetSchoolAccountsParams,
   HealthStatus,
   ImportPortalPdfParams,
   IndividualFeeCharge,
@@ -163,12 +165,15 @@ import type {
   ResultImportPreview,
   ResultImportRecord,
   RevokeRequest,
+  SchoolAccounts,
   SchoolCommerceSettings,
   SchoolCommerceSettingsUpdate,
   SchoolEmailDetail,
   SchoolEmailMessage,
   SchoolEmailRequest,
   SchoolEmailWorkspace,
+  SchoolTransactionDecision,
+  SchoolTransactionInput,
   SecuritySessions,
   SendDirectorReport200,
   SiteContent,
@@ -7396,6 +7401,295 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       > => {
       return useMutation(getSaveMyExamRegistrationMutationOptions(options));
     }
+
+export const getGetSchoolAccountsUrl = (params?: GetSchoolAccountsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/portal/accounts?${stringifiedParams}` : `/api/portal/accounts`
+}
+
+/**
+ * The school accounts for a period: money in (fee transfers, card payments, store orders and other income) and money out, with spending waiting for approval
+ */
+export const getSchoolAccounts = async (params?: GetSchoolAccountsParams, options?: RequestInit): Promise<SchoolAccounts> => {
+
+  return customFetch<SchoolAccounts>(getGetSchoolAccountsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetSchoolAccountsQueryKey = (params?: GetSchoolAccountsParams,) => {
+    return [
+    `/api/portal/accounts`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetSchoolAccountsQueryOptions = <TData = Awaited<ReturnType<typeof getSchoolAccounts>>, TError = ErrorType<unknown>>(params?: GetSchoolAccountsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSchoolAccounts>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetSchoolAccountsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSchoolAccounts>>> = ({ signal }) => getSchoolAccounts(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSchoolAccounts>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetSchoolAccountsQueryResult = NonNullable<Awaited<ReturnType<typeof getSchoolAccounts>>>
+export type GetSchoolAccountsQueryError = ErrorType<unknown>
+
+
+
+export function useGetSchoolAccounts<TData = Awaited<ReturnType<typeof getSchoolAccounts>>, TError = ErrorType<unknown>>(
+ params?: GetSchoolAccountsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSchoolAccounts>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetSchoolAccountsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getRecordSchoolTransactionUrl = () => {
+
+
+
+
+  return `/api/portal/accounts/transactions`
+}
+
+/**
+ * Record other income or spending (spending waits for the school owner's approval)
+ */
+export const recordSchoolTransaction = async (schoolTransactionInput: SchoolTransactionInput, options?: RequestInit): Promise<AccountEntry> => {
+
+  return customFetch<AccountEntry>(getRecordSchoolTransactionUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(schoolTransactionInput)
+  }
+);}
+
+
+
+
+
+export const getRecordSchoolTransactionMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof recordSchoolTransaction>>, TError,{data: BodyType<SchoolTransactionInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof recordSchoolTransaction>>, TError,{data: BodyType<SchoolTransactionInput>}, TContext> => {
+
+const mutationKey = ['recordSchoolTransaction'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof recordSchoolTransaction>>, {data: BodyType<SchoolTransactionInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  recordSchoolTransaction(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RecordSchoolTransactionMutationResult = NonNullable<Awaited<ReturnType<typeof recordSchoolTransaction>>>
+    export type RecordSchoolTransactionMutationBody = BodyType<SchoolTransactionInput>
+    export type RecordSchoolTransactionMutationError = ErrorType<unknown>
+
+    export const useRecordSchoolTransaction = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof recordSchoolTransaction>>, TError,{data: BodyType<SchoolTransactionInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof recordSchoolTransaction>>,
+        TError,
+        {data: BodyType<SchoolTransactionInput>},
+        TContext
+      > => {
+      return useMutation(getRecordSchoolTransactionMutationOptions(options));
+    }
+
+export const getDecideSchoolTransactionUrl = (id: number,) => {
+
+
+
+
+  return `/api/portal/accounts/transactions/${id}`
+}
+
+/**
+ * Approve or reject spending (school owner), void an entry (school owner) or cancel your own waiting entry
+ */
+export const decideSchoolTransaction = async (id: number,
+    schoolTransactionDecision: SchoolTransactionDecision, options?: RequestInit): Promise<AccountEntry> => {
+
+  return customFetch<AccountEntry>(getDecideSchoolTransactionUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(schoolTransactionDecision)
+  }
+);}
+
+
+
+
+
+export const getDecideSchoolTransactionMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof decideSchoolTransaction>>, TError,{id: number;data: BodyType<SchoolTransactionDecision>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof decideSchoolTransaction>>, TError,{id: number;data: BodyType<SchoolTransactionDecision>}, TContext> => {
+
+const mutationKey = ['decideSchoolTransaction'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof decideSchoolTransaction>>, {id: number;data: BodyType<SchoolTransactionDecision>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  decideSchoolTransaction(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DecideSchoolTransactionMutationResult = NonNullable<Awaited<ReturnType<typeof decideSchoolTransaction>>>
+    export type DecideSchoolTransactionMutationBody = BodyType<SchoolTransactionDecision>
+    export type DecideSchoolTransactionMutationError = ErrorType<unknown>
+
+    export const useDecideSchoolTransaction = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof decideSchoolTransaction>>, TError,{id: number;data: BodyType<SchoolTransactionDecision>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof decideSchoolTransaction>>,
+        TError,
+        {id: number;data: BodyType<SchoolTransactionDecision>},
+        TContext
+      > => {
+      return useMutation(getDecideSchoolTransactionMutationOptions(options));
+    }
+
+export const getGetAccountsReceiptUrl = (id: string,) => {
+
+
+
+
+  return `/api/portal/accounts/receipts/${id}`
+}
+
+export const getAccountsReceipt = async (id: string, options?: RequestInit): Promise<Blob> => {
+
+  return customFetch<Blob>(getGetAccountsReceiptUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetAccountsReceiptQueryKey = (id: string,) => {
+    return [
+    `/api/portal/accounts/receipts/${id}`
+    ] as const;
+    }
+
+
+export const getGetAccountsReceiptQueryOptions = <TData = Awaited<ReturnType<typeof getAccountsReceipt>>, TError = ErrorType<unknown>>(id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAccountsReceipt>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetAccountsReceiptQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAccountsReceipt>>> = ({ signal }) => getAccountsReceipt(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAccountsReceipt>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetAccountsReceiptQueryResult = NonNullable<Awaited<ReturnType<typeof getAccountsReceipt>>>
+export type GetAccountsReceiptQueryError = ErrorType<unknown>
+
+
+
+export function useGetAccountsReceipt<TData = Awaited<ReturnType<typeof getAccountsReceipt>>, TError = ErrorType<unknown>>(
+ id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAccountsReceipt>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetAccountsReceiptQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 
 export const getGetChairmanBoardUrl = (params?: GetChairmanBoardParams,) => {
   const normalizedParams = new URLSearchParams();

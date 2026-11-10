@@ -75,9 +75,17 @@ export function chairmanEmails(): string[] {
   return emailList(process.env.SCHOOL_CHAIRMAN_EMAILS);
 }
 
-/** Every email whose Clerk verification is tracked: administrators, both principals, the exam officer and the Chairman. */
+/**
+ * The bursar (SCHOOL_BURSAR_EMAILS): keeps the school's accounts (money in and out) on /accounts. Not an
+ * administrator: sees nothing else in the portal. Money going out waits for the school owner's approval.
+ */
+export function bursarEmails(): string[] {
+  return emailList(process.env.SCHOOL_BURSAR_EMAILS);
+}
+
+/** Every email whose Clerk verification is tracked: administrators, both principals, the exam officer, the Chairman and the bursar. */
 export function verifiedRoleEmails(): string[] {
-  return [...new Set([...approvedEmails(), ...principalEmails("secondary"), ...principalEmails("primary"), ...examOfficerEmails(), ...chairmanEmails()])];
+  return [...new Set([...approvedEmails(), ...principalEmails("secondary"), ...principalEmails("primary"), ...examOfficerEmails(), ...chairmanEmails(), ...bursarEmails()])];
 }
 
 /** When true, administrators must have Clerk two-factor authentication turned on. */

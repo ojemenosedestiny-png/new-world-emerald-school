@@ -31,4 +31,6 @@ export interface PortalCommand {
   attemptControl?: PortalCommandAttemptControl;
   /** deleteExam only: also delete every student's attempt and score for the exam (the school owner only, for clearing test exams) */
   withAttempts?: boolean;
+  /** saveExam (a new exam) only: also set the same exam for these classes, for example every Year 11 class */
+  alsoClassIds?: number[];
 }

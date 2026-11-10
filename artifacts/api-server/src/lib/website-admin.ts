@@ -1,5 +1,5 @@
 import type { NextFunction, Request, Response } from "express";
-import { adminMfaRequired, approvedEmails, chairmanEmails, directorEmails, examOfficerEmails, headEmails, principalEmails, superAdminEmails } from "./approved-identities";
+import { adminMfaRequired, approvedEmails, bursarEmails, chairmanEmails, directorEmails, examOfficerEmails, headEmails, principalEmails, superAdminEmails } from "./approved-identities";
 
 /** Approved, verified administrator email, before any two-factor requirement. */
 function isApprovedAdmin(req: Request): boolean {
@@ -71,6 +71,19 @@ export function isChairman(req: Request): boolean {
 /** May open the Chairman's board: the Chairman, or the super administrator (to see what the Chairman sees). */
 export function canViewChairman(req: Request): boolean {
   return isChairman(req) || isSuperAdmin(req);
+}
+
+/** The bursar's own account: a verified email in SCHOOL_BURSAR_EMAILS (two-factor when required). */
+export function isBursar(req: Request): boolean {
+  const email = req.identity?.email?.trim().toLowerCase();
+  if (!req.dbUser || !email || !req.identity?.emailVerified) return false;
+  if (adminMfaRequired() && req.identity.mfa !== true) return false;
+  return bursarEmails().includes(email);
+}
+
+/** May open the school accounts: the bursar, or the school owner (super administrator), who also approves spending. */
+export function canUseAccounts(req: Request): boolean {
+  return isBursar(req) || isSuperAdmin(req);
 }
 
 /** May use the exam officer's portal and publish exams: the exam officer, or the super administrator. */

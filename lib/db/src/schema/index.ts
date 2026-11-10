@@ -27,3 +27,4 @@ export * from "./portal-facilities";
 export * from "./parent-payments";
 export * from "./payment-accounts";
 export * from "./exam-registrations";
+export * from "./school-accounts";

@@ -36,7 +36,9 @@
     "test:portal-exam-officer": "node ./test-portal.mjs portal-exam-officer",
     "test:portal-head-and-parents": "node ./test-portal.mjs portal-head-and-parents",
     "test:portal-timetables": "node ./test-portal.mjs portal-timetables",
-    "test:portal-transfers": "node ./test-portal.mjs portal-transfers"
+    "test:portal-transfers": "node ./test-portal.mjs portal-transfers",
+    "test:school-accounts": "node ./test-portal.mjs school-accounts",
+    "test:portal-class-delete": "node ./test-portal.mjs portal-class-delete"
   },
   "dependencies": {
     "@clerk/express": "^2.1.75",

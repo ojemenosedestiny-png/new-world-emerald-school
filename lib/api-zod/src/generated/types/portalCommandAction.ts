@@ -25,4 +25,6 @@ export const PortalCommandAction = {
   resetAttempt: 'resetAttempt',
   addPracticeExams: 'addPracticeExams',
   inviteTeacher: 'inviteTeacher',
+  deleteClass: 'deleteClass',
+  deleteTeacher: 'deleteTeacher',
 } as const;
