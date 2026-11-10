@@ -13,11 +13,13 @@ import { setApprovedIdentitiesForTest } from "./approved-identities";
 test("exams for many classes; deleting classes and teachers", async () => {
   const marker = `QA-DEL-${randomUUID().slice(0, 8)}`.toUpperCase();
   const admin = `admin-${marker.toLowerCase()}@example.test`;
-  const saved = Object.fromEntries(["SCHOOL_ADMIN_EMAILS", "SCHOOL_SUPER_ADMIN_EMAILS", "SCHOOL_EXAM_OFFICER_EMAILS"].map((k) => [k, process.env[k]]));
+  const principal = `principal-${marker.toLowerCase()}@example.test`;
+  const saved = Object.fromEntries(["SCHOOL_ADMIN_EMAILS", "SCHOOL_SUPER_ADMIN_EMAILS", "SCHOOL_EXAM_OFFICER_EMAILS", "SCHOOL_PRINCIPAL_EMAILS"].map((k) => [k, process.env[k]]));
   process.env.SCHOOL_ADMIN_EMAILS = admin;
   process.env.SCHOOL_SUPER_ADMIN_EMAILS = admin;
   delete process.env.SCHOOL_EXAM_OFFICER_EMAILS;
-  setApprovedIdentitiesForTest([[`id-${admin}`, { email: admin, mfa: true }]]);
+  process.env.SCHOOL_PRINCIPAL_EMAILS = principal;
+  setApprovedIdentitiesForTest([[`id-${admin}`, { email: admin, mfa: true }], [`id-${principal}`, { email: principal, mfa: true }]]);
   const app = express();
   app.use(express.json());
   app.use((req, _res, next) => {
@@ -38,9 +40,23 @@ test("exams for many classes; deleting classes and teachers", async () => {
   const classIds: number[] = [];
   const termIds: number[] = [];
   try {
-    const made = await db.insert(portalClasses).values([`${marker} Year 11 Gold`, `${marker} Year 11 Blue`, `${marker} Year 12 Gold`, `${marker} Empty`, `${marker} Results`].map((name) => ({ name }))).returning();
+    const made = await db.insert(portalClasses).values([`${marker} Year 11 Gold`, `${marker} Year 11 Blue`, `${marker} Year 12 Gold`, `${marker} Empty`, `${marker} Results`, `${marker} Year 3 Ruby`].map((name) => ({ name }))).returning();
     classIds.push(...made.map((c) => c.id));
-    const [y11g, y11b, y12, empty, results] = made;
+    const [y11g, y11b, y12, empty, results, y3] = made;
+
+    // Moving a child: the office moves anyone; a principal moves only within their own school.
+    const [mover] = await db.insert(portalStudents).values({ studentId: `${marker}-9`, name: "Chidi", classId: y11g.id, passwordHash: "x" }).returning();
+    const moved = await manage({ action: "moveStudent", target: { id: mover.id }, toClassId: y12.id });
+    assert.equal(moved.status, 200, JSON.stringify(moved.data));
+    assert.match(moved.data.message, /Year 11 Gold to .*Year 12 Gold/);
+    assert.equal((await manage({ action: "moveStudent", target: { id: mover.id }, toClassId: y12.id })).status, 409, "already there");
+    const asPrincipal = (body: unknown) => fetch(root + "/principal", { method: "POST", headers: { "Content-Type": "application/json", "X-Test-User": principal }, body: JSON.stringify(body) });
+    assert.equal((await asPrincipal({ action: "moveStudent", classId: y11g.id, studentId: mover.id })).status, 200);
+    assert.equal((await asPrincipal({ action: "moveStudent", classId: y3.id, studentId: mover.id })).status, 403, "primary is not the secondary principal's");
+    assert.equal((await db.select().from(portalStudents).where(eq(portalStudents.id, mover.id)))[0].classId, y11g.id);
+    const overview = await (await fetch(root + "/principal?section=secondary", { headers: { "X-Test-User": principal } })).json() as { students: { id: number }[] };
+    assert.ok(overview.students.some((s: { id: number }) => s.id === mover.id));
+    await db.delete(portalStudents).where(eq(portalStudents.id, mover.id));
 
     // One exam, three classes: each gets its own copy, and the PDF record is copied for each class.
     const fileId = randomUUID();

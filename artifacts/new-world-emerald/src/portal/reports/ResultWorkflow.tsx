@@ -5,16 +5,18 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { termLabel } from "./reportCard";
 import { useReportCommand } from "./useReportCommand";
 
-const STEPS: { key: ReportWorkflowStatus; label: string; short: string }[] = [
+/** Who approves and signs results: the Head Teacher for Year 1 to 6, the principal for secondary. */
+export const approverName = (ws: Pick<ReportWorkspace, "scheme">) => (ws.scheme === "primary" ? "Head Teacher" : "principal");
+const steps = (approver: string): { key: ReportWorkflowStatus; label: string; short: string }[] => [
   { key: "draft", label: "Draft", short: "Draft" }, { key: "review", label: "Teacher review", short: "Review" },
-  { key: "approved", label: "Principal approval", short: "Approval" }, { key: "published", label: "Published", short: "Published" },
+  { key: "approved", label: `${approver[0].toUpperCase()}${approver.slice(1)} approval`, short: "Approval" }, { key: "published", label: "Published", short: "Published" },
 ];
-const SUMMARY: Record<ReportWorkflowStatus, string> = {
+const summary = (approver: string): Record<ReportWorkflowStatus, string> => ({
   draft: "Teachers enter scores and remarks. When everything is in, the class teacher reviews the results, signs and sends them for approval.",
-  review: "The class teacher has reviewed and signed. Waiting for the principal or school office to approve.",
-  approved: "Approved and signed by the principal. Publish to let students view and download their results.",
+  review: `The class teacher has reviewed and signed. Waiting for the ${approver} or school office to approve.`,
+  approved: `Approved and signed by the ${approver}. Publish to let students view and download their results.`,
   published: "Students in this class can view and download their results. Scores and remarks are locked.",
-};
+});
 
 /** Result sheets are editable only in draft (the office may still correct them while they wait for approval). */
 export function resultsLocked(ws: ReportWorkspace) {
@@ -30,6 +32,9 @@ export function WorkflowBar({ ws, term, className, missing, onOpenSettings }: { 
   const [confirm, setConfirm] = useState<Action | null>(null);
   const [note, setNote] = useState("");
   const w = ws.workflow;
+  const approver = approverName(ws);
+  const STEPS = steps(approver);
+  const SUMMARY = summary(approver);
   const at = STEPS.findIndex((s) => s.key === w.status);
   const run = async (action: Action) => {
     const ok = await cmd.run({ action: "workflow", workflow: { termId: term.id, classId: ws.classId!, action, ...(action === "return" && note.trim() ? { note: note.trim() } : {}) } }, {
@@ -41,9 +46,9 @@ export function WorkflowBar({ ws, term, className, missing, onOpenSettings }: { 
   const needsSignature = !ws.canAdmin && !ws.mySignature;
 
   const copy: Record<Action, { title: string; body: string; cta: string }> = {
-    submit: { title: "Review, sign and send for approval?", body: `Your signature is added to every ${className} result for ${termLabel(term)}.${missing ? ` ${missing} students are still missing some subject scores.` : ""} Scores and remarks lock while the principal reviews them.`, cta: "Sign and send" },
+    submit: { title: "Review, sign and send for approval?", body: `Your signature is added to every ${className} result for ${termLabel(term)}.${missing ? ` ${missing} students are still missing some subject scores.` : ""} Scores and remarks lock while the ${approver} reviews them.`, cta: "Sign and send" },
     withdraw: { title: "Take the results back?", body: "They return to draft so you can make changes. You will need to send them again.", cta: "Take back" },
-    approve: { title: "Approve these results?", body: `The principal's signature is added to ${className}'s results. You can publish them next.`, cta: "Approve" },
+    approve: { title: "Approve these results?", body: `The ${approver}'s signature is added to ${className}'s results. You can publish them next.`, cta: "Approve" },
     return: { title: "Return to the class teacher?", body: "The results go back to draft with your note, so the teacher can correct them.", cta: "Return" },
     publish: { title: "Publish to students?", body: `Every student in ${className} will be able to view and download their ${termLabel(term)} result.`, cta: "Publish" },
     unpublish: { title: "Unpublish these results?", body: "Students will no longer see them. They stay approved, so you can publish again.", cta: "Unpublish" },
@@ -100,7 +105,7 @@ export function WorkflowBar({ ws, term, className, missing, onOpenSettings }: { 
           {confirm && (<>
             <DialogHeader><DialogTitle className="font-serif text-2xl">{copy[confirm].title}</DialogTitle><DialogDescription>{copy[confirm].body}</DialogDescription></DialogHeader>
             {confirm === "submit" && ws.mySignature && <img src={ws.mySignature} alt="Your signature" className="mx-auto max-h-16 rounded-lg border border-[hsl(var(--p-line))] bg-white p-2" />}
-            {confirm === "approve" && !ws.principalSignature && <p className="rounded-lg bg-[hsl(var(--p-gold-soft)/0.7)] px-3 py-2 text-sm">No principal's signature is saved yet. Add it in the Settings tab so it prints on the results.</p>}
+            {confirm === "approve" && !ws.principalSignature && <p className="rounded-lg bg-[hsl(var(--p-gold-soft)/0.7)] px-3 py-2 text-sm">No {approver}'s signature is saved yet. Add it in the Settings tab so it prints on the results.</p>}
             {confirm === "return" && <textarea className="portal-input min-h-[80px]" maxLength={500} placeholder="What should the teacher correct?" value={note} onChange={(e) => setNote(e.target.value)} data-testid="input-return-note" />}
             <DialogFooter className="gap-2">
               <button className="portal-btn-ghost" onClick={() => setConfirm(null)}>Cancel</button>

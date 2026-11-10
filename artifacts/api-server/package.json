@@ -38,7 +38,8 @@
     "test:portal-timetables": "node ./test-portal.mjs portal-timetables",
     "test:portal-transfers": "node ./test-portal.mjs portal-transfers",
     "test:school-accounts": "node ./test-portal.mjs school-accounts",
-    "test:portal-class-delete": "node ./test-portal.mjs portal-class-delete"
+    "test:portal-class-delete": "node ./test-portal.mjs portal-class-delete",
+    "test:portal-signatures": "node ./test-portal.mjs portal-signatures"
   },
   "dependencies": {
     "@clerk/express": "^2.1.75",

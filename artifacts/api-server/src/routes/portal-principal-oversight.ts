@@ -252,6 +252,7 @@ portalPrincipalOversightRouter.post("/principal/results", async (req, res) => {
   check(!("problem" in next), "problem" in next ? next.problem : "");
   let message = "Saved.";
   if (body.action === "approve") {
+    check(section !== "primary", "Primary results are approved and signed by the Head Teacher, not the primary principal.", 403);
     check(isSectionPrincipal(req, section), "Only the principal can sign results with their signature.", 403);
     const [own] = await db.select().from(portalPrincipals).where(eq(portalPrincipals.section, section));
     check(own?.name && own.signature, "Add your name and signature first (Results, My signature).", 409);

@@ -37,7 +37,8 @@ export type PrintableReport = {
   studentName: string; studentId: string; className: string; term: ReportTerm; subjects: ReportSubject[];
   result: ReportStudentResult; subjectStats: ReportSubjectStats[]; classSize: number; card: ReportCardInfo | null;
   gradingScale?: GradeBand[]; teacherName?: string; teacherSignature?: string | null; principalName?: string; principalSignature?: string | null;
-  /** Primary (Year 1 to 6) prints Mid-term, End-term and their average, with no positions. */
+  directorName?: string; directorSignature?: string | null;
+  /** Primary (Year 1 to 6) prints First Half Term, Second Half Term and their average, with no positions. */
   scheme?: ResultScheme;
 };
 // Only image data URLs are drawn as signatures; anything else is ignored.
@@ -102,10 +103,10 @@ function reportSection(report: PrintableReport) {
       </tbody></table>
     </div>
     ${primary ? `<table class="scores">
-      <thead><tr><th class="l">Subject</th><th>MID-TERM<br><small>(100)</small></th><th>END-TERM<br><small>(100)</small></th><th>FINAL SCORE<br><small>(100)</small></th><th>CLASS AVE.</th><th>GRADE</th><th>REMARK</th></tr></thead>
+      <thead><tr><th class="l">Subject</th><th>FIRST HALF TERM<br><small>(100)</small></th><th>SECOND HALF TERM<br><small>(100)</small></th><th>FINAL SCORE<br><small>(100)</small></th><th>CLASS AVE.</th><th>GRADE</th><th>REMARK</th></tr></thead>
       <tbody>${rows}</tbody>
     </table>
-    <p class="formula">Final score = (Mid-term + End-term) &divide; 2</p>
+    <p class="formula">Final score = (First Half Term + Second Half Term) &divide; 2</p>
     <div class="summary">
       <div><span>Total score</span><b>${r.result.total}</b><em>of ${r.result.subjectsTaken * possible}</em></div>
       <div><span>Percentage</span><b>${r.result.average === null ? "-" : r.result.average + "%"}</b><em>${r.result.subjectsTaken} ${r.result.subjectsTaken === 1 ? "subject" : "subjects"}</em></div>
@@ -122,7 +123,7 @@ function reportSection(report: PrintableReport) {
     <table class="traits"><thead><tr><th colspan="8" class="l">PART 2: AFFECTIVE (5 point scale)</th></tr></thead><tbody>${traitRows}</tbody></table>
     <table class="signoff"><colgroup><col style="width:12%"><col style="width:26%"><col style="width:12%"><col style="width:22%"><col style="width:12%"><col style="width:16%"></colgroup><tbody>
       <tr><td class="l k">Teacher's remark</td><td class="l">${esc(r.card?.teacherRemark || "-")}</td><td class="l k">Head teacher remark</td><td class="l">${esc(r.card?.principalRemark || "-")}</td><td class="l k">Date</td><td>${today}</td></tr>
-      <tr><td class="l k">Next term begins</td><td class="l">${esc(r.term.nextTermBegins || "-")}</td><td class="l k">Signature</td><td class="sigcell">${sigImg(r.principalSignature)}<span>${esc(r.principalName || "")}</span><em>Principal</em></td><td class="l k">Class teacher name</td><td class="sigcell">${sigImg(r.teacherSignature)}<span>${esc(r.teacherName || "")}</span></td></tr>
+      <tr><td class="l k">Next term begins</td><td class="l">${esc(r.term.nextTermBegins || "-")}</td><td class="l k">${r.scheme === "primary" ? "Head Teacher" : "Principal"}</td><td class="sigcell">${sigImg(r.principalSignature)}<span>${esc(r.principalName || "")}</span></td><td class="l k">Director</td><td class="sigcell">${sigImg(r.directorSignature)}<span>${esc(r.directorName || "")}</span></td></tr>
     </tbody></table>
     <div class="keys">
       <table><thead><tr><th colspan="3" class="l">GRADING: COGNITIVE</th></tr><tr><th class="l">Score range</th><th>Grade</th><th class="l">Remarks</th></tr></thead><tbody>${scaleRows}</tbody></table>
@@ -138,6 +139,7 @@ export type BroadsheetData = {
   className: string; term: ReportTerm; subjects: ReportSubject[]; students: { id: number; studentId: string; name: string }[];
   results: ReportStudentResult[]; subjectStats: ReportSubjectStats[]; gradingScale?: GradeBand[];
   teacherName?: string; teacherSignature?: string | null; principalName?: string; principalSignature?: string | null;
+  directorName?: string; directorSignature?: string | null;
   scheme?: ResultScheme;
 };
 
@@ -168,7 +170,7 @@ function broadsheetSection(b: BroadsheetData) {
   <section class="sheet">
     <header>
       <img src="${esc(window.location.origin + import.meta.env.BASE_URL.replace(/\/$/, "") + "/logo.jpg")}" alt="">
-      <div><h1>New World Emerald Private School</h1><p class="sub">${primary ? "Primary broadsheet" : "Broadsheet"}</p><p class="term">${esc(b.className)} &middot; ${esc(termLabel(b.term))} &middot; ${primary ? "final score = (Mid-term + End-term) &divide; 2, out of 100" : `totals out of ${termPossible(b.term)}`}</p></div>
+      <div><h1>New World Emerald Private School</h1><p class="sub">${primary ? "Primary broadsheet" : "Broadsheet"}</p><p class="term">${esc(b.className)} &middot; ${esc(termLabel(b.term))} &middot; ${primary ? "final score = (First Half Term + Second Half Term) &divide; 2, out of 100" : `totals out of ${termPossible(b.term)}`}</p></div>
     </header>
     <div class="facts">
       <span>${primary ? "Students with results" : "Students ranked"} <b>${ranked.length}</b> of ${b.students.length}</span>
@@ -184,8 +186,8 @@ function broadsheetSection(b: BroadsheetData) {
       ${statRow("Subject average", (s) => s.average)}${statRow("Highest", (s) => s.highest)}${statRow("Lowest", (s) => s.lowest)}</tbody>
     </table>
     <div class="signs">
-      <span>${sigImg(b.teacherSignature)}${esc(b.teacherName || "Class teacher")}</span>
-      <span>${sigImg(b.principalSignature)}${esc(b.principalName || "Principal")}</span>
+      <span>${sigImg(b.principalSignature)}${esc(b.principalName || (primary ? "Head Teacher" : "Principal"))}</span>
+      <span>${sigImg(b.directorSignature)}${esc(b.directorName || "Director")}</span>
       <span class="date">Printed ${new Date().toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}</span>
     </div>
   </section>`;

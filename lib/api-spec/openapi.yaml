@@ -183,6 +183,8 @@ paths:
     $ref: "./school-accounts.yaml#/paths/transaction"
   /portal/accounts/receipts/{id}:
     $ref: "./school-accounts.yaml#/paths/receipt"
+  /portal/signatures:
+    $ref: "./reports.yaml#/paths/signatures"
   /chairman/board:
     $ref: "./chairman.yaml#/paths/board"
   /portal/my-messages:
@@ -1309,6 +1311,12 @@ components:
       $ref: "./school-accounts.yaml#/schemas/SchoolTransactionInput"
     SchoolTransactionDecision:
       $ref: "./school-accounts.yaml#/schemas/SchoolTransactionDecision"
+    SignatureEntry:
+      $ref: "./reports.yaml#/schemas/SignatureEntry"
+    SignatureSet:
+      $ref: "./reports.yaml#/schemas/SignatureSet"
+    SignatureInput:
+      $ref: "./reports.yaml#/schemas/SignatureInput"
     ChairmanCount:
       $ref: "./chairman.yaml#/schemas/ChairmanCount"
     ChairmanSection:

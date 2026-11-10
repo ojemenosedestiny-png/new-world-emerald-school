@@ -1,7 +1,7 @@
 import { useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useSetTeacherPhoto, useRemoveTeacherPhoto, getGetPortalManagementQueryKey, type PortalManagement, type PortalManagementStudentsItem, type PortalManagementTeachersItem } from "@workspace/api-client-react";
-import { Activity, Camera, Copy, GraduationCap, KeyRound, Link2, ListPlus, Mail, Pencil, Plus, Printer, School, Trash2, UserCheck, Users, Wallet } from "lucide-react";
+import { Activity, ArrowRightLeft, Camera, Copy, GraduationCap, KeyRound, Link2, ListPlus, Mail, Pencil, Plus, Printer, School, Trash2, UserCheck, Users, Wallet } from "lucide-react";
 import type { AccountLinkResult } from "@workspace/api-client-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
@@ -15,6 +15,8 @@ import { printLoginSlips, type IssuedLogin } from "./enrol";
 import { StudentActivityDialogBody } from "../security/SecurityPanels";
 import { OfficeFeeStatement } from "../FeeStatement";
 import { AccountLinkDialog, EnrolStudentDialog, useAccountLink } from "./accounts";
+import { MoveStudentDialog } from "./MoveStudent";
+import { GROUP_LABEL, teacherGroup, type TeacherGroup } from "./sections";
 
 export const SECONDARY_CLASSES = ["JSS 1", "JSS 2", "JSS 3", "SS 1", "SS 2", "SS 3"];
 
@@ -107,6 +109,7 @@ export function StudentsPanel({ data, isAdmin = true }: { data: PortalManagement
   const [bulk, setBulk] = useState(false);
   const [activity, setActivity] = useState<{ id: number; name: string } | null>(null);
   const [fees, setFees] = useState<{ id: number; name: string } | null>(null);
+  const [moving, setMoving] = useState<{ id: number; name: string; classId: number } | null>(null);
   const [enrolling, setEnrolling] = useState(false);
   const [link, setLink] = useState<{ result: AccountLinkResult; purpose: "activate" | "reset" } | null>(null);
   const accountLink = useAccountLink();
@@ -117,7 +120,7 @@ export function StudentsPanel({ data, isAdmin = true }: { data: PortalManagement
     if (!form) return;
     const isNew = !form.id;
     const password = isNew ? friendlyPassword() : undefined;
-    const student = { id: form.id, studentId: form.studentId.trim(), name: form.name.trim(), classId: form.classId, active: form.active, guardianEmail: form.guardianEmail?.trim() || null, ...(password ? { password } : {}) };
+    const student = { id: form.id, studentId: form.studentId.trim(), name: form.name.trim(), classId: form.classId, active: form.active, ...(isAdmin || !form.id ? { guardianEmail: form.guardianEmail?.trim() || null } : {}), ...(password ? { password } : {}) };
     const res = await cmd.runForResult({ action: "saveStudent", student }, isNew ? "Student enrolled" : "Student updated");
     if (res) {
       setForm(null);
@@ -151,7 +154,8 @@ export function StudentsPanel({ data, isAdmin = true }: { data: PortalManagement
                 <p className="text-xs text-[hsl(var(--p-ink)/0.55)]"><span className="font-mono">{s.studentId}</span> / {className(data.classes, s.classId)}{s.guardianEmail ? <> / <Mail size={11} className="inline" /> {s.guardianEmail}</> : ""}</p>
               </div>
               <div className="flex flex-wrap gap-2">
-                {isAdmin && <button className="portal-btn-ghost" onClick={() => setForm({ ...s })} data-testid={"button-edit-student-" + s.id}><Pencil size={13} /> Edit</button>}
+                <button className="portal-btn-ghost" onClick={() => setForm({ ...s })} data-testid={"button-edit-student-" + s.id}><Pencil size={13} /> {isAdmin ? "Edit" : "Correct name"}</button>
+                {isAdmin && <button className="portal-btn-ghost" onClick={() => setMoving({ id: s.id as number, name: s.name, classId: s.classId })} data-testid={"button-move-student-" + s.id}><ArrowRightLeft size={13} /> Move class</button>}
                 {isAdmin && <button className="portal-btn-ghost" onClick={() => setActivity({ id: s.id as number, name: s.name })} data-testid={"button-activity-student-" + s.id}><Activity size={13} /> Activity</button>}
                 {isAdmin && <button className="portal-btn-ghost" onClick={() => setFees({ id: s.id as number, name: s.name })} data-testid={"button-fees-student-" + s.id}><Wallet size={13} /> Fees</button>}
                 {isAdmin && s.active && (s.accountStatus === "pending"
@@ -167,12 +171,12 @@ export function StudentsPanel({ data, isAdmin = true }: { data: PortalManagement
       <Dialog open={!!form} onOpenChange={(o) => !o && setForm(null)}>
         <DialogContent className="portal !min-h-0 max-w-md rounded-2xl">
           <DialogHeader><DialogTitle className="font-serif text-2xl">{form?.id ? "Edit student" : "Enrol student"}</DialogTitle>
-            {form?.id && <DialogDescription>Student ID and class are fixed for an enrolment. For a class transfer, create a new enrolment and deactivate this one.</DialogDescription>}</DialogHeader>
+            {form?.id && <DialogDescription>{isAdmin ? "The Student ID is fixed. To change class, use Move class on the student." : "Correct the spelling of the student's name. The school office changes other details."}</DialogDescription>}</DialogHeader>
           {form && <div className="space-y-4">
             <Field label="Student ID" htmlFor="st-id" hint={form.id ? undefined : "Leave empty to create one automatically (like NWE/2026/00012). Used to sign in; cannot be changed later."}><input id="st-id" className="portal-input font-mono" maxLength={50} disabled={!!form.id} value={form.studentId} onChange={(e) => setForm({ ...form, studentId: e.target.value })} data-testid="input-student-studentid" /></Field>
             <Field label="Full name" htmlFor="st-name"><input id="st-name" className="portal-input" maxLength={150} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} data-testid="input-student-name" /></Field>
             <Field label="Class" htmlFor="st-class"><ClassSelect id="st-class" classes={data.classes} value={form.classId} disabled={!!form.id} onChange={(v) => setForm({ ...form, classId: v })} /></Field>
-            <Field label="Parent email (optional)" htmlFor="st-email" hint="Not needed. If given, the family can also reset a forgotten password by email."><input id="st-email" type="email" className="portal-input" maxLength={200} value={form.guardianEmail ?? ""} onChange={(e) => setForm({ ...form, guardianEmail: e.target.value })} data-testid="input-student-email" /></Field>
+            {(isAdmin || !form.id) && <Field label="Parent email (optional)" htmlFor="st-email" hint="Not needed. If given, the family can also reset a forgotten password by email."><input id="st-email" type="email" className="portal-input" maxLength={200} value={form.guardianEmail ?? ""} onChange={(e) => setForm({ ...form, guardianEmail: e.target.value })} data-testid="input-student-email" /></Field>}
             {isAdmin && <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.active} onChange={(e) => setForm({ ...form, active: e.target.checked })} data-testid="checkbox-student-active" /> Active (can sign in)</label>}
           </div>}
           <DialogFooter><button className="portal-btn" onClick={save} disabled={cmd.pending || (!!form?.id && !form?.studentId.trim()) || !form?.name.trim() || !form?.classId} data-testid="button-save-student">{cmd.pending ? "Saving..." : form?.id ? "Save changes" : "Enrol and generate password"}</button></DialogFooter>
@@ -182,6 +186,8 @@ export function StudentsPanel({ data, isAdmin = true }: { data: PortalManagement
       {bulk && <BulkEnrol data={data} onClose={() => setBulk(false)} />}
       {enrolling && <EnrolStudentDialog data={data} onClose={() => setEnrolling(false)} onDone={(result) => { setEnrolling(false); setLink({ result, purpose: "activate" }); }} />}
       {link && <AccountLinkDialog result={link.result} purpose={link.purpose} onClose={() => setLink(null)} />}
+      <MoveStudentDialog student={moving} classes={data.classes} pending={cmd.pending} onClose={() => setMoving(null)}
+        onMove={(toClassId) => cmd.run({ action: "moveStudent", target: { id: moving!.id }, toClassId }, "Student moved")} />
       <Dialog open={!!activity} onOpenChange={(o) => !o && setActivity(null)}>
         <DialogContent className="portal !min-h-0 max-w-lg rounded-2xl">
           <DialogHeader><DialogTitle className="font-serif text-2xl">{activity?.name}</DialogTitle><DialogDescription>Sign-in history and active sessions</DialogDescription></DialogHeader>
@@ -249,6 +255,10 @@ export function TeachersPanel({ data }: { data: PortalManagement }) {
   const [form, setFormState] = useState<PortalManagementTeachersItem | null>(null);
   const [subjectsText, setSubjectsText] = useState("");
   const [removing, setRemoving] = useState<{ id: number; name: string } | null>(null);
+  const [show, setShow] = useState<"all" | TeacherGroup>("all");
+  const groupOf = (t: PortalManagementTeachersItem) => teacherGroup(t.classIds, data.classes);
+  const order: TeacherGroup[] = ["primary", "secondary", "both", "none"];
+  const groups = order.map((g) => ({ g, list: data.teachers.filter((t) => groupOf(t) === g) })).filter((x) => x.list.length && (show === "all" || show === x.g));
   const setForm = (next: PortalManagementTeachersItem | null) => {
     // Opening the dialog (or switching teacher) loads that teacher's subjects into the text box.
     if (next && (!form || next.id !== form.id)) setSubjectsText((next.subjects ?? []).join(", "));
@@ -270,8 +280,19 @@ export function TeachersPanel({ data }: { data: PortalManagement }) {
         <button className="portal-btn shrink-0" onClick={() => setForm({ email: "", name: "", classIds: [], active: true, title: "", subjects: [], showInDirectory: true })} data-testid="button-add-teacher"><Plus size={15} /> Approve teacher</button>
       </div>
       {data.teachers.length === 0 ? <EmptyState icon={<Users size={22} />} title="No teachers approved" body="Add a teacher's email and choose the classes they teach. They can then sign in through staff sign-in." /> : (
+        <div className="space-y-6">
+          <div className="flex flex-wrap gap-1.5" role="group" aria-label="Show teachers">
+            {(["all", ...order] as const).map((g) => {
+              const n = g === "all" ? data.teachers.length : data.teachers.filter((t) => groupOf(t) === g).length;
+              if (g !== "all" && !n) return null;
+              return <button key={g} type="button" aria-pressed={show === g} onClick={() => setShow(g)} className={"rounded-full border px-3 py-1 text-xs " + (show === g ? "border-[hsl(var(--p-emerald))] bg-[hsl(var(--p-emerald))] font-semibold text-white" : "border-[hsl(var(--p-line))] hover:bg-[hsl(var(--p-paper-2))]")} data-testid={"filter-teachers-" + g}>{g === "all" ? "All teachers" : GROUP_LABEL[g].replace(/ \(.*\)$/, "")} · {n}</button>;
+            })}
+          </div>
+          {groups.map(({ g, list }) => (
+          <section key={g} aria-label={GROUP_LABEL[g]} data-testid={"group-teachers-" + g}>
+          <h3 className="mb-2 font-serif text-lg font-semibold">{GROUP_LABEL[g]} <span className="text-sm font-normal text-[hsl(var(--p-ink)/0.55)]">{list.length}</span></h3>
         <div className="grid gap-3 md:grid-cols-2">
-          {data.teachers.map((t) => (
+          {list.map((t) => (
             <div key={t.id} className="portal-card p-5" data-testid={"card-teacher-" + t.id}>
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0"><p className="font-semibold">{t.name} {!t.active && <StatusPill tone="muted">Inactive</StatusPill>} {t.active && t.showInDirectory === false && <StatusPill tone="muted">Hidden from directory</StatusPill>}</p><p className="truncate text-xs text-[hsl(var(--p-ink)/0.55)]">{t.title ? t.title + " / " : ""}{t.email}</p>{!!t.subjects?.length && <p className="truncate text-xs text-[hsl(var(--p-ink)/0.55)]">{t.subjects.join(", ")}</p>}</div>
@@ -286,6 +307,9 @@ export function TeachersPanel({ data }: { data: PortalManagement }) {
                 <button className="portal-btn-ghost" disabled={cmd.pending} onClick={() => setRemoving({ id: t.id as number, name: t.name })} aria-label={"Delete " + t.name} data-testid={"button-delete-teacher-" + t.id}><Trash2 size={13} /></button>
               </div>
             </div>
+          ))}
+        </div>
+          </section>
           ))}
         </div>
       )}

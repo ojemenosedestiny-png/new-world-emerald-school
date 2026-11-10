@@ -6,6 +6,7 @@ import {
   portalReportWorkflow, portalTimetables, examRegistrationSettings,
 } from "@workspace/db";
 import { randomUUID } from "node:crypto";
+import { moveStudent } from "../lib/move-student";
 import { ManagePortalBody } from "@workspace/api-zod";
 import { check, portalActor, staffOnly, classAllowed, hashPassword, type PortalActor } from "../lib/portal-auth";
 import { automaticMarks, attemptView, finalizeExpired, validateQuestions } from "../lib/portal-assessment";
@@ -105,7 +106,7 @@ portalManagementRouter.post("/manage", async (req, res) => {
   const actor = await portalActor(req);
   staffOnly(actor);
   const body = ManagePortalBody.parse(req.body);
-  if (["saveClass", "saveTeacher", "addPracticeExams", "inviteTeacher", "deleteClass", "deleteTeacher"].includes(body.action)) check(actor.role === "admin", "Only school administrators can manage enrolments and staff access.", 403);
+  if (["saveClass", "saveTeacher", "addPracticeExams", "inviteTeacher", "deleteClass", "deleteTeacher", "moveStudent"].includes(body.action)) check(actor.role === "admin", "Only school administrators can manage enrolments and staff access.", 403);
   if (body.action === "resetAttempt") check(actor.role === "admin", "Only school administrators can reset a student's attempt.", 403);
   switch (body.action) {
     case "saveClass": {
@@ -359,6 +360,11 @@ portalManagementRouter.post("/manage", async (req, res) => {
         await tx.delete(portalClasses).where(eq(portalClasses.id, cls.id));
       });
       res.json({ message: "Class deleted." });
+      return;
+    }
+    case "moveStudent": {
+      check(body.target && body.toClassId, "Choose the student and the class to move them to.");
+      res.json({ message: await moveStudent(req, body.target.id, body.toClassId, req.identity?.email || actor.name, () => true) });
       return;
     }
     case "deleteTeacher": {

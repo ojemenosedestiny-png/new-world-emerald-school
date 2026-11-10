@@ -2,7 +2,7 @@ import { useState, type ReactNode } from "react";
 import { Link } from "wouter";
 import { useAuth, useClerk, useUser } from "@clerk/react";
 import { ApiError, getGetSchoolEmailQueryKey, useGetSchoolEmail } from "@workspace/api-client-react";
-import { ArrowRight, BarChart3, ClipboardCheck, CreditCard, Globe, GraduationCap, LayoutDashboard, Mail, School, ShieldCheck, Users } from "lucide-react";
+import { ArrowRight, BarChart3, ClipboardCheck, CreditCard, PenLine, Globe, GraduationCap, LayoutDashboard, Mail, School, ShieldCheck, Users } from "lucide-react";
 import "@/portal/portal.css";
 import { AppShell, type NavItem } from "@/portal/shell/AppShell";
 import { usePortalTheme } from "@/portal/shell/theme";
@@ -13,10 +13,11 @@ import { SchoolEmail } from "@/portal/messaging/SchoolEmail";
 import { ParentLinksPanel } from "@/portal/manage/ParentLinksPanel";
 import { FeePayments } from "@/portal/payments/OfficePayments";
 import { RegistrationAdmin } from "@/portal/exam-registration/RegistrationAdmin";
+import { MySignatures } from "@/portal/reports/MySignatures";
 import { asset } from "@/lib/asset";
 
-type Tab = "home" | "email" | "parents" | "payments" | "waec";
-const TITLES: Record<Tab, string> = { home: "Head of School", email: "Email teachers and parents", parents: "Parents and children", payments: "Fee payments", waec: "WAEC / NECO registration" };
+type Tab = "home" | "email" | "parents" | "payments" | "waec" | "signature";
+const TITLES: Record<Tab, string> = { home: "Head of School", email: "Email teachers and parents", parents: "Parents and children", payments: "Fee payments", waec: "WAEC / NECO registration", signature: "My signature for report cards" };
 
 const PORTALS: { href: string; title: string; body: string; icon: typeof School }[] = [
   { href: "/portal/manage", title: "Staff portal", body: "Every class, student, exam, report card, register, fee and payment.", icon: School },
@@ -67,6 +68,7 @@ export default function HeadOfSchool() {
     { key: "parents", label: "Parents and children", icon: Users, testId: "tab-head-parents" },
     { key: "payments", label: "Fee payments", icon: CreditCard, testId: "tab-head-payments" },
     { key: "waec", label: "WAEC / NECO", icon: GraduationCap, testId: "tab-head-waec" },
+    { key: "signature", label: "My signature", icon: PenLine, testId: "tab-head-signature" },
   ];
   const first = (user?.firstName ?? "").trim();
   const teachers = q.data.people.filter((p) => p.kind === "teacher").length, parents = q.data.people.filter((p) => p.kind === "parent").length;
@@ -111,6 +113,7 @@ export default function HeadOfSchool() {
         {tab === "parents" && <ParentLinksPanel />}
         {tab === "payments" && <FeePayments />}
         {tab === "waec" && <RegistrationAdmin />}
+        {tab === "signature" && <MySignatures />}
       </div>
     </AppShell>
   );

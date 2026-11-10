@@ -127,6 +127,7 @@ export function printableFor(ws: ReportWorkspace, term: ReportTerm, className: s
     subjectStats: ws.subjectStats, classSize: ws.ranked, card: ws.cards.find((c) => c.studentId === st.id) ?? null,
     gradingScale: ws.gradingScale, teacherName: ws.workflow?.teacherName, teacherSignature: ws.workflow?.teacherSignature, scheme: ws.scheme,
     principalName: ws.cardPrincipalName, principalSignature: ws.workflow?.status === "approved" || ws.workflow?.status === "published" ? ws.cardPrincipalSignature : null,
+    directorName: ws.cardDirectorName, directorSignature: ws.workflow?.status === "approved" || ws.workflow?.status === "published" ? ws.cardDirectorSignature : null,
   }));
 }
 
@@ -136,6 +137,7 @@ export function broadsheetFor(ws: ReportWorkspace, term: ReportTerm, className: 
   return {
     className, term, subjects: ws.subjects, students: ws.students, results: ws.results, subjectStats: ws.subjectStats, gradingScale: ws.gradingScale, scheme: ws.scheme,
     teacherName: ws.workflow?.teacherName, teacherSignature: ws.workflow?.teacherSignature, principalName: ws.cardPrincipalName, principalSignature: signed ? ws.cardPrincipalSignature : null,
+    directorName: ws.cardDirectorName, directorSignature: signed ? ws.cardDirectorSignature : null,
   };
 }
 
@@ -166,7 +168,7 @@ export function Broadsheet({ ws, term, className }: { ws: ReportWorkspace; term:
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-sm text-[hsl(var(--p-ink)/0.65)]">{primary ? `${ws.ranked} of ${ws.students.length} students have results. Final scores are (Mid-term + End-term) ÷ 2, out of 100.` : `${ws.ranked} of ${ws.students.length} students ranked. Totals out of ${termPossible(term)}.`}</p>
+        <p className="text-sm text-[hsl(var(--p-ink)/0.65)]">{primary ? `${ws.ranked} of ${ws.students.length} students have results. Final scores are (First Half Term + Second Half Term) ÷ 2, out of 100.` : `${ws.ranked} of ${ws.students.length} students ranked. Totals out of ${termPossible(term)}.`}</p>
         <ClassPrintButtons ws={ws} term={term} className={className} />
       </div>
       <div className="portal-card overflow-x-auto">

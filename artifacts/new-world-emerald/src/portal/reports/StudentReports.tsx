@@ -11,12 +11,12 @@ export function TermReport({ data, report, open, onToggle }: { data: StudentRepo
   const names = new Map(report.subjects.map((s) => [s.id, s.name]));
   const stats = new Map(report.subjectStats.map((s) => [s.subjectId, s]));
   const r = report.result;
-  // Primary (Year 1 to 6): Mid-term and End-term, final = their average; percentage and average, no positions.
+  // Primary (Year 1 to 6): First Half Term and Second Half Term, final = their average; percentage and average, no positions.
   const primary = report.scheme === "primary";
   const print = () => {
     const ok = printReportCards([{
       studentName: data.studentName, studentId: data.studentId, className: report.className || data.className, term: report.term, subjects: report.subjects, result: r, subjectStats: report.subjectStats, classSize: report.classSize, card: report.card,
-      gradingScale: report.gradingScale, teacherName: report.teacherName, teacherSignature: report.teacherSignature, principalName: report.principalName, principalSignature: report.principalSignature, scheme: report.scheme,
+      gradingScale: report.gradingScale, teacherName: report.teacherName, teacherSignature: report.teacherSignature, principalName: report.principalName, principalSignature: report.principalSignature, directorName: report.directorName, directorSignature: report.directorSignature, scheme: report.scheme,
     }]);
     if (!ok) toast({ variant: "destructive", title: "Pop-up blocked", description: "Allow pop-ups for this site to print your report card." });
   };
@@ -44,7 +44,7 @@ export function TermReport({ data, report, open, onToggle }: { data: StudentRepo
           <div className="overflow-x-auto rounded-2xl border border-[hsl(var(--p-line))]">
             <table className="w-full min-w-[560px] text-sm">
               <thead className="bg-[hsl(var(--p-ink))] text-left text-xs text-[hsl(var(--p-paper))]">
-                <tr><th className="px-3 py-2">Subject</th><th className="px-2 py-2 text-center">{primary ? "Mid-term" : "CA"}</th><th className="px-2 py-2 text-center">{primary ? "End-term" : "Exam"}</th><th className="px-2 py-2 text-center">{primary ? "Final" : "Total"}</th><th className="px-2 py-2 text-center">Grade</th>{!primary && <th className="px-2 py-2 text-center">Position</th>}<th className="px-2 py-2 text-center">Class avg</th><th className="px-3 py-2">Remark</th></tr>
+                <tr><th className="px-3 py-2">Subject</th><th className="px-2 py-2 text-center">{primary ? "First Half Term" : "CA"}</th><th className="px-2 py-2 text-center">{primary ? "Second Half Term" : "Exam"}</th><th className="px-2 py-2 text-center">{primary ? "Final" : "Total"}</th><th className="px-2 py-2 text-center">Grade</th>{!primary && <th className="px-2 py-2 text-center">Position</th>}<th className="px-2 py-2 text-center">Class avg</th><th className="px-3 py-2">Remark</th></tr>
               </thead>
               <tbody className="divide-y divide-[hsl(var(--p-line))] bg-[hsl(var(--p-surface)/0.7)]">
                 {r.subjects.map((s) => (

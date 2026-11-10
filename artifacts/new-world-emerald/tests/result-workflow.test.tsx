@@ -96,16 +96,18 @@ describe("manual results and settings", () => {
     expect(screen.queryByTestId("panel-grading-scale")).toBeNull();
   });
 
-  it("the printed result shows both signatures, names and the school's own grade key", () => {
+  it("the printed result shows the principal's and the Director's signatures, names and the school's own grade key", () => {
     expect(scaleKey(scale).map((k) => k.range)).toEqual(["75 - 100", "50 - 74", "0 - 49"]);
     const html = reportCardsHtml([{
       studentName: "Ada Obi", studentId: "NWE-1", className: "SS 1", term, subjects: [{ id: 10, classId: 7, name: "Mathematics", sortOrder: 0 }],
       result: { studentId: 1, subjects: [], total: 0, average: null, grade: null, position: null, subjectsTaken: 0 }, subjectStats: [], classSize: 1, card: null,
       gradingScale: scale, teacherName: "Mr Bayo", teacherSignature: SIG, principalName: "Mrs P. Principal", principalSignature: "javascript:alert(1)",
+      directorName: "Dr D. Director", directorSignature: SIG,
     }]);
     expect(html).toContain(`<img class="sigimg" src="${SIG}"`);
-    expect(html).toContain("Mr Bayo");
+    expect(html).not.toContain("Mr Bayo"); // class teachers no longer sign the card
     expect(html).toContain("Mrs P. Principal");
+    expect(html).toContain("Dr D. Director");
     expect(html).not.toContain("javascript:");
     expect(html).toContain(`<td class="l">75 - 100</td><td class="b">A1</td>`);
   });

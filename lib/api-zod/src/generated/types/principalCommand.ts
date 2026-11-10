@@ -32,4 +32,6 @@ export interface PrincipalCommand {
   subjectName?: string;
   /** For setGroupSubjectTeacher: add the subject to any of the classes that do not offer it yet (a new, typed subject is added to all of them), so every arm matches */
   addMissing?: boolean;
+  /** For moveStudent: the student (portal id) to move into classId */
+  studentId?: number;
 }

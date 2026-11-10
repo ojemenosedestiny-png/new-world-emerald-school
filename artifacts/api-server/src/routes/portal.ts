@@ -10,6 +10,7 @@ import { portalAccountsRouter } from "./portal-accounts";
 import { portalCommunityRouter } from "./portal-community";
 import { portalMediaRouter } from "./portal-media";
 import { schoolAccountsRouter } from "./school-accounts";
+import { portalSignaturesRouter } from "./portal-signatures";
 import { portalLearningRouter } from "./portal-learning";
 import { portalMessagesRouter } from "./portal-messages";
 import { portalFeesRouter } from "./portal-fees";
@@ -53,6 +54,7 @@ portalRouter.use(portalTimetablesRouter);
 portalRouter.use(portalPaymentsRouter);
 portalRouter.use(portalExamRegistrationRouter);
 portalRouter.use(schoolAccountsRouter);
+portalRouter.use(portalSignaturesRouter);
 const errors: ErrorRequestHandler = (error, req, res, _next) => {
   if (res.headersSent) { if (!res.destroyed) res.destroy(); return; }
   if (error instanceof PortalError) { res.status(error.status).json({ error: error.message }); return; }

@@ -44,8 +44,10 @@ export function accountLink(base: string, token: string) {
  * parent email stay with the school office. Returns the reason it is refused, or null.
  */
 export function teacherStudentEditProblem(old: { name: string; active: boolean }, next: { name: string; active: boolean; newPassword: boolean; guardianEmailChanged: boolean }) {
-  if (!next.newPassword || old.name !== next.name || old.active !== next.active || next.guardianEmailChanged) {
-    return "Teachers can give a student a new password. Ask the school office to change other details.";
+  // Teachers may correct a misspelled name and issue a new password; activation and parent emails stay with the office.
+  if (old.active !== next.active || next.guardianEmailChanged) {
+    return "Teachers can correct a student's name or give a new password. Ask the school office to change other details.";
   }
+  if (!next.newPassword && old.name === next.name) return "Nothing to change. Correct the name or give a new password.";
   return null;
 }

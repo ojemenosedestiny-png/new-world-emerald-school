@@ -176,6 +176,8 @@ import type {
   SchoolTransactionInput,
   SecuritySessions,
   SendDirectorReport200,
+  SignatureInput,
+  SignatureSet,
   SiteContent,
   SiteContentInput,
   StaffAssignment,
@@ -7690,6 +7692,148 @@ export function useGetAccountsReceipt<TData = Awaited<ReturnType<typeof getAccou
 
 
 
+
+export const getGetMySignaturesUrl = () => {
+
+
+
+
+  return `/api/portal/signatures`
+}
+
+/**
+ * The Head Teacher's and the Director's own name and signature for report cards (only the roles the signed-in person holds)
+ */
+export const getMySignatures = async ( options?: RequestInit): Promise<SignatureSet> => {
+
+  return customFetch<SignatureSet>(getGetMySignaturesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetMySignaturesQueryKey = () => {
+    return [
+    `/api/portal/signatures`
+    ] as const;
+    }
+
+
+export const getGetMySignaturesQueryOptions = <TData = Awaited<ReturnType<typeof getMySignatures>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMySignatures>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetMySignaturesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMySignatures>>> = ({ signal }) => getMySignatures({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMySignatures>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetMySignaturesQueryResult = NonNullable<Awaited<ReturnType<typeof getMySignatures>>>
+export type GetMySignaturesQueryError = ErrorType<unknown>
+
+
+
+export function useGetMySignatures<TData = Awaited<ReturnType<typeof getMySignatures>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMySignatures>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetMySignaturesQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getSaveMySignatureUrl = () => {
+
+
+
+
+  return `/api/portal/signatures`
+}
+
+/**
+ * Save the Head Teacher's or the Director's name and signature for report cards
+ */
+export const saveMySignature = async (signatureInput: SignatureInput, options?: RequestInit): Promise<SignatureSet> => {
+
+  return customFetch<SignatureSet>(getSaveMySignatureUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(signatureInput)
+  }
+);}
+
+
+
+
+
+export const getSaveMySignatureMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof saveMySignature>>, TError,{data: BodyType<SignatureInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof saveMySignature>>, TError,{data: BodyType<SignatureInput>}, TContext> => {
+
+const mutationKey = ['saveMySignature'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof saveMySignature>>, {data: BodyType<SignatureInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  saveMySignature(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SaveMySignatureMutationResult = NonNullable<Awaited<ReturnType<typeof saveMySignature>>>
+    export type SaveMySignatureMutationBody = BodyType<SignatureInput>
+    export type SaveMySignatureMutationError = ErrorType<unknown>
+
+    export const useSaveMySignature = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof saveMySignature>>, TError,{data: BodyType<SignatureInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof saveMySignature>>,
+        TError,
+        {data: BodyType<SignatureInput>},
+        TContext
+      > => {
+      return useMutation(getSaveMySignatureMutationOptions(options));
+    }
 
 export const getGetChairmanBoardUrl = (params?: GetChairmanBoardParams,) => {
   const normalizedParams = new URLSearchParams();

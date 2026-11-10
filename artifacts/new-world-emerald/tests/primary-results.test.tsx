@@ -46,8 +46,8 @@ describe("primary results (Year 1 to 6)", () => {
 
   it("enters Mid-term and End-term marks and shows the final score as their average", () => {
     render(wrap(<ScoresEditor ws={ws} term={term} locked={false} />));
-    expect(screen.getByText("Mid-term /100")).toBeTruthy();
-    expect(screen.getByText("End-term /100")).toBeTruthy();
+    expect(screen.getByText("First Half Term /100")).toBeTruthy();
+    expect(screen.getByText("Second Half Term /100")).toBeTruthy();
     expect(screen.getByText("Final /100")).toBeTruthy();
     expect(screen.queryByText(/CA 2/)).toBeNull();
     const ada = screen.getByTestId("score-row-1");
@@ -63,10 +63,10 @@ describe("primary results (Year 1 to 6)", () => {
   it("prints a primary card: Mid-term, End-term, final, percentage and average, and no position", () => {
     const html = reportCardsHtml(printableFor(ws, rawTerm, "Year 3"));
     expect(html).toContain('class="card primary"');
-    expect(html).toContain("MID-TERM");
-    expect(html).toContain("END-TERM");
+    expect(html).toContain("FIRST HALF TERM");
+    expect(html).toContain("SECOND HALF TERM");
     expect(html).toContain("FINAL SCORE");
-    expect(html).toContain("Final score = (Mid-term + End-term) &divide; 2");
+    expect(html).toContain("Final score = (First Half Term + Second Half Term) &divide; 2");
     expect(html).toContain("Primary section &middot; Year 1 to Year 6");
     expect(html).toMatch(/<span>Percentage<\/span><b>85%<\/b>/);
     expect(html).toMatch(/<span>Average<\/span><b>85<\/b>/);
@@ -86,6 +86,6 @@ describe("primary results (Year 1 to 6)", () => {
     expect(within(table).queryByText("Pos.")).toBeNull();
     const names = within(table).getAllByText(/Ada Obi|Zainab Bello/).map((n) => n.textContent);
     expect(names).toEqual(["Ada Obi", "Zainab Bello"]);
-    expect(screen.getByText(/Final scores are \(Mid-term \+ End-term\) ÷ 2/)).toBeTruthy();
+    expect(screen.getByText(/Final scores are \(First Half Term \+ Second Half Term\) ÷ 2/)).toBeTruthy();
   });
 });

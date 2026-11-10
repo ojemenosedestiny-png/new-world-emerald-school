@@ -7,6 +7,7 @@ import {
 import { GetReportWorkspaceQueryParams, ManageReportsBody } from "@workspace/api-zod";
 import { check, classAllowed, portalActor, staffOnly, studentOnly, type PortalActor } from "../lib/portal-auth";
 import { classSection } from "../lib/principal";
+import { isHeadOfSchool, isSuperAdmin } from "../lib/website-admin";
 import { GRADE_SCALE, traitsProblem, buildClassReport, nextStatus, scaleProblem, schemeFor, schemeMaxima, schemePossible, signatureProblem, validScorePart, type GradeBand, type ResultScheme, type ResultStatus } from "../lib/report-cards";
 
 export const portalReportsRouter = Router();
@@ -19,6 +20,24 @@ async function reportSettings() {
   const [row] = await db.select().from(portalReportSettings).where(eq(portalReportSettings.id, 1));
   return { gradingScale: (row?.gradingScale ?? GRADE_SCALE.map((b) => ({ ...b }))) as GradeBand[], principalName: row?.principalName ?? "", principalSignature: row?.principalSignature ?? null };
 }
+/** The Director, printed on every report card beside the Head Teacher (primary) or the principal (secondary). */
+async function cardDirector() {
+  const [row] = await db.select().from(portalPrincipals).where(eq(portalPrincipals.section, "director"));
+  return { name: row?.name ?? "", signature: row?.signature ?? null };
+}
+/**
+ * Only the Head Teacher (the Head of School) or the school owner approves primary results; the Head Teacher's
+ * saved signature goes on them. Secondary results keep the office approval (the principal signs in their portal).
+ */
+async function approvalSignature(req: Parameters<typeof isHeadOfSchool>[0], classId: number): Promise<{ principalName: string; principalSignature: string | null }> {
+  const [cls] = await db.select({ name: portalClasses.name }).from(portalClasses).where(eq(portalClasses.id, classId));
+  if (!cls || classSection(cls.name) !== "primary") return { principalName: "", principalSignature: null };
+  check(isHeadOfSchool(req) || isSuperAdmin(req), "Only the Head Teacher approves and signs primary results.", 403);
+  if (!isHeadOfSchool(req)) return { principalName: "", principalSignature: null };
+  const [head] = await db.select().from(portalPrincipals).where(eq(portalPrincipals.section, "head"));
+  check(head?.name && head.signature, "Add your name and signature first (Head of School page, My signature), then approve.", 409);
+  return { principalName: head.name, principalSignature: head.signature };
+}
 /**
  * The principal printed on a class's report cards: whoever signed them in the principal's portal, else that
  * school's principal (primary or secondary), else the school-wide principal in Result settings.
@@ -27,6 +46,11 @@ async function cardPrincipal(classId: number, workflow: PortalReportWorkflowReco
   if (workflow?.principalSignature) return { name: workflow.principalName, signature: workflow.principalSignature };
   const [cls] = await db.select({ name: portalClasses.name }).from(portalClasses).where(eq(portalClasses.id, classId));
   const section = cls ? classSection(cls.name) : null;
+  // Primary results are signed by the Head Teacher (the Head of School), never the primary principal.
+  if (section === "primary") {
+    const [head] = await db.select().from(portalPrincipals).where(eq(portalPrincipals.section, "head"));
+    return { name: head?.name ?? "", signature: head?.signature ?? null };
+  }
   const [own] = section ? await db.select().from(portalPrincipals).where(eq(portalPrincipals.section, section)) : [];
   if (own?.signature) return { name: own.name, signature: own.signature };
   return { name: settings.principalName, signature: settings.principalSignature };
@@ -56,7 +80,7 @@ async function classScheme(classId: number): Promise<ResultScheme> {
 async function classData(termId: number, classId: number) {
   const [termRow] = await db.select().from(portalTerms).where(eq(portalTerms.id, termId));
   check(termRow, "Term not found.", 404);
-  // Primary classes use Mid-term and End-term marks out of 100 whatever the term's CA and exam maxima are.
+  // Primary classes use First Half Term and Second Half Term marks out of 100 whatever the term's CA and exam maxima are.
   const scheme = await classScheme(classId);
   const term = schemeMaxima(termRow, scheme);
   const subjectRows = await db.select().from(portalSubjects).where(eq(portalSubjects.classId, classId)).orderBy(asc(portalSubjects.sortOrder), asc(portalSubjects.name));
@@ -77,8 +101,8 @@ async function classData(termId: number, classId: number) {
   // Typed totals and grades count only when the class's results are in manual mode.
   const manual = workflow?.mode === "manual";
   const report = buildClassReport(ids, subjects.map((s) => s.id), scores.map((s) => (manual ? s : { ...s, total: null, grade: null })), term, settings.gradingScale, scheme);
-  const principal = await cardPrincipal(classId, workflow, settings);
-  return { term, scheme, subjects, students, scores, cards, release, report, workflow, settings, principal };
+  const [principal, director] = await Promise.all([cardPrincipal(classId, workflow, settings), cardDirector()]);
+  return { term, scheme, subjects, students, scores, cards, release, report, workflow, settings, principal, director };
 }
 
 /** A class's results for a term as the workspace shows them. */
@@ -87,6 +111,7 @@ const classPayload = (d: Awaited<ReturnType<typeof classData>>) => ({
   scores: d.scores.map((s) => ({ studentId: s.studentId, subjectId: s.subjectId, ca: s.ca, ca2: s.ca2, exam: s.exam, comment: s.comment, total: s.total, grade: s.grade })),
   cards: d.cards.map(cardView), results: d.report.students, subjectStats: d.report.subjectStats, ranked: d.report.ranked, released: !!d.release,
   workflow: workflowView(d.workflow, !!d.release), cardPrincipalName: d.principal.name, cardPrincipalSignature: d.principal.signature,
+  cardDirectorName: d.director.name, cardDirectorSignature: d.director.signature,
 });
 
 /** One class's report workspace, read-only (no editing rights, no teacher list): for a principal's report card preview. */
@@ -260,8 +285,8 @@ portalReportsRouter.post("/reports/manage", async (req, res) => {
         const scheme = schemes.get(studentClass.get(e.studentId)!)!;
         const m = schemeMaxima(term, scheme);
         if (scheme === "primary") {
-          check(validScorePart(e.ca, 100) && validScorePart(e.exam, 100), "Mid-term and End-term marks must be between 0 and 100, in half marks.");
-          check(e.ca2 === undefined || e.ca2 === null, "Primary classes have no CA 2: enter a Mid-term and an End-term mark.");
+          check(validScorePart(e.ca, 100) && validScorePart(e.exam, 100), "First Half Term and Second Half Term marks must be between 0 and 100, in half marks.");
+          check(e.ca2 === undefined || e.ca2 === null, "Primary classes have no CA 2: enter a First Half Term and an Second Half Term mark.");
         } else {
           check(validScorePart(e.ca, m.caMax) && validScorePart(e.exam, m.examMax), m.ca2Max
             ? `Scores must be between 0 and ${m.caMax} (CA 1) and 0 and ${m.examMax} (exam), in half marks.`
@@ -324,7 +349,7 @@ portalReportsRouter.post("/reports/manage", async (req, res) => {
       check(term && cls, "Term or class not found.", 404);
       // The office publishing directly counts as its approval.
       if (r.released) {
-        if (statusOf(await workflowRow(r.termId, r.classId), false) !== "approved") await upsertWorkflow(r.termId, r.classId, { status: "approved", approvedBy: approver(req, actor), approvedAt: new Date(), principalName: "", principalSignature: null });
+        if (statusOf(await workflowRow(r.termId, r.classId), false) !== "approved") await upsertWorkflow(r.termId, r.classId, { status: "approved", approvedBy: approver(req, actor), approvedAt: new Date(), ...await approvalSignature(req, r.classId) });
         await db.insert(portalReportReleases).values({ termId: r.termId, classId: r.classId }).onConflictDoNothing();
       } else {
         // Withholding sends the results back to draft so they can be corrected.
@@ -383,7 +408,7 @@ portalReportsRouter.post("/reports/manage", async (req, res) => {
         }
         await upsertWorkflow(w.termId, w.classId, { status: "review", teacherName: actor.name, teacherSignature: signature, submittedAt: new Date(), returnNote: "" });
       } else if (w.action === "withdraw") await upsertWorkflow(w.termId, w.classId, { status: "draft" });
-      else if (w.action === "approve") await upsertWorkflow(w.termId, w.classId, { status: "approved", approvedBy: approver(req, actor), approvedAt: new Date(), principalName: "", principalSignature: null });
+      else if (w.action === "approve") await upsertWorkflow(w.termId, w.classId, { status: "approved", approvedBy: approver(req, actor), approvedAt: new Date(), ...await approvalSignature(req, w.classId) });
       else if (w.action === "return") await upsertWorkflow(w.termId, w.classId, { status: "draft", returnNote: (w.note ?? "").trim(), approvedAt: null, approvedBy: "", principalName: "", principalSignature: null });
       else if (w.action === "publish") await db.insert(portalReportReleases).values({ termId: w.termId, classId: w.classId }).onConflictDoNothing();
       else await db.delete(portalReportReleases).where(and(eq(portalReportReleases.termId, w.termId), eq(portalReportReleases.classId, w.classId)));
@@ -418,6 +443,7 @@ export async function publishedReportsFor(student: { id: number; classId: number
       className: classNames.get(release.classId) ?? "", gradingScale: d.settings.gradingScale,
       teacherName: d.workflow?.teacherName ?? "", teacherSignature: d.workflow?.teacherSignature ?? null,
       principalName: d.principal.name, principalSignature: d.principal.signature,
+      directorName: d.director.name, directorSignature: d.director.signature,
       sortKey: d.term.createdAt.getTime(),
     });
   }

@@ -3,12 +3,12 @@ import { classSection } from "./principal";
 
 /**
  * How a class is assessed. Secondary (JSS 1 to SS 3): CA (1 and 2) + exam, out of the term's maxima, with positions.
- * Primary (Year 1 to Year 6): a Mid-term and an End-of-term mark per subject, each out of 100; the final mark is
- * their average ((Mid-term + End-term) / 2), shown as a percentage and average with no positions.
+ * Primary (Year 1 to Year 6): a First Half Term and an Second Half Term mark per subject, each out of 100; the final mark is
+ * their average ((First Half Term + Second Half Term) / 2), shown as a percentage and average with no positions.
  */
 export type ResultScheme = "primary" | "secondary";
 export const schemeFor = (className: string): ResultScheme => (classSection(className) === "primary" ? "primary" : "secondary");
-/** Primary: Mid-term is stored as CA and End-term as exam, each out of 100. */
+/** Primary: First Half Term is stored as CA and Second Half Term as exam, each out of 100. */
 export const PRIMARY_MAXIMA = { caMax: 100, ca2Max: 0, examMax: 100 } as const;
 export function schemeMaxima<T extends { caMax: number; ca2Max?: number; examMax: number }>(term: T, scheme: ResultScheme): T {
   return scheme === "primary" ? { ...term, ...PRIMARY_MAXIMA } : term;

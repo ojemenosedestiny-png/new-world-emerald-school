@@ -14,7 +14,7 @@ import type { StudentReportsReportsItemSubjectStatsItem } from './studentReports
 import type { StudentReportsReportsItemTerm } from './studentReportsReportsItemTerm';
 
 export type StudentReportsReportsItem = {
-  /** primary (Year 1 to 6): Mid-term (ca) and End-term (exam) out of 100, final = their average, no positions; secondary: CA + exam with positions */
+  /** primary (Year 1 to 6): First Half Term (ca) and Second Half Term (exam) out of 100, final = their average, no positions; secondary: CA + exam with positions */
   scheme: StudentReportsReportsItemScheme;
   /** The class the student was in for this term */
   className: string;
@@ -25,6 +25,9 @@ export type StudentReportsReportsItem = {
   principalName: string;
   /** @nullable */
   principalSignature: string | null;
+  directorName?: string;
+  /** @nullable */
+  directorSignature?: string | null;
   term: StudentReportsReportsItemTerm;
   subjects: StudentReportsReportsItemSubjectsItem[];
   result: StudentReportsReportsItemResult;

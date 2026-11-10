@@ -33,7 +33,51 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/StudentReports" }
+  signatures:
+    get:
+      operationId: getMySignatures
+      description: "The Head Teacher's and the Director's own name and signature for report cards (only the roles the signed-in person holds)"
+      responses:
+        "200":
+          description: Saved signatures
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SignatureSet" }
+    post:
+      operationId: saveMySignature
+      description: "Save the Head Teacher's or the Director's name and signature for report cards"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SignatureInput" }
+      responses:
+        "200":
+          description: Saved
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SignatureSet" }
 schemas:
+  SignatureEntry:
+    type: object
+    required: [role, name, signature]
+    properties:
+      role: { type: string, enum: [head, director] }
+      name: { type: string }
+      signature: { type: [string, "null"] }
+  SignatureSet:
+    type: object
+    required: [roles, entries]
+    properties:
+      roles: { type: array, items: { type: string, enum: [head, director] } }
+      entries: { type: array, items: { $ref: "#/components/schemas/SignatureEntry" } }
+  SignatureInput:
+    type: object
+    required: [role, name, signature]
+    properties:
+      role: { type: string, enum: [head, director] }
+      name: { type: string, maxLength: 120 }
+      signature: { type: [string, "null"], maxLength: 200000 }
   ReportTerm:
     type: object
     required: [id, session, term, caMax, ca2Max, examMax, nextTermBegins]
@@ -168,9 +212,11 @@ schemas:
       gradingScale: { type: array, items: { $ref: "#/schemas/GradeBand" } }
       principalName: { type: string }
       principalSignature: { type: [string, "null"] }
-      scheme: { type: string, enum: [primary, secondary], description: "primary (Year 1 to 6): Mid-term (ca) and End-term (exam) out of 100, final = their average, no positions; secondary: CA + exam with positions" }
+      scheme: { type: string, enum: [primary, secondary], description: "primary (Year 1 to 6): First Half Term (ca) and Second Half Term (exam) out of 100, final = their average, no positions; secondary: CA + exam with positions" }
       cardPrincipalName: { type: string, description: "The principal printed on this class's report cards: who signed them in the principal's portal, else that school's principal, else principalName" }
       cardPrincipalSignature: { type: [string, "null"] }
+      cardDirectorName: { type: string, description: "The Director, printed on every report card with the Head Teacher (primary) or the principal (secondary)" }
+      cardDirectorSignature: { type: [string, "null"] }
       mySignature: { type: [string, "null"], description: The signed-in teacher's saved signature }
       isClassTeacher: { type: boolean, description: "The office or the class teacher: may write remarks, sign and send results" }
       editableSubjectIds: { type: [array, "null"], items: { type: integer }, description: "Subjects whose scores the signed-in teacher may enter (null: all)" }
@@ -265,13 +311,15 @@ schemas:
     type: object
     required: [term, scheme, subjects, result, subjectStats, classSize, card, releasedAt, className, gradingScale, teacherName, teacherSignature, principalName, principalSignature]
     properties:
-      scheme: { type: string, enum: [primary, secondary], description: "primary (Year 1 to 6): Mid-term (ca) and End-term (exam) out of 100, final = their average, no positions; secondary: CA + exam with positions" }
+      scheme: { type: string, enum: [primary, secondary], description: "primary (Year 1 to 6): First Half Term (ca) and Second Half Term (exam) out of 100, final = their average, no positions; secondary: CA + exam with positions" }
       className: { type: string, description: The class the student was in for this term }
       gradingScale: { type: array, items: { $ref: "#/schemas/GradeBand" } }
       teacherName: { type: string }
       teacherSignature: { type: [string, "null"] }
       principalName: { type: string }
       principalSignature: { type: [string, "null"] }
+      directorName: { type: string }
+      directorSignature: { type: [string, "null"] }
       term: { $ref: "#/schemas/ReportTerm" }
       subjects: { type: array, items: { $ref: "#/schemas/ReportSubject" } }
       result: { $ref: "#/schemas/ReportStudentResult" }

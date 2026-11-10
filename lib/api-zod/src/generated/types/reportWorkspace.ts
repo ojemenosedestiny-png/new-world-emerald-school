@@ -24,12 +24,16 @@ export interface ReportWorkspace {
   principalName: string;
   /** @nullable */
   principalSignature: string | null;
-  /** primary (Year 1 to 6): Mid-term (ca) and End-term (exam) out of 100, final = their average, no positions; secondary: CA + exam with positions */
+  /** primary (Year 1 to 6): First Half Term (ca) and Second Half Term (exam) out of 100, final = their average, no positions; secondary: CA + exam with positions */
   scheme: ReportWorkspaceScheme;
   /** The principal printed on this class's report cards: who signed them in the principal's portal, else that school's principal, else principalName */
   cardPrincipalName: string;
   /** @nullable */
   cardPrincipalSignature: string | null;
+  /** The Director, printed on every report card with the Head Teacher (primary) or the principal (secondary) */
+  cardDirectorName?: string;
+  /** @nullable */
+  cardDirectorSignature?: string | null;
   /**
      * The signed-in teacher's saved signature
      * @nullable

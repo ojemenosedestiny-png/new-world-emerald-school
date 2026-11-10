@@ -116,8 +116,9 @@ test("teacher invitations carry the sign-in link, the email to use and the class
 test("teachers may only give their students a new password", () => {
   const old = { name: "Ada Obi", active: true };
   assert.equal(teacherStudentEditProblem(old, { name: "Ada Obi", active: true, newPassword: true, guardianEmailChanged: false }), null);
-  assert.match(teacherStudentEditProblem(old, { name: "Ada Obi", active: true, newPassword: false, guardianEmailChanged: false })!, /new password/);
-  assert.ok(teacherStudentEditProblem(old, { name: "Ada O.", active: true, newPassword: true, guardianEmailChanged: false }), "no renaming");
+  assert.match(teacherStudentEditProblem(old, { name: "Ada Obi", active: true, newPassword: false, guardianEmailChanged: false })!, /Nothing to change/);
+  assert.equal(teacherStudentEditProblem(old, { name: "Adaeze Obi", active: true, newPassword: false, guardianEmailChanged: false }), null, "teachers correct a misspelled name");
+  assert.equal(teacherStudentEditProblem(old, { name: "Adaeze Obi", active: true, newPassword: true, guardianEmailChanged: false }), null);
   assert.ok(teacherStudentEditProblem(old, { name: "Ada Obi", active: false, newPassword: true, guardianEmailChanged: false }), "no deactivating");
   assert.ok(teacherStudentEditProblem(old, { name: "Ada Obi", active: true, newPassword: true, guardianEmailChanged: true }), "no parent email changes");
 });

@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { EmptyState, ErrorPanel, Skeleton, StatusPill } from "../ui";
 import { errorMessage } from "../lib";
 import { armName, groupClasses, yearGroup } from "./groups";
+import { MoveStudentDialog } from "../manage/MoveStudent";
 
 /** The arms of a class's year group (Year 7 Amber -> every Year 7 arm), the class itself when it has none. */
 const armsOf = (data: PrincipalOverview, cls: { name: string }) => data.classes.filter((c) => yearGroup(c.name).key === yearGroup(cls.name).key);
@@ -170,6 +171,8 @@ function ClassCard({ cls, data, cmd, linked = false, onReplace }: { cls: Princip
     ? cmd.run({ action: "setGroupSubjectTeacher", classId: cls.id, classIds: arms.map((a) => a.id), subjectName, teacherId, addMissing: true })
     : cmd.run({ action: "setSubjectTeacher", classId: cls.id, subjectId, teacherId });
   const [pick, setPick] = useState("");
+  const [moving, setMoving] = useState<{ id: number; name: string; classId: number } | null>(null);
+  const kids = (data.students ?? []).filter((s) => s.classId === cls.id);
   const available = data.teachers.filter((t) => !cls.teachers.some((x) => x.id === t.id));
   return (
     <section className="portal-card p-5" aria-labelledby={`class-${cls.id}`} data-testid={`principal-class-${cls.id}`}>
@@ -177,6 +180,21 @@ function ClassCard({ cls, data, cmd, linked = false, onReplace }: { cls: Princip
         <h2 id={`class-${cls.id}`} className="font-serif text-2xl font-semibold">{cls.name}</h2>
         <span className={"text-sm " + MUTED}>{cls.students} {cls.students === 1 ? "student" : "students"}</span>
       </div>
+      {kids.length > 0 && (
+        <details className="mt-3 rounded-xl border border-[hsl(var(--p-line))] px-3 py-2" data-testid={`students-${cls.id}`}>
+          <summary className="cursor-pointer text-sm font-semibold">Students · move a child to another class</summary>
+          <ul className="mt-2 max-h-64 space-y-1 overflow-y-auto">
+            {kids.map((k) => (
+              <li key={k.id} className="flex items-center gap-2 text-sm">
+                <span className="min-w-0 flex-1 truncate">{k.name} <span className={"font-mono text-xs " + MUTED}>{k.studentId}</span></span>
+                <button type="button" className="portal-btn-ghost !min-h-[30px] !px-2.5 text-xs" disabled={cmd.pending} onClick={() => setMoving({ id: k.id, name: k.name, classId: k.classId })} data-testid={`button-move-${k.id}`}><ArrowLeftRight size={12} aria-hidden="true" /> Move</button>
+              </li>
+            ))}
+          </ul>
+        </details>
+      )}
+      <MoveStudentDialog student={moving} classes={data.classes} pending={cmd.pending} onClose={() => setMoving(null)}
+        onMove={(toClassId) => cmd.run({ action: "moveStudent", classId: toClassId, studentId: moving!.id })} />
       <h3 className={"mt-4 text-xs font-semibold uppercase tracking-wider " + MUTED}>Class teachers</h3>
       {cls.teachers.length ? (
         <ul className="mt-2 space-y-2">

@@ -97,7 +97,7 @@ export function ReportsPanel() {
   const term = ws.terms.find((t) => t.id === termId);
   const cls = ws.classes.find((c) => c.id === classId);
   const ready = term && cls && ws.termId === term.id && ws.classId === cls.id;
-  // Primary classes (Year 1 to 6) use Mid-term and End-term out of 100; the term's own maxima are for secondary.
+  // Primary classes (Year 1 to 6) use First Half Term and Second Half Term out of 100; the term's own maxima are for secondary.
   const classTerm = term && schemeTerm(term, ws.scheme);
   const blankTerm: ReportTermInput = { session: `${new Date().getFullYear()}/${new Date().getFullYear() + 1}`, term: "Autumn Term", caMax: 20, ca2Max: 20, examMax: 60, nextTermBegins: "" };
   const missing = ready ? ws.students.filter((s) => (ws.results.find((r) => r.studentId === s.id)?.subjectsTaken ?? 0) < ws.subjects.length).length : 0;
@@ -137,7 +137,7 @@ export function ReportsPanel() {
         <>
           <p className="flex flex-wrap items-center gap-2 text-sm" data-testid="text-result-scheme">
             <span className={"rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wider " + (ws.scheme === "primary" ? "bg-[hsl(var(--p-gold-soft))] text-[hsl(var(--p-gold-ink))]" : "bg-[hsl(var(--p-emerald-soft))] text-[hsl(var(--p-emerald))]")}>{ws.scheme === "primary" ? "Primary result" : "Secondary result"}</span>
-            <span className="text-[hsl(var(--p-ink)/0.65)]">{ws.scheme === "primary" ? "Mid-term /100 and End-term /100 per subject; final = (Mid-term + End-term) ÷ 2. Percentage and average, no positions." : `${classTerm!.ca2Max ? `CA 1 /${classTerm!.caMax} + CA 2 /${classTerm!.ca2Max}` : `CA /${classTerm!.caMax}`} + Exam /${classTerm!.examMax}, with positions.`}</span>
+            <span className="text-[hsl(var(--p-ink)/0.65)]">{ws.scheme === "primary" ? "First Half Term /100 and Second Half Term /100 per subject; final = (First Half Term + Second Half Term) ÷ 2. Percentage and average, no positions." : `${classTerm!.ca2Max ? `CA 1 /${classTerm!.caMax} + CA 2 /${classTerm!.ca2Max}` : `CA /${classTerm!.caMax}`} + Exam /${classTerm!.examMax}, with positions.`}</span>
           </p>
           {ws.isClassTeacher ? <WorkflowBar ws={ws} term={classTerm!} className={cls.name} missing={missing} onOpenSettings={() => setSection("settings")} />
             : <p className="portal-card p-4 text-sm" data-testid="text-subject-teacher">You are the subject teacher for {ws.subjects.filter((x) => ws.editableSubjectIds?.includes(x.id)).map((x) => x.name).join(", ")} in {cls.name}. Enter those scores here; the class teacher adds remarks and sends the results for approval.</p>}

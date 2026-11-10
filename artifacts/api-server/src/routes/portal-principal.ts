@@ -4,6 +4,7 @@ import { db, portalAuditLog, portalClasses, portalStudents, portalSubjects, port
 import { ManagePrincipalBody, GetPrincipalActivityQueryParams, GetPrincipalOverviewQueryParams } from "@workspace/api-zod";
 import { check } from "../lib/portal-auth";
 import { isPrincipal } from "../lib/website-admin";
+import { moveStudent } from "../lib/move-student";
 import { classSection, describeActivity, lagosDay, lagosToday, type ActivityKind, type SchoolSection } from "../lib/principal";
 
 export const portalPrincipalRouter = Router();
@@ -36,10 +37,12 @@ export async function sectionStaff(section: SchoolSection) {
 portalPrincipalRouter.get("/principal", async (req, res) => {
   const section = GetPrincipalOverviewQueryParams.parse(req.query).section ?? "secondary";
   principalOnly(req, section);
-  const [{ classes, teachers, subjects, inSection }, counts] = await Promise.all([
+  const [{ classes, teachers, subjects, inSection }, counts, active] = await Promise.all([
     sectionStaff(section),
     db.select({ classId: portalStudents.classId, n: sql<number>`count(*)::int` }).from(portalStudents).where(eq(portalStudents.active, true)).groupBy(portalStudents.classId),
+    db.select({ id: portalStudents.id, name: portalStudents.name, studentId: portalStudents.studentId, classId: portalStudents.classId }).from(portalStudents).where(eq(portalStudents.active, true)).orderBy(asc(portalStudents.name)),
   ]);
+  const sectionIds = new Set(classes.map((c) => c.id));
   const studentCount = new Map(counts.map((c) => [c.classId, c.n]));
   const teacherName = new Map(teachers.map((t) => [t.id, t.name]));
   res.json({
@@ -50,6 +53,7 @@ portalPrincipalRouter.get("/principal", async (req, res) => {
       subjects: subjects.filter((s) => s.classId === c.id).map((s) => ({ id: s.id, name: s.name, teacherId: s.teacherId, teacherName: s.teacherId === null ? null : teacherName.get(s.teacherId) ?? null })),
     })),
     teachers: teachers.map((t) => ({ id: t.id, name: t.name, email: t.email, classIds: t.classIds, photoFileId: t.photoFileId ?? null, subjectCount: subjects.filter((s) => s.teacherId === t.id).length, inSection: inSection(t) })),
+    students: active.filter((s) => sectionIds.has(s.classId)),
   });
 });
 
@@ -71,6 +75,12 @@ portalPrincipalRouter.post("/principal", async (req, res) => {
   check(section && isPrincipal(req, section), `${cls.name} is not one of your classes.`, 403);
   let message = "Saved.";
   switch (body.action) {
+    case "moveStudent": {
+      // Within the principal's own school only: both classes must be in their section.
+      check(body.studentId, "Choose a student.");
+      message = await moveStudent(req, body.studentId, cls.id, req.identity?.email ?? "principal", (from) => classSection(from) === section);
+      break;
+    }
     case "assign": {
       const t = await activeTeacher(body.teacherId);
       check(!t.classIds.includes(cls.id), `${t.name} already teaches ${cls.name}.`, 409);

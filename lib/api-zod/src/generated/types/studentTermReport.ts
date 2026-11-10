@@ -14,7 +14,7 @@ import type { StudentTermReportSubjectStatsItem } from './studentTermReportSubje
 import type { StudentTermReportTerm } from './studentTermReportTerm';
 
 export interface StudentTermReport {
-  /** primary (Year 1 to 6): Mid-term (ca) and End-term (exam) out of 100, final = their average, no positions; secondary: CA + exam with positions */
+  /** primary (Year 1 to 6): First Half Term (ca) and Second Half Term (exam) out of 100, final = their average, no positions; secondary: CA + exam with positions */
   scheme: StudentTermReportScheme;
   /** The class the student was in for this term */
   className: string;
@@ -25,6 +25,9 @@ export interface StudentTermReport {
   principalName: string;
   /** @nullable */
   principalSignature: string | null;
+  directorName?: string;
+  /** @nullable */
+  directorSignature?: string | null;
   term: StudentTermReportTerm;
   subjects: StudentTermReportSubjectsItem[];
   result: StudentTermReportResult;

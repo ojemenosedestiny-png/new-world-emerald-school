@@ -6,10 +6,13 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { PrincipalClass } from './principalClass';
+import type { PrincipalOverviewStudentsItem } from './principalOverviewStudentsItem';
 import type { PrincipalTeacher } from './principalTeacher';
 
 export interface PrincipalOverview {
   today: string;
   classes: PrincipalClass[];
   teachers: PrincipalTeacher[];
+  /** Active students in the section's classes, for moving a child to another class */
+  students?: PrincipalOverviewStudentsItem[];
 }

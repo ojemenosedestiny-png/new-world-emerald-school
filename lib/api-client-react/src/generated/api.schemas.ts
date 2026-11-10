@@ -839,10 +839,19 @@ export interface PrincipalTeacher {
   inSection: boolean;
 }
 
+export type PrincipalOverviewStudentsItem = {
+  id: number;
+  name: string;
+  studentId: string;
+  classId: number;
+};
+
 export interface PrincipalOverview {
   today: string;
   classes: PrincipalClass[];
   teachers: PrincipalTeacher[];
+  /** Active students in the section's classes, for moving a child to another class */
+  students?: PrincipalOverviewStudentsItem[];
 }
 
 export type PrincipalCommandAction = typeof PrincipalCommandAction[keyof typeof PrincipalCommandAction];
@@ -854,6 +863,7 @@ export const PrincipalCommandAction = {
   replace: 'replace',
   setSubjectTeacher: 'setSubjectTeacher',
   setGroupSubjectTeacher: 'setGroupSubjectTeacher',
+  moveStudent: 'moveStudent',
 } as const;
 
 export interface PrincipalCommand {
@@ -881,6 +891,8 @@ export interface PrincipalCommand {
   subjectName?: string;
   /** For setGroupSubjectTeacher: add the subject to any of the classes that do not offer it yet (a new, typed subject is added to all of them), so every arm matches */
   addMissing?: boolean;
+  /** For moveStudent: the student (portal id) to move into classId */
+  studentId?: number;
 }
 
 export type PrincipalActionKind = typeof PrincipalActionKind[keyof typeof PrincipalActionKind];
@@ -1609,7 +1621,7 @@ export interface ParentChildInfo {
 }
 
 /**
- * primary (Year 1 to 6): Mid-term (ca) and End-term (exam) out of 100, final = their average, no positions; secondary: CA + exam with positions
+ * primary (Year 1 to 6): First Half Term (ca) and Second Half Term (exam) out of 100, final = their average, no positions; secondary: CA + exam with positions
  */
 export type StudentTermReportScheme = typeof StudentTermReportScheme[keyof typeof StudentTermReportScheme];
 
@@ -1730,7 +1742,7 @@ export type StudentTermReportCard = {
 } | null;
 
 export interface StudentTermReport {
-  /** primary (Year 1 to 6): Mid-term (ca) and End-term (exam) out of 100, final = their average, no positions; secondary: CA + exam with positions */
+  /** primary (Year 1 to 6): First Half Term (ca) and Second Half Term (exam) out of 100, final = their average, no positions; secondary: CA + exam with positions */
   scheme: StudentTermReportScheme;
   /** The class the student was in for this term */
   className: string;
@@ -1741,6 +1753,9 @@ export interface StudentTermReport {
   principalName: string;
   /** @nullable */
   principalSignature: string | null;
+  directorName?: string;
+  /** @nullable */
+  directorSignature?: string | null;
   term: StudentTermReportTerm;
   subjects: StudentTermReportSubjectsItem[];
   result: StudentTermReportResult;
@@ -2015,6 +2030,53 @@ export const SchoolTransactionDecisionAction = {
 export interface SchoolTransactionDecision {
   action: SchoolTransactionDecisionAction;
   note?: string;
+}
+
+export type SignatureEntryRole = typeof SignatureEntryRole[keyof typeof SignatureEntryRole];
+
+
+export const SignatureEntryRole = {
+  head: 'head',
+  director: 'director',
+} as const;
+
+export interface SignatureEntry {
+  role: SignatureEntryRole;
+  name: string;
+  /** @nullable */
+  signature: string | null;
+}
+
+export type SignatureSetRolesItem = typeof SignatureSetRolesItem[keyof typeof SignatureSetRolesItem];
+
+
+export const SignatureSetRolesItem = {
+  head: 'head',
+  director: 'director',
+} as const;
+
+export interface SignatureSet {
+  roles: SignatureSetRolesItem[];
+  entries: SignatureEntry[];
+}
+
+export type SignatureInputRole = typeof SignatureInputRole[keyof typeof SignatureInputRole];
+
+
+export const SignatureInputRole = {
+  head: 'head',
+  director: 'director',
+} as const;
+
+export interface SignatureInput {
+  role: SignatureInputRole;
+  /** @maxLength 120 */
+  name: string;
+  /**
+     * @maxLength 200000
+     * @nullable
+     */
+  signature: string | null;
 }
 
 export interface ChairmanCount {
@@ -3317,7 +3379,7 @@ export type ReportWorkspaceGradingScaleItem = {
 };
 
 /**
- * primary (Year 1 to 6): Mid-term (ca) and End-term (exam) out of 100, final = their average, no positions; secondary: CA + exam with positions
+ * primary (Year 1 to 6): First Half Term (ca) and Second Half Term (exam) out of 100, final = their average, no positions; secondary: CA + exam with positions
  */
 export type ReportWorkspaceScheme = typeof ReportWorkspaceScheme[keyof typeof ReportWorkspaceScheme];
 
@@ -3480,12 +3542,16 @@ export interface ReportWorkspace {
   principalName: string;
   /** @nullable */
   principalSignature: string | null;
-  /** primary (Year 1 to 6): Mid-term (ca) and End-term (exam) out of 100, final = their average, no positions; secondary: CA + exam with positions */
+  /** primary (Year 1 to 6): First Half Term (ca) and Second Half Term (exam) out of 100, final = their average, no positions; secondary: CA + exam with positions */
   scheme: ReportWorkspaceScheme;
   /** The principal printed on this class's report cards: who signed them in the principal's portal, else that school's principal, else principalName */
   cardPrincipalName: string;
   /** @nullable */
   cardPrincipalSignature: string | null;
+  /** The Director, printed on every report card with the Head Teacher (primary) or the principal (secondary) */
+  cardDirectorName?: string;
+  /** @nullable */
+  cardDirectorSignature?: string | null;
   /**
      * The signed-in teacher's saved signature
      * @nullable
@@ -3758,7 +3824,7 @@ export interface ReportCommand {
 }
 
 /**
- * primary (Year 1 to 6): Mid-term (ca) and End-term (exam) out of 100, final = their average, no positions; secondary: CA + exam with positions
+ * primary (Year 1 to 6): First Half Term (ca) and Second Half Term (exam) out of 100, final = their average, no positions; secondary: CA + exam with positions
  */
 export type StudentReportsReportsItemScheme = typeof StudentReportsReportsItemScheme[keyof typeof StudentReportsReportsItemScheme];
 
@@ -3879,7 +3945,7 @@ export type StudentReportsReportsItemCard = {
 } | null;
 
 export type StudentReportsReportsItem = {
-  /** primary (Year 1 to 6): Mid-term (ca) and End-term (exam) out of 100, final = their average, no positions; secondary: CA + exam with positions */
+  /** primary (Year 1 to 6): First Half Term (ca) and Second Half Term (exam) out of 100, final = their average, no positions; secondary: CA + exam with positions */
   scheme: StudentReportsReportsItemScheme;
   /** The class the student was in for this term */
   className: string;
@@ -3890,6 +3956,9 @@ export type StudentReportsReportsItem = {
   principalName: string;
   /** @nullable */
   principalSignature: string | null;
+  directorName?: string;
+  /** @nullable */
+  directorSignature?: string | null;
   term: StudentReportsReportsItemTerm;
   subjects: StudentReportsReportsItemSubjectsItem[];
   result: StudentReportsReportsItemResult;
@@ -5125,6 +5194,7 @@ export const PortalCommandAction = {
   inviteTeacher: 'inviteTeacher',
   deleteClass: 'deleteClass',
   deleteTeacher: 'deleteTeacher',
+  moveStudent: 'moveStudent',
 } as const;
 
 export type PortalCommandSchoolClass = {
@@ -5384,6 +5454,8 @@ export interface PortalCommand {
   attemptControl?: PortalCommandAttemptControl;
   /** deleteExam only: also delete every student's attempt and score for the exam (the school owner only, for clearing test exams) */
   withAttempts?: boolean;
+  /** moveStudent only: the class to move the student (target) into */
+  toClassId?: number;
   /** saveExam (a new exam) only: also set the same exam for these classes, for example every Year 11 class */
   alsoClassIds?: number[];
 }

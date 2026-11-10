@@ -31,7 +31,8 @@ it("a teacher enrols a student with a password and no email, and sees the login 
   // Office-only actions are hidden from teachers.
   expect(screen.queryByTestId("button-bulk-enrol")).toBeNull();
   expect(screen.queryByTestId("button-add-student")).toBeNull();
-  expect(screen.queryByTestId("button-edit-student-9")).toBeNull();
+  // Teachers may only correct a misspelled name (no parent email or activation).
+  expect(screen.getByTestId("button-edit-student-9").textContent).toContain("Correct name");
   expect(screen.queryByTestId("button-fees-student-9")).toBeNull();
   expect(screen.queryByTestId("button-toggle-student-9")).toBeNull();
   expect(screen.getByTestId("button-reset-student-9").textContent).toContain("New password");

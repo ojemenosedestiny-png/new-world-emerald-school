@@ -443,7 +443,7 @@ schemas:
     type: object
     required: [action]
     properties:
-      action: { type: string, enum: [saveClass, saveStudent, saveTeacher, saveExam, saveMaterial, saveNotice, grade, examStatus, deleteExam, deleteMaterial, deleteNotice, extendAttempt, resetAttempt, addPracticeExams, inviteTeacher, deleteClass, deleteTeacher] }
+      action: { type: string, enum: [saveClass, saveStudent, saveTeacher, saveExam, saveMaterial, saveNotice, grade, examStatus, deleteExam, deleteMaterial, deleteNotice, extendAttempt, resetAttempt, addPracticeExams, inviteTeacher, deleteClass, deleteTeacher, moveStudent] }
       schoolClass: { $ref: "#/schemas/PortalClass" }
       student: { $ref: "#/schemas/PortalStudent" }
       teacher: { $ref: "#/schemas/PortalTeacher" }
@@ -455,6 +455,7 @@ schemas:
       target: { $ref: "#/schemas/PortalTarget" }
       attemptControl: { $ref: "#/schemas/PortalAttemptControl" }
       withAttempts: { type: boolean, description: "deleteExam only: also delete every student's attempt and score for the exam (the school owner only, for clearing test exams)" }
+      toClassId: { type: integer, description: "moveStudent only: the class to move the student (target) into" }
       alsoClassIds: { type: array, items: { type: integer }, description: "saveExam (a new exam) only: also set the same exam for these classes, for example every Year 11 class" }
   PortalTarget:
     type: object

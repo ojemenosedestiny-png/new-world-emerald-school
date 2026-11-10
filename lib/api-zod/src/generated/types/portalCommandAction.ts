@@ -27,4 +27,5 @@ export const PortalCommandAction = {
   inviteTeacher: 'inviteTeacher',
   deleteClass: 'deleteClass',
   deleteTeacher: 'deleteTeacher',
+  moveStudent: 'moveStudent',
 } as const;

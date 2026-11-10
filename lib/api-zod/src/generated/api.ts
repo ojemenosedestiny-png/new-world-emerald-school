@@ -772,7 +772,7 @@ export const managePortalBodyAttemptControlMinutesMax = 240;
 
 
 export const ManagePortalBody = zod.object({
-  "action": zod.enum(['saveClass', 'saveStudent', 'saveTeacher', 'saveExam', 'saveMaterial', 'saveNotice', 'grade', 'examStatus', 'deleteExam', 'deleteMaterial', 'deleteNotice', 'extendAttempt', 'resetAttempt', 'addPracticeExams', 'inviteTeacher', 'deleteClass', 'deleteTeacher']),
+  "action": zod.enum(['saveClass', 'saveStudent', 'saveTeacher', 'saveExam', 'saveMaterial', 'saveNotice', 'grade', 'examStatus', 'deleteExam', 'deleteMaterial', 'deleteNotice', 'extendAttempt', 'resetAttempt', 'addPracticeExams', 'inviteTeacher', 'deleteClass', 'deleteTeacher', 'moveStudent']),
   "schoolClass": zod.object({
   "id": zod.number().optional(),
   "name": zod.string().min(1).max(managePortalBodySchoolClassNameMax)
@@ -869,6 +869,7 @@ export const ManagePortalBody = zod.object({
   "minutes": zod.number().min(1).max(managePortalBodyAttemptControlMinutesMax).optional()
 }).optional(),
   "withAttempts": zod.boolean().optional().describe('deleteExam only: also delete every student\'s attempt and score for the exam (the school owner only, for clearing test exams)'),
+  "toClassId": zod.number().optional().describe('moveStudent only: the class to move the student (target) into'),
   "alsoClassIds": zod.array(zod.number()).optional().describe('saveExam (a new exam) only: also set the same exam for these classes, for example every Year 11 class')
 })
 
@@ -1007,9 +1008,11 @@ export const GetReportWorkspaceResponse = zod.object({
 })),
   "principalName": zod.string(),
   "principalSignature": zod.string().nullable(),
-  "scheme": zod.enum(['primary', 'secondary']).describe('primary (Year 1 to 6): Mid-term (ca) and End-term (exam) out of 100, final = their average, no positions; secondary: CA + exam with positions'),
+  "scheme": zod.enum(['primary', 'secondary']).describe('primary (Year 1 to 6): First Half Term (ca) and Second Half Term (exam) out of 100, final = their average, no positions; secondary: CA + exam with positions'),
   "cardPrincipalName": zod.string().describe('The principal printed on this class\'s report cards: who signed them in the principal\'s portal, else that school\'s principal, else principalName'),
   "cardPrincipalSignature": zod.string().nullable(),
+  "cardDirectorName": zod.string().optional().describe('The Director, printed on every report card with the Head Teacher (primary) or the principal (secondary)'),
+  "cardDirectorSignature": zod.string().nullish(),
   "mySignature": zod.string().nullable().describe('The signed-in teacher\'s saved signature'),
   "isClassTeacher": zod.boolean().describe('The office or the class teacher: may write remarks, sign and send results'),
   "editableSubjectIds": zod.array(zod.number()).nullable().describe('Subjects whose scores the signed-in teacher may enter (null: all)'),
@@ -1266,7 +1269,7 @@ export const GetStudentReportsResponse = zod.object({
   "studentId": zod.string(),
   "className": zod.string(),
   "reports": zod.array(zod.object({
-  "scheme": zod.enum(['primary', 'secondary']).describe('primary (Year 1 to 6): Mid-term (ca) and End-term (exam) out of 100, final = their average, no positions; secondary: CA + exam with positions'),
+  "scheme": zod.enum(['primary', 'secondary']).describe('primary (Year 1 to 6): First Half Term (ca) and Second Half Term (exam) out of 100, final = their average, no positions; secondary: CA + exam with positions'),
   "className": zod.string().describe('The class the student was in for this term'),
   "gradingScale": zod.array(zod.object({
   "min": zod.number().min(getStudentReportsResponseReportsItemGradingScaleItemMinMin).max(getStudentReportsResponseReportsItemGradingScaleItemMinMax),
@@ -1277,6 +1280,8 @@ export const GetStudentReportsResponse = zod.object({
   "teacherSignature": zod.string().nullable(),
   "principalName": zod.string(),
   "principalSignature": zod.string().nullable(),
+  "directorName": zod.string().optional(),
+  "directorSignature": zod.string().nullish(),
   "term": zod.object({
   "id": zod.number(),
   "session": zod.string(),
@@ -3001,7 +3006,13 @@ export const GetPrincipalOverviewResponse = zod.object({
   "photoFileId": zod.string().nullable(),
   "subjectCount": zod.number(),
   "inSection": zod.boolean().describe('Class teacher or subject teacher in this section, or not yet assigned anywhere')
-}))
+})),
+  "students": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "studentId": zod.string(),
+  "classId": zod.number()
+})).optional().describe('Active students in the section\'s classes, for moving a child to another class')
 })
 
 
@@ -3015,14 +3026,15 @@ export const managePrincipalBodySubjectNameMax = 120;
 
 
 export const ManagePrincipalBody = zod.object({
-  "action": zod.enum(['assign', 'remove', 'replace', 'setSubjectTeacher', 'setGroupSubjectTeacher']),
+  "action": zod.enum(['assign', 'remove', 'replace', 'setSubjectTeacher', 'setGroupSubjectTeacher', 'moveStudent']),
   "classId": zod.number().describe('The class; for setGroupSubjectTeacher, any one of classIds'),
   "teacherId": zod.number().nullish().describe('The teacher to assign or remove; for replace, the outgoing teacher; for a subject, its new teacher (null for none)'),
   "newTeacherId": zod.number().optional().describe('For replace: the incoming teacher'),
   "subjectId": zod.number().optional().describe('For setSubjectTeacher'),
   "classIds": zod.array(zod.number()).max(managePrincipalBodyClassIdsMax).optional().describe('For setGroupSubjectTeacher: every arm of a year group, e.g. Year 11 Amber, Jade and Chrysolite'),
   "subjectName": zod.string().max(managePrincipalBodySubjectNameMax).optional().describe('For setGroupSubjectTeacher: the subject, matched by name in each class'),
-  "addMissing": zod.boolean().optional().describe('For setGroupSubjectTeacher: add the subject to any of the classes that do not offer it yet (a new, typed subject is added to all of them), so every arm matches')
+  "addMissing": zod.boolean().optional().describe('For setGroupSubjectTeacher: add the subject to any of the classes that do not offer it yet (a new, typed subject is added to all of them), so every arm matches'),
+  "studentId": zod.number().optional().describe('For moveStudent: the student (portal id) to move into classId')
 })
 
 export const ManagePrincipalResponse = zod.object({
@@ -3326,9 +3338,11 @@ export const GetPrincipalReportCardsResponse = zod.object({
 })),
   "principalName": zod.string(),
   "principalSignature": zod.string().nullable(),
-  "scheme": zod.enum(['primary', 'secondary']).describe('primary (Year 1 to 6): Mid-term (ca) and End-term (exam) out of 100, final = their average, no positions; secondary: CA + exam with positions'),
+  "scheme": zod.enum(['primary', 'secondary']).describe('primary (Year 1 to 6): First Half Term (ca) and Second Half Term (exam) out of 100, final = their average, no positions; secondary: CA + exam with positions'),
   "cardPrincipalName": zod.string().describe('The principal printed on this class\'s report cards: who signed them in the principal\'s portal, else that school\'s principal, else principalName'),
   "cardPrincipalSignature": zod.string().nullable(),
+  "cardDirectorName": zod.string().optional().describe('The Director, printed on every report card with the Head Teacher (primary) or the principal (secondary)'),
+  "cardDirectorSignature": zod.string().nullish(),
   "mySignature": zod.string().nullable().describe('The signed-in teacher\'s saved signature'),
   "isClassTeacher": zod.boolean().describe('The office or the class teacher: may write remarks, sign and send results'),
   "editableSubjectIds": zod.array(zod.number()).nullable().describe('Subjects whose scores the signed-in teacher may enter (null: all)'),
@@ -3801,7 +3815,7 @@ export const GetParentChildProgressResponse = zod.object({
   "className": zod.string()
 }),
   "reports": zod.array(zod.object({
-  "scheme": zod.enum(['primary', 'secondary']).describe('primary (Year 1 to 6): Mid-term (ca) and End-term (exam) out of 100, final = their average, no positions; secondary: CA + exam with positions'),
+  "scheme": zod.enum(['primary', 'secondary']).describe('primary (Year 1 to 6): First Half Term (ca) and Second Half Term (exam) out of 100, final = their average, no positions; secondary: CA + exam with positions'),
   "className": zod.string().describe('The class the student was in for this term'),
   "gradingScale": zod.array(zod.object({
   "min": zod.number().min(getParentChildProgressResponseReportsItemGradingScaleItemMinMin).max(getParentChildProgressResponseReportsItemGradingScaleItemMinMax),
@@ -3812,6 +3826,8 @@ export const GetParentChildProgressResponse = zod.object({
   "teacherSignature": zod.string().nullable(),
   "principalName": zod.string(),
   "principalSignature": zod.string().nullable(),
+  "directorName": zod.string().optional(),
+  "directorSignature": zod.string().nullish(),
   "term": zod.object({
   "id": zod.number(),
   "session": zod.string(),
@@ -4757,6 +4773,44 @@ export const GetAccountsReceiptParams = zod.object({
 })
 
 export const GetAccountsReceiptResponse = zod.unknown()
+
+
+/**
+ * The Head Teacher's and the Director's own name and signature for report cards (only the roles the signed-in person holds)
+ */
+export const GetMySignaturesResponse = zod.object({
+  "roles": zod.array(zod.enum(['head', 'director'])),
+  "entries": zod.array(zod.object({
+  "role": zod.enum(['head', 'director']),
+  "name": zod.string(),
+  "signature": zod.string().nullable()
+}))
+})
+
+
+/**
+ * Save the Head Teacher's or the Director's name and signature for report cards
+ */
+export const saveMySignatureBodyNameMax = 120;
+
+export const saveMySignatureBodySignatureMax = 200000;
+
+
+
+export const SaveMySignatureBody = zod.object({
+  "role": zod.enum(['head', 'director']),
+  "name": zod.string().max(saveMySignatureBodyNameMax),
+  "signature": zod.string().max(saveMySignatureBodySignatureMax).nullable()
+})
+
+export const SaveMySignatureResponse = zod.object({
+  "roles": zod.array(zod.enum(['head', 'director'])),
+  "entries": zod.array(zod.object({
+  "role": zod.enum(['head', 'director']),
+  "name": zod.string(),
+  "signature": zod.string().nullable()
+}))
+})
 
 
 /**

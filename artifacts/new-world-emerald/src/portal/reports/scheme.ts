@@ -1,7 +1,7 @@
 /**
  * How a class is assessed (the server decides from the class's name).
  * Secondary (JSS 1 to SS 3): CA (1 and 2) + exam, out of the term's maxima, with positions.
- * Primary (Year 1 to Year 6): a Mid-term and an End-term mark per subject, each out of 100, stored as CA and exam;
+ * Primary (Year 1 to Year 6): a First Half Term and an Second Half Term mark per subject, each out of 100, stored as CA and exam;
  * the final mark is their average, shown as a percentage and average with no positions.
  */
 export type ResultScheme = "primary" | "secondary";
@@ -24,6 +24,6 @@ export function schemeTotal(scheme: ResultScheme | undefined, ca: number | null,
 
 /** Column names for the score parts. */
 export function partLabels(scheme: ResultScheme | undefined, twoCa: boolean) {
-  if (scheme === "primary") return { ca: "Mid-term", ca2: "", exam: "End-term", total: "Final" };
+  if (scheme === "primary") return { ca: "First Half Term", ca2: "", exam: "Second Half Term", total: "Final" };
   return { ca: twoCa ? "CA 1" : "CA", ca2: "CA 2", exam: "Exam", total: "Total" };
 }

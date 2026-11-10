@@ -32,7 +32,7 @@ export function ScoresEditor({ ws, term, locked: lockedByStatus }: { ws: ReportW
   useEffect(() => { setDraft(saved); }, [saved]);
 
   // CA 1 + CA 2 + exam when the term splits continuous assessment; otherwise a single CA column.
-  // Primary (Year 1 to 6): Mid-term and End-term out of 100, final = their average.
+  // Primary (Year 1 to 6): First Half Term and Second Half Term out of 100, final = their average.
   const primary = ws.scheme === "primary";
   const twoCa = !primary && (term.ca2Max ?? 0) > 0;
   const L = partLabels(ws.scheme, twoCa);
@@ -93,7 +93,7 @@ export function ScoresEditor({ ws, term, locked: lockedByStatus }: { ws: ReportW
 
       <div className="portal-card overflow-hidden">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[hsl(var(--p-line))] px-4 py-3">
-          <p className="text-sm"><b>{subject?.name}</b> <span className="text-[hsl(var(--p-ink)/0.6)]">/ {enteredCount} of {ws.students.length} entered / {primary ? "Mid-term and End-term each out of 100; final = (Mid-term + End-term) ÷ 2" : `${twoCa ? `CA 1 out of ${term.caMax}, CA 2 out of ${term.ca2Max}` : `CA out of ${term.caMax}`}, exam out of ${term.examMax}`}</span></p>
+          <p className="text-sm"><b>{subject?.name}</b> <span className="text-[hsl(var(--p-ink)/0.6)]">/ {enteredCount} of {ws.students.length} entered / {primary ? "First Half Term and Second Half Term each out of 100; final = (First Half Term + Second Half Term) ÷ 2" : `${twoCa ? `CA 1 out of ${term.caMax}, CA 2 out of ${term.ca2Max}` : `CA out of ${term.caMax}`}, exam out of ${term.examMax}`}</span></p>
           <div className="flex gap-2">
             <button className="portal-btn-ghost" disabled={locked} onClick={() => setCbtOpen(true)} data-testid="button-import-cbt"><FileUp size={13} /> From CBT exam</button>
             <button className="portal-btn-ghost" disabled={locked} onClick={() => setCsvOpen(true)} data-testid="button-import-scores"><FileUp size={13} /> Paste or upload</button>
@@ -131,7 +131,7 @@ export function ScoresEditor({ ws, term, locked: lockedByStatus }: { ws: ReportW
             </tbody>
           </table>
         </div>
-        {manual && <p className="border-t border-[hsl(var(--p-line))] px-4 py-2 text-xs text-[hsl(var(--p-ink)/0.6)]">Manual results: type a total and grade to use them instead of the calculated ones. Leave them empty to calculate from {primary ? "the Mid-term and End-term marks" : "CA and exam"}.</p>}
+        {manual && <p className="border-t border-[hsl(var(--p-line))] px-4 py-2 text-xs text-[hsl(var(--p-ink)/0.6)]">Manual results: type a total and grade to use them instead of the calculated ones. Leave them empty to calculate from {primary ? "the First Half Term and Second Half Term marks" : "CA and exam"}.</p>}
         {invalid && <p className="border-t border-[hsl(var(--p-line))] px-4 py-2 text-xs text-[hsl(var(--p-red))]">Fix the highlighted scores before saving.</p>}
       </div>
 
@@ -139,8 +139,8 @@ export function ScoresEditor({ ws, term, locked: lockedByStatus }: { ws: ReportW
       <Dialog open={csvOpen} onOpenChange={setCsvOpen}>
         <DialogContent className="portal !min-h-0 max-h-[92dvh] max-w-xl overflow-y-auto rounded-2xl">
           <DialogHeader><DialogTitle className="font-serif text-2xl">Import {subject?.name} scores</DialogTitle>
-            <DialogDescription>One student per line: {primary ? "Student ID, Mid-term, End-term" : twoCa ? "Student ID, CA 1, CA 2, Exam" : "Student ID, CA, Exam"}. Copying the columns from Excel works. Scores fill the grid for you to check before saving.</DialogDescription></DialogHeader>
-          <textarea className="portal-input min-h-[160px] font-mono text-sm" value={csv} onChange={(e) => setCsv(e.target.value)} placeholder={primary ? "Student ID, Mid-term, End-term\nNWE/2026/001, 78, 84" : twoCa ? "Student ID, CA 1, CA 2, Exam\nNWE/2026/001, 16, 17, 51" : "Student ID, CA, Exam\nNWE/2026/001, 32, 51"} data-testid="input-score-csv" />
+            <DialogDescription>One student per line: {primary ? "Student ID, First Half Term, Second Half Term" : twoCa ? "Student ID, CA 1, CA 2, Exam" : "Student ID, CA, Exam"}. Copying the columns from Excel works. Scores fill the grid for you to check before saving.</DialogDescription></DialogHeader>
+          <textarea className="portal-input min-h-[160px] font-mono text-sm" value={csv} onChange={(e) => setCsv(e.target.value)} placeholder={primary ? "Student ID, First Half Term, Second Half Term\nNWE/2026/001, 78, 84" : twoCa ? "Student ID, CA 1, CA 2, Exam\nNWE/2026/001, 16, 17, 51" : "Student ID, CA, Exam\nNWE/2026/001, 32, 51"} data-testid="input-score-csv" />
           <label className="portal-btn-ghost w-fit cursor-pointer"><FileUp size={13} /> Upload CSV
             <input type="file" accept=".csv,text/csv,text/plain" className="sr-only" onChange={(e) => { e.target.files?.[0]?.text().then(setCsv); e.target.value = ""; }} />
           </label>

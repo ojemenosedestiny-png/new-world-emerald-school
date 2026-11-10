@@ -1,3 +1,4 @@
+import { MySignatures } from "@/portal/reports/MySignatures";
 import { useState, type ReactNode } from "react";
 import { Link } from "wouter";
 import { useAuth, useClerk } from "@clerk/react";
@@ -233,6 +234,7 @@ export default function Director() {
           </div>
         </div>
         {!r ? <div className="space-y-4"><Skeleton className="h-44" /><Skeleton className="h-28" /><Skeleton className="h-56" /></div> : <DirectorDashboard r={r} />}
+        <div className="print:hidden"><MySignatures /></div>
         </>)}
         <p className={"text-center text-xs print:hidden " + MUTED}>The weekly report is emailed to you every Monday at 7 am. Only the Director can open this page. <Link href="/admin" className="underline">Website admin</Link> / <Link href="/portal/manage" className="underline">Staff portal</Link></p>
       </main>

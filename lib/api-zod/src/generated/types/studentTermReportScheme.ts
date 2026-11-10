@@ -7,7 +7,7 @@
  */
 
 /**
- * primary (Year 1 to 6): Mid-term (ca) and End-term (exam) out of 100, final = their average, no positions; secondary: CA + exam with positions
+ * primary (Year 1 to 6): First Half Term (ca) and Second Half Term (exam) out of 100, final = their average, no positions; secondary: CA + exam with positions
  */
 export type StudentTermReportScheme = typeof StudentTermReportScheme[keyof typeof StudentTermReportScheme];
 
