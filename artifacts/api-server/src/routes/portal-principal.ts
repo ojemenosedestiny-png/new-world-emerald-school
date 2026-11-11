@@ -5,6 +5,7 @@ import { ManagePrincipalBody, GetPrincipalActivityQueryParams, GetPrincipalOverv
 import { check } from "../lib/portal-auth";
 import { isPrincipal } from "../lib/website-admin";
 import { moveStudent } from "../lib/move-student";
+import { cleanSubjectName, fixMessage, fixSubject } from "../lib/subject-fix";
 import { classSection, describeActivity, lagosDay, lagosToday, type ActivityKind, type SchoolSection } from "../lib/principal";
 
 export const portalPrincipalRouter = Router();
@@ -75,6 +76,20 @@ portalPrincipalRouter.post("/principal", async (req, res) => {
   check(section && isPrincipal(req, section), `${cls.name} is not one of your classes.`, 403);
   let message = "Saved.";
   switch (body.action) {
+    case "renameSubject":
+    case "removeSubject": {
+      // Across every class of the principal's school, so a misspelling made in many arms is fixed at once.
+      const oldName = cleanSubjectName(body.subjectName);
+      check(oldName, "Choose the subject to fix.");
+      const newName = body.action === "renameSubject" ? cleanSubjectName(body.newSubjectName) : null;
+      if (body.action === "renameSubject") {
+        check(newName, "Type the correct subject name (letters, numbers and simple punctuation, up to 80 characters).");
+        check(newName !== oldName, "The new name is the same as the old one.");
+      }
+      const ids = (await sectionStaff(section!)).classes.map((c) => c.id);
+      message = fixMessage(await fixSubject(ids, oldName, newName), oldName, newName);
+      break;
+    }
     case "moveStudent": {
       // Within the principal's own school only: both classes must be in their section.
       check(body.studentId, "Choose a student.");

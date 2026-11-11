@@ -34,4 +34,9 @@ export interface PrincipalCommand {
   addMissing?: boolean;
   /** For moveStudent: the student (portal id) to move into classId */
   studentId?: number;
+  /**
+     * For renameSubject: the corrected name. In every class of the principal's school, subjectName is renamed to it, or merged into it where the class already has it (marks and teacher kept)
+     * @maxLength 120
+     */
+  newSubjectName?: string;
 }

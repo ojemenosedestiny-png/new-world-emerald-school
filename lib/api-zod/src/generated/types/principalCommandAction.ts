@@ -16,4 +16,6 @@ export const PrincipalCommandAction = {
   setSubjectTeacher: 'setSubjectTeacher',
   setGroupSubjectTeacher: 'setGroupSubjectTeacher',
   moveStudent: 'moveStudent',
+  renameSubject: 'renameSubject',
+  removeSubject: 'removeSubject',
 } as const;

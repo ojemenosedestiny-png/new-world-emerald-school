@@ -3023,10 +3023,12 @@ export const managePrincipalBodyClassIdsMax = 20;
 
 export const managePrincipalBodySubjectNameMax = 120;
 
+export const managePrincipalBodyNewSubjectNameMax = 120;
+
 
 
 export const ManagePrincipalBody = zod.object({
-  "action": zod.enum(['assign', 'remove', 'replace', 'setSubjectTeacher', 'setGroupSubjectTeacher', 'moveStudent']),
+  "action": zod.enum(['assign', 'remove', 'replace', 'setSubjectTeacher', 'setGroupSubjectTeacher', 'moveStudent', 'renameSubject', 'removeSubject']),
   "classId": zod.number().describe('The class; for setGroupSubjectTeacher, any one of classIds'),
   "teacherId": zod.number().nullish().describe('The teacher to assign or remove; for replace, the outgoing teacher; for a subject, its new teacher (null for none)'),
   "newTeacherId": zod.number().optional().describe('For replace: the incoming teacher'),
@@ -3034,7 +3036,8 @@ export const ManagePrincipalBody = zod.object({
   "classIds": zod.array(zod.number()).max(managePrincipalBodyClassIdsMax).optional().describe('For setGroupSubjectTeacher: every arm of a year group, e.g. Year 11 Amber, Jade and Chrysolite'),
   "subjectName": zod.string().max(managePrincipalBodySubjectNameMax).optional().describe('For setGroupSubjectTeacher: the subject, matched by name in each class'),
   "addMissing": zod.boolean().optional().describe('For setGroupSubjectTeacher: add the subject to any of the classes that do not offer it yet (a new, typed subject is added to all of them), so every arm matches'),
-  "studentId": zod.number().optional().describe('For moveStudent: the student (portal id) to move into classId')
+  "studentId": zod.number().optional().describe('For moveStudent: the student (portal id) to move into classId'),
+  "newSubjectName": zod.string().max(managePrincipalBodyNewSubjectNameMax).optional().describe('For renameSubject: the corrected name. In every class of the principal\'s school, subjectName is renamed to it, or merged into it where the class already has it (marks and teacher kept)')
 })
 
 export const ManagePrincipalResponse = zod.object({

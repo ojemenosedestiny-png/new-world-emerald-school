@@ -8,6 +8,7 @@ import { GetReportWorkspaceQueryParams, ManageReportsBody } from "@workspace/api
 import { check, classAllowed, portalActor, staffOnly, studentOnly, type PortalActor } from "../lib/portal-auth";
 import { classSection } from "../lib/principal";
 import { isHeadOfSchool, isSuperAdmin } from "../lib/website-admin";
+import { fixMessage, fixSubject } from "../lib/subject-fix";
 import { GRADE_SCALE, traitsProblem, buildClassReport, nextStatus, scaleProblem, schemeFor, schemeMaxima, schemePossible, signatureProblem, validScorePart, type GradeBand, type ResultScheme, type ResultStatus } from "../lib/report-cards";
 
 export const portalReportsRouter = Router();
@@ -246,7 +247,17 @@ portalReportsRouter.post("/reports/manage", async (req, res) => {
         const [t] = await db.select({ id: portalTeachers.id }).from(portalTeachers).where(and(eq(portalTeachers.id, teacherId), eq(portalTeachers.active, true)));
         check(t, "Choose an active teacher.", 404);
       }
-      check(!existing.some((e) => e.id !== s.id && e.name.toLowerCase() === name.toLowerCase()), "This class already has that subject.", 409);
+      const taken = existing.find((e) => e.id !== s.id && e.name.toLowerCase() === name.toLowerCase());
+      if (taken && s.id) {
+        // Renaming onto a subject the class already has (a misspelt duplicate): merge them, keeping marks and teacher.
+        const old = existing.find((e) => e.id === s.id);
+        check(old, "Subject not found.", 404);
+        const r = await fixSubject([s.classId], old.name, taken.name);
+        check(!r.skipped.length, r.skipped[0] ? `Could not merge: ${r.skipped[0].reason}.` : "", 409);
+        res.json({ message: fixMessage(r, old.name, taken.name) });
+        return;
+      }
+      check(!taken, "This class already has that subject.", 409);
       if (s.id) {
         const rows = await db.update(portalSubjects).set({ name, sortOrder: s.sortOrder ?? 0, teacherId }).where(and(eq(portalSubjects.id, s.id), eq(portalSubjects.classId, s.classId))).returning();
         check(rows.length, "Subject not found.", 404);

@@ -11,6 +11,7 @@ import { EmptyState, ErrorPanel, Skeleton, StatusPill } from "../ui";
 import { errorMessage } from "../lib";
 import { armName, groupClasses, yearGroup } from "./groups";
 import { MoveStudentDialog } from "../manage/MoveStudent";
+import { FixSubject } from "./FixSubject";
 
 /** The arms of a class's year group (Year 7 Amber -> every Year 7 arm), the class itself when it has none. */
 const armsOf = (data: PrincipalOverview, cls: { name: string }) => data.classes.filter((c) => yearGroup(c.name).key === yearGroup(cls.name).key);
@@ -89,6 +90,7 @@ export function ClassesView({ data, classes = "JSS 1 to SS 3" }: { data: Princip
           <input type="checkbox" className="h-4 w-4 accent-[hsl(var(--p-emerald))]" checked={linked} onChange={(e) => setLinked(e.target.checked)} data-testid="toggle-link-arms" />
           Same subject teacher in every arm of a year
         </label>
+        <FixSubject data={data} run={cmd.run} pending={cmd.pending} />
       </div>
       {groups.map(({ group, classes: arms }) => (
         <section key={group.key} className="space-y-3" aria-labelledby={arms.length > 1 ? `group-${group.key}` : undefined} data-testid={`year-group-${group.key.replace(/\s+/g, "-")}`}>
