@@ -123,6 +123,14 @@ test("transfers and WAEC/NECO: parents report transfers, the office or Head of S
     // WAEC/NECO: the office opens registration for SS 3 with a fee.
     const settings = { academicYear: year, title: "WAEC and NECO registration", open: true, feeKobo: 45_000_00, compulsorySubjects: ["Mathematics", "English Language", "Civic Education", "Livestock Farming"], optionalSubjects: ["Biology", "Chemistry", "Physics", "Economics", "Geography", "Government", "Further Mathematics"], maxSubjects: 9, classIds: [ss3.id], deadline: "" };
     assert.equal((await call("/exam-registration", office, { ...settings, academicYear: "next year" })).status, 400);
+    // A bad setting is named, not "some fields are invalid".
+    const long = await call("/exam-registration", office, { ...settings, optionalSubjects: ["x".repeat(81)] });
+    assert.equal(long.status, 400);
+    assert.match(long.data.error, /up to 80 characters/);
+    assert.match((await call("/exam-registration", office, { ...settings, feeKobo: 2_000_000_000 })).data.error, /fee in naira/);
+    assert.match((await call("/exam-registration", office, { ...settings, maxSubjects: null })).data.error, /Most subjects/);
+    // A school with many classes and long subject names saves.
+    assert.equal((await call("/exam-registration", office, { ...settings, optionalSubjects: [...settings.optionalSubjects, "Technical Drawing and Engineering Graphics for SSS"], feeKobo: 150_000_00 })).status, 200);
     assert.equal((await call("/exam-registration", office, settings)).status, 200);
     const admin = await call(`/exam-registration?academicYear=${encodeURIComponent(year)}`, office);
     assert.deepEqual(admin.data.rows.map((r: { studentName: string; feeStatus: string }) => [r.studentName, r.feeStatus]), [["Tolu Ade", "due"]]);

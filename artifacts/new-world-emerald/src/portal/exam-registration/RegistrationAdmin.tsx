@@ -40,6 +40,9 @@ export function RegistrationAdmin() {
   const { toast } = useToast();
   const [editing, setEditing] = useState<ExamRegistrationSettings | null>(null);
   const [naira, setNaira] = useState("");
+  // The subject boxes keep exactly what is typed (spaces, new lines); they are split into subjects on Save.
+  const [compText, setCompText] = useState("");
+  const [optText, setOptText] = useState("");
   const [viewing, setViewing] = useState<ExamRegistrationRow | null>(null);
   const [note, setNote] = useState("");
   if (q.isLoading) return <Skeleton className="h-72" />;
@@ -47,12 +50,25 @@ export function RegistrationAdmin() {
   const d = q.data;
   const s = d.settings;
   const refresh = () => qc.invalidateQueries({ queryKey: getGetExamRegistrationAdminQueryKey() });
-  const openEditor = (base: ExamRegistrationSettings) => { setEditing(base); setNaira(base.feeKobo ? String(base.feeKobo / 100) : ""); };
+  const openEditor = (base: ExamRegistrationSettings) => {
+    setEditing(base); setNaira(base.feeKobo ? String(base.feeKobo / 100) : "");
+    setCompText(base.compulsorySubjects.join("\n")); setOptText(base.optionalSubjects.join("\n"));
+  };
   const store = async () => {
     if (!editing) return;
-    const kobo = Math.round(Number(naira.replace(/[,\s₦]/g, "") || "0") * 100);
-    if (!Number.isFinite(kobo) || kobo < 0) { toast({ variant: "destructive", title: "Enter the fee in naira" }); return; }
-    try { const r = await saveSettings.mutateAsync({ data: { ...editing, feeKobo: kobo } }); toast({ title: r.message }); setYear(editing.academicYear); setEditing(null); await refresh(); }
+    const kobo = Math.round(Number(naira.replace(/[,\s₦]/g, "").replace(/^NGN/i, "") || "0") * 100);
+    const compulsorySubjects = lines(compText), optionalSubjects = lines(optText);
+    const tooLong = [...compulsorySubjects, ...optionalSubjects].find((x) => x.length > 80);
+    const problem = !/^\d{4}\/\d{4}$/.test(editing.academicYear.trim()) ? "Write the session like 2026/2027."
+      : !Number.isFinite(kobo) || kobo < 0 || kobo > 1_000_000_000 ? "Enter the fee in naira, for example 45000."
+      : tooLong ? `"${tooLong.slice(0, 40)}…" is too long for one subject. Put one subject per line.`
+      : compulsorySubjects.length > 15 ? "Up to 15 compulsory subjects."
+      : optionalSubjects.length > 80 ? "Up to 80 subjects to choose from."
+      : editing.maxSubjects < compulsorySubjects.length ? "Most subjects must include every compulsory subject."
+      : editing.open && !editing.classIds.length ? "Choose the SS 3 classes before opening registration."
+      : null;
+    if (problem) { toast({ variant: "destructive", title: "Check the settings", description: problem }); return; }
+    try { const r = await saveSettings.mutateAsync({ data: { ...editing, academicYear: editing.academicYear.trim(), feeKobo: kobo, compulsorySubjects, optionalSubjects, maxSubjects: Math.max(1, Math.min(15, Math.round(Number(editing.maxSubjects) || 9))), deadline: editing.deadline ?? "" } }); toast({ title: r.message }); setYear(editing.academicYear); setEditing(null); await refresh(); }
     catch (e) { toast({ variant: "destructive", title: "Not saved", description: errorMessage(e) }); }
   };
   const sendBack = async () => {
@@ -125,8 +141,8 @@ export function RegistrationAdmin() {
             <fieldset><legend className="text-sm font-semibold">SS 3 classes that register</legend>
               <div className="mt-2 flex flex-wrap gap-2">{d.classes.map((c) => { const on = editing.classIds.includes(c.id); return <button key={c.id} type="button" aria-pressed={on} onClick={() => setEditing({ ...editing, classIds: on ? editing.classIds.filter((x) => x !== c.id) : [...editing.classIds, c.id] })} className={"rounded-full border px-3 py-1.5 text-sm " + (on ? "border-[hsl(var(--p-emerald))] bg-[hsl(var(--p-emerald-soft))] font-semibold" : "border-[hsl(var(--p-line))]")} data-testid={`button-reg-class-${c.id}`}>{c.name}</button>; })}</div></fieldset>
             <div className="grid gap-4 sm:grid-cols-[1fr_1fr_7rem]">
-              <Field label="Compulsory subjects" htmlFor="rs-comp" hint="One per line"><textarea id="rs-comp" className="portal-input min-h-[120px]" value={editing.compulsorySubjects.join("\n")} onChange={(e) => setEditing({ ...editing, compulsorySubjects: lines(e.target.value) })} /></Field>
-              <Field label="Subjects to choose from" htmlFor="rs-opt" hint="One per line"><textarea id="rs-opt" className="portal-input min-h-[120px]" value={editing.optionalSubjects.join("\n")} onChange={(e) => setEditing({ ...editing, optionalSubjects: lines(e.target.value) })} /></Field>
+              <Field label="Compulsory subjects" htmlFor="rs-comp" hint="One per line"><textarea id="rs-comp" className="portal-input min-h-[120px]" value={compText} onChange={(e) => setCompText(e.target.value)} data-testid="input-reg-compulsory" /></Field>
+              <Field label="Subjects to choose from" htmlFor="rs-opt" hint="One per line"><textarea id="rs-opt" className="portal-input min-h-[120px]" value={optText} onChange={(e) => setOptText(e.target.value)} data-testid="input-reg-optional" /></Field>
               <Field label="Most subjects" htmlFor="rs-max"><input id="rs-max" type="number" min={1} max={15} className="portal-input" value={editing.maxSubjects} onChange={(e) => setEditing({ ...editing, maxSubjects: Math.max(1, Math.min(15, Number(e.target.value) || 9)) })} /></Field>
             </div>
             <label className="flex items-center gap-2 rounded-xl border border-[hsl(var(--p-line))] p-3 text-sm"><input type="checkbox" checked={editing.open} onChange={(e) => setEditing({ ...editing, open: e.target.checked })} data-testid="checkbox-reg-open" /> <span><b>Open registration</b><span className={"block text-xs " + MUTED}>Students in the chosen classes see the form; their parents see the fee.</span></span></label>

@@ -4230,19 +4230,19 @@ export const getExamRegistrationAdminResponseSettingsOneAcademicYearMax = 20;
 export const getExamRegistrationAdminResponseSettingsOneTitleMax = 120;
 
 export const getExamRegistrationAdminResponseSettingsOneFeeKoboMin = 0;
-export const getExamRegistrationAdminResponseSettingsOneFeeKoboMax = 100000000;
+export const getExamRegistrationAdminResponseSettingsOneFeeKoboMax = 1000000000;
 
-export const getExamRegistrationAdminResponseSettingsOneCompulsorySubjectsItemMax = 60;
+export const getExamRegistrationAdminResponseSettingsOneCompulsorySubjectsItemMax = 80;
 
 export const getExamRegistrationAdminResponseSettingsOneCompulsorySubjectsMax = 15;
 
-export const getExamRegistrationAdminResponseSettingsOneOptionalSubjectsItemMax = 60;
+export const getExamRegistrationAdminResponseSettingsOneOptionalSubjectsItemMax = 80;
 
-export const getExamRegistrationAdminResponseSettingsOneOptionalSubjectsMax = 60;
+export const getExamRegistrationAdminResponseSettingsOneOptionalSubjectsMax = 80;
 
 export const getExamRegistrationAdminResponseSettingsOneMaxSubjectsMax = 15;
 
-export const getExamRegistrationAdminResponseSettingsOneClassIdsMax = 50;
+export const getExamRegistrationAdminResponseSettingsOneClassIdsMax = 100;
 
 export const getExamRegistrationAdminResponseSettingsOneDeadlineMax = 10;
 
@@ -4330,19 +4330,19 @@ export const saveExamRegistrationSettingsBodyAcademicYearMax = 20;
 export const saveExamRegistrationSettingsBodyTitleMax = 120;
 
 export const saveExamRegistrationSettingsBodyFeeKoboMin = 0;
-export const saveExamRegistrationSettingsBodyFeeKoboMax = 100000000;
+export const saveExamRegistrationSettingsBodyFeeKoboMax = 1000000000;
 
-export const saveExamRegistrationSettingsBodyCompulsorySubjectsItemMax = 60;
+export const saveExamRegistrationSettingsBodyCompulsorySubjectsItemMax = 80;
 
 export const saveExamRegistrationSettingsBodyCompulsorySubjectsMax = 15;
 
-export const saveExamRegistrationSettingsBodyOptionalSubjectsItemMax = 60;
+export const saveExamRegistrationSettingsBodyOptionalSubjectsItemMax = 80;
 
-export const saveExamRegistrationSettingsBodyOptionalSubjectsMax = 60;
+export const saveExamRegistrationSettingsBodyOptionalSubjectsMax = 80;
 
 export const saveExamRegistrationSettingsBodyMaxSubjectsMax = 15;
 
-export const saveExamRegistrationSettingsBodyClassIdsMax = 50;
+export const saveExamRegistrationSettingsBodyClassIdsMax = 100;
 
 export const saveExamRegistrationSettingsBodyDeadlineMax = 10;
 
@@ -4396,19 +4396,19 @@ export const getMyExamRegistrationResponseSettingsOneAcademicYearMax = 20;
 export const getMyExamRegistrationResponseSettingsOneTitleMax = 120;
 
 export const getMyExamRegistrationResponseSettingsOneFeeKoboMin = 0;
-export const getMyExamRegistrationResponseSettingsOneFeeKoboMax = 100000000;
+export const getMyExamRegistrationResponseSettingsOneFeeKoboMax = 1000000000;
 
-export const getMyExamRegistrationResponseSettingsOneCompulsorySubjectsItemMax = 60;
+export const getMyExamRegistrationResponseSettingsOneCompulsorySubjectsItemMax = 80;
 
 export const getMyExamRegistrationResponseSettingsOneCompulsorySubjectsMax = 15;
 
-export const getMyExamRegistrationResponseSettingsOneOptionalSubjectsItemMax = 60;
+export const getMyExamRegistrationResponseSettingsOneOptionalSubjectsItemMax = 80;
 
-export const getMyExamRegistrationResponseSettingsOneOptionalSubjectsMax = 60;
+export const getMyExamRegistrationResponseSettingsOneOptionalSubjectsMax = 80;
 
 export const getMyExamRegistrationResponseSettingsOneMaxSubjectsMax = 15;
 
-export const getMyExamRegistrationResponseSettingsOneClassIdsMax = 50;
+export const getMyExamRegistrationResponseSettingsOneClassIdsMax = 100;
 
 export const getMyExamRegistrationResponseSettingsOneDeadlineMax = 10;
 
@@ -4545,19 +4545,19 @@ export const saveMyExamRegistrationResponseSettingsOneAcademicYearMax = 20;
 export const saveMyExamRegistrationResponseSettingsOneTitleMax = 120;
 
 export const saveMyExamRegistrationResponseSettingsOneFeeKoboMin = 0;
-export const saveMyExamRegistrationResponseSettingsOneFeeKoboMax = 100000000;
+export const saveMyExamRegistrationResponseSettingsOneFeeKoboMax = 1000000000;
 
-export const saveMyExamRegistrationResponseSettingsOneCompulsorySubjectsItemMax = 60;
+export const saveMyExamRegistrationResponseSettingsOneCompulsorySubjectsItemMax = 80;
 
 export const saveMyExamRegistrationResponseSettingsOneCompulsorySubjectsMax = 15;
 
-export const saveMyExamRegistrationResponseSettingsOneOptionalSubjectsItemMax = 60;
+export const saveMyExamRegistrationResponseSettingsOneOptionalSubjectsItemMax = 80;
 
-export const saveMyExamRegistrationResponseSettingsOneOptionalSubjectsMax = 60;
+export const saveMyExamRegistrationResponseSettingsOneOptionalSubjectsMax = 80;
 
 export const saveMyExamRegistrationResponseSettingsOneMaxSubjectsMax = 15;
 
-export const saveMyExamRegistrationResponseSettingsOneClassIdsMax = 50;
+export const saveMyExamRegistrationResponseSettingsOneClassIdsMax = 100;
 
 export const saveMyExamRegistrationResponseSettingsOneDeadlineMax = 10;
 

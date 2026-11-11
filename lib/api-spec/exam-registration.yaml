@@ -74,11 +74,11 @@ schemas:
       academicYear: { type: string, maxLength: 20 }
       title: { type: string, maxLength: 120 }
       open: { type: boolean }
-      feeKobo: { type: integer, minimum: 0, maximum: 100000000 }
-      compulsorySubjects: { type: array, items: { type: string, maxLength: 60 }, maxItems: 15 }
-      optionalSubjects: { type: array, items: { type: string, maxLength: 60 }, maxItems: 60 }
+      feeKobo: { type: integer, minimum: 0, maximum: 1000000000 }
+      compulsorySubjects: { type: array, items: { type: string, maxLength: 80 }, maxItems: 15 }
+      optionalSubjects: { type: array, items: { type: string, maxLength: 80 }, maxItems: 80 }
       maxSubjects: { type: integer, minimum: 1, maximum: 15 }
-      classIds: { type: array, items: { type: integer }, maxItems: 50 }
+      classIds: { type: array, items: { type: integer }, maxItems: 100 }
       deadline: { type: string, maxLength: 10 }
   ExamRegistrationFormFields:
     type: object

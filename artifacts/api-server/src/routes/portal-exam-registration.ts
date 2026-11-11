@@ -30,6 +30,21 @@ const formView = (f: ExamRegistrationRecord) => ({
   submittedAt: f.submittedAt?.toISOString() ?? null, updatedAt: f.updatedAt.toISOString(),
 });
 const clean = (v: string) => v.trim().replace(/\s+/g, " ");
+/** Which setting is wrong, in words the office understands (instead of "some fields are invalid"). */
+export function settingsProblem(path: PropertyKey[]): string {
+  switch (path[0]) {
+    case "academicYear": return "Write the session like 2026/2027.";
+    case "title": return "The title is too long (120 characters at most).";
+    case "feeKobo": return "Enter the fee in naira, between 0 and 10,000,000.";
+    case "compulsorySubjects": return path.length > 1 ? "Each compulsory subject can be up to 80 characters. Put one subject per line." : "Up to 15 compulsory subjects.";
+    case "optionalSubjects": return path.length > 1 ? "Each subject to choose from can be up to 80 characters. Put one subject per line." : "Up to 80 subjects to choose from.";
+    case "maxSubjects": return "Most subjects must be a number from 1 to 15.";
+    case "classIds": return "Choose up to 100 classes.";
+    case "deadline": return "Choose a valid closing date, or leave it empty.";
+    case "open": return "Tick or untick Open registration.";
+    default: return "Some settings are missing. Close the window, open it again and retry.";
+  }
+}
 const sameSubject = (a: string, b: string) => clean(a).toLowerCase() === clean(b).toLowerCase();
 
 /** What is wrong with a form before it can be submitted, or null. Exported for tests. */
@@ -130,7 +145,9 @@ portalExamRegistrationRouter.get("/exam-registration", async (req, res) => {
 
 portalExamRegistrationRouter.post("/exam-registration", async (req, res) => {
   const by = await office(req);
-  const body = SaveExamRegistrationSettingsBody.parse(req.body);
+  const parsed = SaveExamRegistrationSettingsBody.safeParse(req.body);
+  check(parsed.success, parsed.success ? "" : settingsProblem(parsed.error.issues[0]?.path ?? []));
+  const body = parsed.data!;
   const academicYear = body.academicYear.trim();
   check(/^\d{4}\/\d{4}$/.test(academicYear), "Write the session like 2026/2027.");
   check(!body.deadline || /^\d{4}-\d{2}-\d{2}$/.test(body.deadline), "Choose a valid closing date.");

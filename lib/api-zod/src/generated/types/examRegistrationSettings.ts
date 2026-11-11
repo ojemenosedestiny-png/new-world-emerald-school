@@ -14,17 +14,17 @@ export interface ExamRegistrationSettings {
   open: boolean;
   /**
      * @minimum 0
-     * @maximum 100000000
+     * @maximum 1000000000
      */
   feeKobo: number;
   /**
      * @maxItems 15
-     * @items.maxLength 60
+     * @items.maxLength 80
      */
   compulsorySubjects: string[];
   /**
-     * @maxItems 60
-     * @items.maxLength 60
+     * @maxItems 80
+     * @items.maxLength 80
      */
   optionalSubjects: string[];
   /**
@@ -32,7 +32,7 @@ export interface ExamRegistrationSettings {
      * @maximum 15
      */
   maxSubjects: number;
-  /** @maxItems 50 */
+  /** @maxItems 100 */
   classIds: number[];
   /** @maxLength 10 */
   deadline: string;
