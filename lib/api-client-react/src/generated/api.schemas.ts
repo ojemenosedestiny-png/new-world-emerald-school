@@ -837,6 +837,8 @@ export interface PrincipalTeacher {
   subjectCount: number;
   /** Class teacher or subject teacher in this section, or not yet assigned anywhere */
   inSection: boolean;
+  /** A new teacher with no class or subject anywhere yet, whom either principal may take on */
+  unassigned?: boolean;
 }
 
 export type PrincipalOverviewStudentsItem = {
@@ -844,13 +846,20 @@ export type PrincipalOverviewStudentsItem = {
   name: string;
   studentId: string;
   classId: number;
+  active?: boolean;
+  /** @nullable */
+  guardianEmail?: string | null;
+  /** @nullable */
+  secondGuardianEmail?: string | null;
+  /** @nullable */
+  photoImageId?: string | null;
 };
 
 export interface PrincipalOverview {
   today: string;
   classes: PrincipalClass[];
   teachers: PrincipalTeacher[];
-  /** Active students in the section's classes, for moving a child to another class */
+  /** Every student in the section's classes (active and inactive), for editing and moving */
   students?: PrincipalOverviewStudentsItem[];
 }
 
@@ -866,6 +875,7 @@ export const PrincipalCommandAction = {
   moveStudent: 'moveStudent',
   renameSubject: 'renameSubject',
   removeSubject: 'removeSubject',
+  editStudent: 'editStudent',
 } as const;
 
 export interface PrincipalCommand {
@@ -900,6 +910,25 @@ export interface PrincipalCommand {
      * @maxLength 120
      */
   newSubjectName?: string;
+  /**
+     * For editStudent: the corrected full name
+     * @maxLength 150
+     */
+  studentName?: string;
+  /**
+     * For editStudent: the first parent email (null or empty for none)
+     * @maxLength 200
+     * @nullable
+     */
+  guardianEmail?: string | null;
+  /**
+     * For editStudent: the second parent email
+     * @maxLength 200
+     * @nullable
+     */
+  secondGuardianEmail?: string | null;
+  /** For editStudent: false stops the student signing in */
+  active?: boolean;
 }
 
 export type PrincipalActionKind = typeof PrincipalActionKind[keyof typeof PrincipalActionKind];

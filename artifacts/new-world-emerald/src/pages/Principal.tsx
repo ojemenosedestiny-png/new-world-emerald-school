@@ -2,8 +2,9 @@ import { useState, type ReactNode } from "react";
 import { Link } from "wouter";
 import { useAuth, useClerk, useUser } from "@clerk/react";
 import { ApiError, useGetPrincipalOverview, getGetPrincipalOverviewQueryKey, useGetPrincipalDashboard, getGetPrincipalDashboardQueryKey } from "@workspace/api-client-react";
-import { Activity, ClipboardList, FileSignature, LayoutDashboard, School, Sparkles, Users } from "lucide-react";
+import { Activity, ClipboardList, FileSignature, GraduationCap, LayoutDashboard, School, Sparkles, Users } from "lucide-react";
 import { AssistantPanel } from "@/portal/assistant/AssistantPanel";
+import { StudentsView } from "@/portal/principal/StudentsView";
 import "@/portal/portal.css";
 import { AppShell, type NavItem } from "@/portal/shell/AppShell";
 import { usePortalTheme } from "@/portal/shell/theme";
@@ -16,7 +17,7 @@ import { asset } from "@/lib/asset";
 
 type Section = PrincipalTab;
 export type SchoolSection = "primary" | "secondary";
-const TITLES: Record<Section, string> = { overview: "Overview", classes: "Classes & teachers", exams: "Exams", results: "Results & signing", teachers: "Teachers", activity: "Daily activity", assistant: "AI assistant" };
+const TITLES: Record<Section, string> = { overview: "Overview", classes: "Classes & teachers", exams: "Exams", results: "Results & signing", teachers: "Teachers", activity: "Daily activity", assistant: "AI assistant", students: "Students" };
 
 // The two principals' portals: the same tools, each over their own classes.
 const SECTIONS = {
@@ -72,13 +73,14 @@ export default function Principal({ section: school = "secondary" }: { section?:
     activity: { key: "activity", label: "Daily activity", icon: Activity, testId: "tab-principal-activity" },
     classes: { key: "classes", label: "Classes & teachers", icon: School, testId: "tab-principal-classes" },
     teachers: { key: "teachers", label: "Teachers", icon: Users, testId: "tab-principal-teachers" },
+    students: { key: "students", label: "Students", icon: GraduationCap, testId: "tab-principal-students" },
     exams: { key: "exams", label: "Exams", icon: ClipboardList, testId: "tab-principal-exams" },
     results: { key: "results", label: "Results & signing", icon: FileSignature, testId: "tab-principal-results", ...(waiting ? { badge: waiting } : {}) },
     assistant: { key: "assistant", label: "AI assistant", icon: Sparkles, testId: "tab-principal-assistant" },
   } satisfies Record<Section, NavItem<Section>>;
   const groups = [
     { label: "Today", items: [item.overview, item.activity] },
-    { label: "Teaching", items: [item.classes, item.teachers, item.exams] },
+    { label: "Teaching", items: [item.classes, item.teachers, item.students, item.exams] },
     { label: "Report cards", items: [item.results] },
     { label: "Help", items: [item.assistant] },
   ];
@@ -97,6 +99,7 @@ export default function Principal({ section: school = "secondary" }: { section?:
         {section === "teachers" && <TeachersView data={q.data} />}
         {section === "activity" && <ActivityView today={q.data.today} section={school} />}
         {section === "assistant" && <AssistantPanel />}
+        {section === "students" && <StudentsView data={q.data} />}
       </div>
     </AppShell>
   );

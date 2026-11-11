@@ -1,10 +1,12 @@
-import { Router } from "express";
+import { Router, type Request } from "express";
 import { and, eq, sql } from "drizzle-orm";
 import { db, portalClasses, portalStudents, studentProfiles, type StudentProfileRecord } from "@workspace/db";
 import { GetChildProfileParams, GetStudentProfileParams, SaveStudentProfileBody, SaveStudentProfileParams } from "@workspace/api-zod";
 import { check, classAllowed, portalActor, studentOnly } from "../lib/portal-auth";
 import { parentEmail } from "./portal-parent";
 import { recordAudit, clientIp } from "../lib/audit";
+import { isPrincipal } from "../lib/website-admin";
+import { classSection } from "../lib/principal";
 
 /**
  * Each student's full profile: date of birth, home address and phone, state of origin, health, admission details,
@@ -55,26 +57,33 @@ export function profileProblem(p: Record<Field, string>, today = new Date().toIS
   return null;
 }
 
-studentProfilesRouter.get("/students/:id/profile", async (req, res) => {
+/** The office, a teacher of the student's class, or the principal of the student's school (primary or secondary). */
+async function staffFor(req: Request, classId: number): Promise<string> {
+  const [cls] = await db.select({ name: portalClasses.name }).from(portalClasses).where(eq(portalClasses.id, classId));
+  const section = cls ? classSection(cls.name) : null;
+  if (section && isPrincipal(req, section)) return req.identity?.email ?? "principal";
   const actor = await portalActor(req);
+  classAllowed(actor, classId);
+  return req.identity?.email || actor.name;
+}
+
+studentProfilesRouter.get("/students/:id/profile", async (req, res) => {
   const { id } = GetStudentProfileParams.parse(req.params);
   const [s] = await db.select({ classId: portalStudents.classId }).from(portalStudents).where(eq(portalStudents.id, id));
   check(s, "Student not found.", 404);
-  classAllowed(actor, s.classId);
+  await staffFor(req, s.classId);
   res.json(await view(id, true));
 });
 
 studentProfilesRouter.put("/students/:id/profile", async (req, res) => {
-  const actor = await portalActor(req);
   const { id } = SaveStudentProfileParams.parse(req.params);
   const body = SaveStudentProfileBody.parse(req.body);
   const [s] = await db.select({ classId: portalStudents.classId, studentId: portalStudents.studentId }).from(portalStudents).where(eq(portalStudents.id, id));
   check(s, "Student not found.", 404);
-  classAllowed(actor, s.classId);
+  const by = await staffFor(req, s.classId);
   const values = Object.fromEntries(PROFILE_FIELDS.map((f) => [f, (body[f] ?? "").trim().replace(/\s+/g, " ")])) as Record<Field, string>;
   const problem = profileProblem(values);
   check(!problem, problem ?? "");
-  const by = req.identity?.email || actor.name;
   const [before] = await db.select().from(studentProfiles).where(eq(studentProfiles.studentId, id));
   await db.insert(studentProfiles).values({ studentId: id, ...values, updatedBy: by, updatedAt: new Date() })
     .onConflictDoUpdate({ target: studentProfiles.studentId, set: { ...values, updatedBy: by, updatedAt: new Date() } });

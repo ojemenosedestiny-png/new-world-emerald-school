@@ -66,13 +66,14 @@ test("principal: assigns and replaces teachers, and sees each teacher's day", as
     // Two principals: the secondary one (the default) sees JSS 1 to SS 3; the primary one, Year 1 to Year 6.
     assert.equal(home.data.classes.some((c: { id: number }) => c.id === year3.id), false);
     const mine = (data: { teachers: { id: number; inSection: boolean }[] }, id: number) => data.teachers.find((t) => t.id === id)?.inSection;
-    assert.deepEqual([mine(home.data, musa.id), mine(home.data, ngozi.id), mine(home.data, bisi.id)], [true, true, false]);
+    assert.deepEqual([mine(home.data, musa.id), mine(home.data, ngozi.id), mine(home.data, bisi.id)], [true, true, undefined]);
+    // The other school's teachers are not listed at all (undefined), only this school's.
     assert.equal((await call("/principal?section=primary", principal)).status, 403);
     assert.equal((await call("/principal", primaryHead)).status, 403);
     const primary = await call("/principal?section=primary", primaryHead);
     assert.equal(primary.status, 200, JSON.stringify(primary.data));
     assert.deepEqual(primary.data.classes.map((c: { id: number }) => c.id).filter((id: number) => classIds.includes(id)), [year3.id]);
-    assert.deepEqual([mine(primary.data, musa.id), mine(primary.data, ngozi.id), mine(primary.data, bisi.id)], [false, true, true]);
+    assert.deepEqual([mine(primary.data, musa.id), mine(primary.data, ngozi.id), mine(primary.data, bisi.id)], [undefined, true, true]);
     assert.equal((await call("/principal?section=nursery", primaryHead)).status, 400);
     // Each changes only their own classes; the super administrator opens both.
     assert.equal((await call("/principal", primaryHead, { action: "assign", classId: jss2.id, teacherId: ngozi.id })).status, 403);

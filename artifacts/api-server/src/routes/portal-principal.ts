@@ -1,10 +1,13 @@
 import { Router, type Request } from "express";
 import { and, asc, eq, gte, inArray, lt, sql } from "drizzle-orm";
-import { db, portalAuditLog, portalClasses, portalStudents, portalSubjects, portalTeacherPresence, portalTeachers } from "@workspace/db";
+import { db, portalAuditLog, portalClasses, portalSessions, portalStudents, portalSubjects, portalTeacherPresence, portalTeachers } from "@workspace/db";
 import { ManagePrincipalBody, GetPrincipalActivityQueryParams, GetPrincipalOverviewQueryParams } from "@workspace/api-zod";
 import { check } from "../lib/portal-auth";
 import { isPrincipal } from "../lib/website-admin";
 import { moveStudent } from "../lib/move-student";
+import { validEmail } from "../lib/accounts";
+import { emailTypoFix } from "../lib/email-typos";
+import { recordAudit, clientIp } from "../lib/audit";
 import { cleanSubjectName, fixMessage, fixSubject } from "../lib/subject-fix";
 import { classSection, describeActivity, lagosDay, lagosToday, type ActivityKind, type SchoolSection } from "../lib/principal";
 
@@ -29,19 +32,22 @@ export async function sectionStaff(section: SchoolSection) {
   const classes = allClasses.filter((c) => classSection(c.name) === section);
   const ids = new Set(classes.map((c) => c.id));
   const subjects = allSubjects.filter((s) => ids.has(s.classId));
-  const inSection = (t: typeof teachers[number]) => t.classIds.some((id) => ids.has(id)) || subjects.some((s) => s.teacherId === t.id)
-    || (!t.classIds.length && !allSubjects.some((s) => s.teacherId === t.id));
-  return { classes, teachers, subjects, inSection };
+  // A new teacher with no class or subject anywhere yet: either principal may take them on.
+  const unassigned = (t: typeof teachers[number]) => !t.classIds.length && !allSubjects.some((s) => s.teacherId === t.id);
+  const inSection = (t: typeof teachers[number]) => t.classIds.some((id) => ids.has(id)) || subjects.some((s) => s.teacherId === t.id) || unassigned(t);
+  return { classes, teachers, subjects, inSection, unassigned };
 }
 
 /** The section's classes with their class teachers and subject teachers, and every active teacher with their classes. */
 portalPrincipalRouter.get("/principal", async (req, res) => {
   const section = GetPrincipalOverviewQueryParams.parse(req.query).section ?? "secondary";
   principalOnly(req, section);
-  const [{ classes, teachers, subjects, inSection }, counts, active] = await Promise.all([
+  const [{ classes, teachers, subjects, inSection, unassigned }, counts, everyone] = await Promise.all([
     sectionStaff(section),
     db.select({ classId: portalStudents.classId, n: sql<number>`count(*)::int` }).from(portalStudents).where(eq(portalStudents.active, true)).groupBy(portalStudents.classId),
-    db.select({ id: portalStudents.id, name: portalStudents.name, studentId: portalStudents.studentId, classId: portalStudents.classId }).from(portalStudents).where(eq(portalStudents.active, true)).orderBy(asc(portalStudents.name)),
+    db.select({ id: portalStudents.id, name: portalStudents.name, studentId: portalStudents.studentId, classId: portalStudents.classId, active: portalStudents.active,
+      guardianEmail: portalStudents.guardianEmail, secondGuardianEmail: portalStudents.secondGuardianEmail, photoImageId: portalStudents.photoImageId })
+      .from(portalStudents).orderBy(asc(portalStudents.name)),
   ]);
   const sectionIds = new Set(classes.map((c) => c.id));
   const studentCount = new Map(counts.map((c) => [c.classId, c.n]));
@@ -53,15 +59,19 @@ portalPrincipalRouter.get("/principal", async (req, res) => {
       teachers: teachers.filter((t) => t.classIds.includes(c.id)).map((t) => ({ id: t.id, name: t.name })),
       subjects: subjects.filter((s) => s.classId === c.id).map((s) => ({ id: s.id, name: s.name, teacherId: s.teacherId, teacherName: s.teacherId === null ? null : teacherName.get(s.teacherId) ?? null })),
     })),
-    teachers: teachers.map((t) => ({ id: t.id, name: t.name, email: t.email, classIds: t.classIds, photoFileId: t.photoFileId ?? null, subjectCount: subjects.filter((s) => s.teacherId === t.id).length, inSection: inSection(t) })),
-    students: active.filter((s) => sectionIds.has(s.classId)),
+    // Only this school's teachers (and new ones not yet in any class): never the other school's.
+    teachers: teachers.filter(inSection).map((t) => ({ id: t.id, name: t.name, email: t.email, classIds: t.classIds, photoFileId: t.photoFileId ?? null, subjectCount: subjects.filter((s) => s.teacherId === t.id).length, inSection: true, unassigned: unassigned(t) })),
+    students: everyone.filter((s) => sectionIds.has(s.classId)),
   });
 });
 
-async function activeTeacher(id: number | null | undefined) {
+async function activeTeacher(id: number | null | undefined, section: SchoolSection) {
   check(id, "Choose a teacher.");
   const [t] = await db.select().from(portalTeachers).where(eq(portalTeachers.id, id));
   check(t && t.active, "That teacher is not active.", 404);
+  // Each principal works with their own school's teachers (or a new one not yet in any class).
+  const staff = await sectionStaff(section);
+  check(staff.inSection(t), `${t.name} teaches in the other school. Ask the school office to add them to your school.`, 403);
   return t;
 }
 
@@ -76,6 +86,34 @@ portalPrincipalRouter.post("/principal", async (req, res) => {
   check(section && isPrincipal(req, section), `${cls.name} is not one of your classes.`, 403);
   let message = "Saved.";
   switch (body.action) {
+    case "editStudent": {
+      // The principal corrects a student in their own school: name, parent emails, and whether they can sign in.
+      check(body.studentId, "Choose a student.");
+      const [st] = await db.select().from(portalStudents).where(eq(portalStudents.id, body.studentId));
+      check(st, "Student not found.", 404);
+      check(st.classId === cls.id, "That student is not in this class.", 409);
+      const name = (body.studentName ?? st.name).trim().replace(/\s+/g, " ");
+      check(name.length >= 2 && name.length <= 150, "Type the student's full name.");
+      const email = (v: string | null | undefined, old: string | null) => {
+        if (v === undefined) return old;
+        const e = (v ?? "").trim().toLowerCase();
+        if (!e) return null;
+        check(validEmail(e), `"${e}" is not a valid email address.`);
+        const typo = emailTypoFix(e);
+        check(!typo, `"${e}" looks mistyped. Did you mean ${typo}?`);
+        return e;
+      };
+      const guardianEmail = email(body.guardianEmail, st.guardianEmail);
+      const secondGuardianEmail = email(body.secondGuardianEmail, st.secondGuardianEmail);
+      check(!guardianEmail || guardianEmail !== secondGuardianEmail, "The two parent emails are the same.");
+      const active = body.active ?? st.active;
+      await db.update(portalStudents).set({ name, guardianEmail, secondGuardianEmail, active }).where(eq(portalStudents.id, st.id));
+      if (!active && st.active) await db.delete(portalSessions).where(eq(portalSessions.studentId, st.id));
+      await recordAudit({ actorKind: "staff", actorId: req.dbUser?.id ?? null, actorLabel: req.identity?.email ?? "principal", action: "principal.student_edited", targetType: "student", targetId: st.studentId,
+        before: { name: st.name, active: st.active }, after: { name, active, parentEmailsChanged: guardianEmail !== st.guardianEmail || secondGuardianEmail !== st.secondGuardianEmail }, ip: clientIp(req), userAgent: req.headers["user-agent"] ?? null });
+      message = `${name}'s details are saved.${!active && st.active ? " They can no longer sign in." : ""}`;
+      break;
+    }
     case "renameSubject":
     case "removeSubject": {
       // Across every class of the principal's school, so a misspelling made in many arms is fixed at once.
@@ -97,22 +135,22 @@ portalPrincipalRouter.post("/principal", async (req, res) => {
       break;
     }
     case "assign": {
-      const t = await activeTeacher(body.teacherId);
+      const t = await activeTeacher(body.teacherId, section!);
       check(!t.classIds.includes(cls.id), `${t.name} already teaches ${cls.name}.`, 409);
       await db.update(portalTeachers).set({ classIds: [...t.classIds, cls.id] }).where(eq(portalTeachers.id, t.id));
       message = `${t.name} is now a class teacher for ${cls.name}.`;
       break;
     }
     case "remove": {
-      const t = await activeTeacher(body.teacherId);
+      const t = await activeTeacher(body.teacherId, section!);
       check(t.classIds.includes(cls.id), `${t.name} does not teach ${cls.name}.`, 404);
       await db.update(portalTeachers).set({ classIds: t.classIds.filter((id) => id !== cls.id) }).where(eq(portalTeachers.id, t.id));
       message = `${t.name} no longer teaches ${cls.name}.`;
       break;
     }
     case "replace": {
-      const out = await activeTeacher(body.teacherId);
-      const into = await activeTeacher(body.newTeacherId);
+      const out = await activeTeacher(body.teacherId, section!);
+      const into = await activeTeacher(body.newTeacherId, section!);
       check(out.id !== into.id, "Choose a different teacher.");
       check(out.classIds.includes(cls.id), `${out.name} does not teach ${cls.name}.`, 404);
       // The class's subjects taught by the outgoing teacher move to the new one too.
@@ -132,7 +170,7 @@ portalPrincipalRouter.post("/principal", async (req, res) => {
         await db.update(portalSubjects).set({ teacherId: null }).where(eq(portalSubjects.id, subject.id));
         message = `${subject.name} in ${cls.name} has no subject teacher now.`;
       } else {
-        const t = await activeTeacher(body.teacherId);
+        const t = await activeTeacher(body.teacherId, section!);
         await db.update(portalSubjects).set({ teacherId: t.id }).where(eq(portalSubjects.id, subject.id));
         message = `${t.name} now teaches ${subject.name} in ${cls.name}.`;
       }
@@ -148,7 +186,7 @@ portalPrincipalRouter.post("/principal", async (req, res) => {
       const rows = await db.select({ id: portalClasses.id, name: portalClasses.name }).from(portalClasses).where(inArray(portalClasses.id, ids));
       check(rows.length === ids.length, "Class not found.", 404);
       check(rows.every((r) => classSection(r.name) === section), "Every class must be in your school.", 403);
-      const t = body.teacherId === null || body.teacherId === undefined ? null : await activeTeacher(body.teacherId);
+      const t = body.teacherId === null || body.teacherId === undefined ? null : await activeTeacher(body.teacherId, section!);
       const same = sql`lower(trim(${portalSubjects.name})) = ${name.toLowerCase()}`;
       const added = await db.transaction(async (tx) => {
         let added: string[] = [];

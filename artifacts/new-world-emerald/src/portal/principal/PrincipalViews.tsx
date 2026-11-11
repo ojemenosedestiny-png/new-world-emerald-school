@@ -36,13 +36,13 @@ function usePrincipalCommand() {
   return { run, pending: m.isPending };
 }
 
-/** Teacher choices: this section's teachers first, then any other teacher (some teach in both schools). */
+/** Teacher choices: this school's teachers, then new teachers not yet in any class (never the other school's). */
 function TeacherOptions({ teachers }: { teachers: PrincipalTeacher[] }) {
-  const here = teachers.filter((t) => t.inSection), elsewhere = teachers.filter((t) => !t.inSection);
-  if (!elsewhere.length) return <>{here.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}</>;
+  const here = teachers.filter((t) => !t.unassigned), fresh = teachers.filter((t) => t.unassigned);
+  if (!fresh.length) return <>{here.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}</>;
   return (<>
     {here.length > 0 && <optgroup label="Teachers in this school">{here.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}</optgroup>}
-    <optgroup label="Other teachers">{elsewhere.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}</optgroup>
+    <optgroup label="New, not yet in a class">{fresh.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}</optgroup>
   </>);
 }
 
@@ -74,7 +74,7 @@ export function ClassesView({ data, classes = "JSS 1 to SS 3" }: { data: Princip
   if (!data.classes.length) return <EmptyState icon={<Users size={22} />} title="No classes yet" body={`Classes ${classes} appear here once the school office adds them in the staff portal (named like ${classes.split(" to ")[0]}).`} />;
   return (
     <div className="space-y-5">
-      <Figures items={[["Classes", data.classes.length], ["Teachers", data.teachers.filter((t) => t.inSection).length], ["Classes without a class teacher", noTeacher, noTeacher > 0], ["Subjects without a teacher", noSubjectTeacher, noSubjectTeacher > 0]]} />
+      <Figures items={[["Classes", data.classes.length], ["Teachers", data.teachers.filter((t) => t.inSection && !t.unassigned).length], ["Classes without a class teacher", noTeacher, noTeacher > 0], ["Subjects without a teacher", noSubjectTeacher, noSubjectTeacher > 0]]} />
       <div className="flex flex-wrap items-center gap-2">
         <label className="relative min-w-[14rem] max-w-sm flex-1">
           <span className="sr-only">Search classes or teachers</span>
@@ -174,7 +174,7 @@ function ClassCard({ cls, data, cmd, linked = false, onReplace }: { cls: Princip
     : cmd.run({ action: "setSubjectTeacher", classId: cls.id, subjectId, teacherId });
   const [pick, setPick] = useState("");
   const [moving, setMoving] = useState<{ id: number; name: string; classId: number } | null>(null);
-  const kids = (data.students ?? []).filter((s) => s.classId === cls.id);
+  const kids = (data.students ?? []).filter((s) => s.classId === cls.id && s.active !== false);
   const available = data.teachers.filter((t) => !cls.teachers.some((x) => x.id === t.id));
   return (
     <section className="portal-card p-5" aria-labelledby={`class-${cls.id}`} data-testid={`principal-class-${cls.id}`}>

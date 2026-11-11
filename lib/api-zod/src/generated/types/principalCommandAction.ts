@@ -18,4 +18,5 @@ export const PrincipalCommandAction = {
   moveStudent: 'moveStudent',
   renameSubject: 'renameSubject',
   removeSubject: 'removeSubject',
+  editStudent: 'editStudent',
 } as const;

@@ -39,4 +39,23 @@ export interface PrincipalCommand {
      * @maxLength 120
      */
   newSubjectName?: string;
+  /**
+     * For editStudent: the corrected full name
+     * @maxLength 150
+     */
+  studentName?: string;
+  /**
+     * For editStudent: the first parent email (null or empty for none)
+     * @maxLength 200
+     * @nullable
+     */
+  guardianEmail?: string | null;
+  /**
+     * For editStudent: the second parent email
+     * @maxLength 200
+     * @nullable
+     */
+  secondGuardianEmail?: string | null;
+  /** For editStudent: false stops the student signing in */
+  active?: boolean;
 }

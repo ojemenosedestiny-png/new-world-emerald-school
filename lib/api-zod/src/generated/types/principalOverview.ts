@@ -13,6 +13,6 @@ export interface PrincipalOverview {
   today: string;
   classes: PrincipalClass[];
   teachers: PrincipalTeacher[];
-  /** Active students in the section's classes, for moving a child to another class */
+  /** Every student in the section's classes (active and inactive), for editing and moving */
   students?: PrincipalOverviewStudentsItem[];
 }

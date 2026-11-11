@@ -151,6 +151,7 @@ schemas:
       photoFileId: { type: [string, "null"] }
       subjectCount: { type: integer }
       inSection: { type: boolean, description: "Class teacher or subject teacher in this section, or not yet assigned anywhere" }
+      unassigned: { type: boolean, description: "A new teacher with no class or subject anywhere yet, whom either principal may take on" }
   PrincipalOverview:
     type: object
     required: [today, classes, teachers]
@@ -160,7 +161,7 @@ schemas:
       teachers: { type: array, items: { $ref: "#/components/schemas/PrincipalTeacher" } }
       students:
         type: array
-        description: Active students in the section's classes, for moving a child to another class
+        description: Every student in the section's classes (active and inactive), for editing and moving
         items:
           type: object
           required: [id, name, studentId, classId]
@@ -169,11 +170,15 @@ schemas:
             name: { type: string }
             studentId: { type: string }
             classId: { type: integer }
+            active: { type: boolean }
+            guardianEmail: { type: ["string", "null"] }
+            secondGuardianEmail: { type: ["string", "null"] }
+            photoImageId: { type: ["string", "null"] }
   PrincipalCommand:
     type: object
     required: [action, classId]
     properties:
-      action: { type: string, enum: [assign, remove, replace, setSubjectTeacher, setGroupSubjectTeacher, moveStudent, renameSubject, removeSubject] }
+      action: { type: string, enum: [assign, remove, replace, setSubjectTeacher, setGroupSubjectTeacher, moveStudent, renameSubject, removeSubject, editStudent] }
       classId: { type: integer, description: "The class; for setGroupSubjectTeacher, any one of classIds" }
       teacherId: { type: [integer, "null"], description: "The teacher to assign or remove; for replace, the outgoing teacher; for a subject, its new teacher (null for none)" }
       newTeacherId: { type: integer, description: "For replace: the incoming teacher" }
@@ -183,6 +188,10 @@ schemas:
       addMissing: { type: boolean, description: "For setGroupSubjectTeacher: add the subject to any of the classes that do not offer it yet (a new, typed subject is added to all of them), so every arm matches" }
       studentId: { type: integer, description: "For moveStudent: the student (portal id) to move into classId" }
       newSubjectName: { type: string, maxLength: 120, description: "For renameSubject: the corrected name. In every class of the principal's school, subjectName is renamed to it, or merged into it where the class already has it (marks and teacher kept)" }
+      studentName: { type: string, maxLength: 150, description: "For editStudent: the corrected full name" }
+      guardianEmail: { type: ["string", "null"], maxLength: 200, description: "For editStudent: the first parent email (null or empty for none)" }
+      secondGuardianEmail: { type: ["string", "null"], maxLength: 200, description: "For editStudent: the second parent email" }
+      active: { type: boolean, description: "For editStudent: false stops the student signing in" }
   PrincipalAction:
     type: object
     required: [at, kind, label]

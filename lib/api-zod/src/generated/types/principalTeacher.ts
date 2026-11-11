@@ -16,4 +16,6 @@ export interface PrincipalTeacher {
   subjectCount: number;
   /** Class teacher or subject teacher in this section, or not yet assigned anywhere */
   inSection: boolean;
+  /** A new teacher with no class or subject anywhere yet, whom either principal may take on */
+  unassigned?: boolean;
 }

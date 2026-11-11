@@ -11,4 +11,11 @@ export type PrincipalOverviewStudentsItem = {
   name: string;
   studentId: string;
   classId: number;
+  active?: boolean;
+  /** @nullable */
+  guardianEmail?: string | null;
+  /** @nullable */
+  secondGuardianEmail?: string | null;
+  /** @nullable */
+  photoImageId?: string | null;
 };

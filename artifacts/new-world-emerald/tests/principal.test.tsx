@@ -26,7 +26,7 @@ const data: PrincipalOverview = {
     { id: 7, name: "Mr Musa", email: "musa@example.test", classIds: [1], photoFileId: null, subjectCount: 1, inSection: true },
     { id: 8, name: "Mrs Ngozi", email: "ngozi@example.test", classIds: [], photoFileId: null, subjectCount: 0, inSection: true },
     // Teaches in the other school (primary): offered last, and not listed among this school's teachers.
-    { id: 9, name: "Miss Bisi", email: "bisi@example.test", classIds: [40], photoFileId: null, subjectCount: 0, inSection: false },
+    { id: 9, name: "Miss Bisi", email: "bisi@example.test", classIds: [], photoFileId: null, subjectCount: 0, inSection: true, unassigned: true },
   ],
 };
 
@@ -63,14 +63,15 @@ it("lists this school's teachers with their classes and flags anyone without a c
   render(wrap(<TeachersView data={data} />));
   expect(within(screen.getByTestId("principal-teacher-7")).getByText("JSS 1")).toBeTruthy();
   expect(within(screen.getByTestId("principal-teacher-8")).getByText("No class")).toBeTruthy();
-  expect(screen.queryByTestId("principal-teacher-9")).toBeNull();
+  // A new teacher not yet in any class is shown so the principal can take them on.
+  expect(within(screen.getByTestId("principal-teacher-9")).getByText("No class")).toBeTruthy();
 });
 
-it("offers this school's teachers first, then teachers from the other school", () => {
+it("offers only this school's teachers, then new teachers not yet in a class (never the other school's)", () => {
   render(wrap(<ClassesView data={data} />));
   expect(screen.getByText("Teachers").nextElementSibling?.textContent).toBe("2");
   const groups = [...screen.getByTestId("select-assign-2").querySelectorAll("optgroup")].map((g) => [g.label, [...g.querySelectorAll("option")].map((o) => o.textContent)]);
-  expect(groups).toEqual([["Teachers in this school", ["Mr Musa", "Mrs Ngozi"]], ["Other teachers", ["Miss Bisi"]]]);
+  expect(groups).toEqual([["Teachers in this school", ["Mr Musa", "Mrs Ngozi"]], ["New, not yet in a class", ["Miss Bisi"]]]);
 });
 
 it("names the primary school's classes when it has none yet, and asks for the primary school's activity", () => {
