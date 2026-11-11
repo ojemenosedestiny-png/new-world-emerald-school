@@ -189,6 +189,9 @@ importers:
       '@google-cloud/storage':
         specifier: ^8.1.0
         version: 8.1.0
+      '@opentelemetry/api':
+        specifier: 1.10.0
+        version: 1.10.0
       '@workspace/api-zod':
         specifier: workspace:*
         version: link:../../lib/api-zod

@@ -51,6 +51,9 @@ jobs:
       - name: API server build
         run: pnpm --filter @workspace/api-server run build
 
+      - name: Built server imports resolve (as on Render)
+        run: node artifacts/api-server/check-dist-imports.mjs
+
       - name: Frontend tests
         run: |
           pnpm --filter @workspace/new-world-emerald run test:photo-entry
