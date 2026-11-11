@@ -16,8 +16,12 @@ import schoolCommerceProofsRouter from "./school-commerce-proofs";
 import directorRouter from "./director";
 import chairmanRouter from "./chairman";
 import { publicRateLimit } from "../lib/public-rate-limit";
+import { originGuard } from "../lib/request-guards";
 
 const router: IRouter = Router();
+
+// No other website can make a visitor's browser change anything here (forged cross-site requests).
+router.use(originGuard);
 
 // Public forms need no sign-in, so each address may only send a few an hour.
 router.post("/admission-applications", publicRateLimit("admissions", 10, "Too many applications from this connection. Please wait an hour or call the school office."));

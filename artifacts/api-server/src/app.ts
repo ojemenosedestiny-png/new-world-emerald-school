@@ -16,6 +16,7 @@ import { auditStaffChanges } from "./lib/audit";
 import { siteRedirects } from "./lib/site-redirects";
 import { clerkEmailWebhook } from "./routes/clerk-email-webhook";
 import { paystackWebhook } from "./routes/paystack-webhook";
+import { bodyShapeGuard, corsOptions } from "./lib/request-guards";
 
 const app: Express = express();
 // Do not advertise the framework in every response.
@@ -47,13 +48,16 @@ mountCspReports(app);
 app.use(siteRedirects());
 // Website files need no auth, so they are served before the Clerk middleware.
 serveFrontend(app, undefined, loadSiteContentSnapshot);
-app.use(cors({ credentials: true, origin: true }));
+// Only this site's own pages may call the API with a visitor's cookies (no other website).
+app.use(cors(corsOptions));
 // Clerk's signed email webhook needs the raw body, so it is mounted before the JSON parser.
 app.post("/api/webhooks/clerk-email", express.raw({ type: "application/json", limit: "1mb" }), clerkEmailWebhook);
 // Paystack signs its payment notices over the raw body too.
 app.post("/api/webhooks/paystack", express.raw({ type: "application/json", limit: "256kb" }), paystackWebhook);
 app.use(express.json({ limit: "2mb" }));
-app.use(express.urlencoded({ extended: true }));
+app.use(express.urlencoded({ extended: true, limit: "100kb", parameterLimit: 1000 }));
+// Oversized bodies are refused before validation (see request-guards).
+app.use(bodyShapeGuard);
 app.use(
   clerkMiddleware((req) => ({
     publishableKey: publishableKeyFromHost(
