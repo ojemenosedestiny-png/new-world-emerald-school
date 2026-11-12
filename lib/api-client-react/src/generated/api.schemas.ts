@@ -2222,6 +2222,172 @@ export interface AssistantHome {
   conversations: AssistantConversationSummary[];
 }
 
+export interface KioskPing {
+  ok: boolean;
+  kiosk: string;
+  date: string;
+  time: string;
+  lateAfter: string;
+}
+
+export type KioskTapInputTapsItem = {
+  /** @maxLength 80 */
+  cardId?: string;
+  /** @maxLength 60 */
+  studentId?: string;
+  /** @maxLength 40 */
+  tappedAt?: string;
+  /** @maxLength 100 */
+  tapId?: string;
+};
+
+export interface KioskTapInput {
+  /**
+     * The number read from the card
+     * @maxLength 80
+     */
+  cardId?: string;
+  /**
+     * Or the student's school ID, when the card holds that instead
+     * @maxLength 60
+     */
+  studentId?: string;
+  /**
+     * When it was tapped (ISO 8601); now if left out
+     * @maxLength 40
+     */
+  tappedAt?: string;
+  /**
+     * The kiosk's own number for the tap, so a re-sent tap counts once
+     * @maxLength 100
+     */
+  tapId?: string;
+  /** @maxItems 500 */
+  taps?: KioskTapInputTapsItem[];
+}
+
+export type KioskTapResultResult = typeof KioskTapResultResult[keyof typeof KioskTapResultResult];
+
+
+export const KioskTapResultResult = {
+  present: 'present',
+  late: 'late',
+  already: 'already',
+  unknown_card: 'unknown_card',
+  inactive: 'inactive',
+  refused: 'refused',
+} as const;
+
+export interface KioskTapResult {
+  ok: boolean;
+  result?: KioskTapResultResult;
+  /** @nullable */
+  status?: string | null;
+  /** @nullable */
+  studentName?: string | null;
+  /** @nullable */
+  studentId?: string | null;
+  /** @nullable */
+  className?: string | null;
+  date?: string;
+  time?: string;
+  message?: string;
+  /** @nullable */
+  tapRef?: string | null;
+  repeat?: boolean;
+}
+
+export interface TapKiosk {
+  id: number;
+  name: string;
+  keyHint: string;
+  active: boolean;
+  /** @nullable */
+  lastSeenAt: string | null;
+  createdAt: string;
+}
+
+export interface TapCard {
+  id: number;
+  cardId: string;
+  studentId: number;
+  studentName: string;
+  studentNumber: string;
+  className: string;
+  createdAt: string;
+}
+
+export interface TapEvent {
+  id: number;
+  at: string;
+  kioskName: string;
+  cardId: string;
+  /** @nullable */
+  studentName: string | null;
+  /** @nullable */
+  className: string | null;
+  result: string;
+  message: string;
+}
+
+export interface TapUnknownCard {
+  cardId: string;
+  lastAt: string;
+  kioskName: string;
+  taps: number;
+}
+
+export interface TapInToday {
+  date: string;
+  tapped: number;
+  present: number;
+  late: number;
+}
+
+export interface TapInOverview {
+  lateAfter: string;
+  tapAddress: string;
+  kiosks: TapKiosk[];
+  cards: TapCard[];
+  recent: TapEvent[];
+  unknownCards: TapUnknownCard[];
+  today: TapInToday;
+}
+
+export type TapInCommandAction = typeof TapInCommandAction[keyof typeof TapInCommandAction];
+
+
+export const TapInCommandAction = {
+  addKiosk: 'addKiosk',
+  renameKiosk: 'renameKiosk',
+  setKioskActive: 'setKioskActive',
+  newKioskKey: 'newKioskKey',
+  deleteKiosk: 'deleteKiosk',
+  assignCard: 'assignCard',
+  removeCard: 'removeCard',
+  setLateAfter: 'setLateAfter',
+} as const;
+
+export interface TapInCommand {
+  action: TapInCommandAction;
+  kioskId?: number;
+  /** @maxLength 60 */
+  name?: string;
+  active?: boolean;
+  /** @maxLength 80 */
+  cardId?: string;
+  studentId?: number;
+  cardRowId?: number;
+  /** @maxLength 5 */
+  lateAfter?: string;
+}
+
+export interface TapInCommandResult {
+  message: string;
+  /** A new kiosk key, shown once */
+  key?: string;
+}
+
 export interface ChairmanCount {
   label: string;
   value: number;

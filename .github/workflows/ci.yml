@@ -106,6 +106,7 @@ jobs:
           pnpm --filter @workspace/api-server run test:subject-fix
           pnpm --filter @workspace/api-server run test:route-security
           pnpm --filter @workspace/api-server run test:principal-students
+          pnpm --filter @workspace/api-server run test:tap-in
 
       - name: Backup and restore round trip (disposable Postgres)
         env:

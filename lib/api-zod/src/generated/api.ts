@@ -5346,6 +5346,145 @@ export const DeleteAssistantConversationResponse = zod.object({
 
 
 /**
+ * For the card kiosk (Tapping software): checks its key. Send Authorization: Bearer <kiosk key>.
+ */
+export const KioskPingResponse = zod.object({
+  "ok": zod.boolean(),
+  "kiosk": zod.string(),
+  "date": zod.string(),
+  "time": zod.string(),
+  "lateAfter": zod.string()
+})
+
+
+/**
+ * For the card kiosk (Tapping software): one card tap, or { taps: [...] } sent together. Send Authorization: Bearer <kiosk key>.
+ */
+export const kioskTapBodyCardIdMax = 80;
+
+export const kioskTapBodyStudentIdMax = 60;
+
+export const kioskTapBodyTappedAtMax = 40;
+
+export const kioskTapBodyTapIdMax = 100;
+
+export const kioskTapBodyTapsItemCardIdMax = 80;
+
+export const kioskTapBodyTapsItemStudentIdMax = 60;
+
+export const kioskTapBodyTapsItemTappedAtMax = 40;
+
+export const kioskTapBodyTapsItemTapIdMax = 100;
+
+export const kioskTapBodyTapsMax = 500;
+
+
+
+export const KioskTapBody = zod.object({
+  "cardId": zod.string().max(kioskTapBodyCardIdMax).optional().describe('The number read from the card'),
+  "studentId": zod.string().max(kioskTapBodyStudentIdMax).optional().describe('Or the student\'s school ID, when the card holds that instead'),
+  "tappedAt": zod.string().max(kioskTapBodyTappedAtMax).optional().describe('When it was tapped (ISO 8601); now if left out'),
+  "tapId": zod.string().max(kioskTapBodyTapIdMax).optional().describe('The kiosk\'s own number for the tap, so a re-sent tap counts once'),
+  "taps": zod.array(zod.object({
+  "cardId": zod.string().max(kioskTapBodyTapsItemCardIdMax).optional(),
+  "studentId": zod.string().max(kioskTapBodyTapsItemStudentIdMax).optional(),
+  "tappedAt": zod.string().max(kioskTapBodyTapsItemTappedAtMax).optional(),
+  "tapId": zod.string().max(kioskTapBodyTapsItemTapIdMax).optional()
+})).max(kioskTapBodyTapsMax).optional()
+})
+
+export const KioskTapResponse = zod.object({
+  "ok": zod.boolean(),
+  "result": zod.enum(['present', 'late', 'already', 'unknown_card', 'inactive', 'refused']).optional(),
+  "status": zod.string().nullish(),
+  "studentName": zod.string().nullish(),
+  "studentId": zod.string().nullish(),
+  "className": zod.string().nullish(),
+  "date": zod.string().optional(),
+  "time": zod.string().optional(),
+  "message": zod.string().optional(),
+  "tapRef": zod.string().nullish(),
+  "repeat": zod.boolean().optional()
+})
+
+
+/**
+ * Card tap-in for the school office: kiosks, cards, the late time and recent taps
+ */
+export const GetTapInResponse = zod.object({
+  "lateAfter": zod.string(),
+  "tapAddress": zod.string(),
+  "kiosks": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "keyHint": zod.string(),
+  "active": zod.boolean(),
+  "lastSeenAt": zod.string().nullable(),
+  "createdAt": zod.string()
+})),
+  "cards": zod.array(zod.object({
+  "id": zod.number(),
+  "cardId": zod.string(),
+  "studentId": zod.number(),
+  "studentName": zod.string(),
+  "studentNumber": zod.string(),
+  "className": zod.string(),
+  "createdAt": zod.string()
+})),
+  "recent": zod.array(zod.object({
+  "id": zod.number(),
+  "at": zod.string(),
+  "kioskName": zod.string(),
+  "cardId": zod.string(),
+  "studentName": zod.string().nullable(),
+  "className": zod.string().nullable(),
+  "result": zod.string(),
+  "message": zod.string()
+})),
+  "unknownCards": zod.array(zod.object({
+  "cardId": zod.string(),
+  "lastAt": zod.string(),
+  "kioskName": zod.string(),
+  "taps": zod.number()
+})),
+  "today": zod.object({
+  "date": zod.string(),
+  "tapped": zod.number(),
+  "present": zod.number(),
+  "late": zod.number()
+})
+})
+
+
+/**
+ * Add or turn off kiosks, link cards to students, set the late time (the school office)
+ */
+export const manageTapInBodyNameMax = 60;
+
+export const manageTapInBodyCardIdMax = 80;
+
+export const manageTapInBodyLateAfterMax = 5;
+
+
+
+export const ManageTapInBody = zod.object({
+  "action": zod.enum(['addKiosk', 'renameKiosk', 'setKioskActive', 'newKioskKey', 'deleteKiosk', 'assignCard', 'removeCard', 'setLateAfter']),
+  "kioskId": zod.number().optional(),
+  "name": zod.string().max(manageTapInBodyNameMax).optional(),
+  "active": zod.boolean().optional(),
+  "cardId": zod.string().max(manageTapInBodyCardIdMax).optional(),
+  "studentId": zod.number().optional(),
+  "cardRowId": zod.number().optional(),
+  "lateAfter": zod.string().max(manageTapInBodyLateAfterMax).optional()
+})
+
+export const ManageTapInResponse = zod.object({
+  "message": zod.string(),
+  "key": zod.string().optional().describe('A new kiosk key, shown once')
+})
+
+
+/**
  * The Chairman's read-only board of students, staff, attendance, learning and results across the school (no money, nothing can be sent or changed)
  */
 export const GetChairmanBoardQueryParams = zod.object({

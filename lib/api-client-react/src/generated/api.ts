@@ -103,6 +103,9 @@ import type {
   InventoryList,
   InventoryMove,
   InventoryMoveInput,
+  KioskPing,
+  KioskTapInput,
+  KioskTapResult,
   LiveUpdate,
   LiveUpdateInput,
   LiveUpdateUpdate,
@@ -201,6 +204,9 @@ import type {
   SubmissionInput,
   SubmissionMark,
   SubmissionRow,
+  TapInCommand,
+  TapInCommandResult,
+  TapInOverview,
   Timetable,
   TimetableCommand,
   TimetableWorkspace,
@@ -8338,6 +8344,290 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
         TContext
       > => {
       return useMutation(getDeleteAssistantConversationMutationOptions(options));
+    }
+
+export const getKioskPingUrl = () => {
+
+
+
+
+  return `/api/kiosk/ping`
+}
+
+/**
+ * For the card kiosk (Tapping software): checks its key. Send Authorization: Bearer <kiosk key>.
+ */
+export const kioskPing = async ( options?: RequestInit): Promise<KioskPing> => {
+
+  return customFetch<KioskPing>(getKioskPingUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getKioskPingQueryKey = () => {
+    return [
+    `/api/kiosk/ping`
+    ] as const;
+    }
+
+
+export const getKioskPingQueryOptions = <TData = Awaited<ReturnType<typeof kioskPing>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof kioskPing>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getKioskPingQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof kioskPing>>> = ({ signal }) => kioskPing({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof kioskPing>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type KioskPingQueryResult = NonNullable<Awaited<ReturnType<typeof kioskPing>>>
+export type KioskPingQueryError = ErrorType<unknown>
+
+
+
+export function useKioskPing<TData = Awaited<ReturnType<typeof kioskPing>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof kioskPing>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getKioskPingQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getKioskTapUrl = () => {
+
+
+
+
+  return `/api/kiosk/tap`
+}
+
+/**
+ * For the card kiosk (Tapping software): one card tap, or { taps: [...] } sent together. Send Authorization: Bearer <kiosk key>.
+ */
+export const kioskTap = async (kioskTapInput: KioskTapInput, options?: RequestInit): Promise<KioskTapResult> => {
+
+  return customFetch<KioskTapResult>(getKioskTapUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(kioskTapInput)
+  }
+);}
+
+
+
+
+
+export const getKioskTapMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof kioskTap>>, TError,{data: BodyType<KioskTapInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof kioskTap>>, TError,{data: BodyType<KioskTapInput>}, TContext> => {
+
+const mutationKey = ['kioskTap'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof kioskTap>>, {data: BodyType<KioskTapInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  kioskTap(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type KioskTapMutationResult = NonNullable<Awaited<ReturnType<typeof kioskTap>>>
+    export type KioskTapMutationBody = BodyType<KioskTapInput>
+    export type KioskTapMutationError = ErrorType<unknown>
+
+    export const useKioskTap = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof kioskTap>>, TError,{data: BodyType<KioskTapInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof kioskTap>>,
+        TError,
+        {data: BodyType<KioskTapInput>},
+        TContext
+      > => {
+      return useMutation(getKioskTapMutationOptions(options));
+    }
+
+export const getGetTapInUrl = () => {
+
+
+
+
+  return `/api/portal/tap-in`
+}
+
+/**
+ * Card tap-in for the school office: kiosks, cards, the late time and recent taps
+ */
+export const getTapIn = async ( options?: RequestInit): Promise<TapInOverview> => {
+
+  return customFetch<TapInOverview>(getGetTapInUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetTapInQueryKey = () => {
+    return [
+    `/api/portal/tap-in`
+    ] as const;
+    }
+
+
+export const getGetTapInQueryOptions = <TData = Awaited<ReturnType<typeof getTapIn>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getTapIn>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetTapInQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getTapIn>>> = ({ signal }) => getTapIn({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getTapIn>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetTapInQueryResult = NonNullable<Awaited<ReturnType<typeof getTapIn>>>
+export type GetTapInQueryError = ErrorType<unknown>
+
+
+
+export function useGetTapIn<TData = Awaited<ReturnType<typeof getTapIn>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getTapIn>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetTapInQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getManageTapInUrl = () => {
+
+
+
+
+  return `/api/portal/tap-in`
+}
+
+/**
+ * Add or turn off kiosks, link cards to students, set the late time (the school office)
+ */
+export const manageTapIn = async (tapInCommand: TapInCommand, options?: RequestInit): Promise<TapInCommandResult> => {
+
+  return customFetch<TapInCommandResult>(getManageTapInUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(tapInCommand)
+  }
+);}
+
+
+
+
+
+export const getManageTapInMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof manageTapIn>>, TError,{data: BodyType<TapInCommand>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof manageTapIn>>, TError,{data: BodyType<TapInCommand>}, TContext> => {
+
+const mutationKey = ['manageTapIn'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof manageTapIn>>, {data: BodyType<TapInCommand>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  manageTapIn(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ManageTapInMutationResult = NonNullable<Awaited<ReturnType<typeof manageTapIn>>>
+    export type ManageTapInMutationBody = BodyType<TapInCommand>
+    export type ManageTapInMutationError = ErrorType<unknown>
+
+    export const useManageTapIn = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof manageTapIn>>, TError,{data: BodyType<TapInCommand>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof manageTapIn>>,
+        TError,
+        {data: BodyType<TapInCommand>},
+        TContext
+      > => {
+      return useMutation(getManageTapInMutationOptions(options));
     }
 
 export const getGetChairmanBoardUrl = (params?: GetChairmanBoardParams,) => {

@@ -14,6 +14,7 @@ import { portalSignaturesRouter } from "./portal-signatures";
 import { schoolExportRouter } from "./school-export";
 import { studentProfilesRouter } from "./student-profiles";
 import { assistantRouter } from "./assistant";
+import { portalTapInRouter } from "./portal-tap-in";
 import { portalLearningRouter } from "./portal-learning";
 import { portalMessagesRouter } from "./portal-messages";
 import { portalFeesRouter } from "./portal-fees";
@@ -61,6 +62,7 @@ portalRouter.use(portalSignaturesRouter);
 portalRouter.use(schoolExportRouter);
 portalRouter.use(studentProfilesRouter);
 portalRouter.use(assistantRouter);
+portalRouter.use(portalTapInRouter);
 const errors: ErrorRequestHandler = (error, req, res, _next) => {
   if (res.headersSent) { if (!res.destroyed) res.destroy(); return; }
   if (error instanceof PortalError) { res.status(error.status).json({ error: error.message }); return; }

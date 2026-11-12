@@ -195,6 +195,12 @@ paths:
     $ref: "./assistant.yaml#/paths/assistant"
   /portal/assistant/conversations/{id}:
     $ref: "./assistant.yaml#/paths/conversation"
+  /kiosk/ping:
+    $ref: "./tap-in.yaml#/paths/kioskPing"
+  /kiosk/tap:
+    $ref: "./tap-in.yaml#/paths/kioskTap"
+  /portal/tap-in:
+    $ref: "./tap-in.yaml#/paths/tapIn"
   /chairman/board:
     $ref: "./chairman.yaml#/paths/board"
   /portal/my-messages:
@@ -1339,6 +1345,28 @@ components:
       $ref: "./assistant.yaml#/schemas/AssistantConversation"
     AssistantHome:
       $ref: "./assistant.yaml#/schemas/AssistantHome"
+    KioskPing:
+      $ref: "./tap-in.yaml#/schemas/KioskPing"
+    KioskTapInput:
+      $ref: "./tap-in.yaml#/schemas/KioskTapInput"
+    KioskTapResult:
+      $ref: "./tap-in.yaml#/schemas/KioskTapResult"
+    TapKiosk:
+      $ref: "./tap-in.yaml#/schemas/TapKiosk"
+    TapCard:
+      $ref: "./tap-in.yaml#/schemas/TapCard"
+    TapEvent:
+      $ref: "./tap-in.yaml#/schemas/TapEvent"
+    TapUnknownCard:
+      $ref: "./tap-in.yaml#/schemas/TapUnknownCard"
+    TapInToday:
+      $ref: "./tap-in.yaml#/schemas/TapInToday"
+    TapInOverview:
+      $ref: "./tap-in.yaml#/schemas/TapInOverview"
+    TapInCommand:
+      $ref: "./tap-in.yaml#/schemas/TapInCommand"
+    TapInCommandResult:
+      $ref: "./tap-in.yaml#/schemas/TapInCommandResult"
     ChairmanCount:
       $ref: "./chairman.yaml#/schemas/ChairmanCount"
     ChairmanSection:

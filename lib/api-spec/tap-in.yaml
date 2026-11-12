@@ -1,0 +1,170 @@
+paths:
+  kioskPing:
+    get:
+      operationId: kioskPing
+      description: "For the card kiosk (Tapping software): checks its key. Send Authorization: Bearer <kiosk key>."
+      responses:
+        "200":
+          description: The kiosk is connected
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/KioskPing" }
+  kioskTap:
+    post:
+      operationId: kioskTap
+      description: "For the card kiosk (Tapping software): one card tap, or { taps: [...] } sent together. Send Authorization: Bearer <kiosk key>."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/KioskTapInput" }
+      responses:
+        "200":
+          description: What the portal did with the tap
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/KioskTapResult" }
+  tapIn:
+    get:
+      operationId: getTapIn
+      description: "Card tap-in for the school office: kiosks, cards, the late time and recent taps"
+      responses:
+        "200":
+          description: Card tap-in
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/TapInOverview" }
+    post:
+      operationId: manageTapIn
+      description: "Add or turn off kiosks, link cards to students, set the late time (the school office)"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/TapInCommand" }
+      responses:
+        "200":
+          description: Done
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/TapInCommandResult" }
+schemas:
+  KioskPing:
+    type: object
+    required: [ok, kiosk, date, time, lateAfter]
+    properties:
+      ok: { type: boolean }
+      kiosk: { type: string }
+      date: { type: string }
+      time: { type: string }
+      lateAfter: { type: string }
+  KioskTapInput:
+    type: object
+    properties:
+      cardId: { type: string, maxLength: 80, description: "The number read from the card" }
+      studentId: { type: string, maxLength: 60, description: "Or the student's school ID, when the card holds that instead" }
+      tappedAt: { type: string, maxLength: 40, description: "When it was tapped (ISO 8601); now if left out" }
+      tapId: { type: string, maxLength: 100, description: "The kiosk's own number for the tap, so a re-sent tap counts once" }
+      taps:
+        type: array
+        maxItems: 500
+        items:
+          type: object
+          properties:
+            cardId: { type: string, maxLength: 80 }
+            studentId: { type: string, maxLength: 60 }
+            tappedAt: { type: string, maxLength: 40 }
+            tapId: { type: string, maxLength: 100 }
+  KioskTapResult:
+    type: object
+    required: [ok]
+    properties:
+      ok: { type: boolean }
+      result: { type: string, enum: [present, late, already, unknown_card, inactive, refused] }
+      status: { type: ["string", "null"] }
+      studentName: { type: ["string", "null"] }
+      studentId: { type: ["string", "null"] }
+      className: { type: ["string", "null"] }
+      date: { type: string }
+      time: { type: string }
+      message: { type: string }
+      tapRef: { type: ["string", "null"] }
+      repeat: { type: boolean }
+  TapKiosk:
+    type: object
+    required: [id, name, keyHint, active, lastSeenAt, createdAt]
+    properties:
+      id: { type: integer }
+      name: { type: string }
+      keyHint: { type: string }
+      active: { type: boolean }
+      lastSeenAt: { type: ["string", "null"] }
+      createdAt: { type: string }
+  TapCard:
+    type: object
+    required: [id, cardId, studentId, studentName, studentNumber, className, createdAt]
+    properties:
+      id: { type: integer }
+      cardId: { type: string }
+      studentId: { type: integer }
+      studentName: { type: string }
+      studentNumber: { type: string }
+      className: { type: string }
+      createdAt: { type: string }
+  TapEvent:
+    type: object
+    required: [id, at, kioskName, cardId, studentName, className, result, message]
+    properties:
+      id: { type: integer }
+      at: { type: string }
+      kioskName: { type: string }
+      cardId: { type: string }
+      studentName: { type: ["string", "null"] }
+      className: { type: ["string", "null"] }
+      result: { type: string }
+      message: { type: string }
+  TapUnknownCard:
+    type: object
+    required: [cardId, lastAt, kioskName, taps]
+    properties:
+      cardId: { type: string }
+      lastAt: { type: string }
+      kioskName: { type: string }
+      taps: { type: integer }
+  TapInToday:
+    type: object
+    required: [date, tapped, present, late]
+    properties:
+      date: { type: string }
+      tapped: { type: integer }
+      present: { type: integer }
+      late: { type: integer }
+  TapInOverview:
+    type: object
+    required: [lateAfter, tapAddress, kiosks, cards, recent, unknownCards, today]
+    properties:
+      lateAfter: { type: string }
+      tapAddress: { type: string }
+      kiosks: { type: array, items: { $ref: "#/components/schemas/TapKiosk" } }
+      cards: { type: array, items: { $ref: "#/components/schemas/TapCard" } }
+      recent: { type: array, items: { $ref: "#/components/schemas/TapEvent" } }
+      unknownCards: { type: array, items: { $ref: "#/components/schemas/TapUnknownCard" } }
+      today: { $ref: "#/components/schemas/TapInToday" }
+  TapInCommand:
+    type: object
+    required: [action]
+    properties:
+      action: { type: string, enum: [addKiosk, renameKiosk, setKioskActive, newKioskKey, deleteKiosk, assignCard, removeCard, setLateAfter] }
+      kioskId: { type: integer }
+      name: { type: string, maxLength: 60 }
+      active: { type: boolean }
+      cardId: { type: string, maxLength: 80 }
+      studentId: { type: integer }
+      cardRowId: { type: integer }
+      lateAfter: { type: string, maxLength: 5 }
+  TapInCommandResult:
+    type: object
+    required: [message]
+    properties:
+      message: { type: string }
+      key: { type: string, description: "A new kiosk key, shown once" }

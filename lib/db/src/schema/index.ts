@@ -30,3 +30,4 @@ export * from "./exam-registrations";
 export * from "./school-accounts";
 export * from "./student-profiles";
 export * from "./assistant";
+export * from "./tap-in";

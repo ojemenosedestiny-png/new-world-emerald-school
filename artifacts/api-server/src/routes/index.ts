@@ -17,8 +17,12 @@ import directorRouter from "./director";
 import chairmanRouter from "./chairman";
 import { publicRateLimit } from "../lib/public-rate-limit";
 import { originGuard } from "../lib/request-guards";
+import { kioskRouter } from "./kiosk";
 
 const router: IRouter = Router();
+
+// Card kiosks (the Tapping software) prove themselves with their own key, never cookies, so they come first.
+router.use("/kiosk", kioskRouter);
 
 // No other website can make a visitor's browser change anything here (forged cross-site requests).
 router.use(originGuard);

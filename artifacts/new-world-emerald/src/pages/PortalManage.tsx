@@ -2,7 +2,7 @@ import { useState, type ReactNode } from "react";
 import { Link } from "wouter";
 import { useAuth, useClerk, useUser } from "@clerk/react";
 import { useGetPortalSession, getGetPortalSessionQueryKey, useGetPortalManagement, getGetPortalManagementQueryKey, useListPhotoReviews, getListPhotoReviewsQueryKey, useListMessageThreads, getListMessageThreadsQueryKey } from "@workspace/api-client-react";
-import { ArrowRight, BedDouble, Download, Sparkles, CreditCard, BookOpen, Boxes, Bus, FileUp, CalendarCheck, CalendarRange, CalendarDays, Camera, CheckSquare, Images, NotebookPen, ClipboardList, FileBarChart, Globe, GraduationCap, LayoutDashboard, Megaphone, MessagesSquare, MonitorSmartphone, School, ScrollText, ShieldAlert, Users } from "lucide-react";
+import { ArrowRight, BedDouble, Download, Sparkles, CreditCard, BookOpen, Boxes, Bus, FileUp, CalendarCheck, CalendarRange, CalendarDays, Camera, CheckSquare, Images, NotebookPen, ClipboardList, FileBarChart, Globe, GraduationCap, LayoutDashboard, Megaphone, MessagesSquare, MonitorSmartphone, Nfc, School, ScrollText, ShieldAlert, Users } from "lucide-react";
 import { AssistantPanel } from "@/portal/assistant/AssistantPanel";
 import { ExportEverything } from "@/portal/security/ExportEverything";
 import "@/portal/portal.css";
@@ -32,6 +32,7 @@ import { ImportResultsPanel } from "@/portal/manage/ImportResultsPanel";
 import { HostelPanel, TransportPanel } from "@/portal/manage/FacilitiesPanels";
 import { ParentPaymentsPanel } from "@/portal/manage/ParentPaymentsPanel";
 import { ParentLinksPanel } from "@/portal/manage/ParentLinksPanel";
+import { TapInPanel } from "@/portal/manage/TapInPanel";
 
 function Gate({ title, body, children }: { title: string; body: string; children?: ReactNode }) {
   return (
@@ -47,10 +48,10 @@ function Gate({ title, body, children }: { title: string; body: string; children
   );
 }
 
-type Section = "overview" | "messages" | "attendance" | "assignments" | "timetables" | "exams" | "marking" | "reports" | "revision" | "notices" | "events" | "gallery" | "photos" | "inventory" | "importResults" | "hostel" | "transport" | "payments" | "waec" | "parents" | "students" | "teachers" | "classes" | "sessions" | "audit" | "export" | "assistant";
+type Section = "overview" | "messages" | "attendance" | "assignments" | "timetables" | "exams" | "marking" | "reports" | "revision" | "notices" | "events" | "gallery" | "photos" | "inventory" | "importResults" | "hostel" | "transport" | "payments" | "waec" | "parents" | "students" | "teachers" | "classes" | "sessions" | "audit" | "export" | "assistant" | "tapIn";
 const TITLES: Record<Section, string> = {
   overview: "Dashboard", messages: "Messages", attendance: "Attendance", assignments: "Assignments", timetables: "Timetables", exams: "Exams", marking: "Marking", reports: "Report cards", revision: "Revision notes",
-  notices: "Announcements", events: "Events calendar", gallery: "Gallery", photos: "Photo approvals", inventory: "Inventory", importResults: "Import old results", payments: "Fee payments", waec: "WAEC / NECO registration", parents: "Parents and children", hostel: "Hostel rooms", transport: "Transport routes", students: "Students", teachers: "Teachers", classes: "Classes", sessions: "Sessions", audit: "Audit log", export: "Download all data", assistant: "AI assistant",
+  notices: "Announcements", events: "Events calendar", gallery: "Gallery", photos: "Photo approvals", inventory: "Inventory", importResults: "Import old results", payments: "Fee payments", waec: "WAEC / NECO registration", parents: "Parents and children", hostel: "Hostel rooms", transport: "Transport routes", students: "Students", teachers: "Teachers", classes: "Classes", sessions: "Sessions", audit: "Audit log", export: "Download all data", assistant: "AI assistant", tapIn: "Card tap-in",
 };
 
 export default function PortalManage() {
@@ -106,6 +107,7 @@ export default function PortalManage() {
       { key: "payments" as const, label: "Fee payments", icon: CreditCard, testId: "tab-manage-payments" },
       { key: "waec" as const, label: "WAEC / NECO", icon: GraduationCap, testId: "tab-manage-waec" },
       { key: "parents" as const, label: "Parents", icon: Users, testId: "tab-manage-parents" },
+      { key: "tapIn" as const, label: "Card tap-in", icon: Nfc, testId: "tab-manage-tap-in" },
       { key: "hostel" as const, label: "Hostel rooms", icon: BedDouble, testId: "tab-manage-hostel" },
       { key: "transport" as const, label: "Transport routes", icon: Bus, testId: "tab-manage-transport" },
       { key: "importResults" as const, label: "Import old results", icon: FileUp, testId: "tab-manage-import-results" },
@@ -149,6 +151,7 @@ export default function PortalManage() {
             {isAdmin && section === "payments" && <FeePayments legacy={<ParentPaymentsPanel />} />}
             {isAdmin && section === "waec" && <RegistrationAdmin />}
             {isAdmin && section === "parents" && <ParentLinksPanel />}
+            {isAdmin && section === "tapIn" && <TapInPanel data={d} />}
             {isAdmin && section === "hostel" && <HostelPanel />}
             {isAdmin && section === "transport" && <TransportPanel />}
             {section === "attendance" && <AttendancePanel data={d} />}

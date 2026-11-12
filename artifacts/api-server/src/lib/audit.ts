@@ -59,7 +59,7 @@ export function commandTarget(body: Body): { type: string; id?: number; load?: (
   }
 }
 
-const COMMAND_PATHS = new Set(["/api/portal/manage", "/api/portal/reports/manage"]);
+const COMMAND_PATHS = new Set(["/api/portal/manage", "/api/portal/reports/manage", "/api/portal/tap-in"]);
 // Public submissions and high-frequency student writes are not staff actions.
 const SKIP = [/^\/api\/portal\/(session|password|attempts|exams\/\d+\/start)/, /^\/api\/csp-report/, /^\/api\/__clerk/];
 
