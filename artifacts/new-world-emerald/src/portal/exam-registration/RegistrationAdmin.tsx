@@ -134,7 +134,13 @@ export function RegistrationAdmin() {
           {editing && <div className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-3">
               <Field label="Session" htmlFor="rs-year"><input id="rs-year" className="portal-input" placeholder="2026/2027" value={editing.academicYear} onChange={(e) => setEditing({ ...editing, academicYear: e.target.value })} data-testid="input-reg-year" /></Field>
-              <Field label="Fee (₦)" htmlFor="rs-fee"><input id="rs-fee" inputMode="decimal" className="portal-input tabular-nums" placeholder="e.g. 45000" value={naira} onChange={(e) => setNaira(e.target.value)} data-testid="input-reg-fee" /></Field>
+              <Field label="Fee (₦)" htmlFor="rs-fee"><input id="rs-fee" inputMode="decimal" className="portal-input tabular-nums" placeholder="e.g. 45000" value={naira} onChange={(e) => setNaira(e.target.value)} data-testid="input-reg-fee" />
+                {naira.trim() && (() => {
+                  const n = Number(naira.replace(/[,\s₦]/g, "").replace(/^NGN/i, ""));
+                  if (!Number.isFinite(n) || n < 0) return <span className="mt-1 block text-xs text-[hsl(var(--p-red))]">Type the amount in naira, digits only.</span>;
+                  const big = n > 10_000_000;
+                  return <span className={"mt-1 block text-xs font-semibold " + (big ? "text-[hsl(var(--p-red))]" : "text-[hsl(var(--p-emerald))]")} data-testid="text-reg-fee-preview">= ₦{n.toLocaleString("en-NG", { maximumFractionDigits: 2 })}{big ? " (too much: check the zeros)" : ""}</span>;
+                })()}</Field>
               <Field label="Closing date" htmlFor="rs-deadline" hint="Optional"><input id="rs-deadline" type="date" className="portal-input" value={editing.deadline} onChange={(e) => setEditing({ ...editing, deadline: e.target.value })} /></Field>
             </div>
             <Field label="Title" htmlFor="rs-title"><input id="rs-title" className="portal-input" maxLength={120} value={editing.title} onChange={(e) => setEditing({ ...editing, title: e.target.value })} /></Field>
