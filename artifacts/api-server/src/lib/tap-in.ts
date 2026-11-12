@@ -11,9 +11,11 @@ export const hashKioskKey = (key: string) => createHash("sha256").update(key.tri
 /** The kiosk's key from `Authorization: Bearer <key>` or an `X-Kiosk-Key` header. */
 export function kioskKeyFrom(headers: Record<string, string | string[] | undefined>): string | null {
   const auth = headers.authorization;
-  if (typeof auth === "string") { const m = /^Bearer\s+(\S+)$/i.exec(auth.trim()); if (m) return m[1]; }
+  // Forgiving of how a key was pasted: surrounding quotes, or "Bearer " typed in front of it twice.
+  const clean = (v: string) => v.trim().replace(/^(Bearer\s+)+/i, "").replace(/^["'<\s]+|["'>\s.,;]+$/g, "") || null;
+  if (typeof auth === "string" && /^Bearer\s+\S/i.test(auth.trim())) return clean(auth);
   const x = headers["x-kiosk-key"];
-  return typeof x === "string" && x.trim() ? x.trim() : null;
+  return typeof x === "string" && x.trim() ? clean(x) : null;
 }
 
 /**

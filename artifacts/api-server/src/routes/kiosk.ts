@@ -19,11 +19,19 @@ kioskRouter.use(publicRateLimit("kiosk", 3_000, "Too many requests from this kio
 export const MAX_TAPS_PER_REQUEST = 500;
 const ATTENDANCE_STATUSES = new Set(["present", "late", "absent", "excused"]);
 
+/** Why a key was not accepted, in words the person setting up the kiosk can act on (never echoes the key). */
+export function keyProblem(key: string): string {
+  if (!key.startsWith("nwek_")) return "This is not a kiosk key. Kiosk keys start with nwek_ : copy the key from the portal, Card tap-in, Add kiosk (or New key).";
+  if (key.length !== KEY_LENGTH) return `This kiosk key is incomplete or has extra characters (it has ${key.length} characters; a kiosk key has ${KEY_LENGTH}). Copy it again with the Copy button in the portal.`;
+  return "This kiosk key is not in use. It may have been replaced with New key, or its kiosk removed. In the portal, Card tap-in, press New key on the kiosk and paste the new key here.";
+}
+const KEY_LENGTH = 48;
+
 async function kioskFor(req: Request): Promise<TapKioskRecord> {
   const key = kioskKeyFrom(req.headers);
   check(key, "Send the kiosk key as: Authorization: Bearer <key>.", 401);
   const [kiosk] = await db.select().from(tapKiosks).where(eq(tapKiosks.keyHash, hashKioskKey(key!)));
-  check(kiosk, "This kiosk key is not recognised. Create a key in the portal: Card tap-in.", 401);
+  check(kiosk, keyProblem(key!), 401);
   check(kiosk.active, "This kiosk has been turned off in the portal.", 403);
   await db.update(tapKiosks).set({ lastSeenAt: new Date() }).where(eq(tapKiosks.id, kiosk.id));
   return kiosk;

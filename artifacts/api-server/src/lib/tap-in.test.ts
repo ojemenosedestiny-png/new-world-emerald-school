@@ -6,7 +6,7 @@ import type { AddressInfo } from "node:net";
 import { and, eq, inArray, like } from "drizzle-orm";
 import { db, pool, portalAttendance, portalClasses, portalStudents, tapCards, tapEvents, tapKiosks, tapSettings } from "@workspace/db";
 import portalRouter from "../routes/portal";
-import { kioskRouter } from "../routes/kiosk";
+import { keyProblem, kioskRouter } from "../routes/kiosk";
 import { setApprovedIdentitiesForTest } from "./approved-identities";
 import { addDays, schoolDate } from "./learning";
 import { arrivalStatus, kioskKeyFrom, normaliseCardId, registerChange, schoolTime, tapTime } from "./tap-in";
@@ -20,6 +20,11 @@ test("tap-in rules: card numbers, times, late and the register", () => {
   assert.equal(kioskKeyFrom({ authorization: "Bearer abc" }), "abc");
   assert.equal(kioskKeyFrom({ "x-kiosk-key": " k " }), "k");
   assert.equal(kioskKeyFrom({}), null);
+  assert.equal(kioskKeyFrom({ authorization: "Bearer Bearer nwek_abc" }), "nwek_abc", "Bearer pasted with the key");
+  assert.equal(kioskKeyFrom({ authorization: 'Bearer "nwek_abc" ' }), "nwek_abc", "quotes around the key");
+  assert.match(keyProblem("sk_live_123"), /not a kiosk key/);
+  assert.match(keyProblem("nwek_short"), /incomplete/);
+  assert.match(keyProblem(`nwek_${"a".repeat(43)}`), /not in use/);
   // Lagos is UTC+1.
   assert.equal(schoolTime(new Date("2026-11-12T06:59:00Z")), "07:59");
   assert.equal(arrivalStatus(new Date("2026-11-12T07:00:00Z"), "08:00"), "present", "08:00 exactly is on time");
