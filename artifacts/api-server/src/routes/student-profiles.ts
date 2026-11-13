@@ -1,7 +1,7 @@
 import { Router, type Request } from "express";
 import { and, eq, sql } from "drizzle-orm";
 import { db, portalClasses, portalStudents, studentProfiles, type StudentProfileRecord } from "@workspace/db";
-import { GetChildProfileParams, GetStudentProfileParams, SaveStudentProfileBody, SaveStudentProfileParams } from "@workspace/api-zod";
+import { GetChildProfileParams, GetStudentProfileParams, SaveMyStudentProfileBody, SaveStudentProfileBody, SaveStudentProfileParams } from "@workspace/api-zod";
 import { check, classAllowed, portalActor, studentOnly } from "../lib/portal-auth";
 import { parentEmail } from "./portal-parent";
 import { recordAudit, clientIp } from "../lib/audit";
@@ -10,8 +10,9 @@ import { classSection } from "../lib/principal";
 
 /**
  * Each student's full profile: date of birth, home address and phone, state of origin, health, admission details,
- * both parents or guardians and an emergency contact. The office and the student's class teachers fill it in; the
- * student and their linked parents can read it.
+ * both parents or guardians and an emergency contact. The office and the student's class teachers fill it in, and so
+ * can the student from their own portal (with their parents' help), except the admission date, which the school sets.
+ * Linked parents can read it.
  */
 export const studentProfilesRouter = Router();
 
@@ -92,9 +93,27 @@ studentProfilesRouter.put("/students/:id/profile", async (req, res) => {
   res.json(await view(id, true));
 });
 
+/** Fields only the school sets; a student's own save keeps them as they were. */
+export const SCHOOL_ONLY_FIELDS: Field[] = ["admissionDate"];
+
 studentProfilesRouter.get("/me/profile", async (req, res) => {
   const student = studentOnly(await portalActor(req));
-  res.json(await view(student.id, false));
+  res.json(await view(student.id, true));
+});
+
+studentProfilesRouter.put("/me/profile", async (req, res) => {
+  const student = studentOnly(await portalActor(req));
+  const body = SaveMyStudentProfileBody.parse(req.body);
+  const [before] = await db.select().from(studentProfiles).where(eq(studentProfiles.studentId, student.id));
+  const values = Object.fromEntries(PROFILE_FIELDS.map((f) => [f, SCHOOL_ONLY_FIELDS.includes(f) ? (before?.[f] ?? "") : (body[f] ?? "").trim().replace(/\s+/g, " ")])) as Record<Field, string>;
+  const problem = profileProblem(values);
+  check(!problem, problem ?? "");
+  const by = `${student.name} (student)`.slice(0, 200);
+  await db.insert(studentProfiles).values({ studentId: student.id, ...values, updatedBy: by, updatedAt: new Date() })
+    .onConflictDoUpdate({ target: studentProfiles.studentId, set: { ...values, updatedBy: by, updatedAt: new Date() } });
+  const changed = PROFILE_FIELDS.filter((f) => (before?.[f] ?? "") !== values[f]);
+  await recordAudit({ actorKind: "student", actorId: null, actorLabel: by, action: "student.profile_saved_by_student", targetType: "student", targetId: student.studentId, after: { changed }, ip: clientIp(req), userAgent: req.headers["user-agent"] ?? null });
+  res.json(await view(student.id, true));
 });
 
 studentProfilesRouter.get("/parent/children/:id/profile", async (req, res) => {

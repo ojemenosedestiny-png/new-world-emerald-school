@@ -37,6 +37,20 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/StudentProfileView" }
+    put:
+      operationId: saveMyStudentProfile
+      description: "The signed-in student (with their parents' help) fills in their own details; the admission date stays as the school set it"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/StudentProfileFields" }
+      responses:
+        "200":
+          description: The saved profile
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/StudentProfileView" }
   childProfile:
     get:
       operationId: getChildProfile

@@ -1,7 +1,8 @@
 import { useState, type ReactNode } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
-  getGetStudentProfileQueryKey, useGetChildProfile, useGetMyStudentProfile, useGetStudentProfile, useSaveStudentProfile,
+  getGetMyStudentProfileQueryKey, getGetStudentProfileQueryKey, useGetChildProfile, useGetMyStudentProfile, useGetStudentProfile, useSaveMyStudentProfile,
+  useSaveStudentProfile,
   type StudentProfileFields, type StudentProfileView,
 } from "@workspace/api-client-react";
 import { Cake, HeartPulse, Home, Loader2, Pencil, Phone, School, ShieldAlert, Users } from "lucide-react";
@@ -64,7 +65,7 @@ export function ProfileDetails({ p, action }: { p: StudentProfileView; action?: 
         </div>
         {action}
       </div>
-      {filled === 0 && <p className={"rounded-xl border border-dashed border-[hsl(var(--p-line))] p-4 text-center text-sm " + MUTED}>No details yet.{p.canEdit ? " Press Edit details to add them." : " The school office adds them."}</p>}
+      {filled === 0 && <p className={"rounded-xl border border-dashed border-[hsl(var(--p-line))] p-4 text-center text-sm " + MUTED}>No details yet.{p.canEdit ? " Use the button above to add them." : " The school office adds them."}</p>}
       <div className="grid gap-4 md:grid-cols-2">
         {SECTIONS.map((s) => {
           const rows = s.fields.filter((f) => (p.profile[f.key] ?? "").trim());
@@ -85,25 +86,35 @@ export function ProfileDetails({ p, action }: { p: StudentProfileView; action?: 
   );
 }
 
-/** Staff fill in or correct the details. */
-function ProfileForm({ p, onDone }: { p: StudentProfileView; onDone: () => void }) {
+/** Fill in or correct the details: staff for any student, or a student (with their parents) for themselves. */
+function ProfileForm({ p, onDone, mine = false }: { p: StudentProfileView; onDone: () => void; mine?: boolean }) {
   const { toast } = useToast();
   const qc = useQueryClient();
-  const save = useSaveStudentProfile();
+  const saveStaff = useSaveStudentProfile();
+  const saveMine = useSaveMyStudentProfile();
+  const pending = saveStaff.isPending || saveMine.isPending;
   const [f, setF] = useState<StudentProfileFields>({ ...p.profile });
   const set = (k: Key, v: string) => setF((x) => ({ ...x, [k]: v }));
   const today = new Date().toISOString().slice(0, 10);
+  // The admission date is the school's to set.
+  const sections = mine ? SECTIONS.map((s) => ({ ...s, fields: s.fields.filter((d) => d.key !== "admissionDate") })) : SECTIONS;
   const go = async () => {
     try {
-      await save.mutateAsync({ id: p.id, data: f });
-      toast({ title: "Profile saved", description: `${p.name}'s details are up to date.` });
-      await qc.invalidateQueries({ queryKey: getGetStudentProfileQueryKey(p.id) });
+      if (mine) {
+        await saveMine.mutateAsync({ data: f });
+        toast({ title: "Details saved", description: "Thank you. The school can now see your details." });
+        await qc.invalidateQueries({ queryKey: getGetMyStudentProfileQueryKey() });
+      } else {
+        await saveStaff.mutateAsync({ id: p.id, data: f });
+        toast({ title: "Profile saved", description: `${p.name}'s details are up to date.` });
+        await qc.invalidateQueries({ queryKey: getGetStudentProfileQueryKey(p.id) });
+      }
       onDone();
     } catch (e) { toast({ variant: "destructive", title: "Not saved", description: errorMessage(e) }); }
   };
   return (
     <div className="space-y-5">
-      {SECTIONS.map((s) => (
+      {sections.map((s) => (
         <fieldset key={s.title} className="rounded-2xl border border-[hsl(var(--p-line))] p-4">
           <legend className="flex items-center gap-2 px-1 text-xs font-semibold uppercase tracking-[0.14em] text-[hsl(var(--p-emerald))]"><s.icon size={14} aria-hidden="true" /> {s.title}</legend>
           <div className="grid gap-3 sm:grid-cols-2">{s.fields.map((d) => {
@@ -122,7 +133,7 @@ function ProfileForm({ p, onDone }: { p: StudentProfileView; onDone: () => void 
       ))}
       <div className="flex justify-end gap-2">
         <button type="button" className="portal-btn-ghost" onClick={onDone}>Cancel</button>
-        <button type="button" className="portal-btn" disabled={save.isPending} onClick={() => void go()} data-testid="button-save-profile">{save.isPending && <Loader2 size={15} className="animate-spin" />} Save details</button>
+        <button type="button" className="portal-btn" disabled={pending} onClick={() => void go()} data-testid="button-save-profile">{pending && <Loader2 size={15} className="animate-spin" />} Save details</button>
       </div>
     </div>
   );
@@ -145,12 +156,32 @@ export function StudentProfileDialog({ studentId, onClose }: { studentId: number
   );
 }
 
-/** The student's own profile. */
+/** The student's own profile, which they fill in with their parents' help. */
 export function MyProfile() {
   const q = useGetMyStudentProfile();
+  const [editing, setEditing] = useState(false);
   if (q.isLoading) return <Skeleton className="h-64" />;
   if (q.isError || !q.data) return <ErrorPanel title="Your profile did not load" message={errorMessage(q.error)} onRetry={() => void q.refetch()} />;
-  return <><ProfileDetails p={q.data} /><p className={"mt-3 text-xs " + MUTED}>Something wrong or missing? Tell your class teacher or the school office.</p></>;
+  const p = q.data;
+  if (editing) return (
+    <div className="space-y-4">
+      <p className="rounded-xl bg-[hsl(var(--p-emerald)/0.08)] p-3 text-sm">Fill this in with your parent or guardian: your home address, their names and phone numbers, and your health details. Leave out anything you do not know.</p>
+      <ProfileForm p={p} mine onDone={() => setEditing(false)} />
+    </div>
+  );
+  const filled = SECTIONS.flatMap((s) => s.fields).filter((f) => (p.profile[f.key] ?? "").trim()).length;
+  const button = <button type="button" className="portal-btn" onClick={() => setEditing(true)} data-testid="button-edit-my-profile"><Pencil size={14} /> {filled ? "Update my details" : "Fill in my details"}</button>;
+  return (
+    <>
+      {!p.profile.address || !p.profile.parent1Phone ? (
+        <p className="mb-4 rounded-xl border border-[hsl(var(--p-gold)/0.5)] bg-[hsl(var(--p-gold-soft))] p-3 text-sm" data-testid="text-profile-ask">
+          Please fill in your details with your parent or guardian: your home address and your parents' phone numbers.
+        </p>
+      ) : null}
+      <ProfileDetails p={p} action={button} />
+      <p className={"mt-3 text-xs " + MUTED}>To correct your name, class or admission date, tell your class teacher or the school office.</p>
+    </>
+  );
 }
 
 /** A parent's view of one child's profile. */
@@ -158,5 +189,5 @@ export function ChildProfile({ studentId }: { studentId: number }) {
   const q = useGetChildProfile(studentId);
   if (q.isLoading) return <Skeleton className="h-48" />;
   if (q.isError || !q.data) return <ErrorPanel title="The profile did not load" message={errorMessage(q.error)} onRetry={() => void q.refetch()} />;
-  return <><ProfileDetails p={q.data} /><p className={"mt-3 text-xs " + MUTED}>To correct any detail, contact the school office.</p></>;
+  return <><ProfileDetails p={q.data} /><p className={"mt-3 text-xs " + MUTED}>Your child can fill in or update these details with you from their own portal: Profile, then Fill in my details.</p></>;
 }

@@ -78,8 +78,24 @@ test("student profiles: office saves, student and linked parent read, strangers 
     const mine = await call("/me/profile", { cookie });
     assert.equal(mine.status, 200);
     assert.equal(mine.data.profile.parent1Phone, "+234 805 000 1111");
-    assert.equal(mine.data.canEdit, false);
+    assert.equal(mine.data.canEdit, true, "students fill in their own details");
     assert.notEqual((await call(`/students/${kid.id}/profile`, { cookie, body: { address: "x" } })).status, 200);
+
+    // The student (with their parents) fills in their own details; the admission date stays as the school set it.
+    const admitted = mine.data.profile.admissionDate;
+    const own = await call("/me/profile", { cookie, body: { ...mine.data.profile, address: " 4  Unity Close, Gwarinpa ", parent2Phone: "0809 222 3333", admissionDate: "2020-01-01" } });
+    assert.equal(own.status, 200, JSON.stringify(own.data));
+    assert.equal(own.data.profile.address, "4 Unity Close, Gwarinpa");
+    assert.equal(own.data.profile.parent2Phone, "0809 222 3333");
+    assert.equal(own.data.profile.admissionDate, admitted, "the school's admission date is kept");
+    assert.equal(own.data.profile.medicalNotes, "Allergic to groundnuts", "fields sent back unchanged stay");
+    assert.match(own.data.updatedBy, /\(student\)$/);
+    assert.equal((await call("/me/profile", { cookie, body: { parent1Phone: "call my dad" } })).status, 400, "phone numbers checked");
+    assert.equal((await call("/me/profile", { body: { address: "x" } })).status, 401, "signed-in students only");
+    const [stored] = await db.select().from(studentProfiles).where(eq(studentProfiles.studentId, kid.id));
+    assert.equal(stored.address, "4 Unity Close, Gwarinpa");
+    const [otherRow] = await db.select().from(studentProfiles).where(eq(studentProfiles.studentId, other.id));
+    assert.notEqual(otherRow?.address, "4 Unity Close, Gwarinpa", "only their own profile");
     assert.notEqual((await call(`/students/${other.id}/profile`, { cookie })).status, 200);
 
     // A linked parent reads their child; not someone else's child.

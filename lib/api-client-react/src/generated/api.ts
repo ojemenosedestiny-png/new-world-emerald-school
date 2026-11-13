@@ -8062,6 +8062,74 @@ export function useGetMyStudentProfile<TData = Awaited<ReturnType<typeof getMySt
 
 
 
+export const getSaveMyStudentProfileUrl = () => {
+
+
+
+
+  return `/api/portal/me/profile`
+}
+
+/**
+ * The signed-in student (with their parents' help) fills in their own details; the admission date stays as the school set it
+ */
+export const saveMyStudentProfile = async (studentProfileFields: StudentProfileFields, options?: RequestInit): Promise<StudentProfileView> => {
+
+  return customFetch<StudentProfileView>(getSaveMyStudentProfileUrl(),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(studentProfileFields)
+  }
+);}
+
+
+
+
+
+export const getSaveMyStudentProfileMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof saveMyStudentProfile>>, TError,{data: BodyType<StudentProfileFields>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof saveMyStudentProfile>>, TError,{data: BodyType<StudentProfileFields>}, TContext> => {
+
+const mutationKey = ['saveMyStudentProfile'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof saveMyStudentProfile>>, {data: BodyType<StudentProfileFields>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  saveMyStudentProfile(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SaveMyStudentProfileMutationResult = NonNullable<Awaited<ReturnType<typeof saveMyStudentProfile>>>
+    export type SaveMyStudentProfileMutationBody = BodyType<StudentProfileFields>
+    export type SaveMyStudentProfileMutationError = ErrorType<unknown>
+
+    export const useSaveMyStudentProfile = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof saveMyStudentProfile>>, TError,{data: BodyType<StudentProfileFields>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof saveMyStudentProfile>>,
+        TError,
+        {data: BodyType<StudentProfileFields>},
+        TContext
+      > => {
+      return useMutation(getSaveMyStudentProfileMutationOptions(options));
+    }
+
 export const getGetChildProfileUrl = (id: number,) => {
 
 
