@@ -29,6 +29,31 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/StudentIdChangeResult" }
+  oldPreview:
+    post:
+      operationId: previewOldStudentIdCleanup
+      description: "Students with an old-style ID, each paired with the new admission-number record of the same name (nothing changes yet)"
+      responses:
+        "200":
+          description: The plan
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/OldStudentIdPlan" }
+  oldApply:
+    post:
+      operationId: applyOldStudentIdCleanup
+      description: "Join each old record to its new admission number (keeping results and history) and remove empty old records"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/OldStudentIdCleanup" }
+      responses:
+        "200":
+          description: Done
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/OldStudentIdCleanupResult" }
 schemas:
   StudentIdListInput:
     type: object
@@ -81,4 +106,48 @@ schemas:
     required: [changed, message]
     properties:
       changed: { type: integer }
+      message: { type: string }
+  OldStudentIdPair:
+    type: object
+    required: [old, new, oldRecords, newRecords, status]
+    properties:
+      old: { $ref: "#/components/schemas/StudentIdStudent" }
+      new: { $ref: "#/components/schemas/StudentIdStudent" }
+      oldRecords: { type: array, items: { type: string } }
+      newRecords: { type: array, items: { type: string } }
+      status: { type: string, enum: [ready, new_has_records, ambiguous] }
+  OldStudentIdUnpaired:
+    type: object
+    required: [student, records, note]
+    properties:
+      student: { $ref: "#/components/schemas/StudentIdStudent" }
+      records: { type: array, items: { type: string } }
+      note: { type: string }
+  OldStudentIdPlan:
+    type: object
+    required: [pairs, unpaired, newOptions]
+    properties:
+      pairs: { type: array, items: { $ref: "#/components/schemas/OldStudentIdPair" } }
+      unpaired: { type: array, items: { $ref: "#/components/schemas/OldStudentIdUnpaired" } }
+      newOptions: { type: array, items: { $ref: "#/components/schemas/StudentIdStudent" } }
+  OldStudentIdCleanup:
+    type: object
+    required: [join, remove]
+    properties:
+      join:
+        type: array
+        maxItems: 3000
+        items:
+          type: object
+          required: [oldId, newId]
+          properties:
+            oldId: { type: integer }
+            newId: { type: integer }
+      remove: { type: array, maxItems: 3000, items: { type: integer } }
+  OldStudentIdCleanupResult:
+    type: object
+    required: [joined, removed, message]
+    properties:
+      joined: { type: integer }
+      removed: { type: integer }
       message: { type: string }

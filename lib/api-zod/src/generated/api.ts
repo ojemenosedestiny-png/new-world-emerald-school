@@ -5714,6 +5714,74 @@ export const ApplyStudentIdChangeResponse = zod.object({
 
 
 /**
+ * Students with an old-style ID, each paired with the new admission-number record of the same name (nothing changes yet)
+ */
+export const PreviewOldStudentIdCleanupResponse = zod.object({
+  "pairs": zod.array(zod.object({
+  "old": zod.object({
+  "id": zod.number(),
+  "studentId": zod.string(),
+  "name": zod.string(),
+  "className": zod.string(),
+  "active": zod.boolean()
+}),
+  "new": zod.object({
+  "id": zod.number(),
+  "studentId": zod.string(),
+  "name": zod.string(),
+  "className": zod.string(),
+  "active": zod.boolean()
+}),
+  "oldRecords": zod.array(zod.string()),
+  "newRecords": zod.array(zod.string()),
+  "status": zod.enum(['ready', 'new_has_records', 'ambiguous'])
+})),
+  "unpaired": zod.array(zod.object({
+  "student": zod.object({
+  "id": zod.number(),
+  "studentId": zod.string(),
+  "name": zod.string(),
+  "className": zod.string(),
+  "active": zod.boolean()
+}),
+  "records": zod.array(zod.string()),
+  "note": zod.string()
+})),
+  "newOptions": zod.array(zod.object({
+  "id": zod.number(),
+  "studentId": zod.string(),
+  "name": zod.string(),
+  "className": zod.string(),
+  "active": zod.boolean()
+}))
+})
+
+
+/**
+ * Join each old record to its new admission number (keeping results and history) and remove empty old records
+ */
+export const applyOldStudentIdCleanupBodyJoinMax = 3000;
+
+export const applyOldStudentIdCleanupBodyRemoveMax = 3000;
+
+
+
+export const ApplyOldStudentIdCleanupBody = zod.object({
+  "join": zod.array(zod.object({
+  "oldId": zod.number(),
+  "newId": zod.number()
+})).max(applyOldStudentIdCleanupBodyJoinMax),
+  "remove": zod.array(zod.number()).max(applyOldStudentIdCleanupBodyRemoveMax)
+})
+
+export const ApplyOldStudentIdCleanupResponse = zod.object({
+  "joined": zod.number(),
+  "removed": zod.number(),
+  "message": zod.string()
+})
+
+
+/**
  * The Chairman's read-only board of students, staff, attendance, learning and results across the school (no money, nothing can be sent or changed)
  */
 export const GetChairmanBoardQueryParams = zod.object({

@@ -2444,6 +2444,53 @@ export interface StudentIdChangeResult {
   message: string;
 }
 
+export type OldStudentIdPairStatus = typeof OldStudentIdPairStatus[keyof typeof OldStudentIdPairStatus];
+
+
+export const OldStudentIdPairStatus = {
+  ready: 'ready',
+  new_has_records: 'new_has_records',
+  ambiguous: 'ambiguous',
+} as const;
+
+export interface OldStudentIdPair {
+  old: StudentIdStudent;
+  new: StudentIdStudent;
+  oldRecords: string[];
+  newRecords: string[];
+  status: OldStudentIdPairStatus;
+}
+
+export interface OldStudentIdUnpaired {
+  student: StudentIdStudent;
+  records: string[];
+  note: string;
+}
+
+export interface OldStudentIdPlan {
+  pairs: OldStudentIdPair[];
+  unpaired: OldStudentIdUnpaired[];
+  newOptions: StudentIdStudent[];
+}
+
+export type OldStudentIdCleanupJoinItem = {
+  oldId: number;
+  newId: number;
+};
+
+export interface OldStudentIdCleanup {
+  /** @maxItems 3000 */
+  join: OldStudentIdCleanupJoinItem[];
+  /** @maxItems 3000 */
+  remove: number[];
+}
+
+export interface OldStudentIdCleanupResult {
+  joined: number;
+  removed: number;
+  message: string;
+}
+
 export interface ChairmanCount {
   label: string;
   value: number;

@@ -120,6 +120,9 @@ import type {
   MyFacilities,
   MyMessages,
   MyPhoto,
+  OldStudentIdCleanup,
+  OldStudentIdCleanupResult,
+  OldStudentIdPlan,
   ParentChildProgress,
   ParentLinkCommand,
   ParentLinks,
@@ -8836,6 +8839,142 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
         TContext
       > => {
       return useMutation(getApplyStudentIdChangeMutationOptions(options));
+    }
+
+export const getPreviewOldStudentIdCleanupUrl = () => {
+
+
+
+
+  return `/api/portal/student-ids/old/preview`
+}
+
+/**
+ * Students with an old-style ID, each paired with the new admission-number record of the same name (nothing changes yet)
+ */
+export const previewOldStudentIdCleanup = async ( options?: RequestInit): Promise<OldStudentIdPlan> => {
+
+  return customFetch<OldStudentIdPlan>(getPreviewOldStudentIdCleanupUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getPreviewOldStudentIdCleanupMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof previewOldStudentIdCleanup>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof previewOldStudentIdCleanup>>, TError,void, TContext> => {
+
+const mutationKey = ['previewOldStudentIdCleanup'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof previewOldStudentIdCleanup>>, void> = () => {
+
+
+          return  previewOldStudentIdCleanup(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PreviewOldStudentIdCleanupMutationResult = NonNullable<Awaited<ReturnType<typeof previewOldStudentIdCleanup>>>
+
+    export type PreviewOldStudentIdCleanupMutationError = ErrorType<unknown>
+
+    export const usePreviewOldStudentIdCleanup = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof previewOldStudentIdCleanup>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof previewOldStudentIdCleanup>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getPreviewOldStudentIdCleanupMutationOptions(options));
+    }
+
+export const getApplyOldStudentIdCleanupUrl = () => {
+
+
+
+
+  return `/api/portal/student-ids/old/apply`
+}
+
+/**
+ * Join each old record to its new admission number (keeping results and history) and remove empty old records
+ */
+export const applyOldStudentIdCleanup = async (oldStudentIdCleanup: OldStudentIdCleanup, options?: RequestInit): Promise<OldStudentIdCleanupResult> => {
+
+  return customFetch<OldStudentIdCleanupResult>(getApplyOldStudentIdCleanupUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(oldStudentIdCleanup)
+  }
+);}
+
+
+
+
+
+export const getApplyOldStudentIdCleanupMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof applyOldStudentIdCleanup>>, TError,{data: BodyType<OldStudentIdCleanup>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof applyOldStudentIdCleanup>>, TError,{data: BodyType<OldStudentIdCleanup>}, TContext> => {
+
+const mutationKey = ['applyOldStudentIdCleanup'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof applyOldStudentIdCleanup>>, {data: BodyType<OldStudentIdCleanup>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  applyOldStudentIdCleanup(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ApplyOldStudentIdCleanupMutationResult = NonNullable<Awaited<ReturnType<typeof applyOldStudentIdCleanup>>>
+    export type ApplyOldStudentIdCleanupMutationBody = BodyType<OldStudentIdCleanup>
+    export type ApplyOldStudentIdCleanupMutationError = ErrorType<unknown>
+
+    export const useApplyOldStudentIdCleanup = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof applyOldStudentIdCleanup>>, TError,{data: BodyType<OldStudentIdCleanup>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof applyOldStudentIdCleanup>>,
+        TError,
+        {data: BodyType<OldStudentIdCleanup>},
+        TContext
+      > => {
+      return useMutation(getApplyOldStudentIdCleanupMutationOptions(options));
     }
 
 export const getGetChairmanBoardUrl = (params?: GetChairmanBoardParams,) => {

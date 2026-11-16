@@ -18,6 +18,7 @@ import { AccountLinkDialog, EnrolStudentDialog, useAccountLink } from "./account
 import { MoveStudentDialog } from "./MoveStudent";
 import { StudentProfileDialog } from "../profile/StudentProfile";
 import { StudentIdChangeDialog } from "./StudentIdChange";
+import { OldIdCleanupDialog } from "./OldIdCleanup";
 import { GROUP_LABEL, teacherGroup, type TeacherGroup } from "./sections";
 
 export const SECONDARY_CLASSES = ["JSS 1", "JSS 2", "JSS 3", "SS 1", "SS 2", "SS 3"];
@@ -115,6 +116,8 @@ export function StudentsPanel({ data, isAdmin = true }: { data: PortalManagement
   const [profile, setProfile] = useState<number | null>(null);
   const [enrolling, setEnrolling] = useState(false);
   const [changingIds, setChangingIds] = useState(false);
+  const [cleaning, setCleaning] = useState(false);
+  const oldIds = data.students.filter((s) => !/^NW\/(SEC|PRY)\/\d{2}\/\d{5,6}$/.test(s.studentId)).length;
   const [link, setLink] = useState<{ result: AccountLinkResult; purpose: "activate" | "reset" } | null>(null);
   const accountLink = useAccountLink();
   const sendLink = async (s: PortalManagementStudentsItem, purpose: "activate" | "reset") => { const result = await accountLink.run(s.id as number, purpose); if (result) setLink({ result, purpose }); };
@@ -144,6 +147,7 @@ export function StudentsPanel({ data, isAdmin = true }: { data: PortalManagement
         <select className="portal-input sm:max-w-[200px]" aria-label="Filter by class" value={filter} onChange={(e) => setFilter(Number(e.target.value))} data-testid="select-filter-class"><option value={0}>All classes</option>{data.classes.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</select>
         <div className="flex flex-wrap gap-2 sm:ml-auto">
           {isAdmin && data.students.length > 0 && <button className="portal-btn-ghost" onClick={() => setChangingIds(true)} data-testid="button-change-ids"><IdCard size={15} /> Admission numbers</button>}
+          {isAdmin && oldIds > 0 && <button className="portal-btn-ghost" onClick={() => setCleaning(true)} data-testid="button-remove-old-ids"><Trash2 size={15} /> Remove old IDs ({oldIds})</button>}
           {isAdmin && <button className="portal-btn-ghost" disabled={data.classes.length === 0} onClick={() => setBulk(true)} data-testid="button-bulk-enrol"><ListPlus size={15} /> Enrol class list</button>}
           {isAdmin && <button className="portal-btn-ghost" disabled={data.classes.length === 0} onClick={() => setEnrolling(true)} data-testid="button-add-student"><Mail size={15} /> Enrol with parent email</button>}
           <button className="portal-btn" disabled={data.classes.length === 0} onClick={() => setForm({ studentId: "", name: "", classId: filter || data.classes[0]?.id || 0, active: true, guardianEmail: "" })} data-testid="button-enrol-password"><KeyRound size={15} /> Enrol with password</button>
@@ -194,6 +198,7 @@ export function StudentsPanel({ data, isAdmin = true }: { data: PortalManagement
       {link && <AccountLinkDialog result={link.result} purpose={link.purpose} onClose={() => setLink(null)} />}
       <StudentProfileDialog studentId={profile} onClose={() => setProfile(null)} />
       {isAdmin && <StudentIdChangeDialog open={changingIds} onClose={() => setChangingIds(false)} data={data} />}
+      {isAdmin && <OldIdCleanupDialog open={cleaning} onClose={() => setCleaning(false)} />}
       <MoveStudentDialog student={moving} classes={data.classes} pending={cmd.pending} onClose={() => setMoving(null)}
         onMove={(toClassId) => cmd.run({ action: "moveStudent", target: { id: moving!.id }, toClassId }, "Student moved")} />
       <Dialog open={!!activity} onOpenChange={(o) => !o && setActivity(null)}>

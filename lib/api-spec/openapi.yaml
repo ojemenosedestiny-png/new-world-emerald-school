@@ -205,6 +205,10 @@ paths:
     $ref: "./student-ids.yaml#/paths/preview"
   /portal/student-ids/apply:
     $ref: "./student-ids.yaml#/paths/apply"
+  /portal/student-ids/old/preview:
+    $ref: "./student-ids.yaml#/paths/oldPreview"
+  /portal/student-ids/old/apply:
+    $ref: "./student-ids.yaml#/paths/oldApply"
   /chairman/board:
     $ref: "./chairman.yaml#/paths/board"
   /portal/my-messages:
@@ -1383,6 +1387,16 @@ components:
       $ref: "./student-ids.yaml#/schemas/StudentIdChanges"
     StudentIdChangeResult:
       $ref: "./student-ids.yaml#/schemas/StudentIdChangeResult"
+    OldStudentIdPair:
+      $ref: "./student-ids.yaml#/schemas/OldStudentIdPair"
+    OldStudentIdUnpaired:
+      $ref: "./student-ids.yaml#/schemas/OldStudentIdUnpaired"
+    OldStudentIdPlan:
+      $ref: "./student-ids.yaml#/schemas/OldStudentIdPlan"
+    OldStudentIdCleanup:
+      $ref: "./student-ids.yaml#/schemas/OldStudentIdCleanup"
+    OldStudentIdCleanupResult:
+      $ref: "./student-ids.yaml#/schemas/OldStudentIdCleanupResult"
     ChairmanCount:
       $ref: "./chairman.yaml#/schemas/ChairmanCount"
     ChairmanSection:
