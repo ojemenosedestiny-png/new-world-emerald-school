@@ -178,12 +178,14 @@ portalStudentIdsRouter.post("/student-ids/old/preview", async (req, res) => {
 portalStudentIdsRouter.post("/student-ids/old/apply", async (req, res) => {
   const by = await office(req);
   const body = ApplyOldStudentIdCleanupBody.parse(req.body);
-  check(body.join.length || body.remove.length, "Choose what to tidy up.");
-  const used = [...body.join.flatMap((j) => [j.oldId, j.newId]), ...body.remove];
+  const purge = body.purge ?? [];
+  check(body.join.length || body.remove.length || purge.length, "Choose what to tidy up.");
+  const used = [...body.join.flatMap((j) => [j.oldId, j.newId]), ...body.remove, ...purge];
   check(new Set(used).size === used.length, "A student appears twice. Check the choices again.");
 
   const joined: { name: string; from: string; to: string }[] = [];
   const removed: { name: string; studentId: string }[] = [];
+  const purged: { name: string; studentId: string; records: string[] }[] = [];
   await db.transaction(async (tx) => {
     for (const j of body.join) {
       const [o] = await tx.select().from(portalStudents).where(eq(portalStudents.id, j.oldId)).for("update");
@@ -216,11 +218,25 @@ portalStudentIdsRouter.post("/student-ids/old/apply", async (req, res) => {
       await tx.delete(portalStudents).where(eq(portalStudents.id, s.id));
       removed.push({ name: s.name, studentId: s.studentId });
     }
+    // Removed with everything recorded under the old ID (the office chose this, knowing it deletes those records).
+    for (const id of purge) {
+      const [s] = await tx.select().from(portalStudents).where(eq(portalStudents.id, id)).for("update");
+      if (!s) continue;
+      check(!ADMISSION_NUMBER.test(s.studentId), `${s.name} has an admission number, so they are not an old record.`, 409);
+      const records = (await recordsOf([s.id], tx)).get(s.id)!;
+      await tx.delete(portalScores).where(eq(portalScores.studentId, s.id));
+      await tx.delete(portalReportCards).where(eq(portalReportCards.studentId, s.id));
+      await tx.delete(portalAttempts).where(eq(portalAttempts.studentId, s.id));
+      await tx.delete(examRegistrations).where(eq(examRegistrations.studentId, s.id));
+      // Everything else (attendance, profile, messages, sessions, cards...) goes with the student.
+      await tx.delete(portalStudents).where(eq(portalStudents.id, s.id));
+      purged.push({ name: s.name, studentId: s.studentId, records });
+    }
   });
   await recordAudit({
-    actorKind: "staff", actorId: req.dbUser?.id ?? null, actorLabel: by, action: "students.old_ids_removed", targetType: "students", targetId: String(joined.length + removed.length),
-    after: { joined: joined.map((j) => ({ from: j.from, to: j.to })), removed: removed.map((r) => r.studentId) }, ip: clientIp(req), userAgent: req.headers["user-agent"] ?? null,
+    actorKind: "staff", actorId: req.dbUser?.id ?? null, actorLabel: by, action: "students.old_ids_removed", targetType: "students", targetId: String(joined.length + removed.length + purged.length),
+    after: { joined: joined.map((j) => ({ from: j.from, to: j.to })), removed: removed.map((r) => r.studentId), removedWithRecords: purged.map((r) => ({ studentId: r.studentId, name: r.name, records: r.records })) }, ip: clientIp(req), userAgent: req.headers["user-agent"] ?? null,
   });
-  const parts = [joined.length ? `${joined.length} old ${joined.length === 1 ? "record" : "records"} joined to the new ID (results and history kept)` : "", removed.length ? `${removed.length} empty old ${removed.length === 1 ? "record" : "records"} removed` : ""].filter(Boolean);
-  res.json({ joined: joined.length, removed: removed.length, message: parts.join("; ") + "." });
+  const parts = [joined.length ? `${joined.length} old ${joined.length === 1 ? "record" : "records"} joined to the new ID (results and history kept)` : "", removed.length ? `${removed.length} empty old ${removed.length === 1 ? "record" : "records"} removed` : "", purged.length ? `${purged.length} old ${purged.length === 1 ? "record" : "records"} removed with ${purged.length === 1 ? "its" : "their"} records` : ""].filter(Boolean);
+  res.json({ joined: joined.length, removed: removed.length + purged.length, message: parts.join("; ") + "." });
 });

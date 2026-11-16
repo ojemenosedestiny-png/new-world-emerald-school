@@ -50,15 +50,19 @@ export function OldIdCleanupDialog({ open, onClose }: { open: boolean; onClose: 
   ];
   const manual = others.filter((o) => /^\d+$/.test(choice[o.id] ?? "")).map((o) => ({ oldId: o.id, newId: Number(choice[o.id]) }));
   const removeIds = others.filter((o) => choice[o.id] === "remove").map((o) => o.id);
+  const purgeIds = others.filter((o) => choice[o.id] === "purge").map((o) => o.id);
+  // Every old record not joined goes: empty ones simply, the rest with their records.
+  const removeAllLeft = () => setChoice(Object.fromEntries(others.map((o) => [o.id, /^\d+$/.test(choice[o.id] ?? "") ? choice[o.id] : o.records.length ? "purge" : "remove"])));
   const joins = [...ready.filter((p) => join.has(p.old.id)).map((p) => ({ oldId: p.old.id, newId: p.new.id })), ...manual];
   const pickedTwice = new Set(joins.map((j) => j.newId)).size !== joins.length;
   const go = async () => {
     const pairs = joins;
     const ids = removeIds;
-    if (!pairs.length && !ids.length) return;
-    if (!window.confirm(`Tidy up ${pairs.length + ids.length} old records? Joined students keep their results and history under their new ID and password. This cannot be undone.`)) return;
+    if (!pairs.length && !ids.length && !purgeIds.length) return;
+    const warn = purgeIds.length ? `\n\n${purgeIds.length} old ${purgeIds.length === 1 ? "record is" : "records are"} removed WITH ${purgeIds.length === 1 ? "its" : "their"} results, attendance and CBT. Those records are deleted for good.` : "";
+    if (!window.confirm(`Tidy up ${pairs.length + ids.length + purgeIds.length} old records? Joined students keep their results and history under their new ID and password. This cannot be undone.${warn}`)) return;
     try {
-      const r = await apply.mutateAsync({ data: { join: pairs, remove: ids } });
+      const r = await apply.mutateAsync({ data: { join: pairs, remove: ids, ...(purgeIds.length ? { purge: purgeIds } : {}) } });
       toast({ title: "Old IDs tidied up", description: r.message });
       await qc.invalidateQueries({ queryKey: getGetPortalManagementQueryKey() });
       onClose();
@@ -102,7 +106,10 @@ export function OldIdCleanupDialog({ open, onClose }: { open: boolean; onClose: 
               {others.length > 0 && (
                 <section data-testid="old-ids-others">
                   <h3 className="font-semibold">Old records that did not pair ({others.length})</h3>
-                  <p className={"text-xs " + MUTED}>Choose the student's new record to join it, remove an empty one, or keep it as it is.</p>
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <p className={"text-xs " + MUTED}>Choose the student's new record to join it (keeps their results), remove it, or keep it as it is.</p>
+                    <button type="button" className="portal-btn-ghost !min-h-[32px] !px-3 text-xs" onClick={removeAllLeft} data-testid="button-remove-all-left">Remove all the rest</button>
+                  </div>
                   <div className="mt-2 max-h-[38dvh] divide-y divide-[hsl(var(--p-line))] overflow-y-auto rounded-xl border border-[hsl(var(--p-line))]">
                     {others.map((o) => (
                       <div key={o.id} className="flex flex-col gap-2 p-2.5 text-sm sm:flex-row sm:items-center" data-testid={`old-other-${o.id}`}>
@@ -113,6 +120,7 @@ export function OldIdCleanupDialog({ open, onClose }: { open: boolean; onClose: 
                         <select className="portal-input !w-full !py-1.5 text-xs sm:!w-72" value={choice[o.id] ?? "keep"} onChange={(e) => setChoice({ ...choice, [o.id]: e.target.value })} aria-label={`What to do with ${o.student.name}`} data-testid={`select-old-${o.id}`}>
                           <option value="keep">Keep as it is</option>
                           {!o.records.length && <option value="remove">Remove (nothing in it)</option>}
+                          {o.records.length > 0 && <option value="purge">Remove with its records ({list(o.records)})</option>}
                           <optgroup label="Join to new record">
                             {plan.newOptions.map((n) => <option key={n.id} value={String(n.id)}>{n.name} · {n.className} · {n.studentId}</option>)}
                           </optgroup>
@@ -125,8 +133,8 @@ export function OldIdCleanupDialog({ open, onClose }: { open: boolean; onClose: 
               {pickedTwice && <p className="rounded-xl bg-[hsl(var(--p-red)/0.1)] p-3 text-sm font-semibold text-[hsl(var(--p-red))]">The same new record is chosen twice. Each new record can join one old record.</p>}
 
               <div className="flex justify-end">
-                <button type="button" className="portal-btn" disabled={apply.isPending || pickedTwice || (!joins.length && !removeIds.length)} onClick={() => void go()} data-testid="button-apply-old-ids">
-                  {apply.isPending && <Loader2 size={15} className="animate-spin" />} Tidy up {joins.length + removeIds.length} old records
+                <button type="button" className="portal-btn" disabled={apply.isPending || pickedTwice || (!joins.length && !removeIds.length && !purgeIds.length)} onClick={() => void go()} data-testid="button-apply-old-ids">
+                  {apply.isPending && <Loader2 size={15} className="animate-spin" />} Tidy up {joins.length + removeIds.length + purgeIds.length} old records
                 </button>
               </div>
             </div>

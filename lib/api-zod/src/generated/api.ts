@@ -5768,6 +5768,8 @@ export const applyOldStudentIdCleanupBodyJoinMax = 3000;
 
 export const applyOldStudentIdCleanupBodyRemoveMax = 3000;
 
+export const applyOldStudentIdCleanupBodyPurgeMax = 3000;
+
 
 
 export const ApplyOldStudentIdCleanupBody = zod.object({
@@ -5775,7 +5777,8 @@ export const ApplyOldStudentIdCleanupBody = zod.object({
   "oldId": zod.number(),
   "newId": zod.number()
 })).max(applyOldStudentIdCleanupBodyJoinMax),
-  "remove": zod.array(zod.number()).max(applyOldStudentIdCleanupBodyRemoveMax)
+  "remove": zod.array(zod.number()).max(applyOldStudentIdCleanupBodyRemoveMax),
+  "purge": zod.array(zod.number()).max(applyOldStudentIdCleanupBodyPurgeMax).optional().describe('Old records to remove together with everything recorded under them (results, attendance, CBT)')
 })
 
 export const ApplyOldStudentIdCleanupResponse = zod.object({

@@ -2483,6 +2483,11 @@ export interface OldStudentIdCleanup {
   join: OldStudentIdCleanupJoinItem[];
   /** @maxItems 3000 */
   remove: number[];
+  /**
+     * Old records to remove together with everything recorded under them (results, attendance, CBT)
+     * @maxItems 3000
+     */
+  purge?: number[];
 }
 
 export interface OldStudentIdCleanupResult {

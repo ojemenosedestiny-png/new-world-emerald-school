@@ -59,3 +59,15 @@ it("keeps an old record the office chooses to keep, and will not join one new re
   await waitFor(() => expect(api.apply).toHaveBeenCalledWith({ data: { join: [{ oldId: 1, newId: 101 }], remove: [] } }));
   confirm.mockRestore();
 });
+
+it("Remove all the rest: empty old records removed, ones with records removed with them (after a clear warning)", async () => {
+  api.preview.mockResolvedValueOnce(plan);
+  const confirm = vi.spyOn(window, "confirm").mockReturnValue(true);
+  render(wrap(<OldIdCleanupDialog open onClose={vi.fn()} />));
+  fireEvent.click(await screen.findByTestId("button-remove-all-left"));
+  expect((screen.getByTestId("select-old-4") as HTMLSelectElement).value).toBe("purge");
+  fireEvent.click(screen.getByTestId("button-apply-old-ids"));
+  await waitFor(() => expect(api.apply).toHaveBeenCalledWith({ data: { join: [{ oldId: 1, newId: 101 }], remove: [3, 2], purge: [4] } }));
+  expect(confirm.mock.calls[0][0]).toMatch(/removed WITH its results, attendance and CBT/);
+  confirm.mockRestore();
+});

@@ -144,6 +144,11 @@ schemas:
             oldId: { type: integer }
             newId: { type: integer }
       remove: { type: array, maxItems: 3000, items: { type: integer } }
+      purge:
+        type: array
+        maxItems: 3000
+        description: Old records to remove together with everything recorded under them (results, attendance, CBT)
+        items: { type: integer }
   OldStudentIdCleanupResult:
     type: object
     required: [joined, removed, message]

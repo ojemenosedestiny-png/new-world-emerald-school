@@ -239,6 +239,15 @@ test("old IDs: each old record keeps its history and takes the new ID and passwo
     assert.equal(runor.studentId, runorNew.studentId);
     assert.equal(runor.name, `Oghenerunor Zw${tag}`, "the new record's spelling of the name is kept");
 
+    // Removing what is left: an old record with attendance goes with its records only when the office chooses that.
+    assert.equal((await post("/student-ids/old/apply", { join: [], remove: [keptOld.id] })).status, 409, "plain remove refuses records");
+    assert.equal((await post("/student-ids/old/apply", { join: [], remove: [], purge: [adaOld.id] })).status, 409, "a student with an admission number is not an old record");
+    const purged = await post("/student-ids/old/apply", { join: [], remove: [], purge: [keptOld.id] });
+    assert.equal(purged.status, 200, JSON.stringify(purged.data));
+    assert.match(purged.data.message, /removed with its records/);
+    assert.equal((await db.select().from(portalStudents).where(eq(portalStudents.id, keptOld.id))).length, 0);
+    assert.equal((await db.select().from(portalAttendance).where(eq(portalAttendance.studentId, keptOld.id))).length, 0);
+
     const [ada] = await db.select().from(portalStudents).where(eq(portalStudents.id, adaOld.id));
     assert.equal(ada.studentId, adaNew.studentId, "the old record now has the new ID");
     assert.equal(ada.name, `Ada ${surname}`);
