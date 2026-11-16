@@ -152,10 +152,12 @@ export function scrollToQuestion(id: string) {
   window.setTimeout(() => el.querySelector<HTMLElement>("button:not(:disabled), textarea:not(:disabled)")?.focus({ preventScroll: true }), 350);
 }
 
-const PASSWORD_WORDS = ["Mango", "Lion", "River", "Eagle", "Tiger", "Sunny", "Cocoa", "Panda", "Zebra", "Orange", "Rocket", "Planet", "Pencil", "Garden", "Falcon", "Dolphin",
-  "Market", "Bridge", "Castle", "Forest", "Lemon", "Parrot", "Silver", "Thunder", "Violet", "Window", "Yellow", "Breeze", "Candle", "Desert", "Harbor", "Island"];
+/** Gemstones, one word each, for student passwords such as "Emerald-4827". */
+export const PASSWORD_WORDS = ["Emerald", "Aquamarine", "Morganite", "Heliodor", "Goshenite", "RedBeryl", "Jade", "Peridot", "Tourmaline", "Tsavorite",
+  "Diopside", "Malachite", "Topaz", "Ruby", "Sapphire", "Diamond", "Opal", "Amethyst", "Citrine", "Garnet", "Onyx", "Turquoise", "Lapis", "Quartz",
+  "Agate", "Zircon", "Tanzanite", "Spinel", "Moonstone", "Coral"];
 
-/** An easy password to read out and type, such as "Mango-4827": a word, a dash and four digits (10+ characters). */
+/** An easy password to read out and type, such as "Emerald-4827": a gemstone, a dash and four digits (10+ characters). */
 export function friendlyPassword() {
   const rand = (n: number) => {
     const limit = Math.floor(0x100000000 / n) * n;

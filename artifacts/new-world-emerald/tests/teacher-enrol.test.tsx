@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 import { afterEach, expect, it, vi } from "vitest";
 import type { PortalManagement } from "@workspace/api-client-react";
 import { StudentsPanel } from "../src/portal/manage/PeoplePanels";
-import { friendlyPassword } from "../src/portal/lib";
+import { PASSWORD_WORDS, friendlyPassword } from "../src/portal/lib";
 
 const api = vi.hoisted(() => ({ manage: vi.fn() }));
 vi.mock("@workspace/api-client-react", async (original) => ({
@@ -21,7 +21,7 @@ const data = {
 } as unknown as PortalManagement;
 
 it("passwords are easy to type and long enough", () => {
-  for (let i = 0; i < 50; i++) expect(friendlyPassword()).toMatch(/^[A-Z][a-z]+-\d{4}7*$/);
+  for (let i = 0; i < 50; i++) { const p = friendlyPassword(); expect(p).toMatch(/^[A-Z][A-Za-z]+-\d{4}7*$/); expect(PASSWORD_WORDS).toContain(p.split("-")[0]); }
   expect(friendlyPassword().length).toBeGreaterThanOrEqual(10);
 });
 
