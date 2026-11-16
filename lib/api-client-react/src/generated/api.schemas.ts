@@ -5186,6 +5186,11 @@ export type PortalManagementClassesItem = {
   name: string;
 };
 
+export type PortalManagementExamClassesItem = {
+  id: number;
+  name: string;
+};
+
 export type PortalManagementStudentsItemAccountStatus = typeof PortalManagementStudentsItemAccountStatus[keyof typeof PortalManagementStudentsItemAccountStatus];
 
 
@@ -5522,6 +5527,8 @@ export type PortalManagementTeaching = {
 
 export interface PortalManagement {
   classes: PortalManagementClassesItem[];
+  /** Every class an exam may be set for (teachers may set exams for any class, not only their own) */
+  examClasses?: PortalManagementExamClassesItem[];
   students: PortalManagementStudentsItem[];
   teachers: PortalManagementTeachersItem[];
   exams: PortalManagementExamsItem[];

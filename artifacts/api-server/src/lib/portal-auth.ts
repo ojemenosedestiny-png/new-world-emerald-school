@@ -50,7 +50,11 @@ const verifiedStaff = new Map<string, { email: string; until: number }>();
  * The signed-in person's primary email, lowercased, only once they have confirmed it with Clerk; otherwise null.
  * Looked up from Clerk (not the session claims) and cached for a minute. Used for teachers and parents.
  */
+// Tests sign staff in without Clerk by replacing this lookup; it is never set in the running site.
+let staffEmailForTest: ((req: Request) => Promise<string | null>) | null = null;
+export function setStaffEmailResolverForTest(fn: ((req: Request) => Promise<string | null>) | null) { staffEmailForTest = fn; }
 export async function verifiedClerkEmail(req: Request): Promise<string | null> {
+  if (staffEmailForTest) return staffEmailForTest(req);
   if (!req.dbUser) return null;
   const clerkId = getAuth(req).userId;
   if (!clerkId) return null;
@@ -91,6 +95,15 @@ export function studentOnly(actor: PortalActor) {
 }
 export function staffOnly(actor: PortalActor) {
   check(actor.role === "admin" || actor.role === "teacher", "Approved staff access required.", actor.role === "guest" ? 401 : 403);
+}
+/**
+ * May this staff member manage this exam? The office always; a teacher for exams in their own classes, and for any
+ * exam they set themselves (teachers may set exams for any class, not only the ones assigned to them).
+ */
+export function examAllowed(actor: PortalActor, exam: { classId: number; createdByTeacherId: number | null }) {
+  staffOnly(actor);
+  check(actor.role === "admin" || actor.classIds.includes(exam.classId) || (!!actor.teacherId && exam.createdByTeacherId === actor.teacherId),
+    "This exam belongs to another teacher's class.", 403);
 }
 export function classAllowed(actor: PortalActor, classId: number) {
   staffOnly(actor);

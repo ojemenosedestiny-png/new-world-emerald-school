@@ -75,7 +75,7 @@ export function MarkingPanel({ data }: { data: PortalManagement }) {
           <div key={a.id} className="flex flex-col gap-2 p-4 sm:flex-row sm:items-center" data-testid={"row-attempt-" + a.id}>
             <div className="min-w-0 flex-1">
               <p className="font-semibold">{a.studentName} <span className="font-mono text-xs text-[hsl(var(--p-ink)/0.5)]">{a.studentId}</span></p>
-              <p className="text-xs text-[hsl(var(--p-ink)/0.55)]">{a.title} / {className(data.classes, a.classId)} / saved {formatDateTime(a.savedAt)}</p>
+              <p className="text-xs text-[hsl(var(--p-ink)/0.55)]">{a.title} / {className(data.examClasses?.length ? data.examClasses : data.classes, a.classId)} / saved {formatDateTime(a.savedAt)}</p>
               {(a.focusLosses ?? 0) > 0 && <p className="text-xs font-semibold text-[hsl(var(--p-red))]" data-testid={"text-focus-losses-" + a.id}>Left the exam screen {a.focusLosses} {a.focusLosses === 1 ? "time" : "times"}</p>}
             </div>
             {a.status === "marked" ? <StatusPill tone="green">{a.score ?? "-"} / {a.totalMarks}</StatusPill> : <StatusPill tone="gold">To mark</StatusPill>}

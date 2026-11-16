@@ -98,6 +98,8 @@ function QuestionEditor({ q, i, count, classId, notes, onChange, onMove, onRemov
 }
 
 export function ExamEditor({ data, initial, onClose }: { data: PortalManagement; initial: PortalExam; onClose: () => void }) {
+  // Every class in the school: teachers may set an exam for any class, not only the ones assigned to them.
+  const examClasses = data.examClasses?.length ? data.examClasses : data.classes;
   const cmd = useCommand();
   const { toast } = useToast();
   const upload = useImportPortalPdf();
@@ -107,8 +109,8 @@ export function ExamEditor({ data, initial, onClose }: { data: PortalManagement;
   // A new exam can go to more classes at once, such as every Year 11 class.
   // Choosing a class ticks every class in its year group (all the Year 10s); staff can untick any.
   const groupMates = (classId: number) => {
-    const name = data.classes.find((c) => c.id === classId)?.name;
-    return name ? data.classes.filter((c) => c.id !== classId && yearGroup(c.name) === yearGroup(name)).map((c) => c.id as number) : [];
+    const name = examClasses.find((c) => c.id === classId)?.name;
+    return name ? examClasses.filter((c) => c.id !== classId && yearGroup(c.name) === yearGroup(name)).map((c) => c.id as number) : [];
   };
   const [also, setAlso] = useState<number[]>(() => (initial.id || !initial.classId ? [] : groupMates(initial.classId)));
   const [importNote, setImportNote] = useState<{ warning: string; extractedText: string; found: number; applied: boolean; attached: string[]; general: string[] } | null>(null);
@@ -192,16 +194,16 @@ export function ExamEditor({ data, initial, onClose }: { data: PortalManagement;
           <div className="grid gap-4 sm:grid-cols-2">
             <Field label="Title" htmlFor="e-title"><input id="e-title" className="portal-input" maxLength={200} value={exam.title} onChange={(e) => set({ title: e.target.value })} data-testid="input-exam-title" /></Field>
             <Field label="Subject" htmlFor="e-subject"><input id="e-subject" className="portal-input" maxLength={100} value={exam.subject} onChange={(e) => set({ subject: e.target.value })} data-testid="input-exam-subject" /></Field>
-            <Field label="Class" htmlFor="e-class" hint={exam.fileId ? "Class is fixed once a PDF is uploaded for it." : undefined}><ClassSelect id="e-class" classes={data.classes} value={exam.classId} disabled={!!exam.fileId} onChange={(v) => { set({ classId: v }); if (!exam.id) setAlso(groupMates(v)); }} /></Field>
+            <Field label="Class" htmlFor="e-class" hint={exam.fileId ? "Class is fixed once a PDF is uploaded for it." : undefined}><ClassSelect id="e-class" classes={examClasses} value={exam.classId} disabled={!!exam.fileId} onChange={(v) => { set({ classId: v }); if (!exam.id) setAlso(groupMates(v)); }} /></Field>
             <Field label="Duration (minutes)" htmlFor="e-dur"><input id="e-dur" type="number" min={1} max={300} className="portal-input" value={exam.durationMinutes} onChange={(e) => set({ durationMinutes: Number(e.target.value) })} data-testid="input-exam-duration" /></Field>
             <Field label="Opens" htmlFor="e-start"><input id="e-start" type="datetime-local" className="portal-input" value={toLocalInput(exam.startsAt)} onChange={(e) => set({ startsAt: fromLocalInput(e.target.value) })} data-testid="input-exam-start" /></Field>
             <Field label="Closes" htmlFor="e-end"><input id="e-end" type="datetime-local" className="portal-input" value={toLocalInput(exam.endsAt)} onChange={(e) => set({ endsAt: fromLocalInput(e.target.value) })} data-testid="input-exam-end" /></Field>
           </div>
-          {!exam.id && data.classes.length > 1 && (() => {
-            const others = data.classes.filter((c) => c.id !== exam.classId);
-            const group = exam.classId ? yearGroup(data.classes.find((c) => c.id === exam.classId)?.name ?? "") : "";
+          {!exam.id && examClasses.length > 1 && (() => {
+            const others = examClasses.filter((c) => c.id !== exam.classId);
+            const group = exam.classId ? yearGroup(examClasses.find((c) => c.id === exam.classId)?.name ?? "") : "";
             const sameGroup = others.filter((c) => group && yearGroup(c.name) === group).map((c) => c.id as number);
-            const label = data.classes.find((c) => c.id === exam.classId)?.name.match(/^(.*?\d+)/)?.[1] ?? "";
+            const label = examClasses.find((c) => c.id === exam.classId)?.name.match(/^(.*?\d+)/)?.[1] ?? "";
             return (
               <fieldset className="rounded-xl border border-[hsl(var(--p-line))] p-4" data-testid="fieldset-also-classes">
                 <legend className="portal-label px-1">Also set this exam for</legend>

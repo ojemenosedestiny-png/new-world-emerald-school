@@ -24,6 +24,8 @@ export function duplicateExam(e: PortalExam): PortalExam {
 /** `canClear`: the school owner may also delete exams students have taken (test exams), with their attempts and scores. */
 export function ExamsPanel({ data, isAdmin = false, canClear = false }: { data: PortalManagement; isAdmin?: boolean; canClear?: boolean }) {
   const cmd = useCommand();
+  // Teachers may set exams for any class; the exams they set elsewhere show here too.
+  const examClasses = data.examClasses?.length ? data.examClasses : data.classes;
   const [editing, setEditing] = useState<PortalExam | null>(null);
   const [confirm, setConfirm] = useState<Pending>(null);
   const [resultsFor, setResultsFor] = useState<number | null>(null);
@@ -39,7 +41,7 @@ export function ExamsPanel({ data, isAdmin = false, canClear = false }: { data: 
     <div className="space-y-4">
       <div className="flex flex-wrap justify-end gap-2">
         {isAdmin && <button className="portal-btn-ghost" disabled={cmd.pending || !data.classes.length} onClick={() => void cmd.run({ action: "addPracticeExams" }, "Practice CBT")} title="Adds a published 15-minute practice test, open for 7 days, to every class" data-testid="button-add-practice-exams"><Sparkles size={15} /> Add practice CBT to every class</button>}
-        <button className="portal-btn" disabled={!data.classes.length} onClick={() => setEditing(blankExam(data.classes[0]?.id ?? 0))} data-testid="button-add-exam"><Plus size={15} /> New exam</button></div>
+        <button className="portal-btn" disabled={!examClasses.length} onClick={() => setEditing(blankExam(data.classes[0]?.id ?? examClasses[0]?.id ?? 0))} data-testid="button-add-exam"><Plus size={15} /> New exam</button></div>
       {data.exams.length === 0 ? <EmptyState icon={<ClipboardList size={22} />} title="No exams yet" body="Build an exam on screen, or upload a PDF paper and add answer slots. Students see it only after you publish." /> : (
         <div className="space-y-3">{data.exams.map((e) => {
           const attempts = data.attempts.filter((a) => a.examId === e.id);
@@ -55,7 +57,7 @@ export function ExamsPanel({ data, isAdmin = false, canClear = false }: { data: 
                     <StatusPill tone={e.published ? "green" : e.reviewStatus === "submitted" ? "gold" : e.reviewStatus === "returned" ? "red" : "muted"}>{e.published ? "Published" : e.reviewStatus === "submitted" ? "Waiting for the exam officer" : e.reviewStatus === "returned" ? "Returned by the exam officer" : "Draft"}</StatusPill>
                     {e.resultsReleased && <StatusPill tone="ink">Results released</StatusPill>}
                     {started && <StatusPill tone="gold"><Lock size={10} /> Content frozen</StatusPill>}
-                    <span className="text-xs text-[hsl(var(--p-ink)/0.55)]">{className(data.classes, e.classId)} / {e.subject} / {e.mode === "pdf" ? "PDF paper" : "Interactive"}</span>
+                    <span className="text-xs text-[hsl(var(--p-ink)/0.55)]">{className(examClasses, e.classId)} / {e.subject} / {e.mode === "pdf" ? "PDF paper" : "Interactive"}</span>
                   </div>
                   <h3 className="mt-2 font-serif text-xl font-semibold">{e.title}</h3>
                   <p className="mt-1 text-sm text-[hsl(var(--p-ink)/0.6)]">{formatDateTime(e.startsAt)} to {formatDateTime(e.endsAt)} / {e.durationMinutes} min / {e.questions.length} {e.questions.length === 1 ? "question" : "questions"}</p>

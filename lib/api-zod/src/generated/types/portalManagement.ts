@@ -7,6 +7,7 @@
  */
 import type { PortalManagementAttemptsItem } from './portalManagementAttemptsItem';
 import type { PortalManagementClassesItem } from './portalManagementClassesItem';
+import type { PortalManagementExamClassesItem } from './portalManagementExamClassesItem';
 import type { PortalManagementExamsItem } from './portalManagementExamsItem';
 import type { PortalManagementMaterialsItem } from './portalManagementMaterialsItem';
 import type { PortalManagementNoticesItem } from './portalManagementNoticesItem';
@@ -16,6 +17,8 @@ import type { PortalManagementTeaching } from './portalManagementTeaching';
 
 export interface PortalManagement {
   classes: PortalManagementClassesItem[];
+  /** Every class an exam may be set for (teachers may set exams for any class, not only their own) */
+  examClasses?: PortalManagementExamClassesItem[];
   students: PortalManagementStudentsItem[];
   teachers: PortalManagementTeachersItem[];
   exams: PortalManagementExamsItem[];

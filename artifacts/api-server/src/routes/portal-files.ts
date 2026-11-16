@@ -2,7 +2,7 @@ import express, { Router } from "express";
 import { randomUUID } from "node:crypto";
 import { and, eq, or, sql } from "drizzle-orm";
 import { db, portalFiles, portalClasses, portalMaterials, portalExams, portalAttempts, portalAssignments, portalStudents, portalTimetables } from "@workspace/db";
-import { check, classAllowed, portalActor, studentOnly, type PortalActor } from "../lib/portal-auth";
+import { check, classAllowed, portalActor, staffOnly, studentOnly, type PortalActor } from "../lib/portal-auth";
 import { parentEmail } from "./portal-parent";
 import { canPublishExams } from "../lib/website-admin";
 import { ObjectStorageService, objectStorageClient } from "../lib/objectStorage";
@@ -26,7 +26,7 @@ function objectFile(objectName: string) {
  * Stores a private file for a class. Papers keep their original names (a bare id in the bucket,
  * <id>.pdf on Cloudinary); diagram pictures carry an image extension so they are never served as papers.
  */
-async function storeClassFile(body: Buffer, classId: number | null, ext: "pdf" | "png" | "jpg" | "webp", kind: "diagram" | "document" = "diagram") {
+async function storeClassFile(body: Buffer, classId: number | null, ext: "pdf" | "png" | "jpg" | "webp", kind: "diagram" | "document" = "diagram", uploadedByTeacherId: number | null = null) {
   const id = randomUUID();
   const contentType = ext === "pdf" ? "application/pdf" : diagramContentType("." + ext)!;
   // A picture uploaded as a document (a timetable photo) is named doc-<id>; exam diagrams stay diagram-<id>.
@@ -42,22 +42,25 @@ async function storeClassFile(body: Buffer, classId: number | null, ext: "pdf" |
     await file.save(body, { contentType, resumable: false, metadata: { cacheControl: "private, no-store" } });
     discard = () => file.delete({ ignoreNotFound: true });
   }
-  try { await db.insert(portalFiles).values({ id, classId, objectName }); }
+  try { await db.insert(portalFiles).values({ id, classId, objectName, uploadedByTeacherId }); }
   catch (error) { await discard().catch(() => {}); throw error; }
   return id;
 }
-// Authorize before accepting a large body into memory.
+// Authorize before accepting a large body into memory. Exam papers and diagrams: any staff member, for any class
+// (teachers may set exams for classes they do not teach).
 const classFirst: express.RequestHandler = async (req, _res, next) => {
   try {
-    classAllowed(await portalActor(req), Number(req.query.classId));
+    staffOnly(await portalActor(req));
     next();
   } catch (error) { next(error); }
 };
+/** A teacher may open their own uploads, and files in their classes. */
+const ownUpload = (actor: PortalActor, file: typeof portalFiles.$inferSelect) => actor.role === "teacher" && !!actor.teacherId && file.uploadedByTeacherId === actor.teacherId;
 const importing = new Set<string>();
 portalFilesRouter.post("/import", classFirst, express.raw({ type: "application/pdf", limit: "15mb" }), async (req, res) => {
   const actor = await portalActor(req);
   const classId = Number(req.query.classId);
-  classAllowed(actor, classId);
+  staffOnly(actor);
   const [schoolClass] = await db.select().from(portalClasses).where(eq(portalClasses.id, classId));
   check(schoolClass, "Class not found.", 404);
   check(Buffer.isBuffer(req.body) && req.body.length > 5 && req.body.subarray(0, 5).toString() === "%PDF-", "Upload a valid PDF document (maximum 15MB).");
@@ -75,7 +78,7 @@ portalFilesRouter.post("/import", classFirst, express.raw({ type: "application/p
     const questions = paper?.questions ?? [];
     if (!questions.length && !warning) warning = "No numbered questions were detected. This may be a scanned paper. Use original-PDF mode with answer slots, or upload a text-based PDF.";
     if (questions.length) warning = "Draft extraction only: review every question, choice, passage, diagram, mark and answer key. Correct answers are never filled in from the PDF. Scanned pages are not converted. The original PDF must not contain an answer key if shown to students.";
-    const fileId = await storeClassFile(req.body, classId, "pdf");
+    const fileId = await storeClassFile(req.body, classId, "pdf", "diagram", actor.teacherId ?? null);
     // Each drawing is cropped from the page and attached to its question; anything not attached is reported.
     const notes: { question: number | null; message: string }[] = [];
     for (const [k, diagram] of (layout?.diagrams ?? []).entries()) {
@@ -86,7 +89,7 @@ portalFilesRouter.post("/import", classFirst, express.raw({ type: "application/p
       if (questions[q].diagramFileId) { notes.push({ question: q, message: `${label}: another diagram on page ${page} was not imported. Use Original PDF mode or attach a picture with both drawings manually.` }); continue; }
       let stored: string | null = null;
       if (diagram.image) {
-        try { stored = await storeClassFile(diagram.image, classId, "png"); }
+        try { stored = await storeClassFile(diagram.image, classId, "png", "diagram", actor.teacherId ?? null); }
         catch (error) { req.log.warn({ err: error }, "Portal PDF diagram could not be stored"); }
       }
       if (stored) {
@@ -107,10 +110,12 @@ function imageKind(body: unknown): "png" | "jpg" | "webp" | null {
 portalFilesRouter.post("/diagrams", classFirst, express.raw({ type: ["image/png", "image/jpeg", "image/webp"], limit: "3mb" }), async (req, res) => {
   const actor = await portalActor(req);
   const classId = Number(req.query.classId);
-  classAllowed(actor, classId);
+  staffOnly(actor);
+  const [schoolClass] = await db.select({ id: portalClasses.id }).from(portalClasses).where(eq(portalClasses.id, classId));
+  check(schoolClass, "Class not found.", 404);
   const kind = imageKind(req.body);
   check(kind, "Upload a PNG, JPEG or WebP picture (maximum 3 MB).");
-  res.json({ fileId: await storeClassFile(req.body, classId, kind) });
+  res.json({ fileId: await storeClassFile(req.body, classId, kind, "diagram", actor.teacherId ?? null) });
 });
 portalFilesRouter.get("/diagrams/:id", async (req, res) => {
   const actor = await portalActor(req);
@@ -120,7 +125,7 @@ portalFilesRouter.get("/diagrams/:id", async (req, res) => {
   // Whole-school documents (timetable pictures) are never exam diagrams.
   const classId = file.classId;
   check(classId !== null, "Diagram not found.", 404);
-  if (actor.role === "admin" || actor.role === "teacher") classAllowed(actor, classId);
+  if (actor.role === "admin" || actor.role === "teacher") { if (!ownUpload(actor, file)) classAllowed(actor, classId); }
   else {
     // Students see a diagram only once it is in a paper they have started.
     const student = studentOnly(actor);
@@ -178,7 +183,7 @@ async function sharedWith(fileId: string, classIds: number[]) {
 /** May this person open the file? Staff for their classes (and whole-school files); students and parents when shared. */
 async function mayOpen(req: express.Request, actor: PortalActor, file: typeof portalFiles.$inferSelect, picture: boolean): Promise<boolean | null> {
   if (actor.role === "admin" || actor.role === "teacher") {
-    if (file.classId === null || actor.role === "admin" || actor.classIds.includes(file.classId)) return true;
+    if (file.classId === null || actor.role === "admin" || actor.classIds.includes(file.classId) || ownUpload(actor, file)) return true;
     // A timetable another teacher posted for this teacher's class too.
     if (await sharedWith(file.id, actor.classIds)) return true;
     classAllowed(actor, file.classId);

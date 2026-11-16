@@ -47,7 +47,8 @@
     "test:route-security": "node ./test-portal.mjs route-security",
     "test:principal-students": "node ./test-portal.mjs principal-students",
     "test:tap-in": "node ./test-portal.mjs tap-in",
-    "test:student-ids": "node ./test-portal.mjs student-ids"
+    "test:student-ids": "node ./test-portal.mjs student-ids",
+    "test:teacher-exams": "node ./test-portal.mjs teacher-exams"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "1.2.0",

@@ -39,6 +39,8 @@ export const portalExams = pgTable("portal_exams", {
   instantResults: boolean("instant_results").notNull().default(true),
   // Who first saved the exam (name, or email): shown to the principals. Empty for exams set before this was recorded.
   createdBy: text("created_by").notNull().default(""),
+  // The teacher who set it. Teachers may set exams for any class, and manage the ones they set wherever they are.
+  createdByTeacherId: integer("created_by_teacher_id"),
   // The exam officer's review, when the school has one: "" (draft), "submitted" (waiting for the exam officer),
   // "returned" (sent back with a note) or "approved" (published by the exam officer; content unchanged since).
   reviewStatus: text("review_status").notNull().default(""),

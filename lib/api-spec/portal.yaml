@@ -397,6 +397,15 @@ schemas:
     required: [classes, students, teachers, exams, attempts, materials, notices]
     properties:
       classes: { type: array, items: { $ref: "#/schemas/PortalClass" } }
+      examClasses:
+        type: array
+        description: Every class an exam may be set for (teachers may set exams for any class, not only their own)
+        items:
+          type: object
+          required: [id, name]
+          properties:
+            id: { type: integer }
+            name: { type: string }
       students: { type: array, items: { $ref: "#/schemas/PortalStudent" } }
       teachers: { type: array, items: { $ref: "#/schemas/PortalTeacher" } }
       exams: { type: array, items: { $ref: "#/schemas/PortalExam" } }

@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { and, asc, eq, inArray, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, or, sql } from "drizzle-orm";
 import {
   db, portalClasses, portalStudents, portalTeachers, portalSessions, portalExams, portalAttempts,
   portalMaterials, portalNotices, portalFiles, portalSubjects, portalTeacherPresence, portalScores, portalReportReleases,
@@ -8,7 +8,7 @@ import {
 import { randomUUID } from "node:crypto";
 import { moveStudent } from "../lib/move-student";
 import { ManagePortalBody } from "@workspace/api-zod";
-import { check, portalActor, staffOnly, classAllowed, hashPassword, type PortalActor } from "../lib/portal-auth";
+import { check, portalActor, staffOnly, classAllowed, examAllowed, hashPassword, type PortalActor } from "../lib/portal-auth";
 import { automaticMarks, attemptView, finalizeExpired, validateQuestions } from "../lib/portal-assessment";
 import { diagramContentType } from "../lib/portal-pdf";
 import { siteBaseUrl, teacherStudentEditProblem, validEmail } from "../lib/accounts";
@@ -53,6 +53,11 @@ async function validClass(actor: PortalActor, id: number) {
   check(row, "Class not found.", 404);
   return row;
 }
+/** A class an exam may be set for: any class in the school (teachers are not limited to their own classes). */
+async function examClass(id: number) {
+  const [row] = await db.select({ id: portalClasses.id }).from(portalClasses).where(eq(portalClasses.id, id));
+  check(row, "Class not found.", 404);
+}
 async function validFile(id: string | null | undefined, classId: number) {
   if (!id) return;
   const [file] = await db.select().from(portalFiles).where(and(eq(portalFiles.id, id), eq(portalFiles.classId, classId)));
@@ -83,12 +88,16 @@ portalManagementRouter.get("/manage", async (req, res) => {
   const students = await db.select({ id: portalStudents.id, studentId: portalStudents.studentId, name: portalStudents.name, classId: portalStudents.classId, active: portalStudents.active, guardianEmail: portalStudents.guardianEmail, accountStatus: portalStudents.accountStatus, photoImageId: portalStudents.photoImageId }).from(portalStudents).where(scoped(actor, portalStudents.classId));
   // Signatures are only sent with the report workspace, not with every staff list.
   const teachers = actor.role === "admin" ? (await db.select().from(portalTeachers)).map(({ signature: _signature, ...t }) => t) : [];
-  const exams = await db.select().from(portalExams).where(scoped(actor, portalExams.classId));
+  const own = scoped(actor, portalExams.classId);
+  const exams = await db.select().from(portalExams).where(own && actor.teacherId ? or(own, eq(portalExams.createdByTeacherId, actor.teacherId)) : own);
   const rawAttempts = exams.length ? await db.select().from(portalAttempts).where(inArray(portalAttempts.examId, exams.map((e) => e.id))) : [];
+  // Students who wrote an exam this teacher set for a class they do not teach: their names, for marking.
+  const missing = [...new Set(rawAttempts.map((a) => a.studentId).filter((id) => !students.some((s) => s.id === id)))];
+  const outside = new Map((missing.length ? await db.select({ id: portalStudents.id, name: portalStudents.name, studentId: portalStudents.studentId }).from(portalStudents).where(inArray(portalStudents.id, missing)) : []).map((s) => [s.id, s]));
   const attempts = await Promise.all(rawAttempts.map(async (raw) => {
     const attempt = await finalizeExpired(raw);
     const exam = exams.find((e) => e.id === raw.examId)!;
-    const student = students.find((s) => s.id === raw.studentId);
+    const student = students.find((s) => s.id === raw.studentId) ?? outside.get(raw.studentId);
     return { ...attemptView(attempt, exam, true), classId: exam.classId, studentName: student?.name ?? "Former enrolment", studentId: student?.studentId ?? "", questionKeys: attempt.questions, focusLosses: attempt.focusLosses };
   }));
   const materials = await db.select().from(portalMaterials).where(scoped(actor, portalMaterials.classId));
@@ -101,7 +110,10 @@ portalManagementRouter.get("/manage", async (req, res) => {
       .orderBy(asc(portalClasses.name), asc(portalSubjects.sortOrder), asc(portalSubjects.name));
     teaching = { classTeacherOf: classes.filter((c) => actor.classIds.includes(c.id)).map((c) => ({ id: c.id, name: c.name })), subjects };
   }
-  res.json({ classes, students, teachers, exams, attempts, materials, notices, examOfficer: examOfficerEmails().length > 0, ...(teaching ? { teaching } : {}) });
+  // Teachers may set an exam for any class in the school, not only their own.
+  const examClasses = actor.role === "admin" ? classes.map((c) => ({ id: c.id, name: c.name }))
+    : await db.select({ id: portalClasses.id, name: portalClasses.name }).from(portalClasses).orderBy(asc(portalClasses.name));
+  res.json({ classes, examClasses, students, teachers, exams, attempts, materials, notices, examOfficer: examOfficerEmails().length > 0, ...(teaching ? { teaching } : {}) });
 });
 portalManagementRouter.post("/manage", async (req, res) => {
   const actor = await portalActor(req);
@@ -188,7 +200,7 @@ portalManagementRouter.post("/manage", async (req, res) => {
     case "saveExam": {
       const data = body.exam;
       check(data, "Exam details required.");
-      await validClass(actor, data.classId);
+      await examClass(data.classId);
       check(data.title.trim() && data.subject.trim(), "Exam title and subject required.");
       const startsAt = new Date(data.startsAt), endsAt = new Date(data.endsAt);
       check(Number.isFinite(startsAt.getTime()) && Number.isFinite(endsAt.getTime()) && endsAt > startsAt, "Choose a valid exam opening and closing time.");
@@ -205,7 +217,7 @@ portalManagementRouter.post("/manage", async (req, res) => {
       // A new exam may also go to other classes (for example every Year 11 class): one copy per class.
       const others = id ? [] : [...new Set(body.alsoClassIds ?? [])].filter((c) => c !== data.classId);
       check(others.length <= 40, "Choose at most 40 extra classes.");
-      for (const c of others) await validClass(actor, c);
+      for (const c of others) await examClass(c);
       const values = { ...rest, ...paper, lockdown: data.lockdown ?? false, instantResults: data.instantResults ?? true, title: data.title.trim(), subject: data.subject.trim(), startsAt, endsAt, fileId: data.fileId || null };
       const gate = examOfficerEmails().length > 0;
       const by = actor.name || req.identity?.email || "";
@@ -218,22 +230,22 @@ portalManagementRouter.post("/manage", async (req, res) => {
         if (id) {
           const [old] = await tx.select().from(portalExams).where(eq(portalExams.id, id)).for("update");
           check(old, "Exam not found.", 404);
-          classAllowed(actor, old.classId);
+          examAllowed(actor, old);
           const [attempt] = await tx.select({ id: portalAttempts.id }).from(portalAttempts).where(eq(portalAttempts.examId, id)).limit(1);
           check(!attempt, "Students have started this exam. Its content is locked; use publish and result controls instead.", 409);
           await tx.update(portalExams).set({ ...values, ...review }).where(eq(portalExams.id, id));
         } else {
-          await tx.insert(portalExams).values({ ...values, ...review, createdBy: by });
+          await tx.insert(portalExams).values({ ...values, ...review, createdBy: by, createdByTeacherId: actor.teacherId ?? null });
           for (const classId of others) {
             // The PDF and diagrams were uploaded for the first class; each copy gets its own record of the same file.
             const ids = [...new Set([values.fileId, ...data.questions.map((q) => q.diagramFileId)].filter((f): f is string => !!f))];
             const map = new Map<string, string>();
             if (ids.length) {
               const files = await tx.select().from(portalFiles).where(inArray(portalFiles.id, ids));
-              for (const f of files) { const copy = randomUUID(); map.set(f.id, copy); await tx.insert(portalFiles).values({ id: copy, classId, objectName: f.objectName }); }
+              for (const f of files) { const copy = randomUUID(); map.set(f.id, copy); await tx.insert(portalFiles).values({ id: copy, classId, objectName: f.objectName, uploadedByTeacherId: f.uploadedByTeacherId }); }
             }
             const questions = values.questions.map((q) => (q.diagramFileId ? { ...q, diagramFileId: map.get(q.diagramFileId) ?? null } : q));
-            await tx.insert(portalExams).values({ ...values, ...review, classId, questions, fileId: values.fileId ? map.get(values.fileId) ?? null : null, createdBy: by });
+            await tx.insert(portalExams).values({ ...values, ...review, classId, questions, fileId: values.fileId ? map.get(values.fileId) ?? null : null, createdBy: by, createdByTeacherId: actor.teacherId ?? null });
           }
         }
       });
@@ -248,7 +260,7 @@ portalManagementRouter.post("/manage", async (req, res) => {
       await db.transaction(async (tx) => {
         const [exam] = await tx.select().from(portalExams).where(eq(portalExams.id, data.id)).for("update");
         check(exam, "Exam not found.", 404);
-        classAllowed(actor, exam.classId);
+        examAllowed(actor, exam);
         validateQuestions(exam.questions, data.published);
         if (data.resultsReleased) {
           check(new Date() >= exam.endsAt, "Wait until the exam window closes before releasing results.");
@@ -303,7 +315,7 @@ portalManagementRouter.post("/manage", async (req, res) => {
         // Same exam-first lock order as starts/releases; marks cannot change
         // concurrently with a release becoming visible to students.
         const [exam] = await tx.select().from(portalExams).where(eq(portalExams.id, lookup.examId)).for("update");
-        check(exam, "Exam not found.", 404); classAllowed(actor, exam.classId);
+        check(exam, "Exam not found.", 404); examAllowed(actor, exam);
         const [attempt] = await tx.select().from(portalAttempts).where(eq(portalAttempts.id, data.attemptId)).for("update");
         check(attempt.status !== "in_progress", "This student is still writing the exam.", 409);
         check(!exam.resultsReleased, "Withhold results before changing marks.", 409);
@@ -384,7 +396,7 @@ portalManagementRouter.post("/manage", async (req, res) => {
       await db.transaction(async (tx) => {
         const [exam] = await tx.select().from(portalExams).where(eq(portalExams.id, data.id)).for("update");
         check(exam, "Exam not found.", 404);
-        classAllowed(actor, exam.classId);
+        examAllowed(actor, exam);
         const [attempt] = await tx.select({ id: portalAttempts.id }).from(portalAttempts).where(eq(portalAttempts.examId, exam.id)).limit(1);
         if (attempt) {
           // Only the school owner may clear an exam students have taken (test exams), with its attempts and scores.
@@ -422,7 +434,7 @@ portalManagementRouter.post("/manage", async (req, res) => {
         check(lookup, "Attempt not found.", 404);
         // Same exam-first lock order as starts, grading and releases.
         const [exam] = await tx.select().from(portalExams).where(eq(portalExams.id, lookup.examId)).for("update");
-        check(exam, "Exam not found.", 404); classAllowed(actor, exam.classId);
+        check(exam, "Exam not found.", 404); examAllowed(actor, exam);
         const [attempt] = await tx.select().from(portalAttempts).where(eq(portalAttempts.id, data.attemptId)).for("update");
         check(!exam.resultsReleased, "Withhold results before changing attempts.", 409);
         if (extend) {

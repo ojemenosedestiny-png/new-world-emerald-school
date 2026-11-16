@@ -329,6 +329,7 @@ export * from './portalLogin';
 export * from './portalManagement';
 export * from './portalManagementAttemptsItem';
 export * from './portalManagementClassesItem';
+export * from './portalManagementExamClassesItem';
 export * from './portalManagementExamsItem';
 export * from './portalManagementExamsItemMode';
 export * from './portalManagementExamsItemQuestionsItem';

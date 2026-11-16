@@ -559,6 +559,10 @@ export const GetPortalManagementResponse = zod.object({
   "id": zod.number().optional(),
   "name": zod.string().min(1).max(getPortalManagementResponseClassesItemNameMax)
 })),
+  "examClasses": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string()
+})).optional().describe('Every class an exam may be set for (teachers may set exams for any class, not only their own)'),
   "students": zod.array(zod.object({
   "id": zod.number().optional(),
   "studentId": zod.string().max(getPortalManagementResponseStudentsItemStudentIdMax).describe('Leave empty on a new enrolment to create the next automatic Student ID'),
