@@ -1,12 +1,14 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { accountLink, formatStudentId, hashAccountToken, newAccountToken, passwordProblem, siteBaseUrl, teacherStudentEditProblem, validEmail, validTokenShape } from "./accounts";
+import { ADMISSION_NUMBER, accountLink, formatStudentId, hashAccountToken, newAccountToken, passwordProblem, siteBaseUrl, teacherStudentEditProblem, validEmail, validTokenShape } from "./accounts";
 import { accountReadyEmail, activationEmail, emailConfigured, emailSender, passwordChangedEmail, resetEmail, sendEmail, teacherInviteEmail } from "./email";
 
-test("automatic Student IDs use NWE/year/five digits", () => {
-  assert.equal(formatStudentId(2026, 1), "NWE/2026/00001");
-  assert.equal(formatStudentId(2026, 123), "NWE/2026/00123");
-  assert.equal(formatStudentId(2027, 100000), "NWE/2027/100000");
+test("automatic Student IDs use the admission number style NW/SEC/26/00001", () => {
+  assert.equal(formatStudentId("secondary", 2026, 1), "NW/SEC/26/00001");
+  assert.equal(formatStudentId("primary", 2026, 123), "NW/PRY/26/00123");
+  assert.equal(formatStudentId("secondary", 2027, 100000), "NW/SEC/27/100000");
+  assert.ok(ADMISSION_NUMBER.test("NW/SEC/24/00067") && ADMISSION_NUMBER.test("NW/PRY/21/00141"));
+  assert.ok(!ADMISSION_NUMBER.test("NWE/2026/00001") && !ADMISSION_NUMBER.test("NW/SEC/2026/00001"));
 });
 
 test("new passwords need 10+ characters with a letter and a number", () => {

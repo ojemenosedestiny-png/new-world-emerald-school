@@ -3,9 +3,17 @@ import { createHash, randomBytes } from "node:crypto";
 export const ACTIVATION_HOURS = 72;
 export const RESET_HOURS = 24;
 
-/** NWE/2026/00001: school prefix, enrolment year, five-digit number. */
-export function formatStudentId(year: number, n: number) {
-  return `NWE/${year}/${String(n).padStart(5, "0")}`;
+export type IdSection = "primary" | "secondary";
+export const ID_SECTION_CODE: Record<IdSection, string> = { primary: "PRY", secondary: "SEC" };
+/** The school's admission number style: NW/SEC/26/00001 (secondary) or NW/PRY/26/00001 (primary). */
+export const ADMISSION_NUMBER = /^NW\/(SEC|PRY)\/\d{2}\/\d{5,6}$/;
+
+/**
+ * NW/SEC/26/00001: school, section (SEC secondary, PRY primary), two-digit year of admission, and a five-digit number
+ * that runs on through the years for each section.
+ */
+export function formatStudentId(section: IdSection, year: number, n: number) {
+  return `NW/${ID_SECTION_CODE[section]}/${String(year % 100).padStart(2, "0")}/${String(n).padStart(5, "0")}`;
 }
 
 /** Null when acceptable; otherwise what is wrong with a new password. */

@@ -5656,6 +5656,64 @@ export const ManageTapInResponse = zod.object({
 
 
 /**
+ * The school office pastes its list of admission numbers and names; the portal pairs each with a student (nothing changes yet)
+ */
+export const previewStudentIdChangeBodyTextMax = 300000;
+
+
+
+export const PreviewStudentIdChangeBody = zod.object({
+  "text": zod.string().max(previewStudentIdChangeBodyTextMax)
+})
+
+export const PreviewStudentIdChangeResponse = zod.object({
+  "rows": zod.array(zod.object({
+  "line": zod.number(),
+  "newId": zod.string(),
+  "name": zod.string(),
+  "status": zod.enum(['match', 'close', 'already', 'unmatched', 'ambiguous', 'problem', 'taken']),
+  "student": zod.union([zod.object({
+  "id": zod.number(),
+  "studentId": zod.string(),
+  "name": zod.string(),
+  "className": zod.string(),
+  "active": zod.boolean()
+}),zod.null()]),
+  "message": zod.string()
+})),
+  "notInList": zod.array(zod.object({
+  "id": zod.number(),
+  "studentId": zod.string(),
+  "name": zod.string(),
+  "className": zod.string(),
+  "active": zod.boolean()
+}))
+})
+
+
+/**
+ * Give students their new admission numbers (the school office); they sign in with the new number from then on
+ */
+export const applyStudentIdChangeBodyChangesItemNewIdMax = 30;
+
+export const applyStudentIdChangeBodyChangesMax = 3000;
+
+
+
+export const ApplyStudentIdChangeBody = zod.object({
+  "changes": zod.array(zod.object({
+  "id": zod.number(),
+  "newId": zod.string().max(applyStudentIdChangeBodyChangesItemNewIdMax)
+})).max(applyStudentIdChangeBodyChangesMax)
+})
+
+export const ApplyStudentIdChangeResponse = zod.object({
+  "changed": zod.number(),
+  "message": zod.string()
+})
+
+
+/**
  * The Chairman's read-only board of students, staff, attendance, learning and results across the school (no money, nothing can be sent or changed)
  */
 export const GetChairmanBoardQueryParams = zod.object({

@@ -51,6 +51,7 @@ async function validClass(actor: PortalActor, id: number) {
   classAllowed(actor, id);
   const [row] = await db.select().from(portalClasses).where(eq(portalClasses.id, id));
   check(row, "Class not found.", 404);
+  return row;
 }
 async function validFile(id: string | null | undefined, classId: number) {
   if (!id) return;
@@ -122,9 +123,9 @@ portalManagementRouter.post("/manage", async (req, res) => {
       const data = body.student;
       check(data, "Student details required.");
       // Teachers may enrol into, and issue new passwords for, their own classes only; validClass enforces the class.
-      await validClass(actor, data.classId);
+      const studentClass = await validClass(actor, data.classId);
       let studentId = data.studentId.trim().toUpperCase();
-      if (!data.id && !studentId) studentId = await nextStudentId(new Date().getFullYear());
+      if (!data.id && !studentId) studentId = await nextStudentId(studentClass.name);
       check(/^[A-Z0-9][A-Z0-9/_-]{0,49}$/.test(studentId), "Use letters, numbers, hyphens, slashes or underscores for student IDs.");
       check(data.name.trim(), "Student name required.");
       const guardianEmail = data.guardianEmail === undefined ? undefined : data.guardianEmail?.trim().toLowerCase() || null;

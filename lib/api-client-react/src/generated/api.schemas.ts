@@ -2388,6 +2388,62 @@ export interface TapInCommandResult {
   key?: string;
 }
 
+export interface StudentIdListInput {
+  /** @maxLength 300000 */
+  text: string;
+}
+
+export interface StudentIdStudent {
+  id: number;
+  studentId: string;
+  name: string;
+  className: string;
+  active: boolean;
+}
+
+export type StudentIdPlanRowStatus = typeof StudentIdPlanRowStatus[keyof typeof StudentIdPlanRowStatus];
+
+
+export const StudentIdPlanRowStatus = {
+  match: 'match',
+  close: 'close',
+  already: 'already',
+  unmatched: 'unmatched',
+  ambiguous: 'ambiguous',
+  problem: 'problem',
+  taken: 'taken',
+} as const;
+
+export interface StudentIdPlanRow {
+  line: number;
+  newId: string;
+  name: string;
+  status: StudentIdPlanRowStatus;
+  student: StudentIdStudent | null;
+  message: string;
+}
+
+export interface StudentIdPlan {
+  rows: StudentIdPlanRow[];
+  notInList: StudentIdStudent[];
+}
+
+export type StudentIdChangesChangesItem = {
+  id: number;
+  /** @maxLength 30 */
+  newId: string;
+};
+
+export interface StudentIdChanges {
+  /** @maxItems 3000 */
+  changes: StudentIdChangesChangesItem[];
+}
+
+export interface StudentIdChangeResult {
+  changed: number;
+  message: string;
+}
+
 export interface ChairmanCount {
   label: string;
   value: number;

@@ -5,10 +5,11 @@ import { db, portalAccountTokens, portalClasses, portalIdSequences, portalSessio
 import { CheckAccountTokenBody, CompleteAccountTokenBody, CreateAccountLinkBody, EnrolStudentBody, RequestPasswordResetBody } from "@workspace/api-zod";
 import { check, hashPassword, hashToken, portalActor, setPortalCookie } from "../lib/portal-auth";
 import {
-  ACTIVATION_HOURS, RESET_HOURS, accountLink, formatStudentId, hashAccountToken, newAccountToken, passwordProblem, siteBaseUrl, validEmail, validTokenShape,
+  ACTIVATION_HOURS, ID_SECTION_CODE, RESET_HOURS, accountLink, formatStudentId, hashAccountToken, newAccountToken, passwordProblem, siteBaseUrl, validEmail, validTokenShape,
 } from "../lib/accounts";
 import { accountReadyEmail, activationEmail, emailConfigured, passwordChangedEmail, resetEmail, sendEmail } from "../lib/email";
 import { clientIp, recordAudit } from "../lib/audit";
+import { idSectionForClass } from "../lib/student-ids";
 
 export const portalAccountsRouter = Router();
 const STUDENT_ID = /^[A-Z0-9][A-Z0-9/_-]{0,49}$/;
@@ -19,12 +20,23 @@ async function adminOnly(req: Request) {
   check(actor.role === "admin", actor.role === "guest" ? "Sign in as an administrator." : "Only school administrators can manage student accounts.", actor.role === "guest" ? 401 : 403);
 }
 
-/** Next automatic Student ID for this year, skipping any number already used by hand. */
-export async function nextStudentId(year: number) {
+// The running number for each section lives in the sequence table under these keys (real years are never negative).
+const SEQUENCE_KEY = { primary: -1, secondary: -2 } as const;
+
+/**
+ * Next automatic Student ID for a class, in the school's admission number style: NW/SEC/26/00214 for a secondary
+ * class, NW/PRY/26/00149 for a primary one. The number runs on from the highest one already given in that section
+ * (whatever the year), skipping any number already used by hand.
+ */
+export async function nextStudentId(className: string, year = Number(new Intl.DateTimeFormat("en-GB", { timeZone: "Africa/Lagos", year: "numeric" }).format(new Date()))) {
+  const section = idSectionForClass(className);
+  const code = ID_SECTION_CODE[section];
+  const [{ highest }] = await db.select({ highest: sql<number>`coalesce(max(cast(substring(${portalStudents.studentId} from ${`^NW/${code}/[0-9]{2}/([0-9]{5,6})$`}) as integer)), 0)::int` })
+    .from(portalStudents).where(sql`${portalStudents.studentId} like ${`NW/${code}/%`}`);
   for (let attempt = 0; attempt < 50; attempt++) {
-    const [row] = await db.insert(portalIdSequences).values({ year, last: 1 })
-      .onConflictDoUpdate({ target: portalIdSequences.year, set: { last: sql`${portalIdSequences.last} + 1` } }).returning();
-    const candidate = formatStudentId(year, row.last);
+    const [row] = await db.insert(portalIdSequences).values({ year: SEQUENCE_KEY[section], last: highest + 1 })
+      .onConflictDoUpdate({ target: portalIdSequences.year, set: { last: sql`greatest(${portalIdSequences.last} + 1, ${highest + 1})` } }).returning();
+    const candidate = formatStudentId(section, year, row.last);
     const [taken] = await db.select({ id: portalStudents.id }).from(portalStudents).where(eq(portalStudents.studentId, candidate));
     if (!taken) return candidate;
   }
@@ -88,7 +100,7 @@ portalAccountsRouter.post("/accounts/enrol", async (req, res) => {
     check(STUDENT_ID.test(studentId), "Use letters, numbers, hyphens, slashes or underscores for student IDs.");
     const [taken] = await db.select({ id: portalStudents.id }).from(portalStudents).where(eq(portalStudents.studentId, studentId));
     check(!taken, "That Student ID is already in use.", 409);
-  } else studentId = await nextStudentId(new Date().getFullYear());
+  } else studentId = await nextStudentId(cls);
   // The account cannot be signed into until the family chooses a password through the link.
   const [student] = await db.insert(portalStudents).values({
     studentId, name, classId: body.classId, guardianEmail, accountStatus: "pending", mustChangePassword: false,

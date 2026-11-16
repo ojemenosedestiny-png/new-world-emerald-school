@@ -1,0 +1,84 @@
+paths:
+  preview:
+    post:
+      operationId: previewStudentIdChange
+      description: "The school office pastes its list of admission numbers and names; the portal pairs each with a student (nothing changes yet)"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/StudentIdListInput" }
+      responses:
+        "200":
+          description: The plan
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/StudentIdPlan" }
+  apply:
+    post:
+      operationId: applyStudentIdChange
+      description: "Give students their new admission numbers (the school office); they sign in with the new number from then on"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/StudentIdChanges" }
+      responses:
+        "200":
+          description: Done
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/StudentIdChangeResult" }
+schemas:
+  StudentIdListInput:
+    type: object
+    required: [text]
+    properties:
+      text: { type: string, maxLength: 300000 }
+  StudentIdStudent:
+    type: object
+    required: [id, studentId, name, className, active]
+    properties:
+      id: { type: integer }
+      studentId: { type: string }
+      name: { type: string }
+      className: { type: string }
+      active: { type: boolean }
+  StudentIdPlanRow:
+    type: object
+    required: [line, newId, name, status, student, message]
+    properties:
+      line: { type: integer }
+      newId: { type: string }
+      name: { type: string }
+      status: { type: string, enum: [match, close, already, unmatched, ambiguous, problem, taken] }
+      student:
+        oneOf:
+          - { $ref: "#/components/schemas/StudentIdStudent" }
+          - { type: "null" }
+      message: { type: string }
+  StudentIdPlan:
+    type: object
+    required: [rows, notInList]
+    properties:
+      rows: { type: array, items: { $ref: "#/components/schemas/StudentIdPlanRow" } }
+      notInList: { type: array, items: { $ref: "#/components/schemas/StudentIdStudent" } }
+  StudentIdChanges:
+    type: object
+    required: [changes]
+    properties:
+      changes:
+        type: array
+        maxItems: 3000
+        items:
+          type: object
+          required: [id, newId]
+          properties:
+            id: { type: integer }
+            newId: { type: string, maxLength: 30 }
+  StudentIdChangeResult:
+    type: object
+    required: [changed, message]
+    properties:
+      changed: { type: integer }
+      message: { type: string }

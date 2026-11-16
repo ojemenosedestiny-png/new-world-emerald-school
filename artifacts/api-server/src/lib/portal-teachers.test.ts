@@ -70,7 +70,7 @@ test("teachers: approval with classes, invitation, and office-only access", asyn
     // Enrolling with a password: no email, an automatic Student ID, and sign-in straight away with no forced change.
     const enrolled = await call({ action: "saveStudent", student: { studentId: "", name: "Chi Eze", classId: b.id, active: true, password: "Mango-4827" } }, admin);
     assert.equal(enrolled.status, 200, JSON.stringify(enrolled.data));
-    assert.match(enrolled.data.studentId, new RegExp(`^NWE/${new Date().getFullYear()}/[0-9]{5}$`));
+    assert.match(enrolled.data.studentId, new RegExp(`^NW/(PRY|SEC)/${String(new Date().getFullYear() % 100).padStart(2, "0")}/[0-9]{5}$`));
     const signIn = async (password: string) => fetch(root + "/session", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ studentId: enrolled.data.studentId, password }) });
     const first = await signIn("Mango-4827");
     assert.equal(first.status, 200);

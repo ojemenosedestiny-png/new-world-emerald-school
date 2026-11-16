@@ -4,7 +4,7 @@ import { randomUUID } from "node:crypto";
 import express from "express";
 import type { AddressInfo } from "node:net";
 import { eq, inArray } from "drizzle-orm";
-import { db, pool, portalAccountTokens, portalClasses, portalIdSequences, portalSessions, portalStudents } from "@workspace/db";
+import { db, pool, portalAccountTokens, portalClasses, portalSessions, portalStudents } from "@workspace/db";
 import portalRouter from "../routes/portal";
 import { formatStudentId } from "./accounts";
 import { hashPassword } from "./portal-auth";
@@ -43,20 +43,25 @@ test("student accounts: automatic IDs, activation links, resets and forgot passw
 
     // Only administrators enrol; IDs are automatic and sequential, skipping numbers taken by hand.
     assert.equal((await call("/accounts/enrol", "POST", { name: "Nobody", classId: cls.id })).status, 401);
-    const [seq] = await db.select().from(portalIdSequences).where(eq(portalIdSequences.year, year));
-    const next = (seq?.last ?? 0) + 1;
-    await db.insert(portalStudents).values({ studentId: formatStudentId(year, next), name: "Hand-made ID", classId: cls.id, passwordHash: await hashPassword("Placeholder-123") });
     assert.equal((await call("/accounts/enrol", "POST", { name: "Bad Email", classId: cls.id, guardianEmail: "not-an-email" }, { admin: true })).status, 400);
     const first = await call("/accounts/enrol", "POST", { name: "  Ada   Obi ", classId: cls.id, guardianEmail: "Parent@Example.TEST" }, { admin: true });
     assert.equal(first.status, 200, JSON.stringify(first.data));
-    assert.equal(first.data.student.studentId, formatStudentId(year, next + 1), "skips the number already taken");
+    // The school's admission number style: this class is not JSS/SS, so primary (PRY), this year, a running number.
+    const m = /^NW\/PRY\/(\d{2})\/(\d{5})$/.exec(first.data.student.studentId);
+    assert.ok(m, first.data.student.studentId);
+    assert.equal(Number(m![1]), year % 100);
+    const next = Number(m![2]) + 1;
+    await db.insert(portalStudents).values({ studentId: formatStudentId("primary", year, next), name: "Hand-made ID", classId: cls.id, passwordHash: await hashPassword("Placeholder-123") });
     assert.equal(first.data.student.name, "Ada Obi");
     assert.equal(first.data.student.guardianEmail, "parent@example.test");
     assert.equal(first.data.emailed, false);
     assert.match(first.data.emailNote, /email is not set up/);
     assert.match(first.data.url, /^https:\/\/school\.example\/portal\/activate\?t=[a-f0-9]{64}$/, "links use the configured site address");
     const second = await call("/accounts/enrol", "POST", { name: "Bayo Ade", classId: cls.id }, { admin: true });
-    assert.equal(second.data.student.studentId, formatStudentId(year, next + 2));
+    assert.equal(second.data.student.studentId, formatStudentId("primary", year, next + 1), "skips the number already taken");
+    const [jss] = await db.insert(portalClasses).values({ name: `${marker} JSS 1` }).returning(); classIds.push(jss.id);
+    const senior = await call("/accounts/enrol", "POST", { name: "Chidi Eze", classId: jss.id }, { admin: true });
+    assert.match(senior.data.student.studentId, /^NW\/SEC\/\d{2}\/\d{5}$/, "secondary classes get NW/SEC/...");
     assert.match(second.data.emailNote, /no parent email/);
     const legacy = await call("/accounts/enrol", "POST", { name: "Legacy Kid", classId: cls.id, studentId: `${marker}-OLD` }, { admin: true });
     assert.equal(legacy.data.student.studentId, `${marker}-OLD`);

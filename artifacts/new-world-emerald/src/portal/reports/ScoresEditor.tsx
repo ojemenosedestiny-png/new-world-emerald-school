@@ -140,7 +140,7 @@ export function ScoresEditor({ ws, term, locked: lockedByStatus }: { ws: ReportW
         <DialogContent className="portal !min-h-0 max-h-[92dvh] max-w-xl overflow-y-auto rounded-2xl">
           <DialogHeader><DialogTitle className="font-serif text-2xl">Import {subject?.name} scores</DialogTitle>
             <DialogDescription>One student per line: {primary ? "Student ID, First Half Term, Second Half Term" : twoCa ? "Student ID, CA 1, CA 2, Exam" : "Student ID, CA, Exam"}. Copying the columns from Excel works. Scores fill the grid for you to check before saving.</DialogDescription></DialogHeader>
-          <textarea className="portal-input min-h-[160px] font-mono text-sm" value={csv} onChange={(e) => setCsv(e.target.value)} placeholder={primary ? "Student ID, First Half Term, Second Half Term\nNWE/2026/001, 78, 84" : twoCa ? "Student ID, CA 1, CA 2, Exam\nNWE/2026/001, 16, 17, 51" : "Student ID, CA, Exam\nNWE/2026/001, 32, 51"} data-testid="input-score-csv" />
+          <textarea className="portal-input min-h-[160px] font-mono text-sm" value={csv} onChange={(e) => setCsv(e.target.value)} placeholder={primary ? "Student ID, First Half Term, Second Half Term\nNW/PRY/26/00001, 78, 84" : twoCa ? "Student ID, CA 1, CA 2, Exam\nNW/SEC/26/00001, 16, 17, 51" : "Student ID, CA, Exam\nNW/SEC/26/00001, 32, 51"} data-testid="input-score-csv" />
           <label className="portal-btn-ghost w-fit cursor-pointer"><FileUp size={13} /> Upload CSV
             <input type="file" accept=".csv,text/csv,text/plain" className="sr-only" onChange={(e) => { e.target.files?.[0]?.text().then(setCsv); e.target.value = ""; }} />
           </label>

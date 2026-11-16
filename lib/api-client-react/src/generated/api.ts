@@ -197,6 +197,10 @@ import type {
   StoreProductUpdate,
   StudentActivity,
   StudentAssignment,
+  StudentIdChangeResult,
+  StudentIdChanges,
+  StudentIdListInput,
+  StudentIdPlan,
   StudentMessageInput,
   StudentProfileFields,
   StudentProfileView,
@@ -8696,6 +8700,142 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
         TContext
       > => {
       return useMutation(getManageTapInMutationOptions(options));
+    }
+
+export const getPreviewStudentIdChangeUrl = () => {
+
+
+
+
+  return `/api/portal/student-ids/preview`
+}
+
+/**
+ * The school office pastes its list of admission numbers and names; the portal pairs each with a student (nothing changes yet)
+ */
+export const previewStudentIdChange = async (studentIdListInput: StudentIdListInput, options?: RequestInit): Promise<StudentIdPlan> => {
+
+  return customFetch<StudentIdPlan>(getPreviewStudentIdChangeUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(studentIdListInput)
+  }
+);}
+
+
+
+
+
+export const getPreviewStudentIdChangeMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof previewStudentIdChange>>, TError,{data: BodyType<StudentIdListInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof previewStudentIdChange>>, TError,{data: BodyType<StudentIdListInput>}, TContext> => {
+
+const mutationKey = ['previewStudentIdChange'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof previewStudentIdChange>>, {data: BodyType<StudentIdListInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  previewStudentIdChange(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PreviewStudentIdChangeMutationResult = NonNullable<Awaited<ReturnType<typeof previewStudentIdChange>>>
+    export type PreviewStudentIdChangeMutationBody = BodyType<StudentIdListInput>
+    export type PreviewStudentIdChangeMutationError = ErrorType<unknown>
+
+    export const usePreviewStudentIdChange = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof previewStudentIdChange>>, TError,{data: BodyType<StudentIdListInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof previewStudentIdChange>>,
+        TError,
+        {data: BodyType<StudentIdListInput>},
+        TContext
+      > => {
+      return useMutation(getPreviewStudentIdChangeMutationOptions(options));
+    }
+
+export const getApplyStudentIdChangeUrl = () => {
+
+
+
+
+  return `/api/portal/student-ids/apply`
+}
+
+/**
+ * Give students their new admission numbers (the school office); they sign in with the new number from then on
+ */
+export const applyStudentIdChange = async (studentIdChanges: StudentIdChanges, options?: RequestInit): Promise<StudentIdChangeResult> => {
+
+  return customFetch<StudentIdChangeResult>(getApplyStudentIdChangeUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(studentIdChanges)
+  }
+);}
+
+
+
+
+
+export const getApplyStudentIdChangeMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof applyStudentIdChange>>, TError,{data: BodyType<StudentIdChanges>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof applyStudentIdChange>>, TError,{data: BodyType<StudentIdChanges>}, TContext> => {
+
+const mutationKey = ['applyStudentIdChange'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof applyStudentIdChange>>, {data: BodyType<StudentIdChanges>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  applyStudentIdChange(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ApplyStudentIdChangeMutationResult = NonNullable<Awaited<ReturnType<typeof applyStudentIdChange>>>
+    export type ApplyStudentIdChangeMutationBody = BodyType<StudentIdChanges>
+    export type ApplyStudentIdChangeMutationError = ErrorType<unknown>
+
+    export const useApplyStudentIdChange = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof applyStudentIdChange>>, TError,{data: BodyType<StudentIdChanges>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof applyStudentIdChange>>,
+        TError,
+        {data: BodyType<StudentIdChanges>},
+        TContext
+      > => {
+      return useMutation(getApplyStudentIdChangeMutationOptions(options));
     }
 
 export const getGetChairmanBoardUrl = (params?: GetChairmanBoardParams,) => {

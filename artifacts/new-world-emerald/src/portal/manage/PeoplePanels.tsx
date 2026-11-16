@@ -17,6 +17,7 @@ import { OfficeFeeStatement } from "../FeeStatement";
 import { AccountLinkDialog, EnrolStudentDialog, useAccountLink } from "./accounts";
 import { MoveStudentDialog } from "./MoveStudent";
 import { StudentProfileDialog } from "../profile/StudentProfile";
+import { StudentIdChangeDialog } from "./StudentIdChange";
 import { GROUP_LABEL, teacherGroup, type TeacherGroup } from "./sections";
 
 export const SECONDARY_CLASSES = ["JSS 1", "JSS 2", "JSS 3", "SS 1", "SS 2", "SS 3"];
@@ -113,6 +114,7 @@ export function StudentsPanel({ data, isAdmin = true }: { data: PortalManagement
   const [moving, setMoving] = useState<{ id: number; name: string; classId: number } | null>(null);
   const [profile, setProfile] = useState<number | null>(null);
   const [enrolling, setEnrolling] = useState(false);
+  const [changingIds, setChangingIds] = useState(false);
   const [link, setLink] = useState<{ result: AccountLinkResult; purpose: "activate" | "reset" } | null>(null);
   const accountLink = useAccountLink();
   const sendLink = async (s: PortalManagementStudentsItem, purpose: "activate" | "reset") => { const result = await accountLink.run(s.id as number, purpose); if (result) setLink({ result, purpose }); };
@@ -141,6 +143,7 @@ export function StudentsPanel({ data, isAdmin = true }: { data: PortalManagement
         <input className="portal-input sm:max-w-xs" placeholder="Search name or ID" aria-label="Search students" value={search} onChange={(e) => setSearch(e.target.value)} data-testid="input-search-students" />
         <select className="portal-input sm:max-w-[200px]" aria-label="Filter by class" value={filter} onChange={(e) => setFilter(Number(e.target.value))} data-testid="select-filter-class"><option value={0}>All classes</option>{data.classes.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</select>
         <div className="flex flex-wrap gap-2 sm:ml-auto">
+          {isAdmin && data.students.length > 0 && <button className="portal-btn-ghost" onClick={() => setChangingIds(true)} data-testid="button-change-ids"><IdCard size={15} /> Admission numbers</button>}
           {isAdmin && <button className="portal-btn-ghost" disabled={data.classes.length === 0} onClick={() => setBulk(true)} data-testid="button-bulk-enrol"><ListPlus size={15} /> Enrol class list</button>}
           {isAdmin && <button className="portal-btn-ghost" disabled={data.classes.length === 0} onClick={() => setEnrolling(true)} data-testid="button-add-student"><Mail size={15} /> Enrol with parent email</button>}
           <button className="portal-btn" disabled={data.classes.length === 0} onClick={() => setForm({ studentId: "", name: "", classId: filter || data.classes[0]?.id || 0, active: true, guardianEmail: "" })} data-testid="button-enrol-password"><KeyRound size={15} /> Enrol with password</button>
@@ -176,7 +179,7 @@ export function StudentsPanel({ data, isAdmin = true }: { data: PortalManagement
           <DialogHeader><DialogTitle className="font-serif text-2xl">{form?.id ? "Edit student" : "Enrol student"}</DialogTitle>
             {form?.id && <DialogDescription>{isAdmin ? "The Student ID is fixed. To change class, use Move class on the student." : "Correct the spelling of the student's name. The school office changes other details."}</DialogDescription>}</DialogHeader>
           {form && <div className="space-y-4">
-            <Field label="Student ID" htmlFor="st-id" hint={form.id ? undefined : "Leave empty to create one automatically (like NWE/2026/00012). Used to sign in; cannot be changed later."}><input id="st-id" className="portal-input font-mono" maxLength={50} disabled={!!form.id} value={form.studentId} onChange={(e) => setForm({ ...form, studentId: e.target.value })} data-testid="input-student-studentid" /></Field>
+            <Field label="Student ID" htmlFor="st-id" hint={form.id ? undefined : "Leave empty to create one automatically (like NW/SEC/26/00012 or NW/PRY/26/00012). Used to sign in; cannot be changed later."}><input id="st-id" className="portal-input font-mono" maxLength={50} disabled={!!form.id} value={form.studentId} onChange={(e) => setForm({ ...form, studentId: e.target.value })} data-testid="input-student-studentid" /></Field>
             <Field label="Full name" htmlFor="st-name"><input id="st-name" className="portal-input" maxLength={150} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} data-testid="input-student-name" /></Field>
             <Field label="Class" htmlFor="st-class"><ClassSelect id="st-class" classes={data.classes} value={form.classId} disabled={!!form.id} onChange={(v) => setForm({ ...form, classId: v })} /></Field>
             {(isAdmin || !form.id) && <Field label="Parent email (optional)" htmlFor="st-email" hint="Not needed. If given, the family can also reset a forgotten password by email."><input id="st-email" type="email" className="portal-input" maxLength={200} value={form.guardianEmail ?? ""} onChange={(e) => setForm({ ...form, guardianEmail: e.target.value })} data-testid="input-student-email" /></Field>}
@@ -190,6 +193,7 @@ export function StudentsPanel({ data, isAdmin = true }: { data: PortalManagement
       {enrolling && <EnrolStudentDialog data={data} onClose={() => setEnrolling(false)} onDone={(result) => { setEnrolling(false); setLink({ result, purpose: "activate" }); }} />}
       {link && <AccountLinkDialog result={link.result} purpose={link.purpose} onClose={() => setLink(null)} />}
       <StudentProfileDialog studentId={profile} onClose={() => setProfile(null)} />
+      {isAdmin && <StudentIdChangeDialog open={changingIds} onClose={() => setChangingIds(false)} data={data} />}
       <MoveStudentDialog student={moving} classes={data.classes} pending={cmd.pending} onClose={() => setMoving(null)}
         onMove={(toClassId) => cmd.run({ action: "moveStudent", target: { id: moving!.id }, toClassId }, "Student moved")} />
       <Dialog open={!!activity} onOpenChange={(o) => !o && setActivity(null)}>

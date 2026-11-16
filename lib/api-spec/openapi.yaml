@@ -201,6 +201,10 @@ paths:
     $ref: "./tap-in.yaml#/paths/kioskTap"
   /portal/tap-in:
     $ref: "./tap-in.yaml#/paths/tapIn"
+  /portal/student-ids/preview:
+    $ref: "./student-ids.yaml#/paths/preview"
+  /portal/student-ids/apply:
+    $ref: "./student-ids.yaml#/paths/apply"
   /chairman/board:
     $ref: "./chairman.yaml#/paths/board"
   /portal/my-messages:
@@ -1367,6 +1371,18 @@ components:
       $ref: "./tap-in.yaml#/schemas/TapInCommand"
     TapInCommandResult:
       $ref: "./tap-in.yaml#/schemas/TapInCommandResult"
+    StudentIdListInput:
+      $ref: "./student-ids.yaml#/schemas/StudentIdListInput"
+    StudentIdStudent:
+      $ref: "./student-ids.yaml#/schemas/StudentIdStudent"
+    StudentIdPlanRow:
+      $ref: "./student-ids.yaml#/schemas/StudentIdPlanRow"
+    StudentIdPlan:
+      $ref: "./student-ids.yaml#/schemas/StudentIdPlan"
+    StudentIdChanges:
+      $ref: "./student-ids.yaml#/schemas/StudentIdChanges"
+    StudentIdChangeResult:
+      $ref: "./student-ids.yaml#/schemas/StudentIdChangeResult"
     ChairmanCount:
       $ref: "./chairman.yaml#/schemas/ChairmanCount"
     ChairmanSection:
