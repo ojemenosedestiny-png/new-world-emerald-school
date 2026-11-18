@@ -12,7 +12,7 @@ import { QuestionNavigator, unansweredNumbers } from "@/portal/exam/QuestionNavi
 import { useAttemptSync, type SaveState } from "@/portal/exam/useAttemptSync";
 import { Countdown, useRemaining } from "@/portal/exam/Countdown";
 import { QuestionCard } from "@/portal/exam/QuestionCard";
-import { useLockdown } from "@/portal/exam/useLockdown";
+import { useExamGuard, useLockdown } from "@/portal/exam/useLockdown";
 
 function SaveBadge({ state, savedAt, error, onRetry }: { state: SaveState; savedAt: string | null; error: string | null; onRetry: () => void }) {
   let text = "";
@@ -59,6 +59,7 @@ export default function PortalExam() {
   // An exam in progress counts as activity, so the idle sign-out in other tabs never ends it.
   useKeepAlive(inProgress && !expired);
   const lockdown = useLockdown(id, !!attempt?.lockdown && inProgress && !expired);
+  useExamGuard(inProgress && !expired);
 
   useEffect(() => {
     if (!inProgress || !expired || autoSubmitted.current) return;
@@ -157,6 +158,7 @@ export default function PortalExam() {
           )}
           <div className="space-y-4">
             {pdf && <p className="text-sm text-[hsl(var(--p-ink)/0.65)]">Read the questions on the paper, then record your answers in the matching slots below.</p>}
+            {attempt.answersAt && !released && <p className="rounded-xl bg-[hsl(var(--p-emerald-soft)/0.6)] p-4 text-sm" data-testid="text-answers-later">Submitted. The right answers will show here after the exam closes at {new Date(attempt.answersAt).toLocaleString([], { weekday: "short", hour: "numeric", minute: "2-digit" })}.</p>}
             {review.size > 0 && !released && <p className="rounded-xl bg-[hsl(var(--p-emerald-soft)/0.6)] p-4 text-sm" data-testid="text-answer-review">Your answers are checked below: the right answer is shown for every multiple-choice question. Your score will appear when the school releases results.</p>}
             {attempt.questions.map((question, i) => {
               const first = question.passage ? attempt.questions.findIndex((q) => q.passage === question.passage) : i;

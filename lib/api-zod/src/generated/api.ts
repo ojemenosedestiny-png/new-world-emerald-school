@@ -140,11 +140,12 @@ export const GetPortalDashboardResponse = zod.object({
 })).optional(),
   "lockdown": zod.boolean().optional(),
   "focusLosses": zod.number().optional(),
+  "answersAt": zod.string().optional().describe('Submitted while the exam is still open: when the right answers will show (the exam\'s closing time)'),
   "review": zod.array(zod.object({
   "questionId": zod.string(),
   "correctAnswer": zod.number(),
   "correct": zod.boolean()
-})).optional().describe('After submitting, the right answer to each multiple-choice question (no score)')
+})).optional().describe('After submitting and once the exam has closed, the right answer to each multiple-choice question (no score)')
 })),
   "materials": zod.array(zod.object({
   "id": zod.number().optional(),
@@ -223,11 +224,12 @@ export const StartPortalExamResponse = zod.object({
 })).optional(),
   "lockdown": zod.boolean().optional(),
   "focusLosses": zod.number().optional(),
+  "answersAt": zod.string().optional().describe('Submitted while the exam is still open: when the right answers will show (the exam\'s closing time)'),
   "review": zod.array(zod.object({
   "questionId": zod.string(),
   "correctAnswer": zod.number(),
   "correct": zod.boolean()
-})).optional().describe('After submitting, the right answer to each multiple-choice question (no score)')
+})).optional().describe('After submitting and once the exam has closed, the right answer to each multiple-choice question (no score)')
 })
 
 
@@ -289,11 +291,12 @@ export const GetPortalAttemptResponse = zod.object({
 })).optional(),
   "lockdown": zod.boolean().optional(),
   "focusLosses": zod.number().optional(),
+  "answersAt": zod.string().optional().describe('Submitted while the exam is still open: when the right answers will show (the exam\'s closing time)'),
   "review": zod.array(zod.object({
   "questionId": zod.string(),
   "correctAnswer": zod.number(),
   "correct": zod.boolean()
-})).optional().describe('After submitting, the right answer to each multiple-choice question (no score)')
+})).optional().describe('After submitting and once the exam has closed, the right answer to each multiple-choice question (no score)')
 })
 
 
@@ -363,11 +366,12 @@ export const SavePortalAnswersResponse = zod.object({
 })).optional(),
   "lockdown": zod.boolean().optional(),
   "focusLosses": zod.number().optional(),
+  "answersAt": zod.string().optional().describe('Submitted while the exam is still open: when the right answers will show (the exam\'s closing time)'),
   "review": zod.array(zod.object({
   "questionId": zod.string(),
   "correctAnswer": zod.number(),
   "correct": zod.boolean()
-})).optional().describe('After submitting, the right answer to each multiple-choice question (no score)')
+})).optional().describe('After submitting and once the exam has closed, the right answer to each multiple-choice question (no score)')
 })
 
 
@@ -437,11 +441,12 @@ export const SubmitPortalAttemptResponse = zod.object({
 })).optional(),
   "lockdown": zod.boolean().optional(),
   "focusLosses": zod.number().optional(),
+  "answersAt": zod.string().optional().describe('Submitted while the exam is still open: when the right answers will show (the exam\'s closing time)'),
   "review": zod.array(zod.object({
   "questionId": zod.string(),
   "correctAnswer": zod.number(),
   "correct": zod.boolean()
-})).optional().describe('After submitting, the right answer to each multiple-choice question (no score)')
+})).optional().describe('After submitting and once the exam has closed, the right answer to each multiple-choice question (no score)')
 })
 
 
@@ -651,11 +656,12 @@ export const GetPortalManagementResponse = zod.object({
 })).optional(),
   "lockdown": zod.boolean().optional(),
   "focusLosses": zod.number().optional(),
+  "answersAt": zod.string().optional().describe('Submitted while the exam is still open: when the right answers will show (the exam\'s closing time)'),
   "review": zod.array(zod.object({
   "questionId": zod.string(),
   "correctAnswer": zod.number(),
   "correct": zod.boolean()
-})).optional().describe('After submitting, the right answer to each multiple-choice question (no score)')
+})).optional().describe('After submitting and once the exam has closed, the right answer to each multiple-choice question (no score)')
 }).and(zod.object({
   "studentName": zod.string(),
   "studentId": zod.string(),

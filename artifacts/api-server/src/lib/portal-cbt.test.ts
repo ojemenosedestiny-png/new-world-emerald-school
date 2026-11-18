@@ -92,10 +92,16 @@ test("cbt: each student gets their own drawn, shuffled paper that marks correctl
     assert.equal((await call(`/attempts/${a.data.id}/focus-loss`, "POST", undefined, adaS)).data.focusLosses, 2);
     const submitted = await call(`/attempts/${a.data.id}/submit`, "POST", { answers }, { cookie: adaS.cookie });
     assert.equal(submitted.data.status, "marked");
-    // After submitting, the right answers show at once; the score waits for the teacher to release it.
-    assert.deepEqual([submitted.data.resultsReleased, "score" in submitted.data], [false, false]);
-    assert.equal(submitted.data.review.length, 5);
-    for (const r of submitted.data.review as { questionId: string; correctAnswer: number; correct: boolean }[]) {
+    // While others may still be writing, the right answers wait for the exam to close; the score waits for release.
+    assert.deepEqual([submitted.data.resultsReleased, "score" in submitted.data, "review" in submitted.data], [false, false, false]);
+    assert.equal(submitted.data.answersAt, row.endsAt.toISOString());
+    const closedAt = new Date(Date.now() - 1000);
+    await db.update(portalExams).set({ endsAt: closedAt }).where(eq(portalExams.id, row.id));
+    const after = (await call(`/attempts/${a.data.id}`, "GET", undefined, adaS)).data;
+    assert.equal("answersAt" in after, false);
+    assert.equal(after.review.length, 5);
+    await db.update(portalExams).set({ endsAt: row.endsAt }).where(eq(portalExams.id, row.id));
+    for (const r of after.review as { questionId: string; correctAnswer: number; correct: boolean }[]) {
       const q = submitted.data.questions.find((x: { id: string }) => x.id === r.questionId);
       const original = bank.find((b) => b.id === r.questionId)!;
       assert.equal(q.options[r.correctAnswer], original.options[original.correctAnswer!], "the right answer is in the student's own option order");

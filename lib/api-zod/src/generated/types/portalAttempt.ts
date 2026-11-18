@@ -33,6 +33,8 @@ export interface PortalAttempt {
   marks?: PortalAttemptMarksItem[];
   lockdown?: boolean;
   focusLosses?: number;
-  /** After submitting, the right answer to each multiple-choice question (no score) */
+  /** Submitted while the exam is still open: when the right answers will show (the exam's closing time) */
+  answersAt?: string;
+  /** After submitting and once the exam has closed, the right answer to each multiple-choice question (no score) */
   review?: PortalAttemptReviewItem[];
 }

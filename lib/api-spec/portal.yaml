@@ -338,9 +338,10 @@ schemas:
       marks: { type: array, items: { $ref: "#/schemas/PortalMark" } }
       lockdown: { type: boolean }
       focusLosses: { type: integer }
+      answersAt: { type: string, description: "Submitted while the exam is still open: when the right answers will show (the exam's closing time)" }
       review:
         type: array
-        description: After submitting, the right answer to each multiple-choice question (no score)
+        description: After submitting and once the exam has closed, the right answer to each multiple-choice question (no score)
         items:
           type: object
           required: [questionId, correctAnswer, correct]

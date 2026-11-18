@@ -8,6 +8,23 @@ const fullscreenSupported = () => typeof document !== "undefined" && document.fu
  * each time the student leaves the exam screen. One trip away (tab switch + blur + leaving full screen) counts once.
  * Browsers cannot stop other apps, so this deters and records rather than prevents.
  */
+/** Right-click, the Inspect / view-source / save / print shortcuts: closed while any exam is being written. */
+export function inspectKey(e: Pick<KeyboardEvent, "key" | "ctrlKey" | "metaKey" | "shiftKey" | "altKey">) {
+  const k = e.key.toLowerCase();
+  const mod = e.ctrlKey || e.metaKey;
+  return k === "f12" || (mod && e.shiftKey && ["i", "j", "c", "k"].includes(k)) || (e.metaKey && e.altKey && ["i", "j", "c", "u"].includes(k)) || (mod && ["u", "s", "p"].includes(k));
+}
+export function useExamGuard(active: boolean) {
+  useEffect(() => {
+    if (!active) return;
+    const menu = (e: Event) => e.preventDefault();
+    const keys = (e: KeyboardEvent) => { if (inspectKey(e)) { e.preventDefault(); e.stopPropagation(); } };
+    document.addEventListener("contextmenu", menu);
+    window.addEventListener("keydown", keys, true);
+    return () => { document.removeEventListener("contextmenu", menu); window.removeEventListener("keydown", keys, true); };
+  }, [active]);
+}
+
 export function useLockdown(attemptId: number, active: boolean) {
   const [exits, setExits] = useState(0);
   const [fullscreen, setFullscreen] = useState(() => typeof document !== "undefined" && !!document.fullscreenElement);
