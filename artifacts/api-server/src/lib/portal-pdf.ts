@@ -9,7 +9,11 @@ import type { PortalQuestionData } from "@workspace/db";
 /** A line of text on a page, in points from the top-left corner. Diagram labels and page furniture are not lines. */
 export interface PdfLine { page: number; text: string; x: number; top: number; bottom: number }
 /** A drawing (vector paths or a picture) with its text labels, in points from the top-left corner. */
-export interface PdfDiagram { page: number; x0: number; top: number; x1: number; bottom: number; labels: string[]; image?: Buffer }
+export interface PdfDiagram {
+  page: number; x0: number; top: number; x1: number; bottom: number; labels: string[]; image?: Buffer;
+  /** Set when this drawing was joined into the picture of an earlier drawing for the same question (its index). */
+  joinedInto?: number;
+}
 export interface PdfLayout { pages: { width: number; height: number }[]; lines: PdfLine[]; diagrams: PdfDiagram[] }
 
 /** Text found between questions: a passage or instruction, and the question numbers it says it is for. */
@@ -21,6 +25,8 @@ export interface ImportedPaper {
   passages: ImportedPassage[];
   /** For each diagram in the layout, the index of the question it belongs to (null when there is none). */
   diagramQuestion: (number | null)[];
+  /** Diagrams left out as page furniture: a letterhead or logo above the first question, or a picture repeated on every page. */
+  letterhead: number[];
   /** The paper's text without headers, footers, page numbers or diagram labels, for staff to check against. */
   text: string;
 }
@@ -61,6 +67,25 @@ function removeFurniture(layout: PdfLayout) {
   });
 }
 
+/**
+ * Pictures that are page furniture, not exam diagrams: a logo or letterhead in the top band of the page before the first
+ * question, or the same picture in the same place on two or more pages (a crest in the header or footer).
+ */
+function furnitureDiagrams(layout: PdfLayout, lines: PdfLine[]) {
+  const first = lines.find((l) => QUESTION.test(l.text));
+  const height = (page: number) => layout.pages[page]?.height ?? 842;
+  const same = (a: PdfDiagram, b: PdfDiagram) => Math.abs(a.x0 - b.x0) < 3 && Math.abs(a.x1 - b.x1) < 3 && Math.abs(a.top - b.top) < 3 && Math.abs(a.bottom - b.bottom) < 3;
+  const out: number[] = [];
+  layout.diagrams.forEach((d, i) => {
+    const h = height(d.page);
+    const topBand = d.bottom < h * 0.18, edgeBand = topBand || d.top > h * 0.88;
+    const beforeFirst = !first || d.page < first.page || (d.page === first.page && d.bottom <= first.top);
+    const repeated = layout.diagrams.some((o, j) => j !== i && o.page !== d.page && same(o, d));
+    if ((topBand && beforeFirst) || (edgeBand && repeated)) out.push(i);
+  });
+  return out;
+}
+
 /** Joins wrapped lines into paragraphs: a new paragraph starts after a clear vertical gap. */
 function joinLines(lines: PdfLine[]) {
   let out = "";
@@ -92,9 +117,10 @@ interface Draft { number: number; stem: PdfLine[]; options: { letter: string; li
  */
 export function paperFromLayout(layout: PdfLayout, { pages = true } = {}): ImportedPaper {
   const lines = pages ? removeFurniture(layout) : layout.lines;
+  const letterhead = pages ? furnitureDiagrams(layout, lines) : [];
   type Item = { line: PdfLine } | { diagram: number };
   const pos = (it: Item) => ("line" in it ? it.line : layout.diagrams[it.diagram]);
-  const items: Item[] = [...lines.map((line) => ({ line })), ...layout.diagrams.map((_, diagram) => ({ diagram }))]
+  const items: Item[] = [...lines.map((line) => ({ line })), ...layout.diagrams.map((_, diagram) => ({ diagram })).filter((d) => !letterhead.includes(d.diagram))]
     .sort((a, b) => pos(a).page - pos(b).page || pos(a).top - pos(b).top || ("line" in a ? a.line.x : 0) - ("line" in b ? b.line.x : 0));
 
   const drafts: Draft[] = [];
@@ -186,6 +212,13 @@ export function paperFromLayout(layout: PdfLayout, { pages = true } = {}): Impor
     if (continues) last.push(line);
     else { draft.closed = true; block.push(line); }
   }
+  // A drawing after the last question's choices, on the same page, belongs to that last question.
+  const lastDraft = drafts[drafts.length - 1];
+  if (lastDraft && waitingDiagrams.length) {
+    const own = [...lastDraft.stem, ...lastDraft.options.flatMap((o) => o.lines)];
+    const lastPageOfDraft = Math.max(...own.map((l) => l.page));
+    for (const d of waitingDiagrams.splice(0)) if (layout.diagrams[d].page === lastPageOfDraft) diagramDraft[d] = drafts.length - 1;
+  }
   flushBlock(null);
 
   const questions: PortalQuestionData[] = [];
@@ -223,7 +256,7 @@ export function paperFromLayout(layout: PdfLayout, { pages = true } = {}): Impor
     }
     return { text: p.text, from: first >= 0 ? first + 1 : null, to: last >= 0 ? last + 1 : null, before };
   });
-  return { questions, numbers, passages: out, diagramQuestion, text: lines.map((l) => l.text).join("\n") };
+  return { questions, numbers, passages: out, diagramQuestion, letterhead, text: lines.map((l) => l.text).join("\n") };
 }
 
 /** Plain-text import for pasted text or tests: every line is treated as one PDF line. */
@@ -263,6 +296,7 @@ export async function readPdfLayout(buffer: Buffer, { render = false } = {}): Pr
   const task = getDocument({ data: new Uint8Array(buffer), useSystemFonts: false, standardFontDataUrl: standardFonts(), verbosity: 0 });
   const document = await task.promise;
   const layout: PdfLayout = { pages: [], lines: [], diagrams: [] };
+  const crops_ = new Map<PdfDiagram, CropCanvas>();
   try {
     if (document.numPages > 100) throw new Error("PDF documents are limited to 100 pages.");
     let length = 0;
@@ -381,15 +415,59 @@ export async function readPdfLayout(buffer: Buffer, { render = false } = {}): Pr
           const below = Math.min(Infinity, ...across.filter((l) => l.top >= d.bottom - 1).map((l) => l.top));
           return { d, box: { x0: d.x0 - PAD, x1: d.x1 + PAD, top: Math.max(d.top - PAD, above + 0.5), bottom: Math.min(d.bottom + PAD, below - 0.5) } };
         });
-        try { await cropDrawings((document as unknown as { canvasFactory: unknown }).canvasFactory, page, crops); }
+        try { await cropDrawings((document as unknown as { canvasFactory: unknown }).canvasFactory, page, crops, crops_); }
         catch { /* The review step reports the drawings that were not imported. */ }
       }
       page.cleanup();
     }
     layout.lines.sort((a, b) => a.page - b.page || a.top - b.top || a.x - b.x);
+    // Two or more drawings for one question (two figures, or one split over a page) become one picture, so none is lost.
+    if (render && crops_.size) {
+      try { joinQuestionDrawings((document as unknown as { canvasFactory: unknown }).canvasFactory, layout, crops_); }
+      catch { /* each question keeps its first drawing; the review step reports the rest */ }
+    }
     return layout;
   } finally {
     await task.destroy();
+  }
+}
+
+type CropCanvas = { canvas: { toBuffer(type: "image/png"): Buffer }; width: number; height: number };
+const GAP = 24;
+const MAX_IMAGE = 2 * 1024 * 1024;
+
+/** Puts the drawings of each question into one picture: side by side when they share a row, otherwise one under another. */
+function joinQuestionDrawings(canvasFactory: unknown, layout: PdfLayout, crops: Map<PdfDiagram, CropCanvas>) {
+  const factory = canvasFactory as { create(w: number, h: number): { canvas: CropCanvas["canvas"]; context: { drawImage(...args: unknown[]): void; fillStyle: string; fillRect(x: number, y: number, w: number, h: number): void } } };
+  const paper = paperFromLayout(layout);
+  const byQuestion = new Map<number, number[]>();
+  paper.diagramQuestion.forEach((q, k) => { if (q != null && crops.has(layout.diagrams[k])) byQuestion.set(q, [...(byQuestion.get(q) ?? []), k]); });
+  for (const ks of byQuestion.values()) {
+    if (ks.length < 2) continue;
+    const rows: number[][] = [];
+    for (const k of ks.slice(0, 6)) {
+      const d = layout.diagrams[k];
+      const row = rows[rows.length - 1];
+      const prev = row && layout.diagrams[row[row.length - 1]];
+      if (prev && prev.page === d.page && d.top < prev.bottom && prev.top < d.bottom) row.push(k); else rows.push([k]);
+    }
+    const sizes = rows.map((r) => ({ w: r.reduce((n, k) => n + crops.get(layout.diagrams[k])!.width, 0) + GAP * (r.length - 1), h: Math.max(...r.map((k) => crops.get(layout.diagrams[k])!.height)) }));
+    const width = Math.max(...sizes.map((z) => z.w)), height = sizes.reduce((n, z) => n + z.h, 0) + GAP * (rows.length - 1);
+    if (width > 6000 || height > 9000) continue;
+    const out = factory.create(width, height);
+    out.context.fillStyle = "#ffffff";
+    out.context.fillRect(0, 0, width, height);
+    let y = 0;
+    rows.forEach((r, i) => {
+      let x = Math.floor((width - sizes[i].w) / 2);
+      for (const k of r) { const c = crops.get(layout.diagrams[k])!; out.context.drawImage(c.canvas, x, y); x += c.width + GAP; }
+      y += sizes[i].h + GAP;
+    });
+    const png = out.canvas.toBuffer("image/png");
+    if (png.length > MAX_IMAGE) continue;
+    const [first, ...rest] = rows.flat();
+    layout.diagrams[first].image = png;
+    for (const k of rest) { layout.diagrams[k].joinedInto = first; delete layout.diagrams[k].image; }
   }
 }
 
@@ -399,6 +477,7 @@ async function cropDrawings(
   canvasFactory: unknown,
   page: { getViewport(o: { scale: number }): { width: number; height: number }; render(o: object): { promise: Promise<void> } },
   drawings: { d: PdfDiagram; box: Box }[],
+  keep?: Map<PdfDiagram, CropCanvas>,
 ) {
   type Canvas = { toBuffer(type: "image/png"): Buffer };
   type Ctx = { drawImage(...args: unknown[]): void; fillStyle: string; fillRect(x: number, y: number, w: number, h: number): void };
@@ -416,6 +495,6 @@ async function cropDrawings(
     const crop = factory.create(w, h);
     crop.context.drawImage(full.canvas, x, y, w, h, 0, 0, w, h);
     const png = crop.canvas.toBuffer("image/png");
-    if (png.length <= 2 * 1024 * 1024) d.image = png;
+    if (png.length <= MAX_IMAGE) { d.image = png; keep?.set(d, { canvas: crop.canvas, width: w, height: h }); }
   }
 }

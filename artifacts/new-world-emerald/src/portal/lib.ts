@@ -87,6 +87,45 @@ export function formatDateTime(value: string) {
   return new Intl.DateTimeFormat("en-NG", { weekday: "short", day: "numeric", month: "short", hour: "numeric", minute: "2-digit" }).format(d);
 }
 
+type Timed = { startsAt: string; endsAt: string };
+export type ExamGroupKey = "open" | "upcoming" | "finished";
+const GROUP_LABEL: Record<ExamGroupKey, string> = { open: "Open now", upcoming: "Coming up", finished: "Finished" };
+const dayOf = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+
+/** "Today", "Tomorrow", "Yesterday" or "Tuesday 24 November" (with the year when it is not this year). */
+export function dayHeading(value: string, now = Date.now()) {
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return "Date not set";
+  const today = new Date(now);
+  const shift = (n: number) => dayOf(new Date(today.getFullYear(), today.getMonth(), today.getDate() + n));
+  const near = ({ [shift(0)]: "Today", [shift(1)]: "Tomorrow", [shift(-1)]: "Yesterday" } as Record<string, string>)[dayOf(d)];
+  const part = (o: Intl.DateTimeFormatOptions) => new Intl.DateTimeFormat("en-NG", o).format(d);
+  const full = [part({ weekday: "long" }), d.getDate(), part({ month: "long" }), ...(d.getFullYear() !== today.getFullYear() ? [d.getFullYear()] : [])].join(" ");
+  return near ? `${near}, ${full}` : full;
+}
+
+/**
+ * Exams in date and time order: open now (closing soonest first), coming up (soonest first), then finished (most
+ * recent first), each grouped by the day it opens.
+ */
+export function examTimeline<T extends Timed>(exams: T[], now = Date.now()) {
+  const at = (v: string) => new Date(v).getTime() || 0;
+  const by: Record<ExamGroupKey, T[]> = { open: [], upcoming: [], finished: [] };
+  for (const e of exams) { const w = examWindow(e.startsAt, e.endsAt, now); by[w === "open" ? "open" : w === "upcoming" ? "upcoming" : "finished"].push(e); }
+  by.open.sort((a, b) => at(a.endsAt) - at(b.endsAt) || at(a.startsAt) - at(b.startsAt));
+  by.upcoming.sort((a, b) => at(a.startsAt) - at(b.startsAt) || at(a.endsAt) - at(b.endsAt));
+  by.finished.sort((a, b) => at(b.startsAt) - at(a.startsAt) || at(b.endsAt) - at(a.endsAt));
+  return (["open", "upcoming", "finished"] as const).filter((k) => by[k].length).map((key) => {
+    const days: { day: string; heading: string; exams: T[] }[] = [];
+    for (const e of by[key]) {
+      const day = Number.isNaN(new Date(e.startsAt).getTime()) ? "" : dayOf(new Date(e.startsAt));
+      const last = days[days.length - 1];
+      if (last && last.day === day) last.exams.push(e); else days.push({ day, heading: dayHeading(e.startsAt, now), exams: [e] });
+    }
+    return { key, label: GROUP_LABEL[key], count: by[key].length, days };
+  });
+}
+
 export function formatTime(value: string) {
   const d = new Date(value);
   if (Number.isNaN(d.getTime())) return "";

@@ -81,9 +81,13 @@ portalFilesRouter.post("/import", classFirst, express.raw({ type: "application/p
     const fileId = await storeClassFile(req.body, classId, "pdf", "diagram", actor.teacherId ?? null);
     // Each drawing is cropped from the page and attached to its question; anything not attached is reported.
     const notes: { question: number | null; message: string }[] = [];
+    const joined = new Map<number, number>();
+    for (const d of layout?.diagrams ?? []) if (d.joinedInto != null) joined.set(d.joinedInto, (joined.get(d.joinedInto) ?? 1) + 1);
     for (const [k, diagram] of (layout?.diagrams ?? []).entries()) {
       const q = paper!.diagramQuestion[k];
       const page = diagram.page + 1;
+      if (paper!.letterhead.includes(k)) { notes.push({ question: null, message: `A picture at the ${diagram.top < (layout!.pages[diagram.page]?.height ?? 842) / 2 ? "top" : "bottom"} of page ${page} looks like the school logo or letterhead, so it was left out of the questions.` }); continue; }
+      if (diagram.joinedInto != null) continue;
       if (q == null) { notes.push({ question: null, message: `A diagram on page ${page} could not be matched to a question. It is still in the original PDF: attach it to the right question manually.` }); continue; }
       const label = `Question ${paper!.numbers[q]}`;
       if (questions[q].diagramFileId) { notes.push({ question: q, message: `${label}: another diagram on page ${page} was not imported. Use Original PDF mode or attach a picture with both drawings manually.` }); continue; }
@@ -94,7 +98,8 @@ portalFilesRouter.post("/import", classFirst, express.raw({ type: "application/p
       }
       if (stored) {
         questions[q].diagramFileId = stored;
-        notes.push({ question: q, message: `${label}: the diagram on page ${page} was attached as a picture. Check it against the original PDF.` });
+        const n = joined.get(k);
+        notes.push({ question: q, message: n ? `${label}: its ${n} diagrams were joined into one picture. Check it against the original PDF.` : `${label}: the diagram on page ${page} was attached as a picture. Check it against the original PDF.` });
       } else notes.push({ question: q, message: `${label}: a diagram on page ${page} was not imported. Use Original PDF mode or attach the diagram manually.` });
     }
     res.json({ fileId, questions, warning, extractedText: paper?.text ?? "", passages: paper?.passages ?? [], notes });

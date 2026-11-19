@@ -240,7 +240,8 @@ export function ExamsView({ section }: { section: SchoolSection }) {
   const exams = q.data?.exams ?? [];
   const classes = useMemo(() => [...new Map(exams.map((e) => [e.classId, e.className])).entries()].sort((a, b) => a[1].localeCompare(b[1])), [exams]);
   const s = search.trim().toLowerCase();
-  const shown = exams.filter((e) => (!classId || e.classId === Number(classId)) && (!status || e.status === status) && (!s || [e.title, e.subject, e.setBy, e.className].some((v) => v.toLowerCase().includes(s))));
+  const shown = exams.filter((e) => (!classId || e.classId === Number(classId)) && (!status || e.status === status) && (!s || [e.title, e.subject, e.setBy, e.className].some((v) => v.toLowerCase().includes(s))))
+    .sort((a, b) => b.startsAt.localeCompare(a.startsAt));
   if (q.isLoading) return <Skeleton className="h-72" />;
   if (q.isError || !q.data) return <ErrorPanel title="Exams did not load" message={errorMessage(q.error)} onRetry={() => void q.refetch()} />;
   if (!q.data.terms.length) return <EmptyState icon={<ClipboardList size={22} />} title="No exams yet" body="Exams and tests your teachers set in the staff portal appear here, term by term." />;

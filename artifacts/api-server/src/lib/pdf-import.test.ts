@@ -57,6 +57,27 @@ test("pdf import: inline options, instruction ranges, page furniture and drawn d
   assert.ok(paper.questions.every((q) => !/\b\d+ cm\b/.test(q.text)), "diagram labels stay out of the stems");
 });
 
+test("pdf import: a question's two figures become one picture; logos and letterheads are left out; questions stay whole", async () => {
+  const layout = await readPdfLayout(fixture("diagram-paper.pdf"), { render: true });
+  const paper = paperFromLayout(layout);
+  assert.deepEqual(paper.numbers, [1, 2, 3]);
+  assert.deepEqual(paper.questions.map((q) => q.text), ["Figure P and Figure Q show two triangles. Which is larger?", "Water boils at what temperature at sea level?", "Name the shape drawn below the choices."]);
+  assert.ok(paper.questions.every((q) => q.type === "mcq" && q.options.length === 4));
+  assert.deepEqual(paper.questions[0].options, ["Figure P", "Figure Q", "They are equal", "Cannot tell"]);
+  // The crest above the title and the crest in every footer are page furniture, not diagrams.
+  assert.deepEqual(paper.letterhead, [0, 1, 4]);
+  // Question 1: both triangles, joined side by side into the first drawing's picture.
+  assert.deepEqual(paper.diagramQuestion.map((q, k) => (paper.letterhead.includes(k) ? "logo" : q)), ["logo", "logo", 0, 0, "logo", 2]);
+  assert.equal(layout.diagrams[3].joinedInto, 2);
+  assert.equal(layout.diagrams[3].image, undefined);
+  const joined = layout.diagrams[2].image!;
+  assert.ok(joined.subarray(0, 4).equals(PNG));
+  const width = joined.readUInt32BE(16), height = joined.readUInt32BE(20);
+  assert.ok(width > (layout.diagrams[2].x1 - layout.diagrams[2].x0) * 2 + (layout.diagrams[3].x1 - layout.diagrams[3].x0) * 2, `side by side: ${width}x${height}`);
+  // Question 3: the figure after its choices, at the end of the paper, still belongs to it.
+  assert.ok(layout.diagrams[5].image?.subarray(0, 4).equals(PNG));
+});
+
 test("pdf import: an answer choice ends at a heading, and passage ranges follow restarted numbering", () => {
   const text = [
     "SECTION A",
