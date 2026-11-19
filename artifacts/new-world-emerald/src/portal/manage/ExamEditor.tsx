@@ -8,6 +8,7 @@ import { OPTION_LETTERS, errorMessage, fileUrl, fromLocalInput, newQuestionId, t
 import { ClassSelect } from "./ClassSelect";
 import { useCommand } from "./useCommand";
 import { DiagramField, PassageEditor } from "./QuestionExtras";
+import { QuestionSheetImport } from "./QuestionSheetImport";
 
 type Q = PortalExamQuestionsItem;
 const MAX_PDF = 15 * 1024 * 1024;
@@ -69,7 +70,7 @@ function QuestionEditor({ q, i, count, classId, notes, onChange, onMove, onRemov
       <label htmlFor={p + "-text"} className="sr-only">Question text</label>
       <textarea id={p + "-text"} className="portal-input min-h-[70px] text-sm" maxLength={12000} placeholder="Question text, or a slot label such as Question 3" value={q.text} onChange={(e) => onChange({ ...q, text: e.target.value })} data-testid={"input-qtext-" + i} />
       {notes?.map((n) => (
-        <p key={n} className={"mt-2 rounded-lg px-3 py-2 text-xs " + (/not imported/.test(n) ? "bg-[hsl(var(--p-gold-soft)/0.7)] font-semibold" : "bg-[hsl(var(--p-paper-2)/0.8)]")} data-testid={"note-q-" + i}>{n}</p>
+        <p key={n} className={"mt-2 rounded-lg px-3 py-2 text-xs " + (/not imported| of the sheet: /.test(n) ? "bg-[hsl(var(--p-gold-soft)/0.7)] font-semibold" : "bg-[hsl(var(--p-paper-2)/0.8)]")} data-testid={"note-q-" + i}>{n}</p>
       ))}
       <DiagramField fileId={q.diagramFileId} classId={classId} index={i} onChange={(diagramFileId) => onChange({ ...q, diagramFileId })} />
       {typeof q.passage !== "string" && <button type="button" className="portal-btn-ghost mt-2" onClick={() => onChange({ ...q, passage: "" })} data-testid={"button-add-passage-" + i}><Plus size={12} /> Shared passage</button>}
@@ -277,6 +278,10 @@ export function ExamEditor({ data, initial, onClose }: { data: PortalManagement;
               <p className="font-serif text-lg font-semibold">Questions <span className="text-sm font-normal text-[hsl(var(--p-ink)/0.55)]">{exam.questions.length} / {totalMarks} marks</span></p>
               <div className="flex gap-2"><button type="button" className="portal-btn-ghost" onClick={() => addQ("mcq")} data-testid="button-add-mcq"><Plus size={13} /> Multiple choice</button><button type="button" className="portal-btn-ghost" onClick={() => addQ("written")} data-testid="button-add-written"><Plus size={13} /> Written</button></div>
             </div>
+            <QuestionSheetImport existing={exam.questions.length} onImport={(qs, byId) => {
+              setExam((e) => ({ ...e, questions: [...e.questions, ...qs].slice(0, 200) }));
+              setNotes((n) => ({ ...n, ...byId }));
+            }} />
             <div className="mb-3 flex flex-wrap items-end gap-2 rounded-xl border border-dashed border-[hsl(var(--p-line))] p-3 text-sm">
               <span className="w-full text-xs font-semibold text-[hsl(var(--p-ink)/0.6)]">Bulk create answer slots</span>
               <label className="flex items-center gap-1">Count <input type="number" min={1} max={200} className="portal-input !w-20 !py-1.5" value={bulk.count} onChange={(e) => setBulk({ ...bulk, count: Number(e.target.value) })} data-testid="input-bulk-count" /></label>
