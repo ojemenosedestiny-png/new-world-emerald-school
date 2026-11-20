@@ -9,4 +9,5 @@ import type { MessageChannel } from './messageChannel';
 
 export interface MessageReadInput {
   channel: MessageChannel;
+  teacherId?: number;
 }

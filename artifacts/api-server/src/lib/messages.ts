@@ -1,6 +1,7 @@
 import type { PortalActor } from "./portal-auth";
 
-export type Channel = "class" | "office";
+export type Channel = "class" | "office" | "teacher";
+/** The conversations every student has; private "teacher" conversations are added as the student starts them. */
 export const CHANNELS: Channel[] = ["class", "office"];
 export const MAX_MESSAGE_LENGTH = 1000;
 /** A student may send this many messages in any ten-minute window. */
@@ -11,11 +12,14 @@ export const THREAD_LIMIT = 200;
 
 /**
  * Who may read and answer a conversation. The office (administrators) sees every conversation so it can safeguard
- * students; a teacher sees only the class channel of students in their own classes.
+ * students; a teacher sees the class channel of students in their own classes, and private conversations a student
+ * started with them alone. No other teacher sees a private conversation.
  */
-export function staffMayOpen(actor: Pick<PortalActor, "role" | "classIds">, channel: Channel, studentClassId: number) {
+export function staffMayOpen(actor: Pick<PortalActor, "role" | "classIds" | "teacherId">, channel: Channel, studentClassId: number, teacherId?: number | null) {
   if (actor.role === "admin") return true;
-  return actor.role === "teacher" && channel === "class" && actor.classIds.includes(studentClassId);
+  if (actor.role !== "teacher") return false;
+  if (channel === "teacher") return !!actor.teacherId && actor.teacherId === teacherId;
+  return channel === "class" && actor.classIds.includes(studentClassId);
 }
 
 export function cleanBody(raw: string): string | null {

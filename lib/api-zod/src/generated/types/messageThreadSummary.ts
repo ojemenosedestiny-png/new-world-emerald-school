@@ -17,4 +17,8 @@ export interface MessageThreadSummary {
   lastAt: Date;
   lastFromStaff: boolean;
   unread: number;
+  /** @nullable */
+  teacherId?: number | null;
+  /** For a private conversation: the teacher it is with */
+  teacherName?: string;
 }

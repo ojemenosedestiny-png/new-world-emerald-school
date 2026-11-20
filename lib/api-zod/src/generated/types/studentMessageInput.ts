@@ -14,4 +14,6 @@ export interface StudentMessageInput {
      * @maxLength 1000
      */
   body: string;
+  /** For a private message: the teacher it goes to */
+  teacherId?: number;
 }

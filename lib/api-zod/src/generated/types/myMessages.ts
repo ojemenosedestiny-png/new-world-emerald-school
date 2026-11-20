@@ -5,8 +5,11 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { MessageTeacher } from './messageTeacher';
 import type { StudentThread } from './studentThread';
 
 export interface MyMessages {
   threads: StudentThread[];
+  /** Teachers the student may write to privately: their class teacher and the teachers of their subjects */
+  teachers?: MessageTeacher[];
 }

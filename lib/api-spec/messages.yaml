@@ -72,10 +72,40 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/StaffMessageThread" }
+  privateThread:
+    get:
+      operationId: getPrivateMessageThread
+      description: A private conversation between a student and one teacher. Only that teacher (and the office, to keep students safe) may open it; opening it as the teacher marks the student's messages read
+      parameters:
+        - { name: studentId, in: path, required: true, schema: { type: integer } }
+        - { name: teacherId, in: path, required: true, schema: { type: integer } }
+      responses:
+        "200":
+          description: The conversation
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/StaffMessageThread" }
+    post:
+      operationId: replyPrivateMessageThread
+      description: The teacher answers the student privately (the office reads but does not answer)
+      parameters:
+        - { name: studentId, in: path, required: true, schema: { type: integer } }
+        - { name: teacherId, in: path, required: true, schema: { type: integer } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/MessageBodyInput" }
+      responses:
+        "200":
+          description: Reply sent
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/StaffMessageThread" }
 schemas:
   MessageChannel:
     type: string
-    enum: [class, office]
+    enum: [class, office, teacher]
   PortalChatMessage:
     type: object
     required: [id, fromStaff, senderName, body, createdAt, read]
@@ -94,11 +124,24 @@ schemas:
       title: { type: string }
       unread: { type: integer }
       messages: { type: array, items: { $ref: "#/components/schemas/PortalChatMessage" } }
+      teacherId: { type: [integer, "null"], description: "The teacher of a private conversation" }
+      closed: { type: boolean, description: "The teacher no longer teaches here, so new messages cannot be sent" }
+  MessageTeacher:
+    type: object
+    required: [id, name, title, photoId, classTeacher, subjects]
+    properties:
+      id: { type: integer }
+      name: { type: string }
+      title: { type: string }
+      photoId: { type: [string, "null"] }
+      classTeacher: { type: boolean }
+      subjects: { type: array, items: { type: string }, description: "What they teach the student's class" }
   MyMessages:
     type: object
     required: [threads]
     properties:
       threads: { type: array, items: { $ref: "#/components/schemas/StudentThread" } }
+      teachers: { type: array, items: { $ref: "#/components/schemas/MessageTeacher" }, description: "Teachers the student may write to privately: their class teacher and the teachers of their subjects" }
   MessageBodyInput:
     type: object
     required: [body]
@@ -110,11 +153,13 @@ schemas:
     properties:
       channel: { $ref: "#/components/schemas/MessageChannel" }
       body: { type: string, minLength: 1, maxLength: 1000 }
+      teacherId: { type: integer, description: "For a private message: the teacher it goes to" }
   MessageReadInput:
     type: object
     required: [channel]
     properties:
       channel: { $ref: "#/components/schemas/MessageChannel" }
+      teacherId: { type: integer }
   MessageThreadSummary:
     type: object
     required: [studentId, studentName, studentCode, className, channel, lastBody, lastAt, lastFromStaff, unread]
@@ -128,6 +173,8 @@ schemas:
       lastAt: { type: string, format: date-time }
       lastFromStaff: { type: boolean }
       unread: { type: integer }
+      teacherId: { type: [integer, "null"] }
+      teacherName: { type: string, description: "For a private conversation: the teacher it is with" }
   StaffMessageThread:
     type: object
     required: [studentId, studentName, studentCode, className, channel, messages]
@@ -138,12 +185,16 @@ schemas:
       className: { type: string }
       channel: { $ref: "#/components/schemas/MessageChannel" }
       messages: { type: array, items: { $ref: "#/components/schemas/PortalChatMessage" } }
+      teacherId: { type: [integer, "null"] }
+      teacherName: { type: string }
+      canReply: { type: boolean, description: "False when the office reads a private teacher conversation: only that teacher answers" }
 components:
   schemas:
     MessageChannel: { $ref: "#/schemas/MessageChannel" }
     PortalChatMessage: { $ref: "#/schemas/PortalChatMessage" }
     StudentThread: { $ref: "#/schemas/StudentThread" }
     MyMessages: { $ref: "#/schemas/MyMessages" }
+    MessageTeacher: { $ref: "#/schemas/MessageTeacher" }
     MessageBodyInput: { $ref: "#/schemas/MessageBodyInput" }
     StudentMessageInput: { $ref: "#/schemas/StudentMessageInput" }
     MessageReadInput: { $ref: "#/schemas/MessageReadInput" }

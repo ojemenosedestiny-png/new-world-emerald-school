@@ -15,4 +15,9 @@ export interface StaffMessageThread {
   className: string;
   channel: MessageChannel;
   messages: PortalChatMessage[];
+  /** @nullable */
+  teacherId?: number | null;
+  teacherName?: string;
+  /** False when the office reads a private teacher conversation: only that teacher answers */
+  canReply?: boolean;
 }

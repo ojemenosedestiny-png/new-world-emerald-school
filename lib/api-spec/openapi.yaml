@@ -219,6 +219,8 @@ paths:
     $ref: "./messages.yaml#/paths/messageThreads"
   /portal/message-threads/{studentId}/{channel}:
     $ref: "./messages.yaml#/paths/messageThread"
+  /portal/message-threads/{studentId}/teacher/{teacherId}:
+    $ref: "./messages.yaml#/paths/privateThread"
   /portal/albums:
     $ref: "./media.yaml#/paths/albums"
   /portal/albums/{id}:
@@ -1459,6 +1461,8 @@ components:
       $ref: "./messages.yaml#/schemas/StudentThread"
     MyMessages:
       $ref: "./messages.yaml#/schemas/MyMessages"
+    MessageTeacher:
+      $ref: "./messages.yaml#/schemas/MessageTeacher"
     MessageBodyInput:
       $ref: "./messages.yaml#/schemas/MessageBodyInput"
     StudentMessageInput:

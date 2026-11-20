@@ -13,6 +13,17 @@ test("messages: the office sees every conversation, teachers only their classes'
   assert.equal(staffMayOpen({ role: "guest", classIds: [] }, "class", 3), false);
 });
 
+test("messages: a private conversation is open to the chosen teacher only (and the office)", () => {
+  const chosen = { role: "teacher" as const, classIds: [], teacherId: 7 };
+  const classTeacher = { role: "teacher" as const, classIds: [3], teacherId: 8 };
+  assert.equal(staffMayOpen(chosen, "teacher", 3, 7), true);
+  assert.equal(staffMayOpen(classTeacher, "teacher", 3, 7), false, "the class teacher does not see it");
+  assert.equal(staffMayOpen({ role: "teacher", classIds: [3] }, "teacher", 3, 7), false, "no teacher record");
+  assert.equal(staffMayOpen(chosen, "teacher", 3, null), false);
+  assert.equal(staffMayOpen({ role: "admin", classIds: [] }, "teacher", 3, 7), true);
+  assert.equal(staffMayOpen({ role: "student", classIds: [3], teacherId: 7 }, "teacher", 3, 7), false);
+});
+
 test("messages: bodies are trimmed, cleaned and capped", () => {
   assert.equal(cleanBody("  Hello\r\nteacher  "), "Hello\nteacher");
   assert.equal(cleanBody("a\n\n\n\n\nb"), "a\n\nb");

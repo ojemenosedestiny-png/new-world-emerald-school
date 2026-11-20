@@ -9544,6 +9544,156 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       return useMutation(getReplyMessageThreadMutationOptions(options));
     }
 
+export const getGetPrivateMessageThreadUrl = (studentId: number,
+    teacherId: number,) => {
+
+
+
+
+  return `/api/portal/message-threads/${studentId}/teacher/${teacherId}`
+}
+
+/**
+ * A private conversation between a student and one teacher. Only that teacher (and the office, to keep students safe) may open it; opening it as the teacher marks the student's messages read
+ */
+export const getPrivateMessageThread = async (studentId: number,
+    teacherId: number, options?: RequestInit): Promise<StaffMessageThread> => {
+
+  return customFetch<StaffMessageThread>(getGetPrivateMessageThreadUrl(studentId,teacherId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetPrivateMessageThreadQueryKey = (studentId: number,
+    teacherId: number,) => {
+    return [
+    `/api/portal/message-threads/${studentId}/teacher/${teacherId}`
+    ] as const;
+    }
+
+
+export const getGetPrivateMessageThreadQueryOptions = <TData = Awaited<ReturnType<typeof getPrivateMessageThread>>, TError = ErrorType<unknown>>(studentId: number,
+    teacherId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPrivateMessageThread>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetPrivateMessageThreadQueryKey(studentId,teacherId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getPrivateMessageThread>>> = ({ signal }) => getPrivateMessageThread(studentId,teacherId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: studentId !== null && studentId !== undefined && teacherId !== null && teacherId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getPrivateMessageThread>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetPrivateMessageThreadQueryResult = NonNullable<Awaited<ReturnType<typeof getPrivateMessageThread>>>
+export type GetPrivateMessageThreadQueryError = ErrorType<unknown>
+
+
+
+export function useGetPrivateMessageThread<TData = Awaited<ReturnType<typeof getPrivateMessageThread>>, TError = ErrorType<unknown>>(
+ studentId: number,
+    teacherId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPrivateMessageThread>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetPrivateMessageThreadQueryOptions(studentId,teacherId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getReplyPrivateMessageThreadUrl = (studentId: number,
+    teacherId: number,) => {
+
+
+
+
+  return `/api/portal/message-threads/${studentId}/teacher/${teacherId}`
+}
+
+/**
+ * The teacher answers the student privately (the office reads but does not answer)
+ */
+export const replyPrivateMessageThread = async (studentId: number,
+    teacherId: number,
+    messageBodyInput: MessageBodyInput, options?: RequestInit): Promise<StaffMessageThread> => {
+
+  return customFetch<StaffMessageThread>(getReplyPrivateMessageThreadUrl(studentId,teacherId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(messageBodyInput)
+  }
+);}
+
+
+
+
+
+export const getReplyPrivateMessageThreadMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof replyPrivateMessageThread>>, TError,{studentId: number;teacherId: number;data: BodyType<MessageBodyInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof replyPrivateMessageThread>>, TError,{studentId: number;teacherId: number;data: BodyType<MessageBodyInput>}, TContext> => {
+
+const mutationKey = ['replyPrivateMessageThread'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof replyPrivateMessageThread>>, {studentId: number;teacherId: number;data: BodyType<MessageBodyInput>}> = (props) => {
+          const {studentId,teacherId,data} = props ?? {};
+
+          return  replyPrivateMessageThread(studentId,teacherId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ReplyPrivateMessageThreadMutationResult = NonNullable<Awaited<ReturnType<typeof replyPrivateMessageThread>>>
+    export type ReplyPrivateMessageThreadMutationBody = BodyType<MessageBodyInput>
+    export type ReplyPrivateMessageThreadMutationError = ErrorType<unknown>
+
+    export const useReplyPrivateMessageThread = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof replyPrivateMessageThread>>, TError,{studentId: number;teacherId: number;data: BodyType<MessageBodyInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof replyPrivateMessageThread>>,
+        TError,
+        {studentId: number;teacherId: number;data: BodyType<MessageBodyInput>},
+        TContext
+      > => {
+      return useMutation(getReplyPrivateMessageThreadMutationOptions(options));
+    }
+
 export const getListPortalAlbumsUrl = () => {
 
 

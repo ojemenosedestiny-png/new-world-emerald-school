@@ -2889,6 +2889,7 @@ export type MessageChannel = typeof MessageChannel[keyof typeof MessageChannel];
 export const MessageChannel = {
   class: 'class',
   office: 'office',
+  teacher: 'teacher',
 } as const;
 
 export interface PortalChatMessage {
@@ -2905,10 +2906,30 @@ export interface StudentThread {
   title: string;
   unread: number;
   messages: PortalChatMessage[];
+  /**
+     * The teacher of a private conversation
+     * @nullable
+     */
+  teacherId?: number | null;
+  /** The teacher no longer teaches here, so new messages cannot be sent */
+  closed?: boolean;
+}
+
+export interface MessageTeacher {
+  id: number;
+  name: string;
+  title: string;
+  /** @nullable */
+  photoId: string | null;
+  classTeacher: boolean;
+  /** What they teach the student's class */
+  subjects: string[];
 }
 
 export interface MyMessages {
   threads: StudentThread[];
+  /** Teachers the student may write to privately: their class teacher and the teachers of their subjects */
+  teachers?: MessageTeacher[];
 }
 
 export interface MessageBodyInput {
@@ -2926,10 +2947,13 @@ export interface StudentMessageInput {
      * @maxLength 1000
      */
   body: string;
+  /** For a private message: the teacher it goes to */
+  teacherId?: number;
 }
 
 export interface MessageReadInput {
   channel: MessageChannel;
+  teacherId?: number;
 }
 
 export interface MessageThreadSummary {
@@ -2942,6 +2966,10 @@ export interface MessageThreadSummary {
   lastAt: string;
   lastFromStaff: boolean;
   unread: number;
+  /** @nullable */
+  teacherId?: number | null;
+  /** For a private conversation: the teacher it is with */
+  teacherName?: string;
 }
 
 export interface StaffMessageThread {
@@ -2951,6 +2979,11 @@ export interface StaffMessageThread {
   className: string;
   channel: MessageChannel;
   messages: PortalChatMessage[];
+  /** @nullable */
+  teacherId?: number | null;
+  teacherName?: string;
+  /** False when the office reads a private teacher conversation: only that teacher answers */
+  canReply?: boolean;
 }
 
 export type AttendanceStatus = typeof AttendanceStatus[keyof typeof AttendanceStatus];

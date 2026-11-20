@@ -13,4 +13,11 @@ export interface StudentThread {
   title: string;
   unread: number;
   messages: PortalChatMessage[];
+  /**
+     * The teacher of a private conversation
+     * @nullable
+     */
+  teacherId?: number | null;
+  /** The teacher no longer teaches here, so new messages cannot be sent */
+  closed?: boolean;
 }

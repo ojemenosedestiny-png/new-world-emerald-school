@@ -213,6 +213,7 @@ export * from './mediaStorageTest';
 export * from './messageBodyInput';
 export * from './messageChannel';
 export * from './messageReadInput';
+export * from './messageTeacher';
 export * from './messageThreadSummary';
 export * from './myAttendance';
 export * from './myAttendanceRecordsItem';

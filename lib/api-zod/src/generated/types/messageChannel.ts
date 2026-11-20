@@ -12,4 +12,5 @@ export type MessageChannel = typeof MessageChannel[keyof typeof MessageChannel];
 export const MessageChannel = {
   class: 'class',
   office: 'office',
+  teacher: 'teacher',
 } as const;

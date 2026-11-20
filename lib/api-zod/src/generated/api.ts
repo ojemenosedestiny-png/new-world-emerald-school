@@ -5953,7 +5953,7 @@ export const GetChairmanBoardResponse = zod.object({
 
 export const GetMyMessagesResponse = zod.object({
   "threads": zod.array(zod.object({
-  "channel": zod.enum(['class', 'office']),
+  "channel": zod.enum(['class', 'office', 'teacher']),
   "title": zod.string(),
   "unread": zod.number(),
   "messages": zod.array(zod.object({
@@ -5963,8 +5963,18 @@ export const GetMyMessagesResponse = zod.object({
   "body": zod.string(),
   "createdAt": zod.coerce.date(),
   "read": zod.boolean()
-}))
-}))
+})),
+  "teacherId": zod.number().nullish().describe('The teacher of a private conversation'),
+  "closed": zod.boolean().optional().describe('The teacher no longer teaches here, so new messages cannot be sent')
+})),
+  "teachers": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "title": zod.string(),
+  "photoId": zod.string().nullable(),
+  "classTeacher": zod.boolean(),
+  "subjects": zod.array(zod.string()).describe('What they teach the student\'s class')
+})).optional().describe('Teachers the student may write to privately: their class teacher and the teachers of their subjects')
 })
 
 
@@ -5973,13 +5983,14 @@ export const sendMyMessageBodyBodyMax = 1000;
 
 
 export const SendMyMessageBody = zod.object({
-  "channel": zod.enum(['class', 'office']),
-  "body": zod.string().min(1).max(sendMyMessageBodyBodyMax)
+  "channel": zod.enum(['class', 'office', 'teacher']),
+  "body": zod.string().min(1).max(sendMyMessageBodyBodyMax),
+  "teacherId": zod.number().optional().describe('For a private message: the teacher it goes to')
 })
 
 export const SendMyMessageResponse = zod.object({
   "threads": zod.array(zod.object({
-  "channel": zod.enum(['class', 'office']),
+  "channel": zod.enum(['class', 'office', 'teacher']),
   "title": zod.string(),
   "unread": zod.number(),
   "messages": zod.array(zod.object({
@@ -5989,18 +6000,29 @@ export const SendMyMessageResponse = zod.object({
   "body": zod.string(),
   "createdAt": zod.coerce.date(),
   "read": zod.boolean()
-}))
-}))
+})),
+  "teacherId": zod.number().nullish().describe('The teacher of a private conversation'),
+  "closed": zod.boolean().optional().describe('The teacher no longer teaches here, so new messages cannot be sent')
+})),
+  "teachers": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "title": zod.string(),
+  "photoId": zod.string().nullable(),
+  "classTeacher": zod.boolean(),
+  "subjects": zod.array(zod.string()).describe('What they teach the student\'s class')
+})).optional().describe('Teachers the student may write to privately: their class teacher and the teachers of their subjects')
 })
 
 
 export const MarkMyMessagesReadBody = zod.object({
-  "channel": zod.enum(['class', 'office'])
+  "channel": zod.enum(['class', 'office', 'teacher']),
+  "teacherId": zod.number().optional()
 })
 
 export const MarkMyMessagesReadResponse = zod.object({
   "threads": zod.array(zod.object({
-  "channel": zod.enum(['class', 'office']),
+  "channel": zod.enum(['class', 'office', 'teacher']),
   "title": zod.string(),
   "unread": zod.number(),
   "messages": zod.array(zod.object({
@@ -6010,8 +6032,18 @@ export const MarkMyMessagesReadResponse = zod.object({
   "body": zod.string(),
   "createdAt": zod.coerce.date(),
   "read": zod.boolean()
-}))
-}))
+})),
+  "teacherId": zod.number().nullish().describe('The teacher of a private conversation'),
+  "closed": zod.boolean().optional().describe('The teacher no longer teaches here, so new messages cannot be sent')
+})),
+  "teachers": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "title": zod.string(),
+  "photoId": zod.string().nullable(),
+  "classTeacher": zod.boolean(),
+  "subjects": zod.array(zod.string()).describe('What they teach the student\'s class')
+})).optional().describe('Teachers the student may write to privately: their class teacher and the teachers of their subjects')
 })
 
 
@@ -6020,18 +6052,20 @@ export const ListMessageThreadsResponseItem = zod.object({
   "studentName": zod.string(),
   "studentCode": zod.string(),
   "className": zod.string(),
-  "channel": zod.enum(['class', 'office']),
+  "channel": zod.enum(['class', 'office', 'teacher']),
   "lastBody": zod.string(),
   "lastAt": zod.coerce.date(),
   "lastFromStaff": zod.boolean(),
-  "unread": zod.number()
+  "unread": zod.number(),
+  "teacherId": zod.number().nullish(),
+  "teacherName": zod.string().optional().describe('For a private conversation: the teacher it is with')
 })
 export const ListMessageThreadsResponse = zod.array(ListMessageThreadsResponseItem)
 
 
 export const GetMessageThreadParams = zod.object({
   "studentId": zod.coerce.number(),
-  "channel": zod.enum(['class', 'office'])
+  "channel": zod.enum(['class', 'office', 'teacher'])
 })
 
 export const GetMessageThreadResponse = zod.object({
@@ -6039,7 +6073,7 @@ export const GetMessageThreadResponse = zod.object({
   "studentName": zod.string(),
   "studentCode": zod.string(),
   "className": zod.string(),
-  "channel": zod.enum(['class', 'office']),
+  "channel": zod.enum(['class', 'office', 'teacher']),
   "messages": zod.array(zod.object({
   "id": zod.number(),
   "fromStaff": zod.boolean(),
@@ -6047,13 +6081,16 @@ export const GetMessageThreadResponse = zod.object({
   "body": zod.string(),
   "createdAt": zod.coerce.date(),
   "read": zod.boolean()
-}))
+})),
+  "teacherId": zod.number().nullish(),
+  "teacherName": zod.string().optional(),
+  "canReply": zod.boolean().optional().describe('False when the office reads a private teacher conversation: only that teacher answers')
 })
 
 
 export const ReplyMessageThreadParams = zod.object({
   "studentId": zod.coerce.number(),
-  "channel": zod.enum(['class', 'office'])
+  "channel": zod.enum(['class', 'office', 'teacher'])
 })
 
 export const replyMessageThreadBodyBodyMax = 1000;
@@ -6069,7 +6106,7 @@ export const ReplyMessageThreadResponse = zod.object({
   "studentName": zod.string(),
   "studentCode": zod.string(),
   "className": zod.string(),
-  "channel": zod.enum(['class', 'office']),
+  "channel": zod.enum(['class', 'office', 'teacher']),
   "messages": zod.array(zod.object({
   "id": zod.number(),
   "fromStaff": zod.boolean(),
@@ -6077,7 +6114,74 @@ export const ReplyMessageThreadResponse = zod.object({
   "body": zod.string(),
   "createdAt": zod.coerce.date(),
   "read": zod.boolean()
-}))
+})),
+  "teacherId": zod.number().nullish(),
+  "teacherName": zod.string().optional(),
+  "canReply": zod.boolean().optional().describe('False when the office reads a private teacher conversation: only that teacher answers')
+})
+
+
+/**
+ * A private conversation between a student and one teacher. Only that teacher (and the office, to keep students safe) may open it; opening it as the teacher marks the student's messages read
+ */
+export const GetPrivateMessageThreadParams = zod.object({
+  "studentId": zod.coerce.number(),
+  "teacherId": zod.coerce.number()
+})
+
+export const GetPrivateMessageThreadResponse = zod.object({
+  "studentId": zod.number(),
+  "studentName": zod.string(),
+  "studentCode": zod.string(),
+  "className": zod.string(),
+  "channel": zod.enum(['class', 'office', 'teacher']),
+  "messages": zod.array(zod.object({
+  "id": zod.number(),
+  "fromStaff": zod.boolean(),
+  "senderName": zod.string(),
+  "body": zod.string(),
+  "createdAt": zod.coerce.date(),
+  "read": zod.boolean()
+})),
+  "teacherId": zod.number().nullish(),
+  "teacherName": zod.string().optional(),
+  "canReply": zod.boolean().optional().describe('False when the office reads a private teacher conversation: only that teacher answers')
+})
+
+
+/**
+ * The teacher answers the student privately (the office reads but does not answer)
+ */
+export const ReplyPrivateMessageThreadParams = zod.object({
+  "studentId": zod.coerce.number(),
+  "teacherId": zod.coerce.number()
+})
+
+export const replyPrivateMessageThreadBodyBodyMax = 1000;
+
+
+
+export const ReplyPrivateMessageThreadBody = zod.object({
+  "body": zod.string().min(1).max(replyPrivateMessageThreadBodyBodyMax)
+})
+
+export const ReplyPrivateMessageThreadResponse = zod.object({
+  "studentId": zod.number(),
+  "studentName": zod.string(),
+  "studentCode": zod.string(),
+  "className": zod.string(),
+  "channel": zod.enum(['class', 'office', 'teacher']),
+  "messages": zod.array(zod.object({
+  "id": zod.number(),
+  "fromStaff": zod.boolean(),
+  "senderName": zod.string(),
+  "body": zod.string(),
+  "createdAt": zod.coerce.date(),
+  "read": zod.boolean()
+})),
+  "teacherId": zod.number().nullish(),
+  "teacherName": zod.string().optional(),
+  "canReply": zod.boolean().optional().describe('False when the office reads a private teacher conversation: only that teacher answers')
 })
 
 
