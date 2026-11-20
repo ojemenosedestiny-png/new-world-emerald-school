@@ -9,7 +9,7 @@ import { CheckCircle2, Clock, Eye, FileCheck2, Inbox, PencilLine, Search, Send, 
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { EmptyState, ErrorPanel, Skeleton, StatusPill } from "../ui";
-import { errorMessage } from "../lib";
+import { errorMessage, examFolder, examFolders } from "../lib";
 import { OfficerEditDialog } from "./OfficerEdit";
 
 export type OfficerTab = "overview" | "queue" | "exams" | "timetables" | "activity";
@@ -156,8 +156,10 @@ export function AllExamsView({ data, onTerm, onView }: { data: ExamOfficerOvervi
   const [section, setSection] = useState("");
   const [status, setStatus] = useState("");
   const [search, setSearch] = useState("");
+  const [year, setYear] = useState("");
+  const years = examFolders(data.exams, (id) => data.exams.find((e) => e.classId === id)?.className ?? "");
   const s = search.trim().toLowerCase();
-  const shown = data.exams.filter((e) => (!section || e.section === section) && (!status || e.status === status) && (!s || [e.title, e.subject, e.className, e.setBy].some((v) => v.toLowerCase().includes(s))))
+  const shown = data.exams.filter((e) => (!section || e.section === section) && (!status || e.status === status) && (!year || examFolder(e.className).key === year) && (!s || [e.title, e.subject, e.className, e.setBy].some((v) => v.toLowerCase().includes(s))))
     .sort((a, b) => b.startsAt.localeCompare(a.startsAt));
   if (!data.terms.length) return <EmptyState icon={<FileCheck2 size={22} />} title="No exams yet" body="Every exam teachers set appears here, term by term." />;
   return (
@@ -172,6 +174,7 @@ export function AllExamsView({ data, onTerm, onView }: { data: ExamOfficerOvervi
         <label className="relative min-w-[12rem] flex-1"><span className="sr-only">Search exams</span><Search size={15} className={"absolute left-3 top-1/2 -translate-y-1/2 " + MUTED} aria-hidden="true" />
           <input className="portal-input !pl-9" placeholder="Search a subject, title, class or teacher" value={search} onChange={(e) => setSearch(e.target.value)} data-testid="input-officer-search" /></label>
         <label><span className="sr-only">Section</span><select className="portal-input !w-auto" value={section} onChange={(e) => setSection(e.target.value)} data-testid="select-officer-section"><option value="">All sections</option><option value="secondary">Secondary</option><option value="primary">Primary</option><option value="other">Other</option></select></label>
+        <label><span className="sr-only">Year</span><select className="portal-input !w-auto" value={year} onChange={(e) => setYear(e.target.value)} data-testid="select-officer-year"><option value="">All years</option>{years.map((f) => <option key={f.key} value={f.key}>{f.label} ({f.exams.length})</option>)}</select></label>
         <label><span className="sr-only">Status</span><select className="portal-input !w-auto" value={status} onChange={(e) => setStatus(e.target.value)} data-testid="select-officer-status"><option value="">Any status</option>{(Object.keys(STATUS) as Status[]).map((k) => <option key={k} value={k}>{STATUS[k].label}</option>)}</select></label>
       </div>
       {shown.length ? <ExamList exams={shown} onView={onView} /> : <p className={"portal-card p-6 text-sm " + MUTED}>No exams match.</p>}

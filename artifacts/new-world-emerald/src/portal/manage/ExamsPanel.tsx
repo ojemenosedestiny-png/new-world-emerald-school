@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { useRecordExamAccess, type PortalManagement, type PortalExam } from "@workspace/api-client-react";
-import { BarChart3, CalendarClock, ClipboardList, Clock3, Copy, Eye, EyeOff, FileText, Lock, Pencil, Plus, Send, Sparkles, Trash2, Undo2, Users } from "lucide-react";
+import { BarChart3, CalendarClock, ClipboardList, Clock3, Copy, Eye, EyeOff, FileText, Folder, FolderOpen, Library, Lock, Pencil, Plus, Send, Sparkles, Trash2, Undo2, Users } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { EmptyState, StatusPill } from "../ui";
-import { examTimeline, fileUrl, formatDateTime, type ExamGroupKey } from "../lib";
+import { examFolders, examTimeline, fileUrl, formatDateTime, type ExamGroupKey } from "../lib";
 import { ExamEditor, blankExam } from "./ExamEditor";
 import { ExamResults } from "./ExamResults";
 import { className, useCommand } from "./useCommand";
@@ -60,14 +60,58 @@ export function ExamsPanel({ data, isAdmin = false, canClear = false }: { data: 
   const officer = !!data.examOfficer;
   const access = useRecordExamAccess();
   const record = (id: number, kind: "open" | "copy" | "pdf") => { access.mutate({ examId: id, data: { kind } }); };
-  // In date and time order: open now, coming up, then finished, grouped by day.
-  const timeline = examTimeline(data.exams);
+  // Filed by year (Year 1, JSS 1, SS 2...), each folder holding every arm; inside, in date and time order.
+  const folders = examFolders(data.exams, (id) => className(examClasses, id));
+  const [folderKey, setFolderKey] = useState("all");
+  const folder = folders.find((f) => f.key === folderKey) ?? null;
+  const timeline = examTimeline(folder ? folder.exams : data.exams);
+  const openNow = folders.reduce((n, f) => n + f.open, 0);
+  const tile = (active: boolean) => "group flex min-h-[112px] flex-col rounded-2xl border p-4 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--p-emerald))] "
+    + (active ? "border-[hsl(var(--p-emerald))] bg-[hsl(var(--p-emerald))] text-[hsl(var(--p-paper))] shadow-md" : "border-[hsl(var(--p-line))] bg-[hsl(var(--p-surface))] hover:border-[hsl(var(--p-emerald)/0.5)] hover:shadow-sm");
 
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap justify-end gap-2">
         {isAdmin && <button className="portal-btn-ghost" disabled={cmd.pending || !data.classes.length} onClick={() => void cmd.run({ action: "addPracticeExams" }, "Practice CBT")} title="Adds a published 15-minute practice test, open for 7 days, to every class" data-testid="button-add-practice-exams"><Sparkles size={15} /> Add practice CBT to every class</button>}
         <button className="portal-btn" disabled={!examClasses.length} onClick={() => setEditing(blankExam(data.classes[0]?.id ?? examClasses[0]?.id ?? 0))} data-testid="button-add-exam"><Plus size={15} /> New exam</button></div>
+      {data.exams.length > 0 && (
+        <nav aria-label="Exam folders by year" className="rounded-3xl border border-[hsl(var(--p-line))] bg-[hsl(var(--p-paper-2)/0.5)] p-4 sm:p-5" data-testid="exam-folders">
+          <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
+            <h3 className="font-serif text-xl font-semibold">Exam folders</h3>
+            <p className="text-xs text-[hsl(var(--p-ink)/0.6)]">One folder for each year. Every arm (A, B, C) is filed in its year.</p>
+          </div>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+            <button type="button" aria-pressed={!folder} className={tile(!folder)} onClick={() => setFolderKey("all")} data-testid="folder-all">
+              <Library size={20} aria-hidden className={!folder ? "" : "text-[hsl(var(--p-emerald))]"} />
+              <span className="mt-2 font-serif text-lg font-semibold leading-tight">All exams</span>
+              <span className={"mt-auto pt-1 text-xs " + (!folder ? "text-[hsl(var(--p-paper)/0.8)]" : "text-[hsl(var(--p-ink)/0.6)]")}>{data.exams.length} {data.exams.length === 1 ? "exam" : "exams"}{openNow ? ` · ${openNow} open now` : ""}</span>
+            </button>
+            {folders.map((f) => {
+              const active = folder?.key === f.key;
+              const Icon = active ? FolderOpen : Folder;
+              return (
+                <button key={f.key} type="button" aria-pressed={active} className={tile(active)} onClick={() => setFolderKey(f.key)} data-testid={"folder-" + f.key}>
+                  <span className="flex items-start justify-between gap-2">
+                    <Icon size={20} aria-hidden className={active ? "" : "text-[hsl(var(--p-gold))]"} />
+                    {f.open > 0 && <span className={"rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide " + (active ? "bg-[hsl(var(--p-paper)/0.2)]" : "bg-[hsl(var(--p-emerald-soft))] text-[hsl(var(--p-emerald))]")}>{f.open} open</span>}
+                  </span>
+                  <span className="mt-2 font-serif text-lg font-semibold leading-tight">{f.label}</span>
+                  <span className={"line-clamp-1 text-[11px] " + (active ? "text-[hsl(var(--p-paper)/0.75)]" : "text-[hsl(var(--p-ink)/0.5)]")} title={f.arms.join(", ")}>{f.arms.join(" · ")}</span>
+                  <span className={"mt-auto pt-1 text-xs " + (active ? "text-[hsl(var(--p-paper)/0.85)]" : "text-[hsl(var(--p-ink)/0.6)]")}>{f.exams.length} {f.exams.length === 1 ? "exam" : "exams"}{f.upcoming ? ` · ${f.upcoming} coming up` : ""}</span>
+                </button>
+              );
+            })}
+          </div>
+        </nav>
+      )}
+      {folder && (
+        <div className="flex flex-wrap items-center gap-3" data-testid="exam-folder-heading">
+          <FolderOpen size={22} className="text-[hsl(var(--p-gold))]" aria-hidden />
+          <h3 className="font-serif text-2xl font-semibold">{folder.label} exams</h3>
+          <span className="text-sm text-[hsl(var(--p-ink)/0.6)]">{folder.arms.join(", ")}</span>
+          <button type="button" className="portal-btn-ghost ml-auto !py-1 text-xs" onClick={() => setFolderKey("all")}>Show all exams</button>
+        </div>
+      )}
       {data.exams.length === 0 ? <EmptyState icon={<ClipboardList size={22} />} title="No exams yet" body="Build an exam on screen, or upload a PDF paper and add answer slots. Students see it only after you publish." /> : (
         <div className="space-y-8">{timeline.map((group) => (
           <section key={group.key} aria-labelledby={"exams-" + group.key} data-testid={"exam-group-" + group.key}>

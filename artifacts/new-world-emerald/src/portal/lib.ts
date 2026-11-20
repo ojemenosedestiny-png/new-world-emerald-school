@@ -126,6 +126,38 @@ export function examTimeline<T extends Timed>(exams: T[], now = Date.now()) {
   });
 }
 
+/**
+ * The year folder a class's exams are filed in: "JSS 1A", "JSS 1 B" and "JSS1C" are all "JSS 1"; "Year 3 Gold" is
+ * "Year 3". Folders sort in school order (nursery, primary, JSS, SS, then anything else), then by year.
+ */
+export function examFolder(name: string) {
+  const n = name.replace(/\s+/g, " ").trim();
+  const m = /^(.*?)(\d+)/.exec(n);
+  if (!m) return { key: "other-" + (n.toLowerCase() || "class"), label: n || "Other classes", rank: 9000 };
+  const prefix = m[1].trim(), year = Number(m[2]);
+  const p = prefix.toLowerCase().replace(/[^a-z]/g, "");
+  const stage = /^(creche|daycare|playgroup|pre|nursery|kg|kindergarten|reception)/.test(p) ? 1
+    : /^(year|yr|primary|pry|basic|grade)/.test(p) ? 2 : /^(jss|js|junior)/.test(p) ? 3 : /^(sss|ss|senior)/.test(p) ? 4 : 5;
+  return { key: (p || "class") + "-" + year, label: `${prefix || "Class"} ${year}`, rank: stage * 1000 + Math.min(year, 999) };
+}
+
+/** Exams filed by year folder, in school order; each folder lists its arms (JSS 1A, 1B, 1C) and what is open now. */
+export function examFolders<T extends Timed & { classId: number }>(exams: T[], classNameOf: (classId: number) => string, now = Date.now()) {
+  const folders = new Map<string, { key: string; label: string; rank: number; exams: T[]; arms: Set<string>; open: number; upcoming: number }>();
+  for (const e of exams) {
+    const name = classNameOf(e.classId);
+    const f = examFolder(name);
+    const entry = folders.get(f.key) ?? { ...f, exams: [], arms: new Set<string>(), open: 0, upcoming: 0 };
+    entry.exams.push(e);
+    entry.arms.add(name);
+    const w = examWindow(e.startsAt, e.endsAt, now);
+    if (w === "open") entry.open++; else if (w === "upcoming") entry.upcoming++;
+    folders.set(f.key, entry);
+  }
+  return [...folders.values()].sort((a, b) => a.rank - b.rank || a.label.localeCompare(b.label))
+    .map((f) => ({ ...f, arms: [...f.arms].sort((a, b) => a.localeCompare(b, undefined, { numeric: true })) }));
+}
+
 export function formatTime(value: string) {
   const d = new Date(value);
   if (Number.isNaN(d.getTime())) return "";
