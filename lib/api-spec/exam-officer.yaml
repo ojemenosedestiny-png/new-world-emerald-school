@@ -37,6 +37,22 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/ExamOfficerPaper" }
+    post:
+      operationId: editExamOfficerExam
+      description: Change an exam's title, instructions, length, opening and closing times and questions, and optionally publish it in the same step (exam officer or Head of School; logged)
+      parameters:
+        - { name: examId, in: path, required: true, schema: { type: integer } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ExamOfficerEdit" }
+      responses:
+        "200":
+          description: Saved
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PortalMessage" }
   activity:
     get:
       operationId: getExamOfficerActivity
@@ -148,6 +164,19 @@ schemas:
       instructions: { type: string }
       questions: { type: array, items: { $ref: "#/components/schemas/PrincipalExamQuestion" } }
       history: { type: array, items: { $ref: "#/components/schemas/ExamOfficerEvent" } }
+      editQuestions: { type: array, items: { $ref: "#/components/schemas/PortalQuestionKey" }, description: "The questions in full (diagrams and marking guides too), for editing" }
+      locked: { type: boolean, description: "Students have started, so the questions cannot change (times still can)" }
+  ExamOfficerEdit:
+    type: object
+    required: [title, instructions, durationMinutes, startsAt, endsAt, questions]
+    properties:
+      title: { type: string, minLength: 1, maxLength: 200 }
+      instructions: { type: string, maxLength: 5000 }
+      durationMinutes: { type: integer, minimum: 1, maximum: 300 }
+      startsAt: { type: string, format: date-time }
+      endsAt: { type: string, format: date-time }
+      questions: { type: array, items: { $ref: "#/components/schemas/PortalQuestionKey" }, maxItems: 200 }
+      publish: { type: boolean, description: "Also publish it to students now" }
   ExamOfficerCounts:
     type: object
     required: [saved, pdf, diagram, submitted, published, returned, withdrawn, hidden, opened, marked, released, deleted, attempt]

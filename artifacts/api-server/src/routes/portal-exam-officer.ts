@@ -1,13 +1,15 @@
 import { Router, type Request } from "express";
 import { and, asc, desc, eq, gte, inArray, isNull, like, lt, or, sql } from "drizzle-orm";
 import { db, portalAttempts, portalAuditLog, portalClasses, portalExams, portalStudents, portalSubjects, portalTeachers, type PortalExamRecord } from "@workspace/db";
-import { GetExamOfficerActivityQueryParams, GetExamOfficerExamParams, GetExamOfficerOverviewQueryParams, ManageExamOfficerBody, RecordExamAccessBody, RecordExamAccessParams } from "@workspace/api-zod";
+import { EditExamOfficerExamBody, EditExamOfficerExamParams, GetExamOfficerActivityQueryParams, GetExamOfficerExamParams, GetExamOfficerOverviewQueryParams, ManageExamOfficerBody, RecordExamAccessBody, RecordExamAccessParams } from "@workspace/api-zod";
 import { check, examAllowed, portalActor, staffOnly } from "../lib/portal-auth";
-import { canPublishExams, isExamOfficer } from "../lib/website-admin";
+import { canPublishExams, isExamOfficer, isHeadOfSchool } from "../lib/website-admin";
 import { examOfficerEmails } from "../lib/approved-identities";
 import { validateQuestions } from "../lib/portal-assessment";
 import { classSection, examTerm, lagosDay, lagosToday, lastDays } from "../lib/principal";
 import { recordAudit } from "../lib/audit";
+import { paperSettingsProblem } from "../lib/cbt";
+import { validDiagrams } from "./portal-management";
 
 /**
  * The exam officer: the final step before an exam reaches students. Sees every exam in the school, publishes or returns
@@ -32,6 +34,20 @@ export function officerStatus(e: Pick<PortalExamRecord, "published" | "resultsRe
 }
 
 const ACCESS = /^POST \/portal\/exams\/(\d+)\/access$/;
+const EDIT = /^POST \/portal\/exam-officer\/exams\/(\d+)$/;
+
+/** Who acted, as the history shows it. */
+function officerLabel(req: Request) {
+  const email = req.identity?.email ?? "";
+  if (isExamOfficer(req)) return email || "Exam officer";
+  return isHeadOfSchool(req) ? `${email || "Head of School"} (head of school)` : `${email || "Super administrator"} (super administrator)`;
+}
+
+/** A question as stored, with empty extras dropped, so an unchanged paper compares equal whatever the key order. */
+type Comparable = { id: string; type: string; text: string; options?: string[]; marks: number; passage?: string | null; diagramFileId?: string | null; correctAnswer?: number | null; rubric?: string | null };
+function sameQuestion(q: Comparable) {
+  return JSON.stringify([q.id, q.type, q.text, q.options ?? [], q.marks, q.passage || "", q.diagramFileId || null, q.type === "mcq" ? q.correctAnswer ?? null : null, q.rubric || ""]);
+}
 
 /** Everything needed to describe exams: classes, teachers (for names) and subjects (for older exams' setters). */
 async function lookups() {
@@ -111,6 +127,11 @@ export function describeExamEvent(row: Pick<AuditRow, "action" | "targetId" | "a
   const sub = (k: string) => (after[k] && typeof after[k] === "object" ? after[k] as Record<string, unknown> : {});
   const target = row.targetId && /^\d+$/.test(row.targetId) ? Number(row.targetId) : null;
   const access = ACCESS.exec(row.action);
+  const edit = EDIT.exec(row.action);
+  if (edit) {
+    const published = after.publish === true;
+    return { kind: published ? "published" : "saved", label: published ? "Edited and published to students" : "Edited the exam (dates, times or questions)", examId: Number(edit[1]), title: typeof after.title === "string" ? after.title : "" };
+  }
   if (access) {
     const kind = after.kind === "copy" ? "Copied the questions" : after.kind === "pdf" ? "Opened the PDF paper" : "Opened the questions";
     return { kind: "opened", label: kind, examId: Number(access[1]), title: "" };
@@ -155,14 +176,17 @@ portalExamOfficerRouter.get("/exam-officer/exams/:examId", async (req, res) => {
     .where(and(eq(portalAuditLog.outcome, "success"), or(
       and(inArray(portalAuditLog.action, ["portal.saveExam", "portal.examStatus", "exam.officer.view"]), eq(portalAuditLog.targetId, String(exam.id))),
       eq(portalAuditLog.action, `POST /portal/exams/${exam.id}/access`),
+      eq(portalAuditLog.action, `POST /portal/exam-officer/exams/${exam.id}`),
       // A new exam has no id until it is saved, so its first save is matched by title and class.
       and(eq(portalAuditLog.action, "portal.saveExam"), isNull(portalAuditLog.targetId), sql`${portalAuditLog.after}->'exam'->>'title' = ${exam.title}`, sql`${portalAuditLog.after}->'exam'->>'classId' = ${String(exam.classId)}`),
       and(eq(portalAuditLog.action, "POST /portal/exam-officer"), sql`${portalAuditLog.after}->>'examId' = ${String(exam.id)}`),
     ))).orderBy(desc(portalAuditLog.at)).limit(300);
   const L = await lookups();
   const [summary] = await summaries([exam]);
+  const [started] = await db.select({ id: portalAttempts.id }).from(portalAttempts).where(eq(portalAttempts.examId, exam.id)).limit(1);
   res.json({
-    exam: summary, instructions: exam.instructions,
+    exam: summary, instructions: exam.instructions, locked: !!started,
+    editQuestions: exam.questions.map((q) => ({ ...q, options: q.options ?? [], correctAnswer: q.type === "mcq" ? q.correctAnswer ?? null : null })),
     questions: exam.questions.map((q) => ({ id: q.id, type: q.type, text: q.text, options: q.options ?? [], correctAnswer: q.type === "mcq" ? q.correctAnswer ?? null : null, marks: q.marks, passage: q.passage ?? "", hasDiagram: !!q.diagramFileId })),
     history: rows.flatMap((r) => { const d = describeExamEvent(r); return d ? [{ at: r.at.toISOString(), who: L.who(r.actorLabel), label: d.label, kind: d.kind, examId: exam.id, examTitle: exam.title }] : []; }),
   });
@@ -178,7 +202,7 @@ portalExamOfficerRouter.get("/exam-officer/activity", async (req, res) => {
   check(Date.parse(to) - Date.parse(from) <= 92 * 86_400_000, "Choose at most three months at a time.");
   const rows = await db.select({ at: portalAuditLog.at, actorLabel: portalAuditLog.actorLabel, action: portalAuditLog.action, targetId: portalAuditLog.targetId, after: portalAuditLog.after }).from(portalAuditLog)
     .where(and(gte(portalAuditLog.at, lagosDay(from)!.start), lt(portalAuditLog.at, lagosDay(to)!.end), eq(portalAuditLog.outcome, "success"),
-      or(inArray(portalAuditLog.action, EXAM_ACTIONS), like(portalAuditLog.action, "POST /portal/exams/%/access"))))
+      or(inArray(portalAuditLog.action, EXAM_ACTIONS), like(portalAuditLog.action, "POST /portal/exams/%/access"), like(portalAuditLog.action, "POST /portal/exam-officer/exams/%"))))
     .orderBy(desc(portalAuditLog.at)).limit(10000);
   const L = await lookups();
   const ids = [...new Set(rows.map((r) => describeExamEvent(r)?.examId).filter((id): id is number => typeof id === "number"))];
@@ -198,11 +222,47 @@ portalExamOfficerRouter.get("/exam-officer/activity", async (req, res) => {
   res.json({ from, to, today, staff: [...staff.values()].sort((a, b) => b.events.length - a.events.length || a.name.localeCompare(b.name)) });
 });
 
+/**
+ * The exam officer (or the Head of School) changes a teacher's exam before or after publishing: its title,
+ * instructions, length, opening and closing times and questions, with the same checks a teacher's save gets.
+ * Once students have started, the questions are locked; the times can still move. Optionally publishes it too.
+ */
+portalExamOfficerRouter.post("/exam-officer/exams/:examId", async (req, res) => {
+  officerOnly(req);
+  const { examId } = EditExamOfficerExamParams.parse(req.params);
+  const body = EditExamOfficerExamBody.parse(req.body);
+  const title = body.title.trim();
+  check(title, "Add a title.");
+  const startsAt = new Date(body.startsAt), endsAt = new Date(body.endsAt);
+  check(Number.isFinite(startsAt.getTime()) && Number.isFinite(endsAt.getTime()) && endsAt > startsAt, "The closing time must be after the opening time.");
+  const by = officerLabel(req);
+  let message = "";
+  await db.transaction(async (tx) => {
+    const [exam] = await tx.select().from(portalExams).where(eq(portalExams.id, examId)).for("update");
+    check(exam, "Exam not found.", 404);
+    const [attempt] = await tx.select({ id: portalAttempts.id }).from(portalAttempts).where(eq(portalAttempts.examId, exam.id)).limit(1);
+    const changed = body.questions.length !== exam.questions.length || body.questions.some((q, i) => sameQuestion(q) !== sameQuestion(exam.questions[i]));
+    check(!attempt || !changed, "Students have started this exam, so its questions are locked. You can still change its dates and times.", 409);
+    const publishing = body.publish === true && !exam.published;
+    if (publishing) check(new Date() < endsAt, "The closing time has already passed. Set a later closing time, then publish.", 409);
+    validateQuestions(body.questions, exam.published || publishing);
+    await validDiagrams(body.questions, exam.classId);
+    const problem = paperSettingsProblem(exam.mode, body.questions, { shuffleQuestions: exam.shuffleQuestions ?? false, shuffleOptions: exam.shuffleOptions ?? false, drawCount: exam.drawCount ?? 0 });
+    check(!problem, problem ?? "");
+    await tx.update(portalExams).set({
+      title, instructions: body.instructions, durationMinutes: body.durationMinutes, startsAt, endsAt, questions: body.questions,
+      ...(publishing ? { published: true, reviewStatus: "approved", reviewNote: "", reviewedBy: by, reviewedAt: new Date() } : {}),
+    }).where(eq(portalExams.id, exam.id));
+    message = publishing ? `"${title}" is saved and published to students.` : exam.published ? `"${title}" is saved. Students see the changes.` : `"${title}" is saved.`;
+  });
+  res.json({ message });
+});
+
 /** Publish, return with a note, or withdraw from students. Each is in the audit log. */
 portalExamOfficerRouter.post("/exam-officer", async (req, res) => {
   officerOnly(req);
   const body = ManageExamOfficerBody.parse(req.body);
-  const by = isExamOfficer(req) ? req.identity?.email ?? "Exam officer" : `${req.identity?.email ?? "Super administrator"} (super administrator)`;
+  const by = officerLabel(req);
   const note = (body.note ?? "").trim();
   let message = "Saved.";
   await db.transaction(async (tx) => {

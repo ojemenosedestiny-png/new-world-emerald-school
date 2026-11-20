@@ -91,6 +91,7 @@ export * from './examOfficerActivity';
 export * from './examOfficerCommand';
 export * from './examOfficerCommandAction';
 export * from './examOfficerCounts';
+export * from './examOfficerEdit';
 export * from './examOfficerEvent';
 export * from './examOfficerEventKind';
 export * from './examOfficerExam';

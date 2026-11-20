@@ -59,6 +59,7 @@ import type {
   ExamAccess,
   ExamOfficerActivity,
   ExamOfficerCommand,
+  ExamOfficerEdit,
   ExamOfficerOverview,
   ExamOfficerPaper,
   ExamRegistrationAdmin,
@@ -5909,6 +5910,75 @@ export function useGetExamOfficerExam<TData = Awaited<ReturnType<typeof getExamO
 
 
 
+
+export const getEditExamOfficerExamUrl = (examId: number,) => {
+
+
+
+
+  return `/api/portal/exam-officer/exams/${examId}`
+}
+
+/**
+ * Change an exam's title, instructions, length, opening and closing times and questions, and optionally publish it in the same step (exam officer or Head of School; logged)
+ */
+export const editExamOfficerExam = async (examId: number,
+    examOfficerEdit: ExamOfficerEdit, options?: RequestInit): Promise<PortalMessage> => {
+
+  return customFetch<PortalMessage>(getEditExamOfficerExamUrl(examId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(examOfficerEdit)
+  }
+);}
+
+
+
+
+
+export const getEditExamOfficerExamMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof editExamOfficerExam>>, TError,{examId: number;data: BodyType<ExamOfficerEdit>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof editExamOfficerExam>>, TError,{examId: number;data: BodyType<ExamOfficerEdit>}, TContext> => {
+
+const mutationKey = ['editExamOfficerExam'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof editExamOfficerExam>>, {examId: number;data: BodyType<ExamOfficerEdit>}> = (props) => {
+          const {examId,data} = props ?? {};
+
+          return  editExamOfficerExam(examId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type EditExamOfficerExamMutationResult = NonNullable<Awaited<ReturnType<typeof editExamOfficerExam>>>
+    export type EditExamOfficerExamMutationBody = BodyType<ExamOfficerEdit>
+    export type EditExamOfficerExamMutationError = ErrorType<unknown>
+
+    export const useEditExamOfficerExam = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof editExamOfficerExam>>, TError,{examId: number;data: BodyType<ExamOfficerEdit>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof editExamOfficerExam>>,
+        TError,
+        {examId: number;data: BodyType<ExamOfficerEdit>},
+        TContext
+      > => {
+      return useMutation(getEditExamOfficerExamMutationOptions(options));
+    }
 
 export const getGetExamOfficerActivityUrl = (params?: GetExamOfficerActivityParams,) => {
   const normalizedParams = new URLSearchParams();

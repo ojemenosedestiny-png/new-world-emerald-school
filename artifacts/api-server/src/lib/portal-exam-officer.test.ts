@@ -4,7 +4,7 @@ import { randomUUID } from "node:crypto";
 import express from "express";
 import type { AddressInfo } from "node:net";
 import { eq, inArray, like } from "drizzle-orm";
-import { db, pool, portalAuditLog, portalClasses, portalExams } from "@workspace/db";
+import { db, pool, portalAttempts, portalAuditLog, portalClasses, portalExams, portalStudents } from "@workspace/db";
 import portalRouter from "../routes/portal";
 import { setApprovedIdentitiesForTest } from "./approved-identities";
 import { auditStaffChanges } from "./audit";
@@ -13,12 +13,13 @@ import { auditStaffChanges } from "./audit";
 test("exam officer: publishes what staff send, re-reviews changes, and sees who opened the questions", async () => {
   const marker = `QA-EXO-${randomUUID().slice(0, 8)}`.toUpperCase();
   const lower = marker.toLowerCase();
-  const office = `office-${lower}@example.test`, officer = `officer-${lower}@example.test`, boss = `boss-${lower}@example.test`, outsider = `parent-${lower}@example.test`;
-  const saved = { admins: process.env.SCHOOL_ADMIN_EMAILS, supers: process.env.SCHOOL_SUPER_ADMIN_EMAILS, officers: process.env.SCHOOL_EXAM_OFFICER_EMAILS };
-  process.env.SCHOOL_ADMIN_EMAILS = [boss, office].join(",");
+  const office = `office-${lower}@example.test`, officer = `officer-${lower}@example.test`, boss = `boss-${lower}@example.test`, outsider = `parent-${lower}@example.test`, head = `head-${lower}@example.test`;
+  const saved = { admins: process.env.SCHOOL_ADMIN_EMAILS, supers: process.env.SCHOOL_SUPER_ADMIN_EMAILS, officers: process.env.SCHOOL_EXAM_OFFICER_EMAILS, heads: process.env.SCHOOL_HEAD_EMAILS };
+  process.env.SCHOOL_ADMIN_EMAILS = [boss, office, head].join(",");
+  process.env.SCHOOL_HEAD_EMAILS = head;
   process.env.SCHOOL_SUPER_ADMIN_EMAILS = boss;
   delete process.env.SCHOOL_EXAM_OFFICER_EMAILS;
-  setApprovedIdentitiesForTest([boss, office, officer].map((e) => [`id-${e}`, { email: e, mfa: true }]));
+  setApprovedIdentitiesForTest([boss, office, officer, head].map((e) => [`id-${e}`, { email: e, mfa: true }]));
   const app = express();
   app.use(express.json());
   app.use((req, _res, next) => {
@@ -127,6 +128,39 @@ test("exam officer: publishes what staff send, re-reviews changes, and sees who 
     assert.equal(again.data.message, "Sent to the exam officer to publish.");
     assert.deepEqual([(await find("Algebra")).published, (await find("Algebra")).reviewStatus], [false, "submitted"]);
 
+    // The exam officer and the Head of School edit a teacher's exam: dates, times and questions, then publish.
+    const full = await call(`/exam-officer/exams/${algebra.id}`, officer);
+    assert.deepEqual([full.data.locked, full.data.editQuestions.length, full.data.editQuestions[0].correctAnswer], [false, 1, 1]);
+    const opens = new Date(Date.now() + 3 * 86_400_000), closes = new Date(Date.now() + 3 * 86_400_000 + 2 * 3_600_000);
+    const edit = (who: string, extra: object = {}) => call(`/exam-officer/exams/${algebra.id}`, who, {
+      title: `${marker} Algebra (checked)`, instructions: "Answer every question.", durationMinutes: 45, startsAt: opens.toISOString(), endsAt: closes.toISOString(),
+      questions: [...full.data.editQuestions, { id: "q2", type: "written", text: "Show your working for 12 x 12.", options: [], marks: 3, correctAnswer: null, rubric: "144" }], ...extra,
+    });
+    assert.equal((await edit(office)).status, 403, "only the exam officer, the Head of School or the owner");
+    assert.equal((await edit(officer, { endsAt: new Date(opens.getTime() - 60_000).toISOString() })).status, 400, "closing before opening");
+    assert.equal((await edit(officer, { questions: [{ id: "q1", type: "mcq", text: "2 + 2?", options: ["4", "4"], correctAnswer: 0, marks: 2 }] })).status, 400, "duplicate choices");
+    assert.equal((await edit(officer, { publish: true, questions: [{ id: "q1", type: "mcq", text: "2 + 2?", options: ["3", "4"], correctAnswer: null, marks: 2 }] })).status, 400, "no answer key");
+    const edited = await edit(officer);
+    assert.equal(edited.status, 200, JSON.stringify(edited.data));
+    let checked = (await db.select().from(portalExams).where(eq(portalExams.id, algebra.id)))[0];
+    assert.deepEqual([checked.title, checked.durationMinutes, checked.startsAt.getTime(), checked.endsAt.getTime(), checked.questions.length, checked.published, checked.reviewStatus],
+      [`${marker} Algebra (checked)`, 45, opens.getTime(), closes.getTime(), 2, false, "submitted"]);
+    const byHead = await edit(head, { publish: true });
+    assert.equal(byHead.status, 200, JSON.stringify(byHead.data));
+    checked = (await db.select().from(portalExams).where(eq(portalExams.id, algebra.id)))[0];
+    assert.deepEqual([checked.published, checked.reviewStatus, checked.reviewedBy], [true, "approved", `${head} (head of school)`]);
+    // Once a student starts, the questions are locked but the times can still move.
+    const [kid] = await db.insert(portalStudents).values({ studentId: `${marker}-S1`, name: "Test Pupil", classId: jss1.id, passwordHash: "x", mustChangePassword: false }).returning();
+    await db.insert(portalAttempts).values({ examId: algebra.id, studentId: kid.id, questions: checked.questions, deadline: new Date(Date.now() + 3_600_000) });
+    assert.equal((await call(`/exam-officer/exams/${algebra.id}`, officer)).data.locked, true);
+    const later = new Date(closes.getTime() + 3_600_000).toISOString();
+    assert.equal((await edit(officer, { endsAt: later, questions: [full.data.editQuestions[0]] })).status, 409);
+    const sameQs = (await call(`/exam-officer/exams/${algebra.id}`, officer)).data.editQuestions;
+    assert.equal((await edit(officer, { endsAt: later, questions: sameQs })).status, 200);
+    await wait();
+    const editHistory = (await call(`/exam-officer/exams/${algebra.id}`, officer)).data.history.map((h: { label: string; who: string }) => `${h.label} | ${h.who}`);
+    assert.ok(editHistory.includes(`Edited and published to students | ${head}`) && editHistory.some((h: string) => h.startsWith("Edited the exam (dates, times or questions)")), editHistory.join(" / "));
+
     // Activity: what each member of staff did with exams.
     await wait();
     const activity = await call("/exam-officer/activity", officer);
@@ -137,16 +171,18 @@ test("exam officer: publishes what staff send, re-reviews changes, and sees who 
     const officerDay = activity.data.staff.find((s: { email: string }) => s.email === officer);
     assert.deepEqual([officerDay.role, officerDay.counts.published, officerDay.counts.returned, officerDay.counts.withdrawn], ["exam officer", 1, 1, 1]);
     assert.ok(officerDay.counts.opened >= 1, "the exam officer's own visit to a paper is recorded");
-    assert.ok(officerDay.events.some((e: { label: string; examTitle: string }) => e.label === "Published to students" && e.examTitle === `${marker} Algebra`));
+    assert.ok(officerDay.events.some((e: { label: string; examTitle: string }) => e.label === "Published to students" && e.examTitle === `${marker} Algebra (checked)`), "titles show the exam's current name");
     assert.equal((await call("/exam-officer/activity?from=2026-01-01&to=2026-12-31", officer)).status, 400, "at most three months at a time");
   } finally {
     server.close();
     const exams = classIds.length ? await db.select({ id: portalExams.id }).from(portalExams).where(inArray(portalExams.classId, classIds)) : [];
+    if (exams.length) await db.delete(portalAttempts).where(inArray(portalAttempts.examId, exams.map((e) => e.id)));
+    if (classIds.length) await db.delete(portalStudents).where(inArray(portalStudents.classId, classIds));
     if (classIds.length) await db.delete(portalExams).where(inArray(portalExams.classId, classIds));
     for (const e of exams) await db.delete(portalAuditLog).where(eq(portalAuditLog.action, `POST /portal/exams/${e.id}/access`));
     await db.delete(portalAuditLog).where(like(portalAuditLog.actorLabel, `%${lower}%`));
     if (classIds.length) await db.delete(portalClasses).where(inArray(portalClasses.id, classIds));
-    for (const [k, v] of [["SCHOOL_ADMIN_EMAILS", saved.admins], ["SCHOOL_SUPER_ADMIN_EMAILS", saved.supers], ["SCHOOL_EXAM_OFFICER_EMAILS", saved.officers]] as const) {
+    for (const [k, v] of [["SCHOOL_ADMIN_EMAILS", saved.admins], ["SCHOOL_SUPER_ADMIN_EMAILS", saved.supers], ["SCHOOL_EXAM_OFFICER_EMAILS", saved.officers], ["SCHOOL_HEAD_EMAILS", saved.heads]] as const) {
       if (v === undefined) delete process.env[k]; else process.env[k] = v;
     }
     await pool.end();

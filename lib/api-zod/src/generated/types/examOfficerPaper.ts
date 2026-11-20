@@ -7,6 +7,7 @@
  */
 import type { ExamOfficerEvent } from './examOfficerEvent';
 import type { ExamOfficerExam } from './examOfficerExam';
+import type { PortalQuestionKey } from './portalQuestionKey';
 import type { PrincipalExamQuestion } from './principalExamQuestion';
 
 export interface ExamOfficerPaper {
@@ -14,4 +15,8 @@ export interface ExamOfficerPaper {
   instructions: string;
   questions: PrincipalExamQuestion[];
   history: ExamOfficerEvent[];
+  /** The questions in full (diagrams and marking guides too), for editing */
+  editQuestions?: PortalQuestionKey[];
+  /** Students have started, so the questions cannot change (times still can) */
+  locked?: boolean;
 }

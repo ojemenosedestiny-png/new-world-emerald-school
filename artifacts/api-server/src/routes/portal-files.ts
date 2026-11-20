@@ -112,10 +112,13 @@ function imageKind(body: unknown): "png" | "jpg" | "webp" | null {
   if (body.subarray(0, 4).toString() === "RIFF" && body.subarray(8, 12).toString() === "WEBP") return "webp";
   return null;
 }
-portalFilesRouter.post("/diagrams", classFirst, express.raw({ type: ["image/png", "image/jpeg", "image/webp"], limit: "3mb" }), async (req, res) => {
+// The exam officer (and the Head of School) may attach a diagram while editing an exam; the import route stays staff only.
+const diagramFirst: express.RequestHandler = (req, res, next) => (canPublishExams(req) ? next() : classFirst(req, res, next));
+portalFilesRouter.post("/diagrams", diagramFirst, express.raw({ type: ["image/png", "image/jpeg", "image/webp"], limit: "3mb" }), async (req, res) => {
+  const officer = canPublishExams(req);
   const actor = await portalActor(req);
   const classId = Number(req.query.classId);
-  staffOnly(actor);
+  if (!officer) staffOnly(actor);
   const [schoolClass] = await db.select({ id: portalClasses.id }).from(portalClasses).where(eq(portalClasses.id, classId));
   check(schoolClass, "Class not found.", 404);
   const kind = imageKind(req.body);
@@ -130,7 +133,8 @@ portalFilesRouter.get("/diagrams/:id", async (req, res) => {
   // Whole-school documents (timetable pictures) are never exam diagrams.
   const classId = file.classId;
   check(classId !== null, "Diagram not found.", 404);
-  if (actor.role === "admin" || actor.role === "teacher") { if (!ownUpload(actor, file)) classAllowed(actor, classId); }
+  if (canPublishExams(req)) { /* the exam officer checks every exam paper, diagrams included */ }
+  else if (actor.role === "admin" || actor.role === "teacher") { if (!ownUpload(actor, file)) classAllowed(actor, classId); }
   else {
     // Students see a diagram only once it is in a paper they have started.
     const student = studentOnly(actor);

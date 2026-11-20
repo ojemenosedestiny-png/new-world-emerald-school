@@ -5,11 +5,12 @@ import {
   useGetExamOfficerActivity, useGetExamOfficerExam, useManageExamOfficer,
   type ExamOfficerExam, type ExamOfficerOverview, type ExamOfficerStaff,
 } from "@workspace/api-client-react";
-import { CheckCircle2, Clock, Eye, FileCheck2, Inbox, Search, Send, ShieldCheck, Undo2, Users } from "lucide-react";
+import { CheckCircle2, Clock, Eye, FileCheck2, Inbox, PencilLine, Search, Send, ShieldCheck, Undo2, Users } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { EmptyState, ErrorPanel, Skeleton, StatusPill } from "../ui";
 import { errorMessage } from "../lib";
+import { OfficerEditDialog } from "./OfficerEdit";
 
 export type OfficerTab = "overview" | "queue" | "exams" | "timetables" | "activity";
 type Status = ExamOfficerExam["status"];
@@ -184,6 +185,7 @@ export function PaperDialog({ id, onClose }: { id: number; onClose: () => void }
   const cmd = useOfficerCommand();
   const [mode, setMode] = useState<"" | "return" | "withdraw">("");
   const [note, setNote] = useState("");
+  const [editing, setEditing] = useState(false);
   const p = q.data;
   const act = async (action: "publish" | "return" | "withdraw") => { if (await cmd.run({ action, examId: id, ...(note.trim() ? { note: note.trim() } : {}) })) onClose(); };
   const closed = p ? new Date(p.exam.endsAt) <= new Date() : false;
@@ -227,8 +229,10 @@ export function PaperDialog({ id, onClose }: { id: number; onClose: () => void }
             <textarea className="portal-input mt-1 min-h-[80px]" maxLength={1000} value={note} onChange={(e) => setNote(e.target.value)} data-testid="input-officer-note" />
           </label>
         )}
+        {p && editing && <OfficerEditDialog paper={p} onClose={() => setEditing(false)} />}
         {p && (
           <DialogFooter className="flex-wrap gap-2">
+            {!mode && <button type="button" className="portal-btn-ghost sm:mr-auto" disabled={cmd.pending} onClick={() => setEditing(true)} data-testid="button-edit-officer-exam"><PencilLine size={14} aria-hidden="true" /> Edit exam, dates and times</button>}
             {!PUBLISHED.includes(p.exam.status) ? (mode === "return" ? (<>
               <button type="button" className="portal-btn-ghost" onClick={() => setMode("")}>Back</button>
               <button type="button" className="portal-btn" disabled={!note.trim() || cmd.pending} onClick={() => void act("return")} data-testid="button-confirm-return-exam"><Undo2 size={14} aria-hidden="true" /> Send back</button>

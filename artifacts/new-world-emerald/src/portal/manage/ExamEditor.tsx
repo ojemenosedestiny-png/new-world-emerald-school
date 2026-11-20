@@ -51,7 +51,7 @@ export function validateExam(e: PortalExam, publishing: boolean): string[] {
   return errs;
 }
 
-function QuestionEditor({ q, i, count, classId, notes, onChange, onMove, onRemove }: { q: Q; i: number; count: number; classId: number; notes?: string[]; onChange: (q: Q) => void; onMove: (d: -1 | 1) => void; onRemove: () => void }) {
+export function QuestionEditor({ q, i, count, classId, notes, onChange, onMove, onRemove }: { q: Q; i: number; count: number; classId: number; notes?: string[]; onChange: (q: Q) => void; onMove: (d: -1 | 1) => void; onRemove: () => void }) {
   const p = "q" + i;
   return (
     <div className="rounded-2xl border border-[hsl(var(--p-line))] bg-[hsl(var(--p-surface)/0.8)] p-4" data-testid={"editor-question-" + i}>

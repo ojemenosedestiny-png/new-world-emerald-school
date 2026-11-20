@@ -63,7 +63,7 @@ async function validFile(id: string | null | undefined, classId: number) {
   const [file] = await db.select().from(portalFiles).where(and(eq(portalFiles.id, id), eq(portalFiles.classId, classId)));
   check(file && !diagramContentType(file.objectName), "The uploaded PDF must belong to this class.");
 }
-async function validDiagrams(questions: { diagramFileId?: string | null }[], classId: number) {
+export async function validDiagrams(questions: { diagramFileId?: string | null }[], classId: number) {
   const ids = [...new Set(questions.map((q) => q.diagramFileId).filter((id): id is string => !!id))];
   if (!ids.length) return;
   const files = await db.select().from(portalFiles).where(and(inArray(portalFiles.id, ids), eq(portalFiles.classId, classId)));

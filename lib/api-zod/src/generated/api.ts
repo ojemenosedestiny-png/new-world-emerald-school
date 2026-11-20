@@ -3541,6 +3541,25 @@ export const GetExamOfficerExamParams = zod.object({
   "examId": zod.coerce.number()
 })
 
+export const getExamOfficerExamResponseEditQuestionsItemOneIdMax = 80;
+
+export const getExamOfficerExamResponseEditQuestionsItemOneTextMax = 12000;
+
+export const getExamOfficerExamResponseEditQuestionsItemOneOptionsItemMax = 3000;
+
+export const getExamOfficerExamResponseEditQuestionsItemOneOptionsMax = 8;
+
+export const getExamOfficerExamResponseEditQuestionsItemOneMarksMin = 0.5;
+export const getExamOfficerExamResponseEditQuestionsItemOneMarksMax = 100;
+
+export const getExamOfficerExamResponseEditQuestionsItemOnePassageMax = 20000;
+
+export const getExamOfficerExamResponseEditQuestionsItemOneDiagramFileIdMax = 80;
+
+export const getExamOfficerExamResponseEditQuestionsItemTwoRubricMax = 5000;
+
+
+
 export const GetExamOfficerExamResponse = zod.object({
   "exam": zod.object({
   "id": zod.number(),
@@ -3585,7 +3604,81 @@ export const GetExamOfficerExamResponse = zod.object({
   "kind": zod.enum(['saved', 'pdf', 'diagram', 'submitted', 'published', 'returned', 'withdrawn', 'hidden', 'opened', 'marked', 'released', 'deleted', 'attempt']),
   "examId": zod.number().nullable(),
   "examTitle": zod.string()
-}))
+})),
+  "editQuestions": zod.array(zod.object({
+  "id": zod.string().min(1).max(getExamOfficerExamResponseEditQuestionsItemOneIdMax),
+  "type": zod.enum(['mcq', 'written']),
+  "text": zod.string().min(1).max(getExamOfficerExamResponseEditQuestionsItemOneTextMax),
+  "options": zod.array(zod.string().max(getExamOfficerExamResponseEditQuestionsItemOneOptionsItemMax)).max(getExamOfficerExamResponseEditQuestionsItemOneOptionsMax),
+  "marks": zod.number().min(getExamOfficerExamResponseEditQuestionsItemOneMarksMin).max(getExamOfficerExamResponseEditQuestionsItemOneMarksMax),
+  "passage": zod.string().max(getExamOfficerExamResponseEditQuestionsItemOnePassageMax).optional().describe('Shared passage or instructions shown above the question'),
+  "diagramFileId": zod.string().max(getExamOfficerExamResponseEditQuestionsItemOneDiagramFileIdMax).nullish().describe('Diagram picture uploaded for the question')
+}).and(zod.object({
+  "correctAnswer": zod.number().nullish(),
+  "rubric": zod.string().max(getExamOfficerExamResponseEditQuestionsItemTwoRubricMax).optional()
+}))).optional().describe('The questions in full (diagrams and marking guides too), for editing'),
+  "locked": zod.boolean().optional().describe('Students have started, so the questions cannot change (times still can)')
+})
+
+
+/**
+ * Change an exam's title, instructions, length, opening and closing times and questions, and optionally publish it in the same step (exam officer or Head of School; logged)
+ */
+export const EditExamOfficerExamParams = zod.object({
+  "examId": zod.coerce.number()
+})
+
+export const editExamOfficerExamBodyTitleMax = 200;
+
+export const editExamOfficerExamBodyInstructionsMax = 5000;
+
+export const editExamOfficerExamBodyDurationMinutesMax = 300;
+
+export const editExamOfficerExamBodyQuestionsItemOneIdMax = 80;
+
+export const editExamOfficerExamBodyQuestionsItemOneTextMax = 12000;
+
+export const editExamOfficerExamBodyQuestionsItemOneOptionsItemMax = 3000;
+
+export const editExamOfficerExamBodyQuestionsItemOneOptionsMax = 8;
+
+export const editExamOfficerExamBodyQuestionsItemOneMarksMin = 0.5;
+export const editExamOfficerExamBodyQuestionsItemOneMarksMax = 100;
+
+export const editExamOfficerExamBodyQuestionsItemOnePassageMax = 20000;
+
+export const editExamOfficerExamBodyQuestionsItemOneDiagramFileIdMax = 80;
+
+export const editExamOfficerExamBodyQuestionsItemTwoRubricMax = 5000;
+
+export const editExamOfficerExamBodyQuestionsMax = 200;
+
+
+
+export const EditExamOfficerExamBody = zod.object({
+  "title": zod.string().min(1).max(editExamOfficerExamBodyTitleMax),
+  "instructions": zod.string().max(editExamOfficerExamBodyInstructionsMax),
+  "durationMinutes": zod.number().min(1).max(editExamOfficerExamBodyDurationMinutesMax),
+  "startsAt": zod.coerce.date(),
+  "endsAt": zod.coerce.date(),
+  "questions": zod.array(zod.object({
+  "id": zod.string().min(1).max(editExamOfficerExamBodyQuestionsItemOneIdMax),
+  "type": zod.enum(['mcq', 'written']),
+  "text": zod.string().min(1).max(editExamOfficerExamBodyQuestionsItemOneTextMax),
+  "options": zod.array(zod.string().max(editExamOfficerExamBodyQuestionsItemOneOptionsItemMax)).max(editExamOfficerExamBodyQuestionsItemOneOptionsMax),
+  "marks": zod.number().min(editExamOfficerExamBodyQuestionsItemOneMarksMin).max(editExamOfficerExamBodyQuestionsItemOneMarksMax),
+  "passage": zod.string().max(editExamOfficerExamBodyQuestionsItemOnePassageMax).optional().describe('Shared passage or instructions shown above the question'),
+  "diagramFileId": zod.string().max(editExamOfficerExamBodyQuestionsItemOneDiagramFileIdMax).nullish().describe('Diagram picture uploaded for the question')
+}).and(zod.object({
+  "correctAnswer": zod.number().nullish(),
+  "rubric": zod.string().max(editExamOfficerExamBodyQuestionsItemTwoRubricMax).optional()
+}))).max(editExamOfficerExamBodyQuestionsMax),
+  "publish": zod.boolean().optional().describe('Also publish it to students now')
+})
+
+export const EditExamOfficerExamResponse = zod.object({
+  "message": zod.string(),
+  "studentId": zod.string().optional().describe('The Student ID of a student just enrolled')
 })
 
 

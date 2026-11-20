@@ -1273,6 +1273,8 @@ components:
       $ref: "./exam-officer.yaml#/schemas/ExamOfficerActivity"
     ExamOfficerCommand:
       $ref: "./exam-officer.yaml#/schemas/ExamOfficerCommand"
+    ExamOfficerEdit:
+      $ref: "./exam-officer.yaml#/schemas/ExamOfficerEdit"
     SchoolEmailPerson:
       $ref: "./school.yaml#/schemas/SchoolEmailPerson"
     SchoolEmailMessage:

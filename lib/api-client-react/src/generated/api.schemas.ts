@@ -1343,11 +1343,55 @@ export interface ExamOfficerEvent {
   examTitle: string;
 }
 
+export type PortalQuestionKey = ({
+  /**
+     * @minLength 1
+     * @maxLength 80
+     */
+  id: string;
+  type: 'mcq' | 'written';
+  /**
+     * @minLength 1
+     * @maxLength 12000
+     */
+  text: string;
+  /**
+     * @maxItems 8
+     * @items.maxLength 3000
+     */
+  options: string[];
+  /**
+     * @minimum 0.5
+     * @maximum 100
+     */
+  marks: number;
+  /**
+     * Shared passage or instructions shown above the question
+     * @maxLength 20000
+     */
+  passage?: string;
+  /**
+     * Diagram picture uploaded for the question
+     * @maxLength 80
+     * @nullable
+     */
+  diagramFileId?: string | null;
+}) & ({
+  /** @nullable */
+  correctAnswer?: number | null;
+  /** @maxLength 5000 */
+  rubric?: string;
+});
+
 export interface ExamOfficerPaper {
   exam: ExamOfficerExam;
   instructions: string;
   questions: PrincipalExamQuestion[];
   history: ExamOfficerEvent[];
+  /** The questions in full (diagrams and marking guides too), for editing */
+  editQuestions?: PortalQuestionKey[];
+  /** Students have started, so the questions cannot change (times still can) */
+  locked?: boolean;
 }
 
 export interface ExamOfficerCounts {
@@ -1407,6 +1451,27 @@ export interface ExamOfficerCommand {
      * @maxLength 1000
      */
   note?: string;
+}
+
+export interface ExamOfficerEdit {
+  /**
+     * @minLength 1
+     * @maxLength 200
+     */
+  title: string;
+  /** @maxLength 5000 */
+  instructions: string;
+  /**
+     * @minimum 1
+     * @maximum 300
+     */
+  durationMinutes: number;
+  startsAt: string;
+  endsAt: string;
+  /** @maxItems 200 */
+  questions: PortalQuestionKey[];
+  /** Also publish it to students now */
+  publish?: boolean;
 }
 
 export type SchoolEmailPersonKind = typeof SchoolEmailPersonKind[keyof typeof SchoolEmailPersonKind];
@@ -4622,46 +4687,6 @@ export interface PortalQuestion {
      */
   diagramFileId?: string | null;
 }
-
-export type PortalQuestionKey = ({
-  /**
-     * @minLength 1
-     * @maxLength 80
-     */
-  id: string;
-  type: 'mcq' | 'written';
-  /**
-     * @minLength 1
-     * @maxLength 12000
-     */
-  text: string;
-  /**
-     * @maxItems 8
-     * @items.maxLength 3000
-     */
-  options: string[];
-  /**
-     * @minimum 0.5
-     * @maximum 100
-     */
-  marks: number;
-  /**
-     * Shared passage or instructions shown above the question
-     * @maxLength 20000
-     */
-  passage?: string;
-  /**
-     * Diagram picture uploaded for the question
-     * @maxLength 80
-     * @nullable
-     */
-  diagramFileId?: string | null;
-}) & ({
-  /** @nullable */
-  correctAnswer?: number | null;
-  /** @maxLength 5000 */
-  rubric?: string;
-});
 
 export type PortalExamMode = typeof PortalExamMode[keyof typeof PortalExamMode];
 
