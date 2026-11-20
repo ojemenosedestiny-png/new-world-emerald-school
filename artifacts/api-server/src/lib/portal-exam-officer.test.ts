@@ -161,6 +161,23 @@ test("exam officer: publishes what staff send, re-reviews changes, and sees who 
     const editHistory = (await call(`/exam-officer/exams/${algebra.id}`, officer)).data.history.map((h: { label: string; who: string }) => `${h.label} | ${h.who}`);
     assert.ok(editHistory.includes(`Edited and published to students | ${head}`) && editHistory.some((h: string) => h.startsWith("Edited the exam (dates, times or questions)")), editHistory.join(" / "));
 
+    // One paper set for two classes: the exam officer's list shows it, and publishing one publishes both.
+    const pair = await call("/manage", office, { action: "saveExam", exam: exam(`${marker} Shared`, jss1.id, true), alsoClassIds: [year3.id] });
+    assert.equal(pair.status, 200, JSON.stringify(pair.data));
+    const shared = (await db.select().from(portalExams).where(eq(portalExams.title, `${marker} Shared`))).sort((x, y) => x.id - y.id);
+    assert.deepEqual(shared.map((e) => [e.published, e.reviewStatus]), [[false, "submitted"], [false, "submitted"]]);
+    const listed = (await call("/exam-officer", head)).data.exams.find((e: { id: number }) => e.id === shared[0].id);
+    assert.deepEqual(listed.linkedClasses, [`${marker} Year 3`]);
+    const both = await call("/exam-officer", head, { action: "publish", examId: shared[0].id });
+    assert.equal(both.status, 200, JSON.stringify(both.data));
+    assert.match(both.data.message, /published to students in .+ and /);
+    assert.deepEqual((await db.select().from(portalExams).where(eq(portalExams.title, `${marker} Shared`))).map((e) => e.published), [true, true]);
+    // The officer's edit of one copy reaches the other (times and questions).
+    const later2 = new Date(Date.now() + 5 * 86_400_000);
+    const sharedEdit = await call(`/exam-officer/exams/${shared[0].id}`, head, { title: `${marker} Shared`, instructions: "Both arms.", durationMinutes: 30, startsAt: start.toISOString(), endsAt: later2.toISOString(), questions: shared[0].questions });
+    assert.equal(sharedEdit.status, 200, JSON.stringify(sharedEdit.data));
+    assert.deepEqual((await db.select().from(portalExams).where(eq(portalExams.title, `${marker} Shared`))).map((e) => [e.instructions, e.endsAt.getTime()]), [["Both arms.", later2.getTime()], ["Both arms.", later2.getTime()]]);
+
     // Activity: what each member of staff did with exams.
     await wait();
     const activity = await call("/exam-officer/activity", officer);

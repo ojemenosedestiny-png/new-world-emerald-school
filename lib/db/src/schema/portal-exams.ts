@@ -1,4 +1,4 @@
-import { pgTable, serial, text, integer, boolean, timestamp, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, integer, boolean, timestamp, jsonb, index } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { portalClasses } from "./portal-classes";
 export interface PortalQuestionData {
@@ -49,6 +49,8 @@ export const portalExams = pgTable("portal_exams", {
   submittedAt: timestamp("submitted_at", { withTimezone: true }),
   reviewedBy: text("reviewed_by").notNull().default(""),
   reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
-});
+  // One paper set for several classes at once (JSS 1A, 1B, 1C): every copy shares this, and saved changes reach them all.
+  paperGroup: text("paper_group"),
+}, (t) => [index("portal_exams_paper_group_idx").on(t.paperGroup)]);
 export const insertPortalExamSchema = createInsertSchema(portalExams).omit({ id: true });
 export type PortalExamRecord = typeof portalExams.$inferSelect;

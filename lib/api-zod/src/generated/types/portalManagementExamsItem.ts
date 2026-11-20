@@ -55,4 +55,9 @@ export type PortalManagementExamsItem = {
   readonly reviewNote?: string;
   /** After submitting, each student sees the right answer to every multiple-choice question; scores wait for release */
   instantResults?: boolean;
+  /**
+     * Copies of one paper set for several classes share this; saved changes reach every copy. Set by the server only
+     * @nullable
+     */
+  readonly paperGroup?: string | null;
 };

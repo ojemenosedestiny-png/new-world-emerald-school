@@ -114,6 +114,10 @@ export function ExamEditor({ data, initial, onClose }: { data: PortalManagement;
     return name ? examClasses.filter((c) => c.id !== classId && yearGroup(c.name) === yearGroup(name)).map((c) => c.id as number) : [];
   };
   const [also, setAlso] = useState<number[]>(() => (initial.id || !initial.classId ? [] : groupMates(initial.classId)));
+  // An exam set for several classes at once shares one paper: by default, saved changes reach every copy.
+  const group = initial.id ? initial.paperGroup : null;
+  const linked = group ? (data.exams ?? []).filter((x) => x.paperGroup === group && x.id !== initial.id) : [];
+  const [applyLinked, setApplyLinked] = useState(true);
   const [importNote, setImportNote] = useState<{ warning: string; extractedText: string; found: number; applied: boolean; attached: string[]; general: string[] } | null>(null);
   // Review notes from the PDF import, keyed by question id (diagrams attached or not imported).
   const [notes, setNotes] = useState<Record<string, string[]>>({});
@@ -183,7 +187,7 @@ export function ExamEditor({ data, initial, onClose }: { data: PortalManagement;
     const questions = exam.questions.map(({ passage, ...q }) => (passage?.trim() ? { ...q, passage } : q));
     const payload = { ...exam, questions, title: exam.title.trim(), subject: exam.subject.trim(), durationMinutes: Number(exam.durationMinutes) };
     const extra = exam.id ? [] : also.filter((c) => c !== exam.classId);
-    if (await cmd.run({ action: "saveExam", exam: payload, ...(extra.length ? { alsoClassIds: extra } : {}) }, data.examOfficer && exam.published ? "Saved and sent to the exam officer" : exam.id ? "Exam updated" : "Exam saved")) onClose();
+    if (await cmd.run({ action: "saveExam", exam: payload, ...(extra.length ? { alsoClassIds: extra } : {}), ...(linked.length ? { linked: applyLinked } : {}) }, data.examOfficer && exam.published ? "Saved and sent to the exam officer" : exam.id ? "Exam updated" : "Exam saved")) onClose();
   };
 
   return (
@@ -205,11 +209,22 @@ export function ExamEditor({ data, initial, onClose }: { data: PortalManagement;
             const group = exam.classId ? yearGroup(examClasses.find((c) => c.id === exam.classId)?.name ?? "") : "";
             const sameGroup = others.filter((c) => group && yearGroup(c.name) === group).map((c) => c.id as number);
             const label = examClasses.find((c) => c.id === exam.classId)?.name.match(/^(.*?\d+)/)?.[1] ?? "";
+            const chosen = exam.classId ? [exam.classId, ...also.filter((c) => c !== exam.classId)] : [];
+            const name = (id: number) => examClasses.find((c) => c.id === id)?.name ?? "";
             return (
-              <fieldset className="rounded-xl border border-[hsl(var(--p-line))] p-4" data-testid="fieldset-also-classes">
-                <legend className="portal-label px-1">Also set this exam for</legend>
-                <p className="mb-3 text-xs text-[hsl(var(--p-ink)/0.6)]">The same questions, times and settings go to each class you tick, as its own copy. Students only see their own class's copy.</p>
-                {sameGroup.length > 0 && <button type="button" className="portal-btn-ghost mb-3 !py-1 text-xs" onClick={() => setAlso((a) => [...new Set([...a, ...sameGroup])])} data-testid="button-also-year-group">Tick every {label} class ({sameGroup.length})</button>}
+              <fieldset className="rounded-2xl border border-[hsl(var(--p-emerald)/0.3)] bg-[hsl(var(--p-emerald-soft)/0.3)] p-4" data-testid="fieldset-also-classes">
+                <legend className="portal-label px-1">Classes taking this exam</legend>
+                {exam.classId ? (
+                  <div className="mb-3 rounded-xl bg-[hsl(var(--p-surface)/0.9)] p-3" data-testid="text-exam-goes-to">
+                    <p className="text-sm font-semibold">This exam goes to {chosen.length} {chosen.length === 1 ? "class" : "classes"}:</p>
+                    <div className="mt-2 flex flex-wrap gap-1.5">{chosen.map((c) => <span key={c} className="rounded-full bg-[hsl(var(--p-emerald))] px-2.5 py-0.5 text-xs font-semibold text-[hsl(var(--p-paper))]">{name(c)}</span>)}</div>
+                    <p className="mt-2 text-xs text-[hsl(var(--p-ink)/0.65)]">Upload the questions once. Every class gets the same questions, times and settings, and changes you save later reach every class that has not started. Students see only their own class's copy.</p>
+                  </div>
+                ) : <p className="mb-3 text-xs text-[hsl(var(--p-ink)/0.6)]">Choose a class above. Every other class in its year (for example JSS 1A, 1B and 1C) is ticked for you.</p>}
+                <div className="mb-3 flex flex-wrap gap-2">
+                  {sameGroup.length > 0 && <button type="button" className="portal-btn-ghost !py-1 text-xs" onClick={() => setAlso((a) => [...new Set([...a, ...sameGroup])])} data-testid="button-also-year-group">Every {label} class ({sameGroup.length + 1})</button>}
+                  {also.filter((c) => c !== exam.classId).length > 0 && <button type="button" className="portal-btn-ghost !py-1 text-xs" onClick={() => setAlso([])} data-testid="button-only-this-class">Only {name(exam.classId)}</button>}
+                </div>
                 <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">{others.map((c) => (
                   <label key={c.id} className="flex items-center gap-2 rounded-lg border border-[hsl(var(--p-line))] px-3 py-2 text-sm">
                     <input type="checkbox" checked={also.includes(c.id as number)} onChange={() => setAlso((a) => a.includes(c.id as number) ? a.filter((x) => x !== c.id) : [...a, c.id as number])} data-testid={"checkbox-also-class-" + c.id} />{c.name}
@@ -219,6 +234,14 @@ export function ExamEditor({ data, initial, onClose }: { data: PortalManagement;
               </fieldset>
             );
           })()}
+          {linked.length > 0 && (
+            <div className="rounded-2xl border border-[hsl(var(--p-emerald)/0.3)] bg-[hsl(var(--p-emerald-soft)/0.3)] p-4 text-sm" data-testid="panel-linked-classes">
+              <p className="font-semibold">One paper for {linked.length + 1} classes</p>
+              <div className="mt-2 flex flex-wrap gap-1.5">{[exam.classId, ...linked.map((x) => x.classId)].map((c) => <span key={c} className="rounded-full bg-[hsl(var(--p-emerald))] px-2.5 py-0.5 text-xs font-semibold text-[hsl(var(--p-paper))]">{examClasses.find((k) => k.id === c)?.name ?? "Class"}</span>)}</div>
+              <label className="mt-3 flex items-start gap-2"><input type="checkbox" className="mt-1" checked={applyLinked} onChange={(e) => setApplyLinked(e.target.checked)} data-testid="checkbox-apply-linked" />
+                <span>Save my changes to every class<span className="block text-xs text-[hsl(var(--p-ink)/0.6)]">Questions, times and settings are updated in each class's copy. A class whose students have already started keeps its paper. Untick to change only this class.</span></span></label>
+            </div>
+          )}
           <Field label="Instructions for students" htmlFor="e-ins"><textarea id="e-ins" className="portal-input min-h-[70px]" maxLength={5000} value={exam.instructions} onChange={(e) => set({ instructions: e.target.value })} data-testid="input-exam-instructions" /></Field>
 
           <fieldset className="rounded-2xl bg-[hsl(var(--p-paper-2)/0.7)] p-4">

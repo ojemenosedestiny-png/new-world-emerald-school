@@ -4,7 +4,7 @@ import { randomUUID } from "node:crypto";
 import express from "express";
 import type { AddressInfo } from "node:net";
 import { eq, inArray, like } from "drizzle-orm";
-import { db, pool, portalClasses, portalExams, portalTeachers } from "@workspace/db";
+import { db, pool, portalAttempts, portalClasses, portalExams, portalStudents, portalTeachers } from "@workspace/db";
 import portalRouter from "../routes/portal";
 import { setStaffEmailResolverForTest } from "./portal-auth";
 
@@ -63,7 +63,31 @@ test("teachers set exams for any class and manage the ones they set", async () =
     // He sees and manages the exams he set there.
     const after = await call(musa);
     assert.ok(mine.every((e) => after.data.exams.some((x: { id: number }) => x.id === e.id)), "his exams in other classes are listed");
-    assert.equal((await call(musa, { action: "saveExam", exam: { ...exam(other.id, `${marker} Musa`), id: mine[0].id, classId: mine[0].classId, instructions: "Show working." } })).status, 200);
+    // Set together, the copies share one paper: a change saved to one reaches the other.
+    assert.ok(mine[0].paperGroup && mine[0].paperGroup === mine[1].paperGroup, "one paper for both classes");
+    const edited = await call(musa, { action: "saveExam", exam: { ...exam(other.id, `${marker} Musa`), id: mine[0].id, classId: mine[0].classId, instructions: "Show working.", paperGroup: "forged" } });
+    assert.equal(edited.status, 200, JSON.stringify(edited.data));
+    assert.match(edited.data.message, /^Saved for 2 classes: /);
+    const copies = async () => (await db.select().from(portalExams).where(like(portalExams.title, `${marker} Musa`))).sort((a, b) => a.id - b.id);
+    let both = await copies();
+    assert.deepEqual(both.map((e) => [e.instructions, e.paperGroup]), [["Show working.", mine[0].paperGroup], ["Show working.", mine[0].paperGroup]], "the change reached both, and the group cannot be forged");
+    assert.deepEqual(both.map((e) => e.classId).sort(), [other.id, other2.id].sort(), "each copy keeps its own class");
+    // Unticked: only this class changes.
+    const target = both.find((e) => e.id === mine[0].id)!, sibling = both.find((e) => e.id !== mine[0].id)!;
+    assert.equal((await call(musa, { action: "saveExam", linked: false, exam: { ...exam(other.id, `${marker} Musa`), id: target.id, classId: target.classId, instructions: "Only here." } })).status, 200);
+    both = await copies();
+    assert.deepEqual([both.find((e) => e.id === target.id)!.instructions, both.find((e) => e.id === sibling.id)!.instructions], ["Only here.", "Show working."]);
+    // A copy whose students have started keeps its paper.
+    const [kid] = await db.insert(portalStudents).values({ studentId: `${marker}-S1`, name: "Test Pupil", classId: sibling.classId, passwordHash: "x", mustChangePassword: false }).returning();
+    await db.insert(portalAttempts).values({ examId: sibling.id, studentId: kid.id, questions: sibling.questions, deadline: new Date(Date.now() + 3_600_000) });
+    const kept = await call(musa, { action: "saveExam", exam: { ...exam(other.id, `${marker} Musa`), id: target.id, classId: target.classId, instructions: "Third version." } });
+    assert.equal(kept.status, 200, JSON.stringify(kept.data));
+    assert.match(kept.data.message, /was not changed: students have started it/);
+    both = await copies();
+    assert.deepEqual([both.find((e) => e.id === target.id)!.instructions, both.find((e) => e.id === sibling.id)!.instructions], ["Third version.", "Show working."]);
+    // One class only: no paper group.
+    assert.equal((await call(musa, { action: "saveExam", exam: exam(other.id, `${marker} Single`) })).status, 200);
+    assert.equal((await db.select().from(portalExams).where(eq(portalExams.title, `${marker} Single`)))[0].paperGroup, null);
     assert.equal((await call(musa, { action: "examStatus", examStatus: { id: mine[0].id, published: true, resultsReleased: false } })).status, 200);
 
     // Mrs Ngozi's exam in that class is not his.
@@ -79,6 +103,9 @@ test("teachers set exams for any class and manage the ones they set", async () =
   } finally {
     server.close();
     setStaffEmailResolverForTest(null);
+    const left = classIds.length ? await db.select({ id: portalExams.id }).from(portalExams).where(inArray(portalExams.classId, classIds)) : [];
+    if (left.length) await db.delete(portalAttempts).where(inArray(portalAttempts.examId, left.map((e) => e.id)));
+    if (classIds.length) await db.delete(portalStudents).where(inArray(portalStudents.classId, classIds));
     if (classIds.length) await db.delete(portalExams).where(inArray(portalExams.classId, classIds));
     await db.delete(portalTeachers).where(like(portalTeachers.name, `${marker}%`));
     if (classIds.length) await db.delete(portalClasses).where(inArray(portalClasses.id, classIds));

@@ -21,6 +21,7 @@ import { lagosToday } from "../lib/principal";
 import { examOfficerEmails } from "../lib/approved-identities";
 import { isSuperAdmin } from "../lib/website-admin";
 import { asReview, staffPublish } from "../lib/exam-review";
+import { classNames, hasStarted, linkedCopies, listNames, newPaperGroup, questionsForClass } from "../lib/paper-group";
 
 /** The short address teachers use: it opens staff sign-in and returns to the teacher workspace. */
 export const TEACHER_PATH = "/teacher";
@@ -213,7 +214,7 @@ portalManagementRouter.post("/manage", async (req, res) => {
       const paperProblem = paperSettingsProblem(data.mode, data.questions, paper);
       check(!paperProblem, paperProblem ?? "");
       // The exam officer's review is set only here, never taken from what was sent.
-      const { id, reviewStatus: _review, reviewNote: _note, ...rest } = data;
+      const { id, reviewStatus: _review, reviewNote: _note, paperGroup: _group, ...rest } = data as typeof data & { paperGroup?: string | null };
       // A new exam may also go to other classes (for example every Year 11 class): one copy per class.
       const others = id ? [] : [...new Set(body.alsoClassIds ?? [])].filter((c) => c !== data.classId);
       check(others.length <= 40, "Choose at most 40 extra classes.");
@@ -226,6 +227,9 @@ portalManagementRouter.post("/manage", async (req, res) => {
       // Saving content means the exam officer has not seen this version: publishing sends it for review again.
       const decision = staffPublish({ gate, wantPublished: data.published, wasPublished: false, review: "", contentChanged: true });
       const review = gate ? { published: decision.published, reviewStatus: decision.review, ...(decision.submitted ? { submittedBy: sender, submittedAt: new Date(), reviewNote: "" } : {}) } : {};
+      // Copies set together for several classes share a paper group; saved changes reach the copies no student has started.
+      const group = others.length ? newPaperGroup() : null;
+      const linkedDone: number[] = [], skipped: [number, string][] = [];
       await db.transaction(async (tx) => {
         if (id) {
           const [old] = await tx.select().from(portalExams).where(eq(portalExams.id, id)).for("update");
@@ -234,8 +238,15 @@ portalManagementRouter.post("/manage", async (req, res) => {
           const [attempt] = await tx.select({ id: portalAttempts.id }).from(portalAttempts).where(eq(portalAttempts.examId, id)).limit(1);
           check(!attempt, "Students have started this exam. Its content is locked; use publish and result controls instead.", 409);
           await tx.update(portalExams).set({ ...values, ...review }).where(eq(portalExams.id, id));
+          if (body.linked !== false) for (const sib of await linkedCopies(tx, old)) {
+            try { examAllowed(actor, sib); } catch { skipped.push([sib.classId, "you do not manage that class's copy"]); continue; }
+            if (await hasStarted(tx, sib.id)) { skipped.push([sib.classId, "students have started it"]); continue; }
+            const own = await questionsForClass(tx, values.questions, values.fileId, sib.classId);
+            await tx.update(portalExams).set({ ...values, ...review, classId: sib.classId, questions: own.questions, fileId: own.fileId }).where(eq(portalExams.id, sib.id));
+            linkedDone.push(sib.classId);
+          }
         } else {
-          await tx.insert(portalExams).values({ ...values, ...review, createdBy: by, createdByTeacherId: actor.teacherId ?? null });
+          await tx.insert(portalExams).values({ ...values, ...review, paperGroup: group, createdBy: by, createdByTeacherId: actor.teacherId ?? null });
           for (const classId of others) {
             // The PDF and diagrams were uploaded for the first class; each copy gets its own record of the same file.
             const ids = [...new Set([values.fileId, ...data.questions.map((q) => q.diagramFileId)].filter((f): f is string => !!f))];
@@ -245,10 +256,19 @@ portalManagementRouter.post("/manage", async (req, res) => {
               for (const f of files) { const copy = randomUUID(); map.set(f.id, copy); await tx.insert(portalFiles).values({ id: copy, classId, objectName: f.objectName, uploadedByTeacherId: f.uploadedByTeacherId }); }
             }
             const questions = values.questions.map((q) => (q.diagramFileId ? { ...q, diagramFileId: map.get(q.diagramFileId) ?? null } : q));
-            await tx.insert(portalExams).values({ ...values, ...review, classId, questions, fileId: values.fileId ? map.get(values.fileId) ?? null : null, createdBy: by, createdByTeacherId: actor.teacherId ?? null });
+            await tx.insert(portalExams).values({ ...values, ...review, classId, questions, fileId: values.fileId ? map.get(values.fileId) ?? null : null, paperGroup: group, createdBy: by, createdByTeacherId: actor.teacherId ?? null });
           }
         }
       });
+      if (linkedDone.length || skipped.length) {
+        const names = await classNames([data.classId, ...linkedDone, ...skipped.map((s) => s[0])]);
+        const done = [data.classId, ...linkedDone].map((c) => names.get(c) ?? "a class");
+        let message = linkedDone.length ? `Saved for ${done.length} classes: ${listNames(done)}.` : "Saved.";
+        if (decision.submitted) message += " Sent to the exam officer to publish.";
+        for (const [c, why] of skipped) message += ` ${names.get(c) ?? "One class"} was not changed: ${why}.`;
+        res.json({ message });
+        return;
+      }
       if (others.length) { res.json({ message: `Saved for ${others.length + 1} classes.${decision.submitted ? " Sent to the exam officer to publish." : ""}` }); return; }
       if (decision.submitted) { res.json({ message: "Saved and sent to the exam officer to publish." }); return; }
       break;

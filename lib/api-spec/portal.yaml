@@ -292,6 +292,7 @@ schemas:
       reviewStatus: { type: string, readOnly: true, description: "Exam officer review: empty (draft), submitted, returned or approved. Set by the server only" }
       reviewNote: { type: string, readOnly: true, description: "The exam officer's note when an exam is returned" }
       instantResults: { type: boolean, description: "After submitting, each student sees the right answer to every multiple-choice question; scores wait for release" }
+      paperGroup: { type: [string, "null"], readOnly: true, description: "Copies of one paper set for several classes share this; saved changes reach every copy. Set by the server only" }
   PortalExamSummary:
     type: object
     required: [id, title, subject, durationMinutes, startsAt, endsAt, mode, instructions, questionCount, totalMarks]
@@ -467,6 +468,7 @@ schemas:
       withAttempts: { type: boolean, description: "deleteExam only: also delete every student's attempt and score for the exam (the school owner only, for clearing test exams)" }
       toClassId: { type: integer, description: "moveStudent only: the class to move the student (target) into" }
       alsoClassIds: { type: array, items: { type: integer }, description: "saveExam (a new exam) only: also set the same exam for these classes, for example every Year 11 class" }
+      linked: { type: boolean, description: "saveExam (an existing exam) only: false keeps the change to this class; otherwise it also reaches the paper's copies in other classes that no student has started" }
   PortalTarget:
     type: object
     required: [id]

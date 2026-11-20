@@ -1274,6 +1274,8 @@ export interface ExamOfficerExam {
   marked: number;
   /** Times staff opened, copied or downloaded the questions */
   opened: number;
+  /** Other classes sitting the same paper (one upload); publishing, returning and editing reach them too */
+  linkedClasses?: string[];
 }
 
 export type ExamOfficerSectionSection = typeof ExamOfficerSectionSection[keyof typeof ExamOfficerSectionSection];
@@ -4783,6 +4785,11 @@ export interface PortalExam {
   readonly reviewNote?: string;
   /** After submitting, each student sees the right answer to every multiple-choice question; scores wait for release */
   instantResults?: boolean;
+  /**
+     * Copies of one paper set for several classes share this; saved changes reach every copy. Set by the server only
+     * @nullable
+     */
+  readonly paperGroup?: string | null;
 }
 
 export interface PortalExamSummary {
@@ -5391,6 +5398,11 @@ export type PortalManagementExamsItem = {
   readonly reviewNote?: string;
   /** After submitting, each student sees the right answer to every multiple-choice question; scores wait for release */
   instantResults?: boolean;
+  /**
+     * Copies of one paper set for several classes share this; saved changes reach every copy. Set by the server only
+     * @nullable
+     */
+  readonly paperGroup?: string | null;
 };
 
 export type PortalManagementAttemptsItem = ({
@@ -5827,6 +5839,11 @@ export type PortalCommandExam = {
   readonly reviewNote?: string;
   /** After submitting, each student sees the right answer to every multiple-choice question; scores wait for release */
   instantResults?: boolean;
+  /**
+     * Copies of one paper set for several classes share this; saved changes reach every copy. Set by the server only
+     * @nullable
+     */
+  readonly paperGroup?: string | null;
 };
 
 export type PortalCommandMaterial = {
@@ -5915,6 +5932,8 @@ export interface PortalCommand {
   toClassId?: number;
   /** saveExam (a new exam) only: also set the same exam for these classes, for example every Year 11 class */
   alsoClassIds?: number[];
+  /** saveExam (an existing exam) only: false keeps the change to this class; otherwise it also reaches the paper's copies in other classes that no student has started */
+  linked?: boolean;
 }
 
 export interface PortalTarget {

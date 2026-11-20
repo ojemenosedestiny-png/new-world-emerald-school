@@ -63,7 +63,7 @@ export function OfficerEditDialog({ paper, onClose }: { paper: ExamOfficerPaper;
       <DialogContent className="portal !min-h-0 max-h-[94dvh] max-w-3xl overflow-y-auto rounded-2xl" data-testid="officer-edit-dialog">
         <DialogHeader>
           <DialogTitle className="font-serif text-2xl">Edit exam</DialogTitle>
-          <DialogDescription>{e.subject} · {e.className}{e.setBy ? ` · set by ${e.setBy}` : ""}. Your changes are saved in the exam's history.</DialogDescription>
+          <DialogDescription>{e.subject} · {e.className}{e.setBy ? ` · set by ${e.setBy}` : ""}. Your changes are saved in the exam's history.{(e.linkedClasses ?? []).length > 0 ? ` They also reach ${(e.linkedClasses ?? []).join(", ")}, which sit the same paper.` : ""}</DialogDescription>
         </DialogHeader>
         <div className="space-y-5">
           <section className="rounded-2xl border border-[hsl(var(--p-line))] p-4" aria-labelledby="officer-when">

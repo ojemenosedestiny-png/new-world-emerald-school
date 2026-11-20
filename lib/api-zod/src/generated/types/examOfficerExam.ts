@@ -35,4 +35,6 @@ export interface ExamOfficerExam {
   marked: number;
   /** Times staff opened, copied or downloaded the questions */
   opened: number;
+  /** Other classes sitting the same paper (one upload); publishing, returning and editing reach them too */
+  linkedClasses?: string[];
 }

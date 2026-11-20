@@ -116,6 +116,7 @@ schemas:
       sat: { type: integer }
       marked: { type: integer }
       opened: { type: integer, description: "Times staff opened, copied or downloaded the questions" }
+      linkedClasses: { type: array, items: { type: string }, description: "Other classes sitting the same paper (one upload); publishing, returning and editing reach them too" }
   ExamOfficerSection:
     type: object
     required: [section, label, draft, awaiting, returned, scheduled, open, closed, released]

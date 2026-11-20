@@ -10,6 +10,7 @@ import { classSection, examTerm, lagosDay, lagosToday, lastDays } from "../lib/p
 import { recordAudit } from "../lib/audit";
 import { paperSettingsProblem } from "../lib/cbt";
 import { validDiagrams } from "./portal-management";
+import { hasStarted, linkedCopies, listNames, questionsForClass } from "../lib/paper-group";
 
 /**
  * The exam officer: the final step before an exam reaches students. Sees every exam in the school, publishes or returns
@@ -20,6 +21,11 @@ export const portalExamOfficerRouter = Router();
 function officerOnly(req: Request) {
   check(req.dbUser, "Sign in with the exam officer's email.", 401);
   check(canPublishExams(req), "This page is for the exam officer only.", 403);
+}
+
+async function classNamesFor(ids: number[]) {
+  const rows = ids.length ? await db.select({ id: portalClasses.id, name: portalClasses.name }).from(portalClasses).where(inArray(portalClasses.id, [...new Set(ids)])) : [];
+  return new Map(rows.map((r) => [r.id, r.name]));
 }
 
 export type OfficerStatus = "draft" | "awaiting" | "returned" | "scheduled" | "open" | "closed" | "released";
@@ -79,6 +85,8 @@ async function summaries(exams: PortalExamRecord[]) {
     ids.length ? db.select({ action: portalAuditLog.action, n: sql<number>`count(*)::int` }).from(portalAuditLog)
       .where(and(like(portalAuditLog.action, "POST /portal/exams/%/access"), eq(portalAuditLog.outcome, "success"))).groupBy(portalAuditLog.action) : [] as { action: string; n: number }[],
   ]);
+  const groups = [...new Set(exams.map((e) => e.paperGroup).filter((g): g is string => !!g))];
+  const copies = groups.length ? await db.select({ id: portalExams.id, classId: portalExams.classId, paperGroup: portalExams.paperGroup }).from(portalExams).where(inArray(portalExams.paperGroup, groups)) : [];
   const opened = new Map<number, number>();
   for (const o of opens) { const m = ACCESS.exec(o.action); if (m) opened.set(Number(m[1]), (opened.get(Number(m[1])) ?? 0) + o.n); }
   return exams.map((e) => {
@@ -91,6 +99,7 @@ async function summaries(exams: PortalExamRecord[]) {
       reviewNote: e.reviewNote, submittedBy: e.submittedBy ? L.who(e.submittedBy) : "", submittedAt: e.submittedAt?.toISOString() ?? null,
       reviewedBy: e.reviewedBy, reviewedAt: e.reviewedAt?.toISOString() ?? null,
       students: students.find((s) => s.classId === e.classId)?.n ?? 0, sat: c?.sat ?? 0, marked: c?.marked ?? 0, opened: opened.get(e.id) ?? 0,
+      linkedClasses: e.paperGroup ? copies.filter((x) => x.paperGroup === e.paperGroup && x.id !== e.id).map((x) => L.className.get(x.classId) ?? "").filter(Boolean).sort() : [],
     };
   });
 }
@@ -249,11 +258,27 @@ portalExamOfficerRouter.post("/exam-officer/exams/:examId", async (req, res) => 
     await validDiagrams(body.questions, exam.classId);
     const problem = paperSettingsProblem(exam.mode, body.questions, { shuffleQuestions: exam.shuffleQuestions ?? false, shuffleOptions: exam.shuffleOptions ?? false, drawCount: exam.drawCount ?? 0 });
     check(!problem, problem ?? "");
+    const approve = { published: true, reviewStatus: "approved", reviewNote: "", reviewedBy: by, reviewedAt: new Date() };
     await tx.update(portalExams).set({
       title, instructions: body.instructions, durationMinutes: body.durationMinutes, startsAt, endsAt, questions: body.questions,
-      ...(publishing ? { published: true, reviewStatus: "approved", reviewNote: "", reviewedBy: by, reviewedAt: new Date() } : {}),
+      ...(publishing ? approve : {}),
     }).where(eq(portalExams.id, exam.id));
-    message = publishing ? `"${title}" is saved and published to students.` : exam.published ? `"${title}" is saved. Students see the changes.` : `"${title}" is saved.`;
+    // The same paper in other classes: times and wording follow; questions only where no student has started.
+    const reached: string[] = [], kept: string[] = [];
+    for (const sib of await linkedCopies(tx, exam)) {
+      const started = await hasStarted(tx, sib.id);
+      const own = started ? null : await questionsForClass(tx, body.questions, null, sib.classId);
+      await tx.update(portalExams).set({
+        title, instructions: body.instructions, durationMinutes: body.durationMinutes, startsAt, endsAt,
+        ...(own ? { questions: own.questions } : {}), ...(publishing && !sib.published ? approve : {}),
+      }).where(eq(portalExams.id, sib.id));
+      (started && changed ? kept : reached).push(String(sib.classId));
+    }
+    const names = await classNamesFor([exam.classId, ...reached, ...kept].map(Number));
+    const all = [exam.classId, ...reached.map(Number)].map((c) => names.get(c) ?? "a class");
+    const where = reached.length ? ` for ${listNames(all)}` : "";
+    message = publishing ? `"${title}" is saved and published to students${where}.` : exam.published ? `"${title}" is saved${where}. Students see the changes.` : `"${title}" is saved${where}.`;
+    if (kept.length) message += ` ${listNames(kept.map((c) => names.get(Number(c)) ?? "One class"))} kept ${kept.length === 1 ? "its" : "their"} questions because students have started; the new times apply.`;
   });
   res.json({ message });
 });
@@ -274,13 +299,28 @@ portalExamOfficerRouter.post("/exam-officer", async (req, res) => {
       check(new Date() < exam.endsAt, "This exam's window has already closed. Return it so the teacher can set new dates.", 409);
       validateQuestions(exam.questions, true);
       await tx.update(portalExams).set({ published: true, reviewStatus: "approved", reviewNote: "", ...reviewed }).where(eq(portalExams.id, exam.id));
-      message = `"${exam.title}" is published to students.`;
+      // The same paper waiting in other classes is published with it.
+      const also: number[] = [];
+      for (const sib of await linkedCopies(tx, exam)) {
+        if (sib.published || sib.reviewStatus !== "submitted" || new Date() >= sib.endsAt) continue;
+        try { validateQuestions(sib.questions, true); } catch { continue; }
+        await tx.update(portalExams).set({ published: true, reviewStatus: "approved", reviewNote: "", ...reviewed }).where(eq(portalExams.id, sib.id));
+        also.push(sib.classId);
+      }
+      const names = await classNamesFor([exam.classId, ...also]);
+      message = also.length ? `"${exam.title}" is published to students in ${listNames([exam.classId, ...also].map((c) => names.get(c) ?? "a class"))}.` : `"${exam.title}" is published to students.`;
     } else if (body.action === "return") {
       check(note, "Say what the teacher should change.");
       const [attempt] = await tx.select({ id: portalAttempts.id }).from(portalAttempts).where(eq(portalAttempts.examId, exam.id)).limit(1);
       check(!attempt, "Students have started this exam, so it cannot be returned. Withdraw it instead.", 409);
       await tx.update(portalExams).set({ published: false, reviewStatus: "returned", reviewNote: note, ...reviewed }).where(eq(portalExams.id, exam.id));
-      message = `"${exam.title}" went back to the teacher.`;
+      let more = 0;
+      for (const sib of await linkedCopies(tx, exam)) {
+        if (sib.published || sib.reviewStatus !== "submitted" || await hasStarted(tx, sib.id)) continue;
+        await tx.update(portalExams).set({ published: false, reviewStatus: "returned", reviewNote: note, ...reviewed }).where(eq(portalExams.id, sib.id));
+        more++;
+      }
+      message = more ? `"${exam.title}" went back to the teacher, with its copies for ${more} other ${more === 1 ? "class" : "classes"}.` : `"${exam.title}" went back to the teacher.`;
     } else {
       check(exam.published, "This exam is not published.", 409);
       await tx.update(portalExams).set({ published: false, reviewStatus: note ? "returned" : "", reviewNote: note, ...reviewed }).where(eq(portalExams.id, exam.id));

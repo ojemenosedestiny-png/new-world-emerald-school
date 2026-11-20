@@ -621,7 +621,8 @@ export const GetPortalManagementResponse = zod.object({
   "lockdown": zod.boolean().optional().describe('Full screen, no copy or paste, and exits from the exam screen are recorded'),
   "reviewStatus": zod.string().optional().describe('Exam officer review: empty (draft), submitted, returned or approved. Set by the server only'),
   "reviewNote": zod.string().optional().describe('The exam officer\'s note when an exam is returned'),
-  "instantResults": zod.boolean().optional().describe('After submitting, each student sees the right answer to every multiple-choice question; scores wait for release')
+  "instantResults": zod.boolean().optional().describe('After submitting, each student sees the right answer to every multiple-choice question; scores wait for release'),
+  "paperGroup": zod.string().nullish().describe('Copies of one paper set for several classes share this; saved changes reach every copy. Set by the server only')
 })),
   "attempts": zod.array(zod.object({
   "id": zod.number(),
@@ -840,7 +841,8 @@ export const ManagePortalBody = zod.object({
   "lockdown": zod.boolean().optional().describe('Full screen, no copy or paste, and exits from the exam screen are recorded'),
   "reviewStatus": zod.string().optional().describe('Exam officer review: empty (draft), submitted, returned or approved. Set by the server only'),
   "reviewNote": zod.string().optional().describe('The exam officer\'s note when an exam is returned'),
-  "instantResults": zod.boolean().optional().describe('After submitting, each student sees the right answer to every multiple-choice question; scores wait for release')
+  "instantResults": zod.boolean().optional().describe('After submitting, each student sees the right answer to every multiple-choice question; scores wait for release'),
+  "paperGroup": zod.string().nullish().describe('Copies of one paper set for several classes share this; saved changes reach every copy. Set by the server only')
 }).optional(),
   "material": zod.object({
   "id": zod.number().optional(),
@@ -880,7 +882,8 @@ export const ManagePortalBody = zod.object({
 }).optional(),
   "withAttempts": zod.boolean().optional().describe('deleteExam only: also delete every student\'s attempt and score for the exam (the school owner only, for clearing test exams)'),
   "toClassId": zod.number().optional().describe('moveStudent only: the class to move the student (target) into'),
-  "alsoClassIds": zod.array(zod.number()).optional().describe('saveExam (a new exam) only: also set the same exam for these classes, for example every Year 11 class')
+  "alsoClassIds": zod.array(zod.number()).optional().describe('saveExam (a new exam) only: also set the same exam for these classes, for example every Year 11 class'),
+  "linked": zod.boolean().optional().describe('saveExam (an existing exam) only: false keeps the change to this class; otherwise it also reaches the paper\'s copies in other classes that no student has started')
 })
 
 export const ManagePortalResponse = zod.object({
@@ -3499,7 +3502,8 @@ export const GetExamOfficerOverviewResponse = zod.object({
   "students": zod.number(),
   "sat": zod.number(),
   "marked": zod.number(),
-  "opened": zod.number().describe('Times staff opened, copied or downloaded the questions')
+  "opened": zod.number().describe('Times staff opened, copied or downloaded the questions'),
+  "linkedClasses": zod.array(zod.string()).optional().describe('Other classes sitting the same paper (one upload); publishing, returning and editing reach them too')
 })),
   "sections": zod.array(zod.object({
   "section": zod.enum(['primary', 'secondary', 'other']),
@@ -3584,7 +3588,8 @@ export const GetExamOfficerExamResponse = zod.object({
   "students": zod.number(),
   "sat": zod.number(),
   "marked": zod.number(),
-  "opened": zod.number().describe('Times staff opened, copied or downloaded the questions')
+  "opened": zod.number().describe('Times staff opened, copied or downloaded the questions'),
+  "linkedClasses": zod.array(zod.string()).optional().describe('Other classes sitting the same paper (one upload); publishing, returning and editing reach them too')
 }),
   "instructions": zod.string(),
   "questions": zod.array(zod.object({
