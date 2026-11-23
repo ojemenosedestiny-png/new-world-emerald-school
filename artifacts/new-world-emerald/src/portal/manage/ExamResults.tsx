@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
 import type { PortalManagement, PortalManagementExamsItem } from "@workspace/api-client-react";
-import { Download, RotateCcw, Timer } from "lucide-react";
+import { CalendarPlus, Download, RotateCcw, Timer } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { StatusPill } from "../ui";
-import { formatTime } from "../lib";
+import { formatDateTime, formatTime } from "../lib";
+import { MakeupDialog } from "./MakeupDialog";
 import { className, useCommand } from "./useCommand";
 import { PASS_PERCENT, downloadCsv, examRoster, examStats, resultsCsv, statusLabel, type RosterRow } from "./results";
 
@@ -19,6 +20,9 @@ export function ExamResults({ data, exam, isAdmin, onClose }: { data: PortalMana
   const cmd = useCommand();
   const [now, setNow] = useState(() => Date.now());
   const [reset, setReset] = useState<RosterRow | null>(null);
+  const [makeupFor, setMakeupFor] = useState<number[] | null>(null);
+  const makeups = (data.makeups ?? []).filter((m) => m.examId === exam.id);
+  const idOf = (code: string) => data.students.find((s) => s.studentId === code)?.id as number | undefined;
   useEffect(() => { const t = window.setInterval(() => setNow(Date.now()), 15_000); return () => window.clearInterval(t); }, []);
   const rows = examRoster(data, exam, now);
   const stats = examStats(rows);
@@ -52,7 +56,8 @@ export function ExamResults({ data, exam, isAdmin, onClose }: { data: PortalMana
           </div>
         )}
 
-        <div className="flex justify-end">
+        <div className="flex flex-wrap justify-end gap-2">
+          {exam.published && !exam.resultsReleased && counts.not_started > 0 && <button className="portal-btn-ghost" onClick={() => setMakeupFor([])} data-testid="button-open-makeup"><CalendarPlus size={13} /> Make-up exam ({counts.not_started} missed)</button>}
           <button className="portal-btn-ghost" onClick={exportCsv} disabled={!rows.length} data-testid="button-export-results"><Download size={13} /> Export CSV</button>
         </div>
 
@@ -64,7 +69,11 @@ export function ExamResults({ data, exam, isAdmin, onClose }: { data: PortalMana
                 <div className="min-w-0 flex-1">
                   <p className="font-semibold">{r.name} <span className="font-mono text-xs text-[hsl(var(--p-ink)/0.5)]">{r.studentId}</span></p>
                   {r.status === "writing" && a && <p className="text-xs text-[hsl(var(--p-ink)/0.55)]">{minutesLeft(a.deadline, now)} min left / ends {formatTime(a.deadline)} / last saved {formatTime(a.savedAt)}</p>}
+                  {(() => { const m = r.status === "not_started" ? makeups.find((x) => x.studentId === idOf(r.studentId)) : undefined; return m ? <p className="text-xs font-semibold text-[hsl(var(--p-gold-ink))]" data-testid={"text-row-makeup-" + r.studentId}>Make-up: {formatDateTime(m.startsAt)} to {formatDateTime(m.endsAt)}</p> : null; })()}
                 </div>
+                {r.status === "not_started" && exam.published && !exam.resultsReleased && idOf(r.studentId) !== undefined && (
+                  <button className="portal-btn-ghost !px-2 !py-1 text-xs" disabled={cmd.pending} onClick={() => setMakeupFor([idOf(r.studentId)!])} data-testid={"button-makeup-" + r.studentId}><CalendarPlus size={12} /> Make-up</button>
+                )}
                 {r.status === "marked" ? <StatusPill tone="green">{r.score} / {r.totalMarks} ({r.percent}%)</StatusPill> : <StatusPill tone={TONE[r.status]}>{statusLabel(r.status)}</StatusPill>}
                 {r.status === "writing" && a && !exam.resultsReleased && (
                   <div className="flex flex-wrap gap-1" aria-label={"Give " + r.name + " extra time"}>
@@ -80,6 +89,7 @@ export function ExamResults({ data, exam, isAdmin, onClose }: { data: PortalMana
         )}
         {exam.resultsReleased && <p className="text-xs text-[hsl(var(--p-ink)/0.5)]">Results are released. Withhold them to give extra time or reset an attempt.</p>}
 
+        {makeupFor && <MakeupDialog data={data} exam={exam} preselect={makeupFor} onClose={() => setMakeupFor(null)} />}
         <AlertDialog open={!!reset} onOpenChange={(o) => !o && setReset(null)}>
           <AlertDialogContent>
             <AlertDialogHeader>

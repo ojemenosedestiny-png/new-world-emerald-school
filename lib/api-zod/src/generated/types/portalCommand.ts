@@ -10,6 +10,7 @@ import type { PortalCommandAttemptControl } from './portalCommandAttemptControl'
 import type { PortalCommandExam } from './portalCommandExam';
 import type { PortalCommandExamStatus } from './portalCommandExamStatus';
 import type { PortalCommandGrade } from './portalCommandGrade';
+import type { PortalCommandMakeup } from './portalCommandMakeup';
 import type { PortalCommandMaterial } from './portalCommandMaterial';
 import type { PortalCommandNotice } from './portalCommandNotice';
 import type { PortalCommandSchoolClass } from './portalCommandSchoolClass';
@@ -19,6 +20,8 @@ import type { PortalCommandTeacher } from './portalCommandTeacher';
 
 export interface PortalCommand {
   action: PortalCommandAction;
+  /** setMakeup: give students who missed an exam their own window (startsAt, endsAt). removeMakeup: take it away again */
+  makeup?: PortalCommandMakeup;
   schoolClass?: PortalCommandSchoolClass;
   student?: PortalCommandStudent;
   teacher?: PortalCommandTeacher;

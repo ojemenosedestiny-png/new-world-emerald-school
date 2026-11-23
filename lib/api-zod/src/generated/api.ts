@@ -105,7 +105,8 @@ export const GetPortalDashboardResponse = zod.object({
   "instructions": zod.string(),
   "questionCount": zod.number(),
   "totalMarks": zod.number(),
-  "lockdown": zod.boolean().optional()
+  "lockdown": zod.boolean().optional(),
+  "makeUp": zod.boolean().optional().describe('A make-up sitting set for this student alone: the window shown is theirs')
 })),
   "attempts": zod.array(zod.object({
   "id": zod.number(),
@@ -708,9 +709,18 @@ export const GetPortalManagementResponse = zod.object({
   "className": zod.string()
 }))
 }).optional().describe('For a teacher, what the principal or office assigned them. Absent for administrators.'),
-  "examOfficer": zod.boolean().optional().describe('The school has an exam officer: staff send exams to them to publish')
+  "examOfficer": zod.boolean().optional().describe('The school has an exam officer: staff send exams to them to publish'),
+  "makeups": zod.array(zod.object({
+  "examId": zod.number(),
+  "studentId": zod.number(),
+  "startsAt": zod.coerce.date(),
+  "endsAt": zod.coerce.date(),
+  "createdBy": zod.string()
+})).optional().describe('Make-up sittings for the exams listed')
 })
 
+
+export const managePortalBodyMakeupStudentIdsMax = 200;
 
 export const managePortalBodySchoolClassNameMax = 100;
 
@@ -783,7 +793,13 @@ export const managePortalBodyAttemptControlMinutesMax = 240;
 
 
 export const ManagePortalBody = zod.object({
-  "action": zod.enum(['saveClass', 'saveStudent', 'saveTeacher', 'saveExam', 'saveMaterial', 'saveNotice', 'grade', 'examStatus', 'deleteExam', 'deleteMaterial', 'deleteNotice', 'extendAttempt', 'resetAttempt', 'addPracticeExams', 'inviteTeacher', 'deleteClass', 'deleteTeacher', 'moveStudent']),
+  "action": zod.enum(['saveClass', 'saveStudent', 'saveTeacher', 'saveExam', 'saveMaterial', 'saveNotice', 'grade', 'examStatus', 'deleteExam', 'deleteMaterial', 'deleteNotice', 'extendAttempt', 'resetAttempt', 'addPracticeExams', 'inviteTeacher', 'deleteClass', 'deleteTeacher', 'moveStudent', 'setMakeup', 'removeMakeup']),
+  "makeup": zod.object({
+  "examId": zod.number(),
+  "studentIds": zod.array(zod.number()).min(1).max(managePortalBodyMakeupStudentIdsMax),
+  "startsAt": zod.coerce.date().optional(),
+  "endsAt": zod.coerce.date().optional()
+}).optional().describe('setMakeup: give students who missed an exam their own window (startsAt, endsAt). removeMakeup: take it away again'),
   "schoolClass": zod.object({
   "id": zod.number().optional(),
   "name": zod.string().min(1).max(managePortalBodySchoolClassNameMax)

@@ -308,6 +308,7 @@ schemas:
       questionCount: { type: integer }
       totalMarks: { type: number }
       lockdown: { type: boolean }
+      makeUp: { type: boolean, description: "A make-up sitting set for this student alone: the window shown is theirs" }
   PortalMark:
     type: object
     required: [questionId, score, feedback]
@@ -416,6 +417,7 @@ schemas:
       notices: { type: array, items: { $ref: "#/schemas/PortalNotice" } }
       teaching: { $ref: "#/schemas/PortalTeaching" }
       examOfficer: { type: boolean, description: "The school has an exam officer: staff send exams to them to publish" }
+      makeups: { type: array, items: { $ref: "#/schemas/PortalMakeup" }, description: "Make-up sittings for the exams listed" }
   PortalTeaching:
     type: object
     description: For a teacher, what the principal or office assigned them. Absent for administrators.
@@ -454,7 +456,8 @@ schemas:
     type: object
     required: [action]
     properties:
-      action: { type: string, enum: [saveClass, saveStudent, saveTeacher, saveExam, saveMaterial, saveNotice, grade, examStatus, deleteExam, deleteMaterial, deleteNotice, extendAttempt, resetAttempt, addPracticeExams, inviteTeacher, deleteClass, deleteTeacher, moveStudent] }
+      action: { type: string, enum: [saveClass, saveStudent, saveTeacher, saveExam, saveMaterial, saveNotice, grade, examStatus, deleteExam, deleteMaterial, deleteNotice, extendAttempt, resetAttempt, addPracticeExams, inviteTeacher, deleteClass, deleteTeacher, moveStudent, setMakeup, removeMakeup] }
+      makeup: { $ref: "#/schemas/PortalMakeupInput" }
       schoolClass: { $ref: "#/schemas/PortalClass" }
       student: { $ref: "#/schemas/PortalStudent" }
       teacher: { $ref: "#/schemas/PortalTeacher" }
@@ -474,6 +477,24 @@ schemas:
     required: [id]
     properties:
       id: { type: integer }
+  PortalMakeupInput:
+    type: object
+    required: [examId, studentIds]
+    description: "setMakeup: give students who missed an exam their own window (startsAt, endsAt). removeMakeup: take it away again"
+    properties:
+      examId: { type: integer }
+      studentIds: { type: array, items: { type: integer }, minItems: 1, maxItems: 200 }
+      startsAt: { type: string, format: date-time }
+      endsAt: { type: string, format: date-time }
+  PortalMakeup:
+    type: object
+    required: [examId, studentId, startsAt, endsAt, createdBy]
+    properties:
+      examId: { type: integer }
+      studentId: { type: integer }
+      startsAt: { type: string, format: date-time }
+      endsAt: { type: string, format: date-time }
+      createdBy: { type: string }
   PortalAttemptControl:
     type: object
     required: [attemptId]
@@ -544,6 +565,8 @@ components:
     PortalCommand: { $ref: "#/schemas/PortalCommand" }
     PortalTarget: { $ref: "#/schemas/PortalTarget" }
     PortalAttemptControl: { $ref: "#/schemas/PortalAttemptControl" }
+    PortalMakeupInput: { $ref: "#/schemas/PortalMakeupInput" }
+    PortalMakeup: { $ref: "#/schemas/PortalMakeup" }
     PortalMessage: { $ref: "#/schemas/PortalMessage" }
     PortalPdfImport: { $ref: "#/schemas/PortalPdfImport" }
     PortalDiagram: { $ref: "#/schemas/PortalDiagram" }

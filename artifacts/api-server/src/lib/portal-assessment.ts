@@ -43,13 +43,14 @@ export async function finalizeExpired(attempt: PortalAttemptRecord) {
     return saved;
   });
 }
-export function attemptView(attempt: PortalAttemptRecord, exam: PortalExamRecord, staff = false) {
+/** `closesAt`: when the last sitting of the exam ends (the class window, or a later make-up), so answers wait for it. */
+export function attemptView(attempt: PortalAttemptRecord, exam: PortalExamRecord, staff = false, closesAt: Date = exam.endsAt) {
   const released = exam.resultsReleased && attempt.status === "marked";
   // After submitting, students see which multiple-choice answers were right and the right answer for
   // each (in their own option order); their score stays hidden until the school releases results.
   // The answers wait until the exam closes, so no one who finishes early can pass them to classmates still writing.
   const finished = attempt.status !== "in_progress";
-  const closed = Date.now() >= exam.endsAt.getTime();
+  const closed = Date.now() >= Math.max(exam.endsAt.getTime(), closesAt.getTime());
   const showAnswers = exam.instantResults && finished && (closed || staff);
   return {
     id: attempt.id, examId: exam.id, title: exam.title, subject: exam.subject, mode: exam.mode,
@@ -58,7 +59,7 @@ export function attemptView(attempt: PortalAttemptRecord, exam: PortalExamRecord
     answers: attempt.answers, startedAt: attempt.startedAt.toISOString(), deadline: attempt.deadline.toISOString(),
     serverNow: new Date().toISOString(), savedAt: attempt.savedAt.toISOString(), status: attempt.status,
     totalMarks: attempt.questions.reduce((sum, q) => sum + q.marks, 0), resultsReleased: released, lockdown: exam.lockdown,
-    ...(exam.instantResults && finished && !closed && !staff ? { answersAt: exam.endsAt.toISOString() } : {}),
+    ...(exam.instantResults && finished && !closed && !staff ? { answersAt: new Date(Math.max(exam.endsAt.getTime(), closesAt.getTime())).toISOString() } : {}),
     ...(showAnswers ? { review: attempt.questions.filter((q) => q.type === "mcq" && q.correctAnswer != null).map((q) => ({ questionId: q.id, correctAnswer: q.correctAnswer!, correct: attempt.answers[q.id] === String(q.correctAnswer) })) } : {}),
     ...((staff || released) ? { score: attempt.marks.reduce((s, m) => s + m.score, 0), marks: attempt.marks } : {}),
   };

@@ -5,6 +5,7 @@ import { SavePortalAnswersBody } from "@workspace/api-zod";
 import { check, portalActor, studentOnly } from "../lib/portal-auth";
 import { automaticMarks, attemptView, finalizeExpired, validAnswers } from "../lib/portal-assessment";
 import { buildPaper, MAX_FOCUS_LOSSES, paperSize } from "../lib/cbt";
+import { lastSittingEnds, sittingWindow, studentMakeups } from "../lib/makeups";
 
 export const portalStudentRouter = Router();
 portalStudentRouter.get("/student", async (req, res) => {
@@ -12,17 +13,24 @@ portalStudentRouter.get("/student", async (req, res) => {
   const [schoolClass] = await db.select().from(portalClasses).where(eq(portalClasses.id, student.classId));
   const exams = await db.select().from(portalExams).where(eq(portalExams.classId, student.classId));
   const ownAttempts = await db.select().from(portalAttempts).where(eq(portalAttempts.studentId, student.id));
+  // A make-up sitting gives this student their own window; answers wait for every sitting to end.
+  const [makeups, closes] = await Promise.all([studentMakeups(student.id, exams.map((e) => e.id)), lastSittingEnds(exams)]);
   const attempts = await Promise.all(ownAttempts.map(async (attempt) => {
     const exam = exams.find((e) => e.id === attempt.examId);
-    return exam ? attemptView(await finalizeExpired(attempt), exam) : null;
+    return exam ? attemptView(await finalizeExpired(attempt), exam, false, closes.get(exam.id)) : null;
   }));
   const materials = await db.select().from(portalMaterials).where(and(eq(portalMaterials.classId, student.classId), eq(portalMaterials.published, true)));
   const notices = await db.select().from(portalNotices).where(and(eq(portalNotices.classId, student.classId), eq(portalNotices.published, true)));
   res.json({
-    className: schoolClass?.name ?? "", exams: exams.filter((e) => e.published).map((e) => ({
-      id: e.id, title: e.title, subject: e.subject, durationMinutes: e.durationMinutes, startsAt: e.startsAt.toISOString(),
-      endsAt: e.endsAt.toISOString(), mode: e.mode, instructions: e.instructions, ...paperSize(e.questions, e.drawCount), lockdown: e.lockdown,
-    })), attempts: attempts.filter(Boolean), materials, notices,
+    className: schoolClass?.name ?? "", exams: exams.filter((e) => e.published).map((e) => {
+      const makeup = makeups.get(e.id);
+      const w = sittingWindow(e, makeup);
+      return {
+        id: e.id, title: e.title, subject: e.subject, durationMinutes: e.durationMinutes, startsAt: w.startsAt.toISOString(),
+        endsAt: w.endsAt.toISOString(), mode: e.mode, instructions: e.instructions, ...paperSize(e.questions, e.drawCount), lockdown: e.lockdown,
+        ...(makeup ? { makeUp: true } : {}),
+      };
+    }), attempts: attempts.filter(Boolean), materials, notices,
   });
 });
 portalStudentRouter.post("/exams/:id/start", async (req, res) => {
@@ -36,15 +44,17 @@ portalStudentRouter.post("/exams/:id/start", async (req, res) => {
     const [existing] = await tx.select().from(portalAttempts).where(and(eq(portalAttempts.examId, exam.id), eq(portalAttempts.studentId, student.id)));
     if (existing) return { exam, attempt: existing };
     const now = new Date();
-    check(exam.published && now >= exam.startsAt && now < exam.endsAt, "This exam is not open.", 403);
+    // A student with a make-up sitting writes in their own window instead of the class's.
+    const w = sittingWindow(exam, (await studentMakeups(student.id, [exam.id])).get(exam.id));
+    check(exam.published && now >= w.startsAt && now < w.endsAt, "This exam is not open.", 403);
     check(!exam.resultsReleased, "This assessment is closed.", 403);
     const [attempt] = await tx.insert(portalAttempts).values({
       examId: exam.id, studentId: student.id, questions: buildPaper(exam.questions, exam),
-      startedAt: now, deadline: new Date(Math.min(exam.endsAt.getTime(), now.getTime() + exam.durationMinutes * 60_000)),
+      startedAt: now, deadline: new Date(Math.min(w.endsAt.getTime(), now.getTime() + exam.durationMinutes * 60_000)),
     }).returning();
     return { exam, attempt };
   });
-  res.json(attemptView(await finalizeExpired(result.attempt), result.exam));
+  res.json(attemptView(await finalizeExpired(result.attempt), result.exam, false, (await lastSittingEnds([result.exam])).get(result.exam.id)));
 });
 portalStudentRouter.get("/attempts/:id", async (req, res) => {
   const student = studentOnly(await portalActor(req));
@@ -52,7 +62,7 @@ portalStudentRouter.get("/attempts/:id", async (req, res) => {
   check(attempt, "Attempt not found.", 404);
   const [exam] = await db.select().from(portalExams).where(eq(portalExams.id, attempt.examId));
   check(exam, "Exam not found.", 404);
-  res.json(attemptView(await finalizeExpired(attempt), exam));
+  res.json(attemptView(await finalizeExpired(attempt), exam, false, (await lastSittingEnds([exam])).get(exam.id)));
 });
 async function updateAttempt(req: import("express").Request, submit: boolean) {
   const student = studentOnly(await portalActor(req));
@@ -62,7 +72,8 @@ async function updateAttempt(req: import("express").Request, submit: boolean) {
     check(attempt, "Attempt not found.", 404);
     const [exam] = await tx.select().from(portalExams).where(eq(portalExams.id, attempt.examId));
     check(exam, "Exam not found.", 404);
-    if (attempt.status !== "in_progress") return attemptView(attempt, exam);
+    const closesAt = (await lastSittingEnds([exam])).get(exam.id);
+    if (attempt.status !== "in_progress") return attemptView(attempt, exam, false, closesAt);
     const now = new Date();
     const expired = now.getTime() >= attempt.deadline.getTime();
     const answers = expired ? attempt.answers : validAnswers(attempt.questions, body.answers);
@@ -71,7 +82,7 @@ async function updateAttempt(req: import("express").Request, submit: boolean) {
       answers, ...(expired ? {} : { savedAt: now }),
       ...(closed ? { status: attempt.questions.some((q) => q.type === "written") ? "submitted" : "marked", marks: automaticMarks(attempt.questions, answers) } : {}),
     }).where(eq(portalAttempts.id, attempt.id)).returning();
-    return attemptView(updated, exam);
+    return attemptView(updated, exam, false, closesAt);
   });
 }
 // Lockdown exams: the page reports each time the student leaves the exam screen; staff see the count.

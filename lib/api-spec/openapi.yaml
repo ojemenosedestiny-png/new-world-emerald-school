@@ -1725,6 +1725,10 @@ components:
       $ref: "./portal.yaml#/schemas/PortalTarget"
     PortalAttemptControl:
       $ref: "./portal.yaml#/schemas/PortalAttemptControl"
+    PortalMakeupInput:
+      $ref: "./portal.yaml#/schemas/PortalMakeupInput"
+    PortalMakeup:
+      $ref: "./portal.yaml#/schemas/PortalMakeup"
     PortalMessage:
       $ref: "./portal.yaml#/schemas/PortalMessage"
     PortalPdfImport:

@@ -3,7 +3,7 @@ import { and, asc, eq, inArray, or, sql } from "drizzle-orm";
 import {
   db, portalClasses, portalStudents, portalTeachers, portalSessions, portalExams, portalAttempts,
   portalMaterials, portalNotices, portalFiles, portalSubjects, portalTeacherPresence, portalScores, portalReportReleases,
-  portalReportWorkflow, portalTimetables, examRegistrationSettings,
+  portalReportWorkflow, portalTimetables, examRegistrationSettings, portalExamMakeups,
 } from "@workspace/db";
 import { randomUUID } from "node:crypto";
 import { moveStudent } from "../lib/move-student";
@@ -114,7 +114,9 @@ portalManagementRouter.get("/manage", async (req, res) => {
   // Teachers may set an exam for any class in the school, not only their own.
   const examClasses = actor.role === "admin" ? classes.map((c) => ({ id: c.id, name: c.name }))
     : await db.select({ id: portalClasses.id, name: portalClasses.name }).from(portalClasses).orderBy(asc(portalClasses.name));
-  res.json({ classes, examClasses, students, teachers, exams, attempts, materials, notices, examOfficer: examOfficerEmails().length > 0, ...(teaching ? { teaching } : {}) });
+  const makeups = exams.length ? (await db.select().from(portalExamMakeups).where(inArray(portalExamMakeups.examId, exams.map((e) => e.id))))
+    .map((m) => ({ examId: m.examId, studentId: m.studentId, startsAt: m.startsAt.toISOString(), endsAt: m.endsAt.toISOString(), createdBy: m.createdBy })) : [];
+  res.json({ classes, examClasses, students, teachers, exams, attempts, materials, notices, makeups, examOfficer: examOfficerEmails().length > 0, ...(teaching ? { teaching } : {}) });
 });
 portalManagementRouter.post("/manage", async (req, res) => {
   const actor = await portalActor(req);
@@ -442,6 +444,42 @@ portalManagementRouter.post("/manage", async (req, res) => {
       check(old, "Announcement not found.", 404); classAllowed(actor, old.classId);
       await db.delete(portalNotices).where(eq(portalNotices.id, data.id));
       break;
+    }
+    case "setMakeup":
+    case "removeMakeup": {
+      // A student who missed an exam writes it in their own window; the class's window is unchanged.
+      const data = body.makeup;
+      check(data, "Choose the exam and the students.");
+      const ids = [...new Set(data.studentIds)];
+      const setting = body.action === "setMakeup";
+      const startsAt = new Date(data.startsAt ?? ""), endsAt = new Date(data.endsAt ?? "");
+      if (setting) {
+        check(Number.isFinite(startsAt.getTime()) && Number.isFinite(endsAt.getTime()) && endsAt > startsAt, "The make-up must end after it starts.");
+        check(endsAt.getTime() > Date.now(), "The make-up must end in the future.");
+        check(endsAt.getTime() - startsAt.getTime() <= 14 * 86_400_000, "Keep a make-up window to at most two weeks.");
+      }
+      let names: string[] = [];
+      await db.transaction(async (tx) => {
+        const [exam] = await tx.select().from(portalExams).where(eq(portalExams.id, data.examId)).for("update");
+        check(exam, "Exam not found.", 404);
+        examAllowed(actor, exam);
+        if (!setting) { await tx.delete(portalExamMakeups).where(and(eq(portalExamMakeups.examId, exam.id), inArray(portalExamMakeups.studentId, ids))); return; }
+        check(exam.published, "Publish the exam first. A make-up uses the published paper.", 409);
+        check(!exam.resultsReleased, "Withhold results before giving a make-up.", 409);
+        check(endsAt.getTime() - startsAt.getTime() >= exam.durationMinutes * 60_000, `The make-up window must be at least the exam's ${exam.durationMinutes} minutes.`);
+        const kids = await tx.select({ id: portalStudents.id, name: portalStudents.name, classId: portalStudents.classId }).from(portalStudents).where(inArray(portalStudents.id, ids));
+        check(kids.length === ids.length && kids.every((k) => k.classId === exam.classId), "Choose students from this exam's class.");
+        const started = await tx.select({ studentId: portalAttempts.studentId }).from(portalAttempts).where(and(eq(portalAttempts.examId, exam.id), inArray(portalAttempts.studentId, ids)));
+        check(!started.length, `${kids.filter((k) => started.some((s) => s.studentId === k.id)).map((k) => k.name).join(", ")} already wrote this exam. Reset their attempt first if they must write it again.`, 409);
+        const by = req.identity?.email || actor.name;
+        for (const k of kids) {
+          await tx.insert(portalExamMakeups).values({ examId: exam.id, studentId: k.id, startsAt, endsAt, createdBy: by })
+            .onConflictDoUpdate({ target: [portalExamMakeups.examId, portalExamMakeups.studentId], set: { startsAt, endsAt, createdBy: by } });
+        }
+        names = kids.map((k) => k.name).sort();
+      });
+      res.json({ message: setting ? `Make-up set for ${names.length === 1 ? names[0] : `${names.length} students`}. Only ${names.length === 1 ? "they see" : "they see"} the exam in that window.` : "Make-up removed." });
+      return;
     }
     case "extendAttempt":
     case "resetAttempt": {

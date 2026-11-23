@@ -160,6 +160,40 @@ test("cbt: each student gets their own drawn, shuffled paper that marks correctl
     // With answer review off, nothing about the answers is shown after submitting.
     const held = await call(`/attempts/${started.data.id}/submit`, "POST", { answers: {} }, bayoS);
     assert.deepEqual([held.data.status, held.data.resultsReleased, "score" in held.data, "review" in held.data], ["marked", false, false, false]);
+
+    // Make-up: Chidi missed the exam; after the class window closes he gets his own window, and nobody else does.
+    const [chidi] = await db.insert(portalStudents).values({ studentId: marker + "-3", name: "Chidi Eze", classId: cls.id, passwordHash: pw, mustChangePassword: false }).returning();
+    const chidiS = await login(chidi.studentId);
+    await db.update(portalExams).set({ startsAt: new Date(Date.now() - 2 * 3_600_000), endsAt: new Date(Date.now() - 3_600_000) }).where(eq(portalExams.id, row.id));
+    assert.equal((await call(`/exams/${row.id}/start`, "POST", undefined, chidiS)).status, 403, "the class window is closed");
+    assert.equal((await call(`/attempts/${a.data.id}`, "GET", undefined, adaS)).data.review.length, 5, "with no make-up, Ada sees the right answers");
+    const soon = new Date(Date.now() - 60_000), later = new Date(Date.now() + 3_600_000);
+    const makeup = (studentIds: number[], startsAt: Date, endsAt: Date) => command({ action: "setMakeup", makeup: { examId: row.id, studentIds, startsAt: startsAt.toISOString(), endsAt: endsAt.toISOString() } });
+    assert.equal((await call("/manage", "POST", { action: "setMakeup", makeup: { examId: row.id, studentIds: [chidi.id], startsAt: soon.toISOString(), endsAt: later.toISOString() } }, chidiS)).status, 403, "students cannot");
+    assert.equal((await makeup([chidi.id], later, soon)).status, 400, "ends before it starts");
+    assert.equal((await makeup([chidi.id], soon, new Date(soon.getTime() + 5 * 60_000))).status, 400, "shorter than the exam");
+    const wrote = await makeup([chidi.id, ada.id], soon, later);
+    assert.equal(wrote.status, 409, "Ada already wrote it");
+    assert.match(wrote.data.error, /Ada Obi already wrote this exam/);
+    const set = await makeup([chidi.id], soon, later);
+    assert.equal(set.status, 200, JSON.stringify(set.data));
+    assert.match(set.data.message, /Make-up set for Chidi Eze/);
+    const chidiExam = (await call("/student", "GET", undefined, chidiS)).data.exams.find((e: { id: number }) => e.id === row.id);
+    assert.deepEqual([chidiExam.makeUp, chidiExam.endsAt], [true, later.toISOString()]);
+    const bayoExam = (await call("/student", "GET", undefined, bayoS)).data.exams.find((e: { id: number }) => e.id === row.id);
+    assert.equal(bayoExam.makeUp, undefined, "only Chidi has the make-up");
+    assert.ok(new Date(bayoExam.endsAt) < new Date(), "Bayo still sees the class window, closed");
+    // While Chidi can still write it, nobody sees the right answers.
+    const waiting = (await call(`/attempts/${a.data.id}`, "GET", undefined, adaS)).data;
+    assert.deepEqual(["review" in waiting, waiting.answersAt], [false, later.toISOString()]);
+    const sitting = await call(`/exams/${row.id}/start`, "POST", undefined, chidiS);
+    assert.equal(sitting.status, 200, JSON.stringify(sitting.data));
+    assert.ok(new Date(sitting.data.deadline) <= later, "his time ends with his window");
+    assert.equal((await makeup([chidi.id], soon, later)).status, 409, "once he has started, it cannot be set again");
+    const listed = (await call("/manage", "GET", undefined, { admin: true })).data.makeups.filter((m: { examId: number }) => m.examId === row.id);
+    assert.deepEqual(listed.map((m: { studentId: number }) => m.studentId), [chidi.id]);
+    assert.equal((await command({ action: "removeMakeup", makeup: { examId: row.id, studentIds: [chidi.id] } })).status, 200);
+    assert.equal((await call(`/attempts/${a.data.id}`, "GET", undefined, adaS)).data.review.length, 5, "the answers show again once no sitting is left");
   } finally {
     await new Promise<void>((resolve, reject) => server.close((e) => (e ? reject(e) : resolve())));
     // Practice tests went to every class in this disposable database; remove the ones nobody sat.

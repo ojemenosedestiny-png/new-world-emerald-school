@@ -18,4 +18,6 @@ export interface PortalExamSummary {
   questionCount: number;
   totalMarks: number;
   lockdown?: boolean;
+  /** A make-up sitting set for this student alone: the window shown is theirs */
+  makeUp?: boolean;
 }

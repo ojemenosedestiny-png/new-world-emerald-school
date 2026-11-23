@@ -4837,6 +4837,8 @@ export interface PortalExamSummary {
   questionCount: number;
   totalMarks: number;
   lockdown?: boolean;
+  /** A make-up sitting set for this student alone: the window shown is theirs */
+  makeUp?: boolean;
 }
 
 export interface PortalMark {
@@ -4997,6 +4999,8 @@ export type PortalDashboardExamsItem = {
   questionCount: number;
   totalMarks: number;
   lockdown?: boolean;
+  /** A make-up sitting set for this student alone: the window shown is theirs */
+  makeUp?: boolean;
 };
 
 export type PortalDashboardAttemptsItemQuestionsItemType = typeof PortalDashboardAttemptsItemQuestionsItemType[keyof typeof PortalDashboardAttemptsItemQuestionsItemType];
@@ -5608,6 +5612,14 @@ export type PortalManagementTeaching = {
   subjects: PortalManagementTeachingSubjectsItem[];
 };
 
+export type PortalManagementMakeupsItem = {
+  examId: number;
+  studentId: number;
+  startsAt: string;
+  endsAt: string;
+  createdBy: string;
+};
+
 export interface PortalManagement {
   classes: PortalManagementClassesItem[];
   /** Every class an exam may be set for (teachers may set exams for any class, not only their own) */
@@ -5622,6 +5634,8 @@ export interface PortalManagement {
   teaching?: PortalManagementTeaching;
   /** The school has an exam officer: staff send exams to them to publish */
   examOfficer?: boolean;
+  /** Make-up sittings for the exams listed */
+  makeups?: PortalManagementMakeupsItem[];
 }
 
 export type PortalTeachingClassTeacherOfItem = {
@@ -5697,7 +5711,23 @@ export const PortalCommandAction = {
   deleteClass: 'deleteClass',
   deleteTeacher: 'deleteTeacher',
   moveStudent: 'moveStudent',
+  setMakeup: 'setMakeup',
+  removeMakeup: 'removeMakeup',
 } as const;
+
+/**
+ * setMakeup: give students who missed an exam their own window (startsAt, endsAt). removeMakeup: take it away again
+ */
+export type PortalCommandMakeup = {
+  examId: number;
+  /**
+     * @minItems 1
+     * @maxItems 200
+     */
+  studentIds: number[];
+  startsAt?: string;
+  endsAt?: string;
+};
 
 export type PortalCommandSchoolClass = {
   id?: number;
@@ -5949,6 +5979,8 @@ export type PortalCommandAttemptControl = {
 
 export interface PortalCommand {
   action: PortalCommandAction;
+  /** setMakeup: give students who missed an exam their own window (startsAt, endsAt). removeMakeup: take it away again */
+  makeup?: PortalCommandMakeup;
   schoolClass?: PortalCommandSchoolClass;
   student?: PortalCommandStudent;
   teacher?: PortalCommandTeacher;
@@ -5980,6 +6012,28 @@ export interface PortalAttemptControl {
      * @maximum 240
      */
   minutes?: number;
+}
+
+/**
+ * setMakeup: give students who missed an exam their own window (startsAt, endsAt). removeMakeup: take it away again
+ */
+export interface PortalMakeupInput {
+  examId: number;
+  /**
+     * @minItems 1
+     * @maxItems 200
+     */
+  studentIds: number[];
+  startsAt?: string;
+  endsAt?: string;
+}
+
+export interface PortalMakeup {
+  examId: number;
+  studentId: number;
+  startsAt: string;
+  endsAt: string;
+  createdBy: string;
 }
 
 export interface PortalMessage {

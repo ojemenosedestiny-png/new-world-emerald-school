@@ -9,6 +9,7 @@ import type { PortalManagementAttemptsItem } from './portalManagementAttemptsIte
 import type { PortalManagementClassesItem } from './portalManagementClassesItem';
 import type { PortalManagementExamClassesItem } from './portalManagementExamClassesItem';
 import type { PortalManagementExamsItem } from './portalManagementExamsItem';
+import type { PortalManagementMakeupsItem } from './portalManagementMakeupsItem';
 import type { PortalManagementMaterialsItem } from './portalManagementMaterialsItem';
 import type { PortalManagementNoticesItem } from './portalManagementNoticesItem';
 import type { PortalManagementStudentsItem } from './portalManagementStudentsItem';
@@ -29,4 +30,6 @@ export interface PortalManagement {
   teaching?: PortalManagementTeaching;
   /** The school has an exam officer: staff send exams to them to publish */
   examOfficer?: boolean;
+  /** Make-up sittings for the exams listed */
+  makeups?: PortalManagementMakeupsItem[];
 }
