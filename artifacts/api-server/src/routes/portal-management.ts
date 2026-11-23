@@ -70,6 +70,16 @@ export async function validDiagrams(questions: { diagramFileId?: string | null }
   const files = await db.select().from(portalFiles).where(and(inArray(portalFiles.id, ids), eq(portalFiles.classId, classId)));
   check(files.length === ids.length && files.every((f) => diagramContentType(f.objectName)), "Each diagram must be a picture uploaded for this class.");
 }
+/** The active students of one class, name and Student ID only: staff may set an exam for particular students of any class. */
+portalManagementRouter.get("/class-students/:classId", async (req, res) => {
+  const actor = await portalActor(req);
+  staffOnly(actor);
+  const classId = Number(req.params.classId);
+  check(Number.isSafeInteger(classId) && classId > 0, "Choose a class.");
+  await examClass(classId);
+  res.json(await db.select({ id: portalStudents.id, name: portalStudents.name, studentId: portalStudents.studentId }).from(portalStudents)
+    .where(and(eq(portalStudents.classId, classId), eq(portalStudents.active, true))).orderBy(asc(portalStudents.name)));
+});
 // When each teacher last had the portal open, written at most every five minutes per teacher.
 const presenceWritten = new Map<number, number>();
 async function notePresence(teacherId: number) {
@@ -221,7 +231,14 @@ portalManagementRouter.post("/manage", async (req, res) => {
       const others = id ? [] : [...new Set(body.alsoClassIds ?? [])].filter((c) => c !== data.classId);
       check(others.length <= 40, "Choose at most 40 extra classes.");
       for (const c of others) await examClass(c);
-      const values = { ...rest, ...paper, lockdown: data.lockdown ?? false, instantResults: data.instantResults ?? true, title: data.title.trim(), subject: data.subject.trim(), startsAt, endsAt, fileId: data.fileId || null };
+      // Particular students: only they (all from this class) see and write it. Empty means the whole class.
+      const only = [...new Set(data.onlyStudentIds ?? [])];
+      if (only.length) {
+        check(!others.length, "An exam for particular students goes to one class. Untick the other classes.");
+        const kids = await db.select({ id: portalStudents.id, classId: portalStudents.classId, active: portalStudents.active }).from(portalStudents).where(inArray(portalStudents.id, only));
+        check(kids.length === only.length && kids.every((k) => k.classId === data.classId && k.active), "Choose students from this exam's class.");
+      }
+      const values = { ...rest, onlyStudentIds: only.length ? only : null, ...paper, lockdown: data.lockdown ?? false, instantResults: data.instantResults ?? true, title: data.title.trim(), subject: data.subject.trim(), startsAt, endsAt, fileId: data.fileId || null };
       const gate = examOfficerEmails().length > 0;
       const by = actor.name || req.identity?.email || "";
       // Who sent it, by email, so the exam officer can tell staff apart.
@@ -244,7 +261,7 @@ portalManagementRouter.post("/manage", async (req, res) => {
             try { examAllowed(actor, sib); } catch { skipped.push([sib.classId, "you do not manage that class's copy"]); continue; }
             if (await hasStarted(tx, sib.id)) { skipped.push([sib.classId, "students have started it"]); continue; }
             const own = await questionsForClass(tx, values.questions, values.fileId, sib.classId);
-            await tx.update(portalExams).set({ ...values, ...review, classId: sib.classId, questions: own.questions, fileId: own.fileId }).where(eq(portalExams.id, sib.id));
+            await tx.update(portalExams).set({ ...values, ...review, classId: sib.classId, questions: own.questions, fileId: own.fileId, onlyStudentIds: sib.onlyStudentIds }).where(eq(portalExams.id, sib.id));
             linkedDone.push(sib.classId);
           }
         } else {
@@ -469,6 +486,7 @@ portalManagementRouter.post("/manage", async (req, res) => {
         check(endsAt.getTime() - startsAt.getTime() >= exam.durationMinutes * 60_000, `The make-up window must be at least the exam's ${exam.durationMinutes} minutes.`);
         const kids = await tx.select({ id: portalStudents.id, name: portalStudents.name, classId: portalStudents.classId }).from(portalStudents).where(inArray(portalStudents.id, ids));
         check(kids.length === ids.length && kids.every((k) => k.classId === exam.classId), "Choose students from this exam's class.");
+        check(!exam.onlyStudentIds?.length || ids.every((id) => exam.onlyStudentIds!.includes(id)), "This exam is only for particular students. Choose from them.");
         const started = await tx.select({ studentId: portalAttempts.studentId }).from(portalAttempts).where(and(eq(portalAttempts.examId, exam.id), inArray(portalAttempts.studentId, ids)));
         check(!started.length, `${kids.filter((k) => started.some((s) => s.studentId === k.id)).map((k) => k.name).join(", ")} already wrote this exam. Reset their attempt first if they must write it again.`, 409);
         const by = req.identity?.email || actor.name;

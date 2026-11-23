@@ -56,6 +56,12 @@ export type PortalCommandExam = {
   /** After submitting, each student sees the right answer to every multiple-choice question; scores wait for release */
   instantResults?: boolean;
   /**
+     * Only these students of the class see and write the exam (for example one child who missed it). Empty or absent: the whole class
+     * @maxItems 200
+     * @nullable
+     */
+  onlyStudentIds?: number[] | null;
+  /**
      * Copies of one paper set for several classes share this; saved changes reach every copy. Set by the server only
      * @nullable
      */

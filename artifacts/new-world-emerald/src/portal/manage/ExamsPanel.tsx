@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useRecordExamAccess, type PortalManagement, type PortalExam } from "@workspace/api-client-react";
-import { BarChart3, CalendarClock, ClipboardList, Clock3, Copy, Eye, EyeOff, FileText, Folder, FolderOpen, Library, Lock, Pencil, Plus, Send, Sparkles, Trash2, Undo2, Users } from "lucide-react";
+import { BarChart3, CalendarClock, ClipboardList, Clock3, Copy, Eye, EyeOff, FileText, Folder, FolderOpen, Library, Lock, Pencil, Plus, Send, Sparkles, Trash2, Undo2, UserCheck, Users } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { EmptyState, StatusPill } from "../ui";
 import { examFolders, examTimeline, fileUrl, formatDateTime, type ExamGroupKey } from "../lib";
@@ -35,12 +35,13 @@ function DateLeaf({ startsAt, endsAt, tone }: { startsAt: string; endsAt: string
 type Pending = { id: number; published: boolean; resultsReleased: boolean; label: string; body: string } | null;
 
 /** A fresh draft copy: unpublished, results withheld, rescheduled to the default future window. */
-export function duplicateExam(e: PortalExam): PortalExam {
+/** `forStudents`: the copy starts as "particular students", for giving the paper to a child who missed it. */
+export function duplicateExam(e: PortalExam, forStudents = false): PortalExam {
   const { id: _id, ...rest } = e;
   const window = blankExam(e.classId);
   return {
     ...rest, title: (e.title + " (copy)").slice(0, 200), published: false, resultsReleased: false,
-    startsAt: window.startsAt, endsAt: window.endsAt,
+    startsAt: window.startsAt, endsAt: window.endsAt, onlyStudentIds: forStudents ? [] : null,
     questions: e.questions.map((q) => ({ ...q, options: [...q.options] })),
   };
 }
@@ -139,6 +140,7 @@ export function ExamsPanel({ data, isAdmin = false, canClear = false }: { data: 
                             <StatusPill tone={e.published ? "green" : e.reviewStatus === "submitted" ? "gold" : e.reviewStatus === "returned" ? "red" : "muted"}>{e.published ? "Published" : e.reviewStatus === "submitted" ? "Waiting for the exam officer" : e.reviewStatus === "returned" ? "Returned by the exam officer" : "Draft"}</StatusPill>
                             {e.resultsReleased && <StatusPill tone="ink">Results released</StatusPill>}
                             {started && <StatusPill tone="gold"><Lock size={10} /> Content frozen</StatusPill>}
+                            {!!e.onlyStudentIds?.length && <StatusPill tone="gold"><span className="inline-flex items-center gap-1" data-testid={"text-only-students-" + id}><UserCheck size={10} /> {(() => { const names = e.onlyStudentIds.map((s) => data.students.find((x) => x.id === s)?.name).filter(Boolean); return names.length === e.onlyStudentIds.length && names.length <= 2 ? `Only ${names.join(" and ")}` : `Only ${e.onlyStudentIds.length} chosen ${e.onlyStudentIds.length === 1 ? "student" : "students"}`; })()}</span></StatusPill>}
                             <span className="text-xs text-[hsl(var(--p-ink)/0.55)]">{className(examClasses, e.classId)} / {e.subject} / {e.mode === "pdf" ? "PDF paper" : "Interactive"}</span>
                           </div>
                           <h3 className="mt-2 font-serif text-xl font-semibold">{e.title}</h3>
@@ -152,6 +154,7 @@ export function ExamsPanel({ data, isAdmin = false, canClear = false }: { data: 
                         <div className="flex flex-wrap gap-2 md:justify-end">
                           <button className="portal-btn-ghost" onClick={() => setResultsFor(id)} data-testid={"button-results-exam-" + id}><BarChart3 size={13} /> Results</button>
                           <button className="portal-btn-ghost" onClick={() => { record(id, "copy"); setEditing(duplicateExam(e)); }} data-testid={"button-duplicate-exam-" + id}><Copy size={13} /> Duplicate</button>
+                          <button className="portal-btn-ghost" onClick={() => { record(id, "copy"); setEditing(duplicateExam(e, true)); }} data-testid={"button-duplicate-student-" + id}><UserCheck size={13} /> Copy for one student</button>
                           {!started && <button className="portal-btn-ghost" onClick={() => { record(id, "open"); setEditing({ ...e, questions: e.questions.map((q) => ({ ...q, options: [...q.options] })) }); }} data-testid={"button-edit-exam-" + id}><Pencil size={13} /> Edit</button>}
                           {e.fileId && <a className="portal-btn-ghost" href={fileUrl(e.fileId)} target="_blank" rel="noreferrer" onClick={() => record(id, "pdf")}><FileText size={13} /> Paper</a>}
                           {started && (e.published

@@ -9,6 +9,7 @@ import { ClassSelect } from "./ClassSelect";
 import { useCommand } from "./useCommand";
 import { DiagramField, PassageEditor } from "./QuestionExtras";
 import { QuestionSheetImport } from "./QuestionSheetImport";
+import { ExamAudience } from "./ExamAudience";
 
 type Q = PortalExamQuestionsItem;
 const MAX_PDF = 15 * 1024 * 1024;
@@ -34,6 +35,7 @@ export function validateExam(e: PortalExam, publishing: boolean): string[] {
   if (!e.startsAt || !e.endsAt || new Date(e.endsAt) <= new Date(e.startsAt)) errs.push("The window must end after it starts.");
   if (e.mode === "pdf" && !e.fileId) errs.push("PDF mode needs an uploaded exam paper.");
   if (e.questions.length === 0) errs.push("Add at least one question or answer slot.");
+  if (Array.isArray(e.onlyStudentIds) && e.onlyStudentIds.length === 0) errs.push("Choose at least one student, or set the exam for the whole class.");
   const draw = e.drawCount ?? 0;
   if ((e.shuffleQuestions || e.shuffleOptions || draw > 0) && e.mode === "pdf") errs.push("Shuffling and question banks only work with on-screen questions.");
   if (!Number.isInteger(draw) || draw < 0) errs.push("Questions per student must be a whole number.");
@@ -185,8 +187,9 @@ export function ExamEditor({ data, initial, onClose }: { data: PortalManagement;
     setShowErrors(true);
     if (errors.length || needsKeyConfirm) return;
     const questions = exam.questions.map(({ passage, ...q }) => (passage?.trim() ? { ...q, passage } : q));
-    const payload = { ...exam, questions, title: exam.title.trim(), subject: exam.subject.trim(), durationMinutes: Number(exam.durationMinutes) };
-    const extra = exam.id ? [] : also.filter((c) => c !== exam.classId);
+    const only = Array.isArray(exam.onlyStudentIds) && exam.onlyStudentIds.length ? exam.onlyStudentIds : null;
+    const payload = { ...exam, questions, onlyStudentIds: only, title: exam.title.trim(), subject: exam.subject.trim(), durationMinutes: Number(exam.durationMinutes) };
+    const extra = exam.id || only ? [] : also.filter((c) => c !== exam.classId);
     if (await cmd.run({ action: "saveExam", exam: payload, ...(extra.length ? { alsoClassIds: extra } : {}), ...(linked.length ? { linked: applyLinked } : {}) }, data.examOfficer && exam.published ? "Saved and sent to the exam officer" : exam.id ? "Exam updated" : "Exam saved")) onClose();
   };
 
@@ -199,12 +202,13 @@ export function ExamEditor({ data, initial, onClose }: { data: PortalManagement;
           <div className="grid gap-4 sm:grid-cols-2">
             <Field label="Title" htmlFor="e-title"><input id="e-title" className="portal-input" maxLength={200} value={exam.title} onChange={(e) => set({ title: e.target.value })} data-testid="input-exam-title" /></Field>
             <Field label="Subject" htmlFor="e-subject"><input id="e-subject" className="portal-input" maxLength={100} value={exam.subject} onChange={(e) => set({ subject: e.target.value })} data-testid="input-exam-subject" /></Field>
-            <Field label="Class" htmlFor="e-class" hint={exam.fileId ? "Class is fixed once a PDF is uploaded for it." : undefined}><ClassSelect id="e-class" classes={examClasses} value={exam.classId} disabled={!!exam.fileId} onChange={(v) => { set({ classId: v }); if (!exam.id) setAlso(groupMates(v)); }} /></Field>
+            <Field label="Class" htmlFor="e-class" hint={exam.fileId ? "Class is fixed once a PDF is uploaded for it." : undefined}><ClassSelect id="e-class" classes={examClasses} value={exam.classId} disabled={!!exam.fileId} onChange={(v) => { set({ classId: v, ...(Array.isArray(exam.onlyStudentIds) ? { onlyStudentIds: [] } : {}) }); if (!exam.id) setAlso(groupMates(v)); }} /></Field>
             <Field label="Duration (minutes)" htmlFor="e-dur"><input id="e-dur" type="number" min={1} max={300} className="portal-input" value={exam.durationMinutes} onChange={(e) => set({ durationMinutes: Number(e.target.value) })} data-testid="input-exam-duration" /></Field>
             <Field label="Opens" htmlFor="e-start"><input id="e-start" type="datetime-local" className="portal-input" value={toLocalInput(exam.startsAt)} onChange={(e) => set({ startsAt: fromLocalInput(e.target.value) })} data-testid="input-exam-start" /></Field>
             <Field label="Closes" htmlFor="e-end"><input id="e-end" type="datetime-local" className="portal-input" value={toLocalInput(exam.endsAt)} onChange={(e) => set({ endsAt: fromLocalInput(e.target.value) })} data-testid="input-exam-end" /></Field>
           </div>
-          {!exam.id && examClasses.length > 1 && (() => {
+          <ExamAudience classId={exam.classId} className={examClasses.find((c) => c.id === exam.classId)?.name ?? ""} chosen={exam.onlyStudentIds} onChange={(ids) => set({ onlyStudentIds: ids })} />
+          {!exam.id && examClasses.length > 1 && !Array.isArray(exam.onlyStudentIds) && (() => {
             const others = examClasses.filter((c) => c.id !== exam.classId);
             const group = exam.classId ? yearGroup(examClasses.find((c) => c.id === exam.classId)?.name ?? "") : "";
             const sameGroup = others.filter((c) => group && yearGroup(c.name) === group).map((c) => c.id as number);

@@ -51,6 +51,8 @@ export const portalExams = pgTable("portal_exams", {
   reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
   // One paper set for several classes at once (JSS 1A, 1B, 1C): every copy shares this, and saved changes reach them all.
   paperGroup: text("paper_group"),
+  // Only these students (of the exam's class) see and write it, for example one child who missed the paper. Empty: the whole class.
+  onlyStudentIds: jsonb("only_student_ids").$type<number[]>(),
 }, (t) => [index("portal_exams_paper_group_idx").on(t.paperGroup)]);
 export const insertPortalExamSchema = createInsertSchema(portalExams).omit({ id: true });
 export type PortalExamRecord = typeof portalExams.$inferSelect;

@@ -119,6 +119,7 @@ export function ExamList({ exams, onView }: { exams: ExamOfficerExam[]; onView: 
               <StatusPill tone={st.tone}>{st.label}</StatusPill>
             </div>
             {(e.linkedClasses ?? []).length > 0 && <p className="text-xs font-semibold text-[hsl(var(--p-emerald))]" data-testid={`officer-linked-${e.id}`}>Same paper for {(e.linkedClasses ?? []).join(", ")}</p>}
+            {(e.onlyStudents ?? []).length > 0 && <p className="text-xs font-semibold text-[hsl(var(--p-gold-ink))]" data-testid={`officer-only-${e.id}`}>Only for {(e.onlyStudents ?? []).join(", ")} (the rest of the class does not see it)</p>}
             <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm sm:grid-cols-4">
               <div><dt className={"text-xs " + MUTED}>Set by</dt><dd className="font-medium">{e.setBy || "Not recorded"}</dd></div>
               <div><dt className={"text-xs " + MUTED}>Opens</dt><dd className="font-medium">{when(e.startsAt)}</dd></div>
@@ -203,6 +204,7 @@ export function PaperDialog({ id, onClose }: { id: number; onClose: () => void }
         {q.isLoading ? <Skeleton className="h-60" /> : q.isError || !p ? <ErrorPanel title="The paper did not load" message={errorMessage(q.error)} onRetry={() => void q.refetch()} /> : (
           <div className="grid gap-5 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
             <div className="space-y-3" data-testid="officer-paper">
+              {(p.exam.onlyStudents ?? []).length > 0 && <p className="rounded-xl bg-[hsl(var(--p-gold-soft)/0.6)] px-3 py-2 text-sm" data-testid="text-officer-only">Only for <b>{(p.exam.onlyStudents ?? []).join(", ")}</b>. The rest of {p.exam.className} does not see it.</p>}
               {(p.exam.linkedClasses ?? []).length > 0 && <p className="rounded-xl bg-[hsl(var(--p-emerald-soft)/0.5)] px-3 py-2 text-sm" data-testid="text-officer-linked">One paper for {(p.exam.linkedClasses ?? []).length + 1} classes: <b>{[p.exam.className, ...(p.exam.linkedClasses ?? [])].join(", ")}</b>. Publishing, returning and editing reach every class waiting for you.</p>}
               <div className="flex flex-wrap items-center gap-2"><StatusPill tone={STATUS[p.exam.status].tone}>{STATUS[p.exam.status].label}</StatusPill>{p.exam.mode === "pdf" && <span className={"text-xs " + MUTED}>PDF paper: students see the uploaded file.</span>}</div>
               {p.instructions && <p className="whitespace-pre-line rounded-xl bg-[hsl(var(--p-paper-2)/0.7)] p-3 text-sm">{p.instructions}</p>}

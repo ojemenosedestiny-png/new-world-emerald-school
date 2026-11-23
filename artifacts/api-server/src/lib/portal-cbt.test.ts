@@ -194,6 +194,26 @@ test("cbt: each student gets their own drawn, shuffled paper that marks correctl
     assert.deepEqual(listed.map((m: { studentId: number }) => m.studentId), [chidi.id]);
     assert.equal((await command({ action: "removeMakeup", makeup: { examId: row.id, studentIds: [chidi.id] } })).status, 200);
     assert.equal((await call(`/attempts/${a.data.id}`, "GET", undefined, adaS)).data.review.length, 5, "the answers show again once no sitting is left");
+
+    // An exam for one particular student: only Chidi sees and writes it; Ada never does.
+    const names = await call(`/class-students/${cls.id}`, "GET", undefined, { admin: true });
+    assert.deepEqual(names.data.map((s: { name: string }) => s.name), ["Ada Obi", "Bayo Ade", "Chidi Eze"]);
+    assert.deepEqual(Object.keys(names.data[0]).sort(), ["id", "name", "studentId"], "names and IDs only");
+    assert.equal((await call(`/class-students/${cls.id}`, "GET", undefined, adaS)).status, 403, "students cannot list a class");
+    const solo = { ...exam, title: marker + "-SOLO", shuffleQuestions: false, shuffleOptions: false, drawCount: 0, onlyStudentIds: [chidi.id] };
+    const [stranger] = await db.insert(portalStudents).values({ studentId: marker + "-9", name: "Other Pupil", classId: other.id, passwordHash: pw, mustChangePassword: false }).returning();
+    assert.equal((await command({ action: "saveExam", exam: { ...solo, onlyStudentIds: [stranger.id] } })).status, 400, "a student of another class");
+    assert.equal((await command({ action: "saveExam", exam: solo, alsoClassIds: [other.id] })).status, 400, "one class only");
+    assert.equal((await command({ action: "saveExam", exam: solo })).status, 200);
+    const [soloRow] = await db.select().from(portalExams).where(eq(portalExams.title, marker + "-SOLO"));
+    assert.deepEqual(soloRow.onlyStudentIds, [chidi.id]);
+    assert.equal((await call("/student", "GET", undefined, adaS)).data.exams.some((e: { id: number }) => e.id === soloRow.id), false, "Ada does not see it");
+    assert.equal((await call(`/exams/${soloRow.id}/start`, "POST", undefined, adaS)).status, 404, "nor start it");
+    assert.equal((await call("/student", "GET", undefined, chidiS)).data.exams.some((e: { id: number }) => e.id === soloRow.id), true);
+    assert.equal((await call(`/exams/${soloRow.id}/start`, "POST", undefined, chidiS)).status, 200, "Chidi writes it");
+    assert.equal((await command({ action: "setMakeup", makeup: { examId: soloRow.id, studentIds: [bayo.id], startsAt: soon.toISOString(), endsAt: later.toISOString() } })).status, 400, "no make-up for someone it is not for");
+    // Saved for the whole class again, everyone sees it.
+    assert.equal((await command({ action: "saveExam", exam: { ...solo, id: soloRow.id, onlyStudentIds: null } })).status, 409, "content is locked once Chidi started");
   } finally {
     await new Promise<void>((resolve, reject) => server.close((e) => (e ? reject(e) : resolve())));
     // Practice tests went to every class in this disposable database; remove the ones nobody sat.

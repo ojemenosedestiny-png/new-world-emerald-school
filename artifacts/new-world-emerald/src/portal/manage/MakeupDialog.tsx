@@ -8,7 +8,8 @@ import { className, useCommand } from "./useCommand";
 /** Students of the exam's class who have not started it: the ones who can be given a make-up. */
 export function missedStudents(data: PortalManagement, exam: PortalManagementExamsItem) {
   const started = new Set(data.attempts.filter((a) => a.examId === exam.id).map((a) => a.studentId));
-  return data.students.filter((s) => s.classId === exam.classId && s.active && !started.has(s.studentId)).sort((a, b) => a.name.localeCompare(b.name));
+  const only = exam.onlyStudentIds?.length ? new Set(exam.onlyStudentIds) : null;
+  return data.students.filter((s) => s.classId === exam.classId && s.active && !started.has(s.studentId) && (!only || only.has(s.id as number))).sort((a, b) => a.name.localeCompare(b.name));
 }
 
 function defaultWindow(minutes: number) {

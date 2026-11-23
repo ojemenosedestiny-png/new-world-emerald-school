@@ -134,6 +134,18 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/PortalMessage" }
+  classStudents:
+    get:
+      operationId: listClassStudents
+      description: The active students of one class (name and Student ID only), so staff can set an exam for particular students of any class
+      parameters:
+        - { name: classId, in: path, required: true, schema: { type: integer } }
+      responses:
+        "200":
+          description: Students, by name
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: "#/components/schemas/PortalClassStudent" } }
   import:
     post:
       operationId: importPortalPdf
@@ -292,6 +304,7 @@ schemas:
       reviewStatus: { type: string, readOnly: true, description: "Exam officer review: empty (draft), submitted, returned or approved. Set by the server only" }
       reviewNote: { type: string, readOnly: true, description: "The exam officer's note when an exam is returned" }
       instantResults: { type: boolean, description: "After submitting, each student sees the right answer to every multiple-choice question; scores wait for release" }
+      onlyStudentIds: { type: [array, "null"], items: { type: integer }, maxItems: 200, description: "Only these students of the class see and write the exam (for example one child who missed it). Empty or absent: the whole class" }
       paperGroup: { type: [string, "null"], readOnly: true, description: "Copies of one paper set for several classes share this; saved changes reach every copy. Set by the server only" }
   PortalExamSummary:
     type: object
@@ -477,6 +490,13 @@ schemas:
     required: [id]
     properties:
       id: { type: integer }
+  PortalClassStudent:
+    type: object
+    required: [id, name, studentId]
+    properties:
+      id: { type: integer }
+      name: { type: string }
+      studentId: { type: string }
   PortalMakeupInput:
     type: object
     required: [examId, studentIds]
@@ -566,6 +586,7 @@ components:
     PortalTarget: { $ref: "#/schemas/PortalTarget" }
     PortalAttemptControl: { $ref: "#/schemas/PortalAttemptControl" }
     PortalMakeupInput: { $ref: "#/schemas/PortalMakeupInput" }
+    PortalClassStudent: { $ref: "#/schemas/PortalClassStudent" }
     PortalMakeup: { $ref: "#/schemas/PortalMakeup" }
     PortalMessage: { $ref: "#/schemas/PortalMessage" }
     PortalPdfImport: { $ref: "#/schemas/PortalPdfImport" }

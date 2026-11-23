@@ -35,7 +35,9 @@ export function examRoster(data: PortalManagement, exam: PortalManagementExamsIt
       percent: score !== undefined && (attempt?.totalMarks ?? totalMarks) > 0 ? Math.round((score / (attempt?.totalMarks ?? totalMarks)) * 1000) / 10 : undefined,
     });
   };
-  for (const s of data.students) if (s.classId === exam.classId && s.active) add(s.studentId, s.name, byStudent.get(s.studentId));
+  // An exam set for particular students lists only them, not the whole class.
+  const only = exam.onlyStudentIds?.length ? new Set(exam.onlyStudentIds) : null;
+  for (const s of data.students) if (s.classId === exam.classId && s.active && (!only || only.has(s.id as number))) add(s.studentId, s.name, byStudent.get(s.studentId));
   for (const a of attempts) if (!seen.has(a.studentId)) add(a.studentId, a.studentName, a);
   return rows.sort((x, y) => x.name.localeCompare(y.name));
 }

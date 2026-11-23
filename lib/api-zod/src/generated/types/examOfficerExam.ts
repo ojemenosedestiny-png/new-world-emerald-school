@@ -37,4 +37,6 @@ export interface ExamOfficerExam {
   opened: number;
   /** Other classes sitting the same paper (one upload); publishing, returning and editing reach them too */
   linkedClasses?: string[];
+  /** When set: the only students who write it (the rest of the class does not see it) */
+  onlyStudents?: string[];
 }

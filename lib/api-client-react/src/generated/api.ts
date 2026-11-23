@@ -147,6 +147,7 @@ import type {
   PortalAlbumPhoto,
   PortalAnswerInput,
   PortalAttempt,
+  PortalClassStudent,
   PortalCommand,
   PortalDashboard,
   PortalDiagram,
@@ -1083,6 +1084,80 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       > => {
       return useMutation(getManagePortalMutationOptions(options));
     }
+
+export const getListClassStudentsUrl = (classId: number,) => {
+
+
+
+
+  return `/api/portal/class-students/${classId}`
+}
+
+/**
+ * The active students of one class (name and Student ID only), so staff can set an exam for particular students of any class
+ */
+export const listClassStudents = async (classId: number, options?: RequestInit): Promise<PortalClassStudent[]> => {
+
+  return customFetch<PortalClassStudent[]>(getListClassStudentsUrl(classId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListClassStudentsQueryKey = (classId: number,) => {
+    return [
+    `/api/portal/class-students/${classId}`
+    ] as const;
+    }
+
+
+export const getListClassStudentsQueryOptions = <TData = Awaited<ReturnType<typeof listClassStudents>>, TError = ErrorType<unknown>>(classId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listClassStudents>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListClassStudentsQueryKey(classId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listClassStudents>>> = ({ signal }) => listClassStudents(classId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: classId !== null && classId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listClassStudents>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListClassStudentsQueryResult = NonNullable<Awaited<ReturnType<typeof listClassStudents>>>
+export type ListClassStudentsQueryError = ErrorType<unknown>
+
+
+
+export function useListClassStudents<TData = Awaited<ReturnType<typeof listClassStudents>>, TError = ErrorType<unknown>>(
+ classId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listClassStudents>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListClassStudentsQueryOptions(classId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 
 export const getImportPortalPdfUrl = (params: ImportPortalPdfParams,) => {
   const normalizedParams = new URLSearchParams();

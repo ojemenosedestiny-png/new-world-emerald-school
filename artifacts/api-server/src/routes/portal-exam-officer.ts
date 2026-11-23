@@ -85,6 +85,8 @@ async function summaries(exams: PortalExamRecord[]) {
     ids.length ? db.select({ action: portalAuditLog.action, n: sql<number>`count(*)::int` }).from(portalAuditLog)
       .where(and(like(portalAuditLog.action, "POST /portal/exams/%/access"), eq(portalAuditLog.outcome, "success"))).groupBy(portalAuditLog.action) : [] as { action: string; n: number }[],
   ]);
+  const chosenIds = [...new Set(exams.flatMap((e) => e.onlyStudentIds ?? []))];
+  const chosen = new Map((chosenIds.length ? await db.select({ id: portalStudents.id, name: portalStudents.name }).from(portalStudents).where(inArray(portalStudents.id, chosenIds)) : []).map((s) => [s.id, s.name]));
   const groups = [...new Set(exams.map((e) => e.paperGroup).filter((g): g is string => !!g))];
   const copies = groups.length ? await db.select({ id: portalExams.id, classId: portalExams.classId, paperGroup: portalExams.paperGroup }).from(portalExams).where(inArray(portalExams.paperGroup, groups)) : [];
   const opened = new Map<number, number>();
@@ -99,6 +101,7 @@ async function summaries(exams: PortalExamRecord[]) {
       reviewNote: e.reviewNote, submittedBy: e.submittedBy ? L.who(e.submittedBy) : "", submittedAt: e.submittedAt?.toISOString() ?? null,
       reviewedBy: e.reviewedBy, reviewedAt: e.reviewedAt?.toISOString() ?? null,
       students: students.find((s) => s.classId === e.classId)?.n ?? 0, sat: c?.sat ?? 0, marked: c?.marked ?? 0, opened: opened.get(e.id) ?? 0,
+      onlyStudents: (e.onlyStudentIds ?? []).map((id) => chosen.get(id) ?? "A former student").sort(),
       linkedClasses: e.paperGroup ? copies.filter((x) => x.paperGroup === e.paperGroup && x.id !== e.id).map((x) => L.className.get(x.classId) ?? "").filter(Boolean).sort() : [],
     };
   });

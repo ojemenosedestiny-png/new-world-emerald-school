@@ -8,10 +8,13 @@ import { buildPaper, MAX_FOCUS_LOSSES, paperSize } from "../lib/cbt";
 import { lastSittingEnds, sittingWindow, studentMakeups } from "../lib/makeups";
 
 export const portalStudentRouter = Router();
+/** Whether a student of the exam's class writes it: everyone, unless it was set for particular students. */
+export const forStudent = (exam: { onlyStudentIds: number[] | null }, studentId: number) => !exam.onlyStudentIds?.length || exam.onlyStudentIds.includes(studentId);
 portalStudentRouter.get("/student", async (req, res) => {
   const student = studentOnly(await portalActor(req));
   const [schoolClass] = await db.select().from(portalClasses).where(eq(portalClasses.id, student.classId));
-  const exams = await db.select().from(portalExams).where(eq(portalExams.classId, student.classId));
+  // An exam set for particular students is theirs alone; the rest of the class never sees it.
+  const exams = (await db.select().from(portalExams).where(eq(portalExams.classId, student.classId))).filter((e) => forStudent(e, student.id));
   const ownAttempts = await db.select().from(portalAttempts).where(eq(portalAttempts.studentId, student.id));
   // A make-up sitting gives this student their own window; answers wait for every sitting to end.
   const [makeups, closes] = await Promise.all([studentMakeups(student.id, exams.map((e) => e.id)), lastSittingEnds(exams)]);
@@ -40,7 +43,7 @@ portalStudentRouter.post("/exams/:id/start", async (req, res) => {
   const result = await db.transaction(async (tx) => {
     // Lock the exam to serialize starting with content edits and release actions.
     const [exam] = await tx.select().from(portalExams).where(eq(portalExams.id, id)).for("update");
-    check(exam && exam.classId === student.classId, "Exam not found.", 404);
+    check(exam && exam.classId === student.classId && forStudent(exam, student.id), "Exam not found.", 404);
     const [existing] = await tx.select().from(portalAttempts).where(and(eq(portalAttempts.examId, exam.id), eq(portalAttempts.studentId, student.id)));
     if (existing) return { exam, attempt: existing };
     const now = new Date();

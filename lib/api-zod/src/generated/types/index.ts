@@ -290,6 +290,7 @@ export * from './portalAttemptReviewItem';
 export * from './portalAttemptStatus';
 export * from './portalChatMessage';
 export * from './portalClass';
+export * from './portalClassStudent';
 export * from './portalCommand';
 export * from './portalCommandAction';
 export * from './portalCommandAttemptControl';

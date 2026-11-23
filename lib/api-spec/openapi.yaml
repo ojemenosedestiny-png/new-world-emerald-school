@@ -35,6 +35,8 @@ paths:
     $ref: "./portal.yaml#/paths/focusLoss"
   /portal/manage:
     $ref: "./portal.yaml#/paths/manage"
+  /portal/class-students/{classId}:
+    $ref: "./portal.yaml#/paths/classStudents"
   /portal/import:
     $ref: "./portal.yaml#/paths/import"
   /portal/files/{id}:
@@ -1727,6 +1729,8 @@ components:
       $ref: "./portal.yaml#/schemas/PortalAttemptControl"
     PortalMakeupInput:
       $ref: "./portal.yaml#/schemas/PortalMakeupInput"
+    PortalClassStudent:
+      $ref: "./portal.yaml#/schemas/PortalClassStudent"
     PortalMakeup:
       $ref: "./portal.yaml#/schemas/PortalMakeup"
     PortalMessage:

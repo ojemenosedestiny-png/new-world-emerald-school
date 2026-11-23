@@ -512,6 +512,8 @@ export const getPortalManagementResponseExamsItemQuestionsMax = 200;
 export const getPortalManagementResponseExamsItemDrawCountMin = 0;
 export const getPortalManagementResponseExamsItemDrawCountMax = 200;
 
+export const getPortalManagementResponseExamsItemOnlyStudentIdsMax = 200;
+
 export const getPortalManagementResponseAttemptsItemOneQuestionsItemIdMax = 80;
 
 export const getPortalManagementResponseAttemptsItemOneQuestionsItemTextMax = 12000;
@@ -623,6 +625,7 @@ export const GetPortalManagementResponse = zod.object({
   "reviewStatus": zod.string().optional().describe('Exam officer review: empty (draft), submitted, returned or approved. Set by the server only'),
   "reviewNote": zod.string().optional().describe('The exam officer\'s note when an exam is returned'),
   "instantResults": zod.boolean().optional().describe('After submitting, each student sees the right answer to every multiple-choice question; scores wait for release'),
+  "onlyStudentIds": zod.array(zod.number()).max(getPortalManagementResponseExamsItemOnlyStudentIdsMax).nullish().describe('Only these students of the class see and write the exam (for example one child who missed it). Empty or absent: the whole class'),
   "paperGroup": zod.string().nullish().describe('Copies of one paper set for several classes share this; saved changes reach every copy. Set by the server only')
 })),
   "attempts": zod.array(zod.object({
@@ -774,6 +777,8 @@ export const managePortalBodyExamQuestionsMax = 200;
 export const managePortalBodyExamDrawCountMin = 0;
 export const managePortalBodyExamDrawCountMax = 200;
 
+export const managePortalBodyExamOnlyStudentIdsMax = 200;
+
 export const managePortalBodyMaterialTitleMax = 200;
 
 export const managePortalBodyMaterialSubjectMax = 100;
@@ -858,6 +863,7 @@ export const ManagePortalBody = zod.object({
   "reviewStatus": zod.string().optional().describe('Exam officer review: empty (draft), submitted, returned or approved. Set by the server only'),
   "reviewNote": zod.string().optional().describe('The exam officer\'s note when an exam is returned'),
   "instantResults": zod.boolean().optional().describe('After submitting, each student sees the right answer to every multiple-choice question; scores wait for release'),
+  "onlyStudentIds": zod.array(zod.number()).max(managePortalBodyExamOnlyStudentIdsMax).nullish().describe('Only these students of the class see and write the exam (for example one child who missed it). Empty or absent: the whole class'),
   "paperGroup": zod.string().nullish().describe('Copies of one paper set for several classes share this; saved changes reach every copy. Set by the server only')
 }).optional(),
   "material": zod.object({
@@ -906,6 +912,21 @@ export const ManagePortalResponse = zod.object({
   "message": zod.string(),
   "studentId": zod.string().optional().describe('The Student ID of a student just enrolled')
 })
+
+
+/**
+ * The active students of one class (name and Student ID only), so staff can set an exam for particular students of any class
+ */
+export const ListClassStudentsParams = zod.object({
+  "classId": zod.coerce.number()
+})
+
+export const ListClassStudentsResponseItem = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "studentId": zod.string()
+})
+export const ListClassStudentsResponse = zod.array(ListClassStudentsResponseItem)
 
 
 export const ImportPortalPdfQueryParams = zod.object({
@@ -3519,7 +3540,8 @@ export const GetExamOfficerOverviewResponse = zod.object({
   "sat": zod.number(),
   "marked": zod.number(),
   "opened": zod.number().describe('Times staff opened, copied or downloaded the questions'),
-  "linkedClasses": zod.array(zod.string()).optional().describe('Other classes sitting the same paper (one upload); publishing, returning and editing reach them too')
+  "linkedClasses": zod.array(zod.string()).optional().describe('Other classes sitting the same paper (one upload); publishing, returning and editing reach them too'),
+  "onlyStudents": zod.array(zod.string()).optional().describe('When set: the only students who write it (the rest of the class does not see it)')
 })),
   "sections": zod.array(zod.object({
   "section": zod.enum(['primary', 'secondary', 'other']),
@@ -3605,7 +3627,8 @@ export const GetExamOfficerExamResponse = zod.object({
   "sat": zod.number(),
   "marked": zod.number(),
   "opened": zod.number().describe('Times staff opened, copied or downloaded the questions'),
-  "linkedClasses": zod.array(zod.string()).optional().describe('Other classes sitting the same paper (one upload); publishing, returning and editing reach them too')
+  "linkedClasses": zod.array(zod.string()).optional().describe('Other classes sitting the same paper (one upload); publishing, returning and editing reach them too'),
+  "onlyStudents": zod.array(zod.string()).optional().describe('When set: the only students who write it (the rest of the class does not see it)')
 }),
   "instructions": zod.string(),
   "questions": zod.array(zod.object({

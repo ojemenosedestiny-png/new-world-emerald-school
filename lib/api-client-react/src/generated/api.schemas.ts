@@ -1276,6 +1276,8 @@ export interface ExamOfficerExam {
   opened: number;
   /** Other classes sitting the same paper (one upload); publishing, returning and editing reach them too */
   linkedClasses?: string[];
+  /** When set: the only students who write it (the rest of the class does not see it) */
+  onlyStudents?: string[];
 }
 
 export type ExamOfficerSectionSection = typeof ExamOfficerSectionSection[keyof typeof ExamOfficerSectionSection];
@@ -4819,6 +4821,12 @@ export interface PortalExam {
   /** After submitting, each student sees the right answer to every multiple-choice question; scores wait for release */
   instantResults?: boolean;
   /**
+     * Only these students of the class see and write the exam (for example one child who missed it). Empty or absent: the whole class
+     * @maxItems 200
+     * @nullable
+     */
+  onlyStudentIds?: number[] | null;
+  /**
      * Copies of one paper set for several classes share this; saved changes reach every copy. Set by the server only
      * @nullable
      */
@@ -5436,6 +5444,12 @@ export type PortalManagementExamsItem = {
   /** After submitting, each student sees the right answer to every multiple-choice question; scores wait for release */
   instantResults?: boolean;
   /**
+     * Only these students of the class see and write the exam (for example one child who missed it). Empty or absent: the whole class
+     * @maxItems 200
+     * @nullable
+     */
+  onlyStudentIds?: number[] | null;
+  /**
      * Copies of one paper set for several classes share this; saved changes reach every copy. Set by the server only
      * @nullable
      */
@@ -5903,6 +5917,12 @@ export type PortalCommandExam = {
   /** After submitting, each student sees the right answer to every multiple-choice question; scores wait for release */
   instantResults?: boolean;
   /**
+     * Only these students of the class see and write the exam (for example one child who missed it). Empty or absent: the whole class
+     * @maxItems 200
+     * @nullable
+     */
+  onlyStudentIds?: number[] | null;
+  /**
      * Copies of one paper set for several classes share this; saved changes reach every copy. Set by the server only
      * @nullable
      */
@@ -6026,6 +6046,12 @@ export interface PortalMakeupInput {
   studentIds: number[];
   startsAt?: string;
   endsAt?: string;
+}
+
+export interface PortalClassStudent {
+  id: number;
+  name: string;
+  studentId: string;
 }
 
 export interface PortalMakeup {
