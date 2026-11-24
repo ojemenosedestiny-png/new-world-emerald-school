@@ -6,13 +6,13 @@ import type { Plugin } from "vite";
 
 type Field = { key: string; group: string; label: string; kind: string; defaultValue: string };
 const files = [
-  "Layout", "HeroAbout", "DirectorWelcome", "ParentServices", "FifthAnniversary", "ProgramsFacilities",
+  "Layout", "HeroAbout", "DirectorWelcome", "ParentServices", "ProgramsFacilities",
   "LifeGallery", "AdmissionsNews", "LiveUpdates", "AcademicCalendar", "Widgets", "SchoolFeeGuide", "SpecialNeeds", "AdmissionRequirements",
 ];
 const groups: Record<string, string> = {
   Navbar: "Navigation", Footer: "Footer", Hero: "Welcome banner",
   About: "About the school", WhyChooseUs: "Why choose us", DirectorWelcome: "Director's welcome",
-  ParentServices: "Parent services", FifthAnniversary: "5th anniversary", SpecialNeeds: "Special needs education (SEN)", AdmissionRequirements: "Application requirements", SchoolFeeGuide: "Reported fee guide", Programs: "Academic programmes", Facilities: "Facilities",
+  ParentServices: "Parent services", SpecialNeeds: "Special needs education (SEN)", AdmissionRequirements: "Application requirements", SchoolFeeGuide: "Reported fee guide", Programs: "Academic programmes", Facilities: "Facilities",
   SchoolLife: "School life", Gallery: "School gallery", Testimonials: "Parent testimonials",
   NewsEvents: "News and events", AdmissionsFAQ: "Admissions and FAQs", FinalCTA: "Admissions invitation",
   LiveUpdates: "Live updates introduction", AcademicCalendar: "Calendar introduction",
