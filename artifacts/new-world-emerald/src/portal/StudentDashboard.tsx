@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { useToast } from "@/hooks/use-toast";
 import { EmptyState, ErrorPanel, Skeleton, StatusPill } from "./ui";
 import { PasswordChange } from "./PasswordChange";
-import { activeStudentExams, clearDrafts, clearStudentQueries, errorMessage, examWindow, formatDateTime, sortStudentExams } from "./lib";
+import { activeStudentExams, clearDrafts, clearStudentQueries, clockOffset, errorMessage, examWindow, formatDateTime, setServerClock, sortStudentExams } from "./lib";
 import { studentAverage } from "./manage/results";
 import { StudentReports } from "./reports/StudentReports";
 import { StudentHome, type StudentSection } from "./StudentHome";
@@ -105,6 +105,9 @@ export function StudentDashboard({ session, theme }: { session: PortalSession; t
   const [pwOpen, setPwOpen] = useState(false);
   const [section, setSection] = useState<StudentSection>("home");
   const data = dash.data;
+  // Exams open by the school's clock, not this computer's (which may be set wrong).
+  if (data?.serverNow) setServerClock(data.serverNow, dash.dataUpdatedAt);
+  const clockWrongBy = data?.serverNow ? Math.round(clockOffset() / 60_000) : 0;
   const attemptByExam = useMemo(() => new Map((data?.attempts ?? []).map((a) => [a.examId, a])), [data]);
   const examIds = useMemo(() => new Set((data?.exams ?? []).map((e) => e.id)), [data]);
   const orphanAttempts = (data?.attempts ?? []).filter((a) => !examIds.has(a.examId) && a.status === "in_progress");
@@ -177,6 +180,11 @@ export function StudentDashboard({ session, theme }: { session: PortalSession; t
             {section === "boarding" && <StudentFacilities />}
 
             {section === "exams" && <div className="space-y-3">
+              {Math.abs(clockWrongBy) >= 3 && (
+                <p className="rounded-xl border border-[hsl(var(--p-gold)/0.5)] bg-[hsl(var(--p-gold-soft))] p-3 text-sm" role="status" data-testid="text-clock-wrong">
+                  <b>This computer's clock is {Math.abs(clockWrongBy) >= 120 ? `${Math.round(Math.abs(clockWrongBy) / 60)} hours` : `${Math.abs(clockWrongBy)} minutes`} {clockWrongBy > 0 ? "behind" : "ahead"}.</b> Your exams still open at the right school time. Please tell a teacher so the clock can be fixed.
+                </p>
+              )}
               {exams.length === 0 && orphanAttempts.length === 0 ? (
                 <EmptyState icon={<ClipboardList size={22} />} title="No exams right now" body="When your teacher publishes an exam for your class, it will appear here with its date and time. Finished exams leave this list; your scores appear in the GradeSheet once released." />
               ) : (

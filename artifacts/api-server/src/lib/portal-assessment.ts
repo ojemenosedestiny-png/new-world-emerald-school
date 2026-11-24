@@ -31,12 +31,19 @@ export function validAnswers(questions: PortalQuestionData[], answers: Record<st
   }
   return clean;
 }
+/**
+ * Answers that reach the server a little after time is up (the computer lost its connection near the end) still
+ * count; the student cannot keep writing, because the page locks at the deadline.
+ */
+export const LATE_ANSWER_GRACE_MS = 2 * 60_000;
+export const pastGrace = (deadline: Date, now = Date.now()) => now >= deadline.getTime() + LATE_ANSWER_GRACE_MS;
 export async function finalizeExpired(attempt: PortalAttemptRecord) {
-  if (attempt.status !== "in_progress" || attempt.deadline.getTime() > Date.now()) return attempt;
+  if (attempt.status !== "in_progress" || !pastGrace(attempt.deadline)) return attempt;
   return db.transaction(async (tx) => {
     const [current] = await tx.select().from(portalAttempts).where(eq(portalAttempts.id, attempt.id)).for("update");
-    if (!current || current.status !== "in_progress" || current.deadline.getTime() > Date.now()) return current ?? attempt;
+    if (!current || current.status !== "in_progress" || !pastGrace(current.deadline)) return current ?? attempt;
     const [saved] = await tx.update(portalAttempts).set({
+      submittedAt: current.deadline, closedBy: "time",
       status: current.questions.some((q) => q.type === "written") ? "submitted" : "marked",
       marks: automaticMarks(current.questions, current.answers),
     }).where(eq(portalAttempts.id, current.id)).returning();

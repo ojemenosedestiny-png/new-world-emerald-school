@@ -93,6 +93,7 @@ export const getPortalDashboardResponseNoticesItemBodyMax = 5000;
 
 
 export const GetPortalDashboardResponse = zod.object({
+  "serverNow": zod.coerce.date().optional().describe('The server\'s clock, so a computer with a wrong clock still shows exams open at the right time'),
   "className": zod.string(),
   "exams": zod.array(zod.object({
   "id": zod.number(),
@@ -682,7 +683,9 @@ export const GetPortalManagementResponse = zod.object({
 }).and(zod.object({
   "correctAnswer": zod.number().nullish(),
   "rubric": zod.string().max(getPortalManagementResponseAttemptsItemTwoQuestionKeysItemTwoRubricMax).optional()
-})))
+}))),
+  "closedBy": zod.string().nullish().describe('student: they pressed Submit in time; time: time ran out first. Empty for older scripts'),
+  "submittedAt": zod.coerce.date().nullish()
 }))),
   "materials": zod.array(zod.object({
   "id": zod.number().optional(),
@@ -798,7 +801,7 @@ export const managePortalBodyAttemptControlMinutesMax = 240;
 
 
 export const ManagePortalBody = zod.object({
-  "action": zod.enum(['saveClass', 'saveStudent', 'saveTeacher', 'saveExam', 'saveMaterial', 'saveNotice', 'grade', 'examStatus', 'deleteExam', 'deleteMaterial', 'deleteNotice', 'extendAttempt', 'resetAttempt', 'addPracticeExams', 'inviteTeacher', 'deleteClass', 'deleteTeacher', 'moveStudent', 'setMakeup', 'removeMakeup']),
+  "action": zod.enum(['saveClass', 'saveStudent', 'saveTeacher', 'saveExam', 'saveMaterial', 'saveNotice', 'grade', 'examStatus', 'deleteExam', 'deleteMaterial', 'deleteNotice', 'extendAttempt', 'resetAttempt', 'reopenAttempt', 'addPracticeExams', 'inviteTeacher', 'deleteClass', 'deleteTeacher', 'moveStudent', 'setMakeup', 'removeMakeup']),
   "makeup": zod.object({
   "examId": zod.number(),
   "studentIds": zod.array(zod.number()).min(1).max(managePortalBodyMakeupStudentIdsMax),

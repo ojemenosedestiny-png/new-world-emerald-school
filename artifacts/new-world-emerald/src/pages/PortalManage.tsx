@@ -66,7 +66,7 @@ export default function PortalManage() {
   const session = useGetPortalSession({ query: { queryKey: [...getGetPortalSessionQueryKey(), "staff", uid], enabled: signedIn, retry: 1 } });
   const role = session.data?.role;
   const isStaff = role === "admin" || role === "teacher";
-  const mgmt = useGetPortalManagement({ query: { queryKey: getGetPortalManagementQueryKey(), enabled: signedIn && isStaff, refetchInterval: 20000 } });
+  const mgmt = useGetPortalManagement({ query: { queryKey: getGetPortalManagementQueryKey(), enabled: signedIn && isStaff, refetchInterval: 60000 } });
   const threads = useListMessageThreads({ query: { queryKey: getListMessageThreadsQueryKey(), enabled: signedIn && isStaff, refetchInterval: 30000 } });
   const reviews = useListPhotoReviews({ query: { queryKey: getListPhotoReviewsQueryKey(), enabled: signedIn && isStaff, refetchInterval: 60000 } });
 

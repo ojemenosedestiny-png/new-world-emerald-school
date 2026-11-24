@@ -1,5 +1,5 @@
 import type { MyMessages, PortalDashboard, PortalEvent, StudentAssignment, StudentReports } from "@workspace/api-client-react";
-import { examWindow } from "./lib";
+import { examWindow, schoolNow } from "./lib";
 import type { StudentSection } from "./StudentHome";
 
 export type PortalNotice = { key: string; kind: "exam" | "notice" | "result" | "report" | "event" | "assignment" | "message"; title: string; detail: string; section: StudentSection; unseen: boolean };
@@ -16,7 +16,7 @@ export function markSeen(studentId: string, keys: string[]) {
 }
 
 /** Everything worth a student's attention, newest-relevant first; `unseen` drives the bell badge. */
-export function studentNotifications(data: PortalDashboard, reports: StudentReports | undefined, seen: Seen, now = Date.now(), events: PortalEvent[] = [], assignments: StudentAssignment[] = [], messages?: MyMessages): PortalNotice[] {
+export function studentNotifications(data: PortalDashboard, reports: StudentReports | undefined, seen: Seen, now = schoolNow(), events: PortalEvent[] = [], assignments: StudentAssignment[] = [], messages?: MyMessages): PortalNotice[] {
   const attempted = new Map(data.attempts.map((a) => [a.examId, a]));
   const list: PortalNotice[] = [];
   for (const e of data.exams) {

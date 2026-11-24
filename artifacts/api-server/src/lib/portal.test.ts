@@ -179,13 +179,39 @@ test("student enrolment, exams, grading, isolation and revocation work end-to-en
     assert.equal(result.data.score, 4);
     assert.equal(result.data.resultsReleased, true);
     assert.equal((await command({ action: "grade", grade: { attemptId, marks: [{ questionId: "written-1", score: 1, feedback: "" }] } })).status, 409);
-    // Expiry uses the server deadline and ignores late answer replacements.
+    // Expiry uses the server deadline. Answers that arrive just after it (the connection dropped near the end)
+    // still count and close the attempt; answers arriving after the grace are ignored.
     const [timedExam] = await db.insert(portalExams).values({ ...examData, title: `${marker}-TIME`, startsAt: new Date(examData.startsAt), endsAt: new Date(examData.endsAt), questions: [questions[0]] }).returning();
     const timed = await call(`/exams/${timedExam.id}/start`, "POST", undefined, cookie);
     await db.update(portalAttempts).set({ answers: { "mcq-1": "0" }, deadline: new Date(Date.now() - 1000) }).where(eq(portalAttempts.id, timed.data.id));
-    const late = await call(`/attempts/${timed.data.id}`, "PUT", { answers: { "mcq-1": "1" } }, cookie);
+    const justLate = await call(`/attempts/${timed.data.id}`, "PUT", { answers: { "mcq-1": "1" } }, cookie);
+    assert.equal(justLate.data.status, "marked");
+    assert.equal(justLate.data.answers["mcq-1"], "1", "sent within the grace: kept");
+    const [lateExam] = await db.insert(portalExams).values({ ...examData, title: `${marker}-LATE`, startsAt: new Date(examData.startsAt), endsAt: new Date(examData.endsAt), questions: [questions[0]] }).returning();
+    const lateTimed = await call(`/exams/${lateExam.id}/start`, "POST", undefined, cookie);
+    await db.update(portalAttempts).set({ answers: { "mcq-1": "0" }, deadline: new Date(Date.now() - 3 * 60_000) }).where(eq(portalAttempts.id, lateTimed.data.id));
+    const late = await call(`/attempts/${lateTimed.data.id}`, "PUT", { answers: { "mcq-1": "1" } }, cookie);
     assert.equal(late.data.status, "marked");
-    assert.equal(late.data.answers["mcq-1"], "0");
+    assert.equal(late.data.answers["mcq-1"], "0", "after the grace: ignored");
+    // The teacher reopens it with extra time: the student carries on with their answers kept.
+    assert.equal((await command({ action: "reopenAttempt", attemptControl: { attemptId: lateTimed.data.id } })).status, 400, "minutes required");
+    const reopened = await command({ action: "reopenAttempt", attemptControl: { attemptId: lateTimed.data.id, minutes: 15 } });
+    assert.equal(reopened.status, 200, JSON.stringify(reopened.data));
+    const resumed = (await call(`/attempts/${lateTimed.data.id}`, "GET", undefined, cookie)).data as unknown as { status: string; answers: Record<string, string>; deadline: string };
+    assert.equal(resumed.status, "in_progress");
+    assert.equal(resumed.answers["mcq-1"], "0", "answers kept");
+    assert.ok(new Date(resumed.deadline).getTime() > Date.now() + 14 * 60_000);
+    assert.equal((await command({ action: "reopenAttempt", attemptControl: { attemptId: lateTimed.data.id, minutes: 5 } })).status, 409, "still writing: use extra time");
+    const closedOf = async (id: number) => (await db.select({ closedBy: portalAttempts.closedBy, submittedAt: portalAttempts.submittedAt }).from(portalAttempts).where(eq(portalAttempts.id, id)))[0];
+    assert.equal((await closedOf(timed.data.id)).closedBy, "time", "closed after the deadline: time ran out");
+    assert.deepEqual(await closedOf(lateTimed.data.id), { closedBy: null, submittedAt: null }, "reopened: not closed");
+    assert.equal((await call(`/attempts/${lateTimed.data.id}/submit`, "POST", { answers: { "mcq-1": "1" } }, cookie)).data.answers["mcq-1"], "1");
+    const byStudent = await closedOf(lateTimed.data.id);
+    assert.equal(byStudent.closedBy, "student", "pressed Submit in time");
+    assert.ok(byStudent.submittedAt && Math.abs(byStudent.submittedAt.getTime() - Date.now()) < 60_000);
+    // The dashboard carries the server clock.
+    const dashNow = ((await call("/student", "GET", undefined, cookie)).data as unknown as { serverNow: string }).serverNow;
+    assert.ok(Math.abs(new Date(dashNow).getTime() - Date.now()) < 60_000);
     // Resetting credentials revokes all sessions; the new password works straight away.
     assert.equal((await command({ action: "saveStudent", student: { id: student.id, studentId: marker, name: student.name, classId: c.id, active: true, password: "Reset-Individual-9821!" } })).status, 200);
     assert.equal((await call("/session", "GET", undefined, cookie)).data.role, "guest");

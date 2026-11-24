@@ -11,6 +11,8 @@ import type { PortalDashboardMaterialsItem } from './portalDashboardMaterialsIte
 import type { PortalDashboardNoticesItem } from './portalDashboardNoticesItem';
 
 export interface PortalDashboard {
+  /** The server's clock, so a computer with a wrong clock still shows exams open at the right time */
+  serverNow?: Date;
   className: string;
   exams: PortalDashboardExamsItem[];
   attempts: PortalDashboardAttemptsItem[];

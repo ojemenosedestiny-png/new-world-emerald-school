@@ -118,4 +118,11 @@ export type PortalManagementAttemptsItem = ({
   /** @maxLength 5000 */
   rubric?: string;
 }))[];
+  /**
+     * student: they pressed Submit in time; time: time ran out first. Empty for older scripts
+     * @nullable
+     */
+  closedBy?: string | null;
+  /** @nullable */
+  submittedAt?: Date | null;
 });

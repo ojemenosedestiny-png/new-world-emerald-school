@@ -5144,6 +5144,8 @@ export type PortalDashboardNoticesItem = {
 };
 
 export interface PortalDashboard {
+  /** The server's clock, so a computer with a wrong clock still shows exams open at the right time */
+  serverNow?: string;
   className: string;
   exams: PortalDashboardExamsItem[];
   attempts: PortalDashboardAttemptsItem[];
@@ -5263,6 +5265,13 @@ export type PortalStaffAttempt = ({
   /** @maxLength 5000 */
   rubric?: string;
 }))[];
+  /**
+     * student: they pressed Submit in time; time: time ran out first. Empty for older scripts
+     * @nullable
+     */
+  closedBy?: string | null;
+  /** @nullable */
+  submittedAt?: string | null;
 });
 
 export type PortalManagementClassesItem = {
@@ -5568,6 +5577,13 @@ export type PortalManagementAttemptsItem = ({
   /** @maxLength 5000 */
   rubric?: string;
 }))[];
+  /**
+     * student: they pressed Submit in time; time: time ran out first. Empty for older scripts
+     * @nullable
+     */
+  closedBy?: string | null;
+  /** @nullable */
+  submittedAt?: string | null;
 });
 
 export type PortalManagementMaterialsItem = {
@@ -5720,6 +5736,7 @@ export const PortalCommandAction = {
   deleteNotice: 'deleteNotice',
   extendAttempt: 'extendAttempt',
   resetAttempt: 'resetAttempt',
+  reopenAttempt: 'reopenAttempt',
   addPracticeExams: 'addPracticeExams',
   inviteTeacher: 'inviteTeacher',
   deleteClass: 'deleteClass',

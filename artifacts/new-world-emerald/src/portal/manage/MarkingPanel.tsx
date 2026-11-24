@@ -191,7 +191,8 @@ export function MarkingPanel({ data }: { data: PortalManagement }) {
                           <div key={a.id} className="flex flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center" data-testid={"row-attempt-" + a.id}>
                             <div className="min-w-0 flex-1">
                               <p className="font-semibold">{a.studentName} <span className="font-mono text-xs text-[hsl(var(--p-ink)/0.5)]">{a.studentId}</span></p>
-                              <p className="text-xs text-[hsl(var(--p-ink)/0.55)]">Saved {formatDateTime(a.savedAt)}</p>
+                              <p className="text-xs text-[hsl(var(--p-ink)/0.55)]">{a.closedBy === "student" && a.submittedAt ? `Submitted by the student ${formatDateTime(a.submittedAt)}` : `Last answer saved ${formatDateTime(a.savedAt)}`}</p>
+                              {a.closedBy === "time" && <p className="text-xs font-semibold text-[hsl(var(--p-gold-ink))]" data-testid={"text-closed-by-time-" + a.id}>Time ran out before the student submitted{a.submittedAt ? ` (closed ${formatDateTime(a.submittedAt)})` : ""}. If the connection failed, use Reopen in the exam's results.</p>}
                               {(a.focusLosses ?? 0) > 0 && <p className="text-xs font-semibold text-[hsl(var(--p-red))]" data-testid={"text-focus-losses-" + a.id}>Left the exam screen {a.focusLosses} {a.focusLosses === 1 ? "time" : "times"}</p>}
                             </div>
                             {p !== null && <div className="hidden h-1.5 w-28 overflow-hidden rounded-full bg-[hsl(var(--p-paper-2))] sm:block" aria-hidden><div className="h-full rounded-full bg-[hsl(var(--p-emerald))]" style={{ width: p + "%" }} /></div>}

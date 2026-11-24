@@ -393,6 +393,7 @@ schemas:
     type: object
     required: [className, exams, attempts, materials, notices]
     properties:
+      serverNow: { type: string, format: date-time, description: "The server's clock, so a computer with a wrong clock still shows exams open at the right time" }
       className: { type: string }
       exams: { type: array, items: { $ref: "#/schemas/PortalExamSummary" } }
       attempts: { type: array, items: { $ref: "#/schemas/PortalAttempt" } }
@@ -408,6 +409,8 @@ schemas:
           studentId: { type: string }
           classId: { type: integer }
           questionKeys: { type: array, items: { $ref: "#/schemas/PortalQuestionKey" } }
+          closedBy: { type: [string, "null"], description: "student: they pressed Submit in time; time: time ran out first. Empty for older scripts" }
+          submittedAt: { type: [string, "null"], format: date-time }
   PortalManagement:
     type: object
     required: [classes, students, teachers, exams, attempts, materials, notices]
@@ -469,7 +472,7 @@ schemas:
     type: object
     required: [action]
     properties:
-      action: { type: string, enum: [saveClass, saveStudent, saveTeacher, saveExam, saveMaterial, saveNotice, grade, examStatus, deleteExam, deleteMaterial, deleteNotice, extendAttempt, resetAttempt, addPracticeExams, inviteTeacher, deleteClass, deleteTeacher, moveStudent, setMakeup, removeMakeup] }
+      action: { type: string, enum: [saveClass, saveStudent, saveTeacher, saveExam, saveMaterial, saveNotice, grade, examStatus, deleteExam, deleteMaterial, deleteNotice, extendAttempt, resetAttempt, reopenAttempt, addPracticeExams, inviteTeacher, deleteClass, deleteTeacher, moveStudent, setMakeup, removeMakeup] }
       makeup: { $ref: "#/schemas/PortalMakeupInput" }
       schoolClass: { $ref: "#/schemas/PortalClass" }
       student: { $ref: "#/schemas/PortalStudent" }

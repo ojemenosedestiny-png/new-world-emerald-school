@@ -58,7 +58,10 @@ export function useAttemptSync(attempt: PortalAttempt | undefined, studentId: st
     finalRef.current = true;
     submitPendingRef.current = false;
     window.clearTimeout(timer.current); window.clearTimeout(retryTimer.current);
-    removeDraft();
+    // Forget this computer's copy only when the server has every answer; otherwise keep it, so if a teacher reopens
+    // the exam (it closed while the connection was down) the student carries on with nothing lost.
+    if (same(answersRef.current, res.answers)) removeDraft();
+    else writeDraft(keyRef.current, { answers: answersRef.current, dirty: true, updatedAt: Date.now() });
     queryClient.setQueryData(getGetPortalAttemptQueryKey(res.id), res);
     void queryClient.invalidateQueries({ queryKey: getGetPortalDashboardQueryKey() });
     answersRef.current = res.answers; setAnswers(res.answers);
@@ -73,7 +76,8 @@ export function useAttemptSync(attempt: PortalAttempt | undefined, studentId: st
     const draft = readDraft(k);
     if (attempt.status !== "in_progress") {
       finalRef.current = true;
-      try { localStorage.removeItem(k); } catch { /* ignore */ }
+      // A copy holding answers the server never got is kept in case a teacher reopens the exam.
+      if (!(draft?.dirty && !same(draft.answers, attempt.answers))) { try { localStorage.removeItem(k); } catch { /* ignore */ } }
       answersRef.current = attempt.answers; setAnswers(attempt.answers); setState("saved"); setSavedAt(attempt.savedAt);
       return;
     }
@@ -112,6 +116,8 @@ export function useAttemptSync(attempt: PortalAttempt | undefined, studentId: st
         const offline = isNetworkError(e) || !navigator.onLine;
         setState(offline ? "offline" : "error");
         if (offline && !submitLockRef.current) { window.clearTimeout(retryTimer.current); retryTimer.current = window.setTimeout(() => void flushRef.current(), 5000); }
+        // Any other failure (for example signed out on this computer) is retried less often, and the page warns loudly.
+        else if (!offline && !submitLockRef.current) { window.clearTimeout(retryTimer.current); retryTimer.current = window.setTimeout(() => void flushRef.current(), 15000); }
       }
     })();
     inFlight.current = run;
@@ -150,9 +156,11 @@ export function useAttemptSync(attempt: PortalAttempt | undefined, studentId: st
     } catch (e) {
       const offline = isNetworkError(e) || !navigator.onLine;
       submitPendingRef.current = offline;
-      setSubmitError(errorMessage(e, "Your exam was not submitted. Your answers are still on this device.") + (offline ? " Submission will retry automatically when you reconnect." : ""));
+      setSubmitError(errorMessage(e, "Your exam was not submitted. Your answers are still on this device.") + (offline ? " It will try again by itself every few seconds. Keep this page open." : ""));
       writeDraft(keyRef.current, { answers: answersRef.current, dirty: true, updatedAt: Date.now() });
       if (!deadlineLockRef.current) submitLockRef.current = false;
+      // A lost connection or a busy server (502/503) does not fire the browser's "online" event, so try again on a timer.
+      if (offline) { window.clearTimeout(retryTimer.current); retryTimer.current = window.setTimeout(() => { if (submitPendingRef.current && !finalRef.current) void submitFnRef.current(); }, 5000); }
       return false;
     } finally { setSubmitting(false); }
   }, [attemptId, applyFinal, submitting]);

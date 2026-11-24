@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import type { PortalManagement, PortalManagementExamsItem } from "@workspace/api-client-react";
-import { CalendarPlus, Download, RotateCcw, Timer } from "lucide-react";
+import { CalendarPlus, Download, PlayCircle, RotateCcw, Timer } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { StatusPill } from "../ui";
@@ -21,6 +21,8 @@ export function ExamResults({ data, exam, isAdmin, onClose }: { data: PortalMana
   const [now, setNow] = useState(() => Date.now());
   const [reset, setReset] = useState<RosterRow | null>(null);
   const [makeupFor, setMakeupFor] = useState<number[] | null>(null);
+  const [reopen, setReopen] = useState<RosterRow | null>(null);
+  const [reopenMinutes, setReopenMinutes] = useState(15);
   const makeups = (data.makeups ?? []).filter((m) => m.examId === exam.id);
   const idOf = (code: string) => data.students.find((s) => s.studentId === code)?.id as number | undefined;
   useEffect(() => { const t = window.setInterval(() => setNow(Date.now()), 15_000); return () => window.clearInterval(t); }, []);
@@ -80,6 +82,9 @@ export function ExamResults({ data, exam, isAdmin, onClose }: { data: PortalMana
                     {EXTRA_MINUTES.map((m) => <button key={m} className="portal-btn-ghost !px-2 !py-1 text-xs" disabled={cmd.pending} onClick={() => void extend(a.id, m)} data-testid={`button-extend-${a.id}-${m}`}><Timer size={12} /> +{m}</button>)}
                   </div>
                 )}
+                {a && !exam.resultsReleased && (r.status === "submitted" || r.status === "marked") && (
+                  <button className="portal-btn-ghost !px-2 !py-1 text-xs" disabled={cmd.pending} onClick={() => { setReopenMinutes(15); setReopen(r); }} data-testid={"button-reopen-" + a.id}><PlayCircle size={12} /> Reopen</button>
+                )}
                 {isAdmin && a && !exam.resultsReleased && (
                   <button className="portal-btn-ghost !px-2 !py-1 text-xs" disabled={cmd.pending} onClick={() => setReset(r)} data-testid={"button-reset-" + a.id}><RotateCcw size={12} /> Reset</button>
                 )}
@@ -90,6 +95,21 @@ export function ExamResults({ data, exam, isAdmin, onClose }: { data: PortalMana
         {exam.resultsReleased && <p className="text-xs text-[hsl(var(--p-ink)/0.5)]">Results are released. Withhold them to give extra time or reset an attempt.</p>}
 
         {makeupFor && <MakeupDialog data={data} exam={exam} preselect={makeupFor} onClose={() => setMakeupFor(null)} />}
+        <AlertDialog open={!!reopen} onOpenChange={(o) => !o && setReopen(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle className="font-serif text-2xl">Let {reopen?.name} carry on?</AlertDialogTitle>
+              <AlertDialogDescription>Use this when their exam closed early, for example the internet or the computer failed. They continue from where they stopped with every answer kept, and get the extra time you choose. Any marks already given for this script are cleared and worked out again when they submit.</AlertDialogDescription>
+            </AlertDialogHeader>
+            <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Extra time">
+              {[10, 15, 20, 30, 45].map((m) => <button key={m} type="button" role="radio" aria-checked={reopenMinutes === m} onClick={() => setReopenMinutes(m)} className={"rounded-full border px-3 py-1 text-sm font-semibold " + (reopenMinutes === m ? "border-[hsl(var(--p-emerald))] bg-[hsl(var(--p-emerald))] text-white" : "border-[hsl(var(--p-line))]")} data-testid={"reopen-minutes-" + m}>{m} min</button>)}
+            </div>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction data-testid="button-confirm-reopen" onClick={() => { if (reopen?.attempt) void cmd.run({ action: "reopenAttempt", attemptControl: { attemptId: reopen.attempt.id, minutes: reopenMinutes } }, `${reopen.name} can carry on for ${reopenMinutes} minutes`); setReopen(null); }}>Reopen for {reopenMinutes} minutes</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
         <AlertDialog open={!!reset} onOpenChange={(o) => !o && setReset(null)}>
           <AlertDialogContent>
             <AlertDialogHeader>

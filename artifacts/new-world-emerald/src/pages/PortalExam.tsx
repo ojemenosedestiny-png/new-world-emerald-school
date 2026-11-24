@@ -5,7 +5,7 @@ import { ArrowLeft, CheckCircle2, ChevronDown, ChevronUp, CloudOff, FileText, Ho
 import "@/portal/portal.css";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { ErrorPanel, PortalHeader, Skeleton, StatusPill } from "@/portal/ui";
-import { errorMessage, fileUrl, formatTime, scrollToQuestion, usePortalMeta } from "@/portal/lib";
+import { errorMessage, fileUrl, formatTime, scrollToQuestion, setServerClock, usePortalMeta } from "@/portal/lib";
 import { usePortalTheme } from "@/portal/shell/theme";
 import { useKeepAlive } from "@/components/IdleSignOut";
 import { QuestionNavigator, unansweredNumbers } from "@/portal/exam/QuestionNavigator";
@@ -49,6 +49,7 @@ export default function PortalExam() {
   usePortalMeta(attempt ? attempt.title : "Exam");
   const sync = useAttemptSync(attempt, session.data?.studentId ?? "");
   const offset = useMemo(() => (attempt ? new Date(attempt.serverNow).getTime() - q.dataUpdatedAt : 0), [attempt, q.dataUpdatedAt]);
+  if (attempt) setServerClock(attempt.serverNow, q.dataUpdatedAt);
   const remaining = useRemaining(attempt?.deadline, offset);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [navOpen, setNavOpen] = useState(false);
@@ -117,6 +118,13 @@ export default function PortalExam() {
       )}
 
       <main className={"mx-auto px-4 py-8 md:px-8 " + (pdf ? "max-w-7xl" : "max-w-3xl")}>
+        {inProgress && !expired && sync.state === "error" && (
+          <div className="mb-4 rounded-xl border-2 border-[hsl(var(--p-red)/0.5)] bg-[hsl(var(--p-red)/0.08)] p-4 text-sm" role="alert" data-testid="banner-not-saving">
+            <p className="font-semibold">Your answers are not reaching the school right now.</p>
+            <p className="mt-1">They are kept safely on this computer. Do not close this page. Tell your teacher straight away{sync.lastError ? ` (${sync.lastError})` : ""}.</p>
+            <button type="button" className="portal-btn-ghost mt-2" onClick={() => void sync.retrySave()} data-testid="button-banner-retry">Try saving again</button>
+          </div>
+        )}
         {attempt.lockdown && inProgress && !expired && lockdown.exits > 0 && (
           <p className="mb-4 rounded-xl bg-[hsl(var(--p-gold-soft))] p-3 text-sm font-semibold" role="status" data-testid="text-lockdown-exits">You have left the exam screen {lockdown.exits} {lockdown.exits === 1 ? "time" : "times"}. Your teacher can see this.</p>
         )}

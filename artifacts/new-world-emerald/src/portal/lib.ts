@@ -182,8 +182,22 @@ export function newQuestionId() {
 
 export const OPTION_LETTERS = ["A", "B", "C", "D", "E", "F", "G", "H"];
 
+/**
+ * School time. A computer whose clock is wrong (wrong date, time or time zone) would otherwise show an open exam as
+ * "Not open yet" while classmates on other computers start it. The server sends its clock with the student's data;
+ * every exam window check uses the server's time instead of the computer's.
+ */
+let clockOffsetMs = 0;
+export function setServerClock(serverNow: string | undefined | null, receivedAt: number) {
+  const t = serverNow ? new Date(serverNow).getTime() : NaN;
+  if (Number.isFinite(t) && receivedAt > 0) clockOffsetMs = t - receivedAt;
+}
+/** How far this computer's clock is from the school's, in milliseconds (positive: the computer is behind). */
+export const clockOffset = () => clockOffsetMs;
+export const schoolNow = () => Date.now() + clockOffsetMs;
+
 export type ExamWindow = "upcoming" | "open" | "closed";
-export function examWindow(startsAt: string, endsAt: string, now = Date.now()): ExamWindow {
+export function examWindow(startsAt: string, endsAt: string, now = schoolNow()): ExamWindow {
   if (now < new Date(startsAt).getTime()) return "upcoming";
   if (now > new Date(endsAt).getTime()) return "closed";
   return "open";
@@ -192,7 +206,7 @@ export function examWindow(startsAt: string, endsAt: string, now = Date.now()): 
 type ExamTiming = { id: number; startsAt: string; endsAt: string };
 type AttemptStatus = { examId: number; status: string };
 /** The exams a student still has to act on: being written, open or upcoming. Finished and closed exams leave the list (scores are in the GradeSheet). */
-export function activeStudentExams<T extends ExamTiming>(exams: T[], attempts: AttemptStatus[], now = Date.now()): T[] {
+export function activeStudentExams<T extends ExamTiming>(exams: T[], attempts: AttemptStatus[], now = schoolNow()): T[] {
   const status = new Map(attempts.map((a) => [a.examId, a.status]));
   return exams.filter((e) => {
     const s = status.get(e.id);
@@ -202,7 +216,7 @@ export function activeStudentExams<T extends ExamTiming>(exams: T[], attempts: A
 }
 
 /** Dashboard order: still writing, open now, upcoming, submitted, then closed. */
-export function sortStudentExams<T extends ExamTiming>(exams: T[], attempts: AttemptStatus[], now = Date.now()): T[] {
+export function sortStudentExams<T extends ExamTiming>(exams: T[], attempts: AttemptStatus[], now = schoolNow()): T[] {
   const status = new Map(attempts.map((a) => [a.examId, a.status]));
   const rank = (e: T) => {
     const s = status.get(e.id);

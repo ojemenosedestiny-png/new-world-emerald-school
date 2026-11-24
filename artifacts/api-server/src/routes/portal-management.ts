@@ -109,7 +109,7 @@ portalManagementRouter.get("/manage", async (req, res) => {
     const attempt = await finalizeExpired(raw);
     const exam = exams.find((e) => e.id === raw.examId)!;
     const student = students.find((s) => s.id === raw.studentId) ?? outside.get(raw.studentId);
-    return { ...attemptView(attempt, exam, true), classId: exam.classId, studentName: student?.name ?? "Former enrolment", studentId: student?.studentId ?? "", questionKeys: attempt.questions, focusLosses: attempt.focusLosses };
+    return { ...attemptView(attempt, exam, true), classId: exam.classId, studentName: student?.name ?? "Former enrolment", studentId: student?.studentId ?? "", questionKeys: attempt.questions, focusLosses: attempt.focusLosses, closedBy: attempt.closedBy ?? null, submittedAt: attempt.submittedAt?.toISOString() ?? null };
   }));
   const materials = await db.select().from(portalMaterials).where(scoped(actor, portalMaterials.classId));
   const notices = await db.select().from(portalNotices).where(scoped(actor, portalNotices.classId));
@@ -500,11 +500,13 @@ portalManagementRouter.post("/manage", async (req, res) => {
       return;
     }
     case "extendAttempt":
+    case "reopenAttempt":
     case "resetAttempt": {
       const data = body.attemptControl;
       check(data, "Attempt required.");
       const extend = body.action === "extendAttempt";
-      check(!extend || (Number.isInteger(data.minutes) && data.minutes! >= 1 && data.minutes! <= 240), "Add between 1 and 240 minutes.");
+      const reopen = body.action === "reopenAttempt";
+      check(!(extend || reopen) || (Number.isInteger(data.minutes) && data.minutes! >= 1 && data.minutes! <= 240), "Add between 1 and 240 minutes.");
       await db.transaction(async (tx) => {
         const [lookup] = await tx.select().from(portalAttempts).where(eq(portalAttempts.id, data.attemptId));
         check(lookup, "Attempt not found.", 404);
@@ -513,7 +515,12 @@ portalManagementRouter.post("/manage", async (req, res) => {
         check(exam, "Exam not found.", 404); examAllowed(actor, exam);
         const [attempt] = await tx.select().from(portalAttempts).where(eq(portalAttempts.id, data.attemptId)).for("update");
         check(!exam.resultsReleased, "Withhold results before changing attempts.", 409);
-        if (extend) {
+        if (reopen) {
+          // A student whose exam closed early (lost connection, computer failed) carries on with every answer kept.
+          const writing = attempt.status === "in_progress" && attempt.deadline.getTime() > Date.now();
+          check(!writing, "This student is still writing. Use extra time instead.", 409);
+          await tx.update(portalAttempts).set({ status: "in_progress", marks: [], submittedAt: null, closedBy: null, deadline: new Date(Date.now() + data.minutes! * 60_000) }).where(eq(portalAttempts.id, attempt.id));
+        } else if (extend) {
           check(attempt.status === "in_progress" && attempt.deadline.getTime() > Date.now(), "Only a student who is still writing can be given extra time.", 409);
           // Staff extensions may run past the exam window; they apply to this student only.
           await tx.update(portalAttempts).set({ deadline: new Date(attempt.deadline.getTime() + data.minutes! * 60_000) }).where(eq(portalAttempts.id, attempt.id));

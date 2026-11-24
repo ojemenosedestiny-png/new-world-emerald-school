@@ -3,7 +3,7 @@ import { and, eq, inArray, sql } from "drizzle-orm";
 import { db, portalStudents, portalExams, portalAttempts, portalMaterials, portalNotices, portalClasses } from "@workspace/db";
 import { SavePortalAnswersBody } from "@workspace/api-zod";
 import { check, portalActor, studentOnly } from "../lib/portal-auth";
-import { automaticMarks, attemptView, finalizeExpired, validAnswers } from "../lib/portal-assessment";
+import { automaticMarks, attemptView, finalizeExpired, pastGrace, validAnswers } from "../lib/portal-assessment";
 import { buildPaper, MAX_FOCUS_LOSSES, paperSize } from "../lib/cbt";
 import { lastSittingEnds, sittingWindow, studentMakeups } from "../lib/makeups";
 
@@ -25,6 +25,7 @@ portalStudentRouter.get("/student", async (req, res) => {
   const materials = await db.select().from(portalMaterials).where(and(eq(portalMaterials.classId, student.classId), eq(portalMaterials.published, true)));
   const notices = await db.select().from(portalNotices).where(and(eq(portalNotices.classId, student.classId), eq(portalNotices.published, true)));
   res.json({
+    serverNow: new Date().toISOString(),
     className: schoolClass?.name ?? "", exams: exams.filter((e) => e.published).map((e) => {
       const makeup = makeups.get(e.id);
       const w = sittingWindow(e, makeup);
@@ -78,12 +79,13 @@ async function updateAttempt(req: import("express").Request, submit: boolean) {
     const closesAt = (await lastSittingEnds([exam])).get(exam.id);
     if (attempt.status !== "in_progress") return attemptView(attempt, exam, false, closesAt);
     const now = new Date();
+    // Time is up at the deadline, but answers sent within the grace (a lost connection at the end) still count.
     const expired = now.getTime() >= attempt.deadline.getTime();
-    const answers = expired ? attempt.answers : validAnswers(attempt.questions, body.answers);
+    const answers = pastGrace(attempt.deadline, now.getTime()) ? attempt.answers : validAnswers(attempt.questions, body.answers);
     const closed = submit || expired;
     const [updated] = await tx.update(portalAttempts).set({
       answers, ...(expired ? {} : { savedAt: now }),
-      ...(closed ? { status: attempt.questions.some((q) => q.type === "written") ? "submitted" : "marked", marks: automaticMarks(attempt.questions, answers) } : {}),
+      ...(closed ? { status: attempt.questions.some((q) => q.type === "written") ? "submitted" : "marked", marks: automaticMarks(attempt.questions, answers), submittedAt: now, closedBy: submit && !expired ? "student" : "time" } : {}),
     }).where(eq(portalAttempts.id, attempt.id)).returning();
     return attemptView(updated, exam, false, closesAt);
   });

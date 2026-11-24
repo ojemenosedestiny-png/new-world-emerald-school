@@ -43,7 +43,7 @@ it("a teacher enrols a student with a password and no email, and sees the login 
   await waitFor(() => expect(api.manage).toHaveBeenCalledTimes(1));
   const sent = api.manage.mock.calls[0][0].data.student;
   expect(sent).toMatchObject({ studentId: "", name: "Bayo Ade", classId: 3, active: true, guardianEmail: null });
-  expect(sent.password).toMatch(/^[A-Z][a-z]+-\d{4}/);
+  expect(sent.password).toMatch(/^[A-Z][A-Za-z]+-\d{4}/);
   expect((await screen.findByTestId("text-issued-student-id")).textContent).toBe("NWE/2026/00002");
   expect(screen.getByTestId("text-temp-password").textContent).toContain(sent.password);
 });

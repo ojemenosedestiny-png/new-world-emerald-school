@@ -23,6 +23,7 @@ export const PortalCommandAction = {
   deleteNotice: 'deleteNotice',
   extendAttempt: 'extendAttempt',
   resetAttempt: 'resetAttempt',
+  reopenAttempt: 'reopenAttempt',
   addPracticeExams: 'addPracticeExams',
   inviteTeacher: 'inviteTeacher',
   deleteClass: 'deleteClass',

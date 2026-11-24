@@ -3,7 +3,7 @@ import { useGetStudentReports, getGetStudentReportsQueryKey, useListMyAssignment
 import { Award, Bell, BookOpen, CalendarCheck, CalendarDays, CalendarRange, ChevronRight, ClipboardList, FileBarChart, Images, MapPin, Megaphone, Menu, MessagesSquare, NotebookPen, Search, Timer, UserRound, Users, Wallet, type LucideIcon } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useOpenShellMenu } from "./shell/AppShell";
-import { activeStudentExams, examWindow } from "./lib";
+import { activeStudentExams, examWindow, schoolNow } from "./lib";
 import { markSeen, readSeen, searchPortal, studentNotifications } from "./notifications";
 import { calendarItems, upcomingItems, whenText } from "./events";
 import { Avatar } from "./photos";
@@ -22,7 +22,7 @@ export function StudentHome({ data, name, studentId, onGo }: { data: PortalDashb
   const photo = useGetMyPhoto({ query: { queryKey: getGetMyPhotoQueryKey() } });
   const [query, setQuery] = useState("");
   const [seenVersion, setSeenVersion] = useState(0);
-  const now = Date.now();
+  const now = schoolNow();
   const firstName = name.split(" ")[0];
   const openExams = data.exams.filter((e) => examWindow(e.startsAt, e.endsAt, now) === "open" && !data.attempts.some((a) => a.examId === e.id && a.status !== "in_progress")).length;
   const notifications = useMemo(() => studentNotifications(data, reports.data, readSeen(studentId), now, events.data, assignments.data, messages.data),
