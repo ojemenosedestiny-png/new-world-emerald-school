@@ -377,6 +377,111 @@ export const SavePortalAnswersResponse = zod.object({
 })
 
 
+/**
+ * One student's whole script for marking (paper with answer key, answers, marks); staff who manage the exam only
+ */
+export const GetStaffAttemptScriptParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const getStaffAttemptScriptResponseOneQuestionsItemIdMax = 80;
+
+export const getStaffAttemptScriptResponseOneQuestionsItemTextMax = 12000;
+
+export const getStaffAttemptScriptResponseOneQuestionsItemOptionsItemMax = 3000;
+
+export const getStaffAttemptScriptResponseOneQuestionsItemOptionsMax = 8;
+
+export const getStaffAttemptScriptResponseOneQuestionsItemMarksMin = 0.5;
+export const getStaffAttemptScriptResponseOneQuestionsItemMarksMax = 100;
+
+export const getStaffAttemptScriptResponseOneQuestionsItemPassageMax = 20000;
+
+export const getStaffAttemptScriptResponseOneQuestionsItemDiagramFileIdMax = 80;
+
+export const getStaffAttemptScriptResponseOneMarksItemScoreMin = 0;
+
+export const getStaffAttemptScriptResponseOneMarksItemFeedbackMax = 3000;
+
+export const getStaffAttemptScriptResponseTwoQuestionKeysItemOneIdMax = 80;
+
+export const getStaffAttemptScriptResponseTwoQuestionKeysItemOneTextMax = 12000;
+
+export const getStaffAttemptScriptResponseTwoQuestionKeysItemOneOptionsItemMax = 3000;
+
+export const getStaffAttemptScriptResponseTwoQuestionKeysItemOneOptionsMax = 8;
+
+export const getStaffAttemptScriptResponseTwoQuestionKeysItemOneMarksMin = 0.5;
+export const getStaffAttemptScriptResponseTwoQuestionKeysItemOneMarksMax = 100;
+
+export const getStaffAttemptScriptResponseTwoQuestionKeysItemOnePassageMax = 20000;
+
+export const getStaffAttemptScriptResponseTwoQuestionKeysItemOneDiagramFileIdMax = 80;
+
+export const getStaffAttemptScriptResponseTwoQuestionKeysItemTwoRubricMax = 5000;
+
+
+
+export const GetStaffAttemptScriptResponse = zod.object({
+  "id": zod.number(),
+  "examId": zod.number(),
+  "title": zod.string(),
+  "subject": zod.string(),
+  "mode": zod.string(),
+  "instructions": zod.string(),
+  "fileId": zod.string().nullish(),
+  "questions": zod.array(zod.object({
+  "id": zod.string().min(1).max(getStaffAttemptScriptResponseOneQuestionsItemIdMax),
+  "type": zod.enum(['mcq', 'written']),
+  "text": zod.string().min(1).max(getStaffAttemptScriptResponseOneQuestionsItemTextMax),
+  "options": zod.array(zod.string().max(getStaffAttemptScriptResponseOneQuestionsItemOptionsItemMax)).max(getStaffAttemptScriptResponseOneQuestionsItemOptionsMax),
+  "marks": zod.number().min(getStaffAttemptScriptResponseOneQuestionsItemMarksMin).max(getStaffAttemptScriptResponseOneQuestionsItemMarksMax),
+  "passage": zod.string().max(getStaffAttemptScriptResponseOneQuestionsItemPassageMax).optional().describe('Shared passage or instructions shown above the question'),
+  "diagramFileId": zod.string().max(getStaffAttemptScriptResponseOneQuestionsItemDiagramFileIdMax).nullish().describe('Diagram picture uploaded for the question')
+})),
+  "answers": zod.record(zod.string(), zod.string()),
+  "startedAt": zod.string(),
+  "deadline": zod.string(),
+  "serverNow": zod.string(),
+  "status": zod.enum(['in_progress', 'submitted', 'marked']),
+  "savedAt": zod.string(),
+  "totalMarks": zod.number(),
+  "resultsReleased": zod.boolean(),
+  "score": zod.number().optional(),
+  "marks": zod.array(zod.object({
+  "questionId": zod.string(),
+  "score": zod.number().min(getStaffAttemptScriptResponseOneMarksItemScoreMin),
+  "feedback": zod.string().max(getStaffAttemptScriptResponseOneMarksItemFeedbackMax)
+})).optional(),
+  "lockdown": zod.boolean().optional(),
+  "focusLosses": zod.number().optional(),
+  "answersAt": zod.string().optional().describe('Submitted while the exam is still open: when the right answers will show (the exam\'s closing time)'),
+  "review": zod.array(zod.object({
+  "questionId": zod.string(),
+  "correctAnswer": zod.number(),
+  "correct": zod.boolean()
+})).optional().describe('After submitting and once the exam has closed, the right answer to each multiple-choice question (no score)')
+}).and(zod.object({
+  "studentName": zod.string(),
+  "studentId": zod.string(),
+  "classId": zod.number(),
+  "questionKeys": zod.array(zod.object({
+  "id": zod.string().min(1).max(getStaffAttemptScriptResponseTwoQuestionKeysItemOneIdMax),
+  "type": zod.enum(['mcq', 'written']),
+  "text": zod.string().min(1).max(getStaffAttemptScriptResponseTwoQuestionKeysItemOneTextMax),
+  "options": zod.array(zod.string().max(getStaffAttemptScriptResponseTwoQuestionKeysItemOneOptionsItemMax)).max(getStaffAttemptScriptResponseTwoQuestionKeysItemOneOptionsMax),
+  "marks": zod.number().min(getStaffAttemptScriptResponseTwoQuestionKeysItemOneMarksMin).max(getStaffAttemptScriptResponseTwoQuestionKeysItemOneMarksMax),
+  "passage": zod.string().max(getStaffAttemptScriptResponseTwoQuestionKeysItemOnePassageMax).optional().describe('Shared passage or instructions shown above the question'),
+  "diagramFileId": zod.string().max(getStaffAttemptScriptResponseTwoQuestionKeysItemOneDiagramFileIdMax).nullish().describe('Diagram picture uploaded for the question')
+}).and(zod.object({
+  "correctAnswer": zod.number().nullish(),
+  "rubric": zod.string().max(getStaffAttemptScriptResponseTwoQuestionKeysItemTwoRubricMax).optional()
+}))),
+  "closedBy": zod.string().nullish().describe('student: they pressed Submit in time; time: time ran out first. Empty for older scripts'),
+  "submittedAt": zod.coerce.date().nullish()
+}))
+
+
 export const SubmitPortalAttemptParams = zod.object({
   "id": zod.coerce.number()
 })

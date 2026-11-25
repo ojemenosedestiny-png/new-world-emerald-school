@@ -29,6 +29,8 @@ paths:
     $ref: "./portal.yaml#/paths/start"
   /portal/attempts/{id}:
     $ref: "./portal.yaml#/paths/attempt"
+  /portal/attempts/{id}/script:
+    $ref: "./portal.yaml#/paths/attemptScript"
   /portal/attempts/{id}/submit:
     $ref: "./portal.yaml#/paths/submit"
   /portal/attempts/{id}/focus-loss:

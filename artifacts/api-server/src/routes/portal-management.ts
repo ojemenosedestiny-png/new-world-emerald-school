@@ -9,7 +9,7 @@ import { randomUUID } from "node:crypto";
 import { moveStudent } from "../lib/move-student";
 import { ManagePortalBody } from "@workspace/api-zod";
 import { check, portalActor, staffOnly, classAllowed, examAllowed, hashPassword, type PortalActor } from "../lib/portal-auth";
-import { automaticMarks, attemptView, finalizeExpired, validateQuestions } from "../lib/portal-assessment";
+import { automaticMarks, attemptView, finalizeExpired, pastGrace, validateQuestions } from "../lib/portal-assessment";
 import { diagramContentType } from "../lib/portal-pdf";
 import { siteBaseUrl, teacherStudentEditProblem, validEmail } from "../lib/accounts";
 import { nextStudentId } from "./portal-accounts";
@@ -80,6 +80,24 @@ portalManagementRouter.get("/class-students/:classId", async (req, res) => {
   res.json(await db.select({ id: portalStudents.id, name: portalStudents.name, studentId: portalStudents.studentId }).from(portalStudents)
     .where(and(eq(portalStudents.classId, classId), eq(portalStudents.active, true))).orderBy(asc(portalStudents.name)));
 });
+/** One student's whole script for marking: paper with answer key, answers and marks. Staff who manage the exam only. */
+portalManagementRouter.get("/attempts/:id/script", async (req, res) => {
+  const actor = await portalActor(req);
+  staffOnly(actor);
+  const id = Number(req.params.id);
+  check(Number.isSafeInteger(id) && id > 0, "Script not found.", 404);
+  const [raw] = await db.select().from(portalAttempts).where(eq(portalAttempts.id, id));
+  check(raw, "Script not found.", 404);
+  const [exam] = await db.select().from(portalExams).where(eq(portalExams.id, raw.examId));
+  check(exam, "Script not found.", 404);
+  examAllowed(actor, exam);
+  const attempt = await finalizeExpired(raw);
+  const [student] = await db.select({ name: portalStudents.name, studentId: portalStudents.studentId }).from(portalStudents).where(eq(portalStudents.id, attempt.studentId));
+  res.json({
+    ...attemptView(attempt, exam, true), classId: exam.classId, studentName: student?.name ?? "Former enrolment", studentId: student?.studentId ?? "",
+    questionKeys: attempt.questions, focusLosses: attempt.focusLosses, closedBy: attempt.closedBy ?? null, submittedAt: attempt.submittedAt?.toISOString() ?? null,
+  });
+});
 // When each teacher last had the portal open, written at most every five minutes per teacher.
 const presenceWritten = new Map<number, number>();
 async function notePresence(teacherId: number) {
@@ -101,16 +119,39 @@ portalManagementRouter.get("/manage", async (req, res) => {
   const teachers = actor.role === "admin" ? (await db.select().from(portalTeachers)).map(({ signature: _signature, ...t }) => t) : [];
   const own = scoped(actor, portalExams.classId);
   const exams = await db.select().from(portalExams).where(own && actor.teacherId ? or(own, eq(portalExams.createdByTeacherId, actor.teacherId)) : own);
-  const rawAttempts = exams.length ? await db.select().from(portalAttempts).where(inArray(portalAttempts.examId, exams.map((e) => e.id))) : [];
+  // A summary of every script: the database adds up marks itself, so each student's paper and answers stay in the
+  // database (a whole school's scripts are tens of megabytes). One script opens in full through /attempts/:id/script.
+  const summaries = exams.length ? await db.select({
+    id: portalAttempts.id, examId: portalAttempts.examId, studentId: portalAttempts.studentId, status: portalAttempts.status,
+    startedAt: portalAttempts.startedAt, deadline: portalAttempts.deadline, savedAt: portalAttempts.savedAt, focusLosses: portalAttempts.focusLosses,
+    closedBy: portalAttempts.closedBy, submittedAt: portalAttempts.submittedAt,
+    totalMarks: sql<number>`(select coalesce(sum((q->>'marks')::numeric), 0) from jsonb_array_elements(${portalAttempts.questions}) q)::float8`,
+    score: sql<number>`(select coalesce(sum((m->>'score')::numeric), 0) from jsonb_array_elements(${portalAttempts.marks}) m)::float8`,
+  }).from(portalAttempts).where(inArray(portalAttempts.examId, exams.map((e) => e.id))) : [];
+  // Scripts whose time ran out without a submit are closed (and marked) now, as before.
+  const overdue = summaries.filter((a) => a.status === "in_progress" && pastGrace(a.deadline)).map((a) => a.id);
+  if (overdue.length) {
+    for (const raw of await db.select().from(portalAttempts).where(inArray(portalAttempts.id, overdue))) {
+      const done = await finalizeExpired(raw);
+      const row = summaries.find((a) => a.id === done.id)!;
+      Object.assign(row, { status: done.status, closedBy: done.closedBy, submittedAt: done.submittedAt, score: done.marks.reduce((s, m) => s + m.score, 0) });
+    }
+  }
   // Students who wrote an exam this teacher set for a class they do not teach: their names, for marking.
-  const missing = [...new Set(rawAttempts.map((a) => a.studentId).filter((id) => !students.some((s) => s.id === id)))];
+  const missing = [...new Set(summaries.map((a) => a.studentId).filter((id) => !students.some((s) => s.id === id)))];
   const outside = new Map((missing.length ? await db.select({ id: portalStudents.id, name: portalStudents.name, studentId: portalStudents.studentId }).from(portalStudents).where(inArray(portalStudents.id, missing)) : []).map((s) => [s.id, s]));
-  const attempts = await Promise.all(rawAttempts.map(async (raw) => {
-    const attempt = await finalizeExpired(raw);
-    const exam = exams.find((e) => e.id === raw.examId)!;
-    const student = students.find((s) => s.id === raw.studentId) ?? outside.get(raw.studentId);
-    return { ...attemptView(attempt, exam, true), classId: exam.classId, studentName: student?.name ?? "Former enrolment", studentId: student?.studentId ?? "", questionKeys: attempt.questions, focusLosses: attempt.focusLosses, closedBy: attempt.closedBy ?? null, submittedAt: attempt.submittedAt?.toISOString() ?? null };
-  }));
+  const serverNow = new Date().toISOString();
+  const attempts = summaries.map((a) => {
+    const exam = exams.find((e) => e.id === a.examId)!;
+    const student = students.find((s) => s.id === a.studentId) ?? outside.get(a.studentId);
+    return {
+      id: a.id, examId: exam.id, title: exam.title, subject: exam.subject, mode: exam.mode, instructions: "", fileId: exam.mode === "pdf" ? exam.fileId : null,
+      questions: [], answers: {}, startedAt: a.startedAt.toISOString(), deadline: a.deadline.toISOString(), serverNow, savedAt: a.savedAt.toISOString(),
+      status: a.status, totalMarks: Number(a.totalMarks), resultsReleased: exam.resultsReleased && a.status === "marked", lockdown: exam.lockdown, score: Number(a.score),
+      classId: exam.classId, studentName: student?.name ?? "Former enrolment", studentId: student?.studentId ?? "", questionKeys: [],
+      focusLosses: a.focusLosses, closedBy: a.closedBy ?? null, submittedAt: a.submittedAt?.toISOString() ?? null,
+    };
+  });
   const materials = await db.select().from(portalMaterials).where(scoped(actor, portalMaterials.classId));
   const notices = await db.select().from(portalNotices).where(scoped(actor, portalNotices.classId));
   // A teacher sees what they were assigned: their classes, and every subject they teach (in any class).

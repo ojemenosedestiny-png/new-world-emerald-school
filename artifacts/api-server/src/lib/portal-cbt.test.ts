@@ -111,6 +111,14 @@ test("cbt: each student gets their own drawn, shuffled paper that marks correctl
     assert.equal((await call(`/attempts/${a.data.id}/focus-loss`, "POST", undefined, adaS)).status, 404);
     const staff = (await call("/manage", "GET", undefined, { admin: true })).data.attempts.find((x: { id: number }) => x.id === a.data.id);
     assert.deepEqual([staff.score, staff.focusLosses], [10, 2]);
+    // The staff list carries a summary only; the whole script (paper, key, answers, marks) opens on its own.
+    assert.deepEqual([staff.questionKeys.length, Object.keys(staff.answers).length, staff.totalMarks, staff.status], [0, 0, 10, "marked"]);
+    const script = await call(`/attempts/${a.data.id}/script`, "GET", undefined, { admin: true });
+    assert.equal(script.status, 200, JSON.stringify(script.data));
+    assert.deepEqual([script.data.questionKeys.length, script.data.score, script.data.studentName], [5, 10, "Ada Obi"]);
+    assert.equal(script.data.questionKeys.every((q: { correctAnswer?: number | null }) => typeof q.correctAnswer === "number"), true, "staff see the key");
+    assert.equal((await call(`/attempts/${a.data.id}/script`, "GET", undefined, adaS)).status, 403, "students cannot open scripts");
+    assert.equal((await call(`/attempts/999999999/script`, "GET", undefined, { admin: true })).status, 404);
 
     // A second student almost always gets a different paper (12 choose 5 with shuffling).
     const b = await call(`/exams/${row.id}/start`, "POST", undefined, bayoS);

@@ -1,15 +1,33 @@
 import { useMemo, useState } from "react";
-import type { PortalManagement, PortalManagementAttemptsItem } from "@workspace/api-client-react";
+import { useQueryClient } from "@tanstack/react-query";
+import { useGetStaffAttemptScript, getGetStaffAttemptScriptQueryKey, type PortalManagement, type PortalManagementAttemptsItem, type PortalStaffAttempt } from "@workspace/api-client-react";
 import { BookOpen, CalendarPlus, CheckSquare, Folder, FolderOpen, Library } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { EmptyState, StatusPill } from "../ui";
-import { OPTION_LETTERS, examFolder, fileUrl, formatDateTime } from "../lib";
+import { EmptyState, ErrorPanel, Skeleton, StatusPill } from "../ui";
+import { OPTION_LETTERS, errorMessage, examFolder, fileUrl, formatDateTime } from "../lib";
 import { className, useCommand } from "./useCommand";
 import { MakeupDialog, missedStudents } from "./MakeupDialog";
 
 type MarkRow = { questionId: string; score: string; feedback: string };
 
-function GradeDialog({ attempt, onClose }: { attempt: PortalManagementAttemptsItem; onClose: () => void }) {
+/** Opens one student's whole script: the staff list carries only a summary of each, so the paper loads here. */
+function GradeDialog({ attempt: summary, onClose }: { attempt: PortalManagementAttemptsItem; onClose: () => void }) {
+  const key = getGetStaffAttemptScriptQueryKey(summary.id);
+  const script = useGetStaffAttemptScript(summary.id, { query: { queryKey: key, staleTime: 0 } });
+  const queryClient = useQueryClient();
+  if (script.data) return <GradeForm attempt={script.data} onClose={() => { void queryClient.invalidateQueries({ queryKey: key }); onClose(); }} />;
+  return (
+    <Dialog open onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="portal !min-h-0 max-h-[94dvh] max-w-3xl overflow-y-auto rounded-2xl">
+        <DialogHeader><DialogTitle className="font-serif text-2xl">{summary.studentName}</DialogTitle>
+          <DialogDescription>{summary.title} / {summary.studentId}</DialogDescription></DialogHeader>
+        {script.isError ? <ErrorPanel title="The script did not open" message={errorMessage(script.error)} onRetry={() => void script.refetch()} /> : <div className="space-y-3" data-testid="grade-loading"><Skeleton className="h-28" /><Skeleton className="h-28" /><Skeleton className="h-28" /></div>}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function GradeForm({ attempt, onClose }: { attempt: PortalStaffAttempt; onClose: () => void }) {
   const cmd = useCommand();
   const existing = new Map((attempt.marks ?? []).map((m) => [m.questionId, m]));
   const [rows, setRows] = useState<MarkRow[]>(() => attempt.questionKeys.map((q) => {

@@ -159,6 +159,7 @@ import type {
   PortalPassword,
   PortalPdfImport,
   PortalSession,
+  PortalStaffAttempt,
   PreviewResultImportParams,
   PrincipalActivity,
   PrincipalCommand,
@@ -817,6 +818,80 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       > => {
       return useMutation(getSavePortalAnswersMutationOptions(options));
     }
+
+export const getGetStaffAttemptScriptUrl = (id: number,) => {
+
+
+
+
+  return `/api/portal/attempts/${id}/script`
+}
+
+/**
+ * One student's whole script for marking (paper with answer key, answers, marks); staff who manage the exam only
+ */
+export const getStaffAttemptScript = async (id: number, options?: RequestInit): Promise<PortalStaffAttempt> => {
+
+  return customFetch<PortalStaffAttempt>(getGetStaffAttemptScriptUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetStaffAttemptScriptQueryKey = (id: number,) => {
+    return [
+    `/api/portal/attempts/${id}/script`
+    ] as const;
+    }
+
+
+export const getGetStaffAttemptScriptQueryOptions = <TData = Awaited<ReturnType<typeof getStaffAttemptScript>>, TError = ErrorType<unknown>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getStaffAttemptScript>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetStaffAttemptScriptQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getStaffAttemptScript>>> = ({ signal }) => getStaffAttemptScript(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getStaffAttemptScript>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetStaffAttemptScriptQueryResult = NonNullable<Awaited<ReturnType<typeof getStaffAttemptScript>>>
+export type GetStaffAttemptScriptQueryError = ErrorType<unknown>
+
+
+
+export function useGetStaffAttemptScript<TData = Awaited<ReturnType<typeof getStaffAttemptScript>>, TError = ErrorType<unknown>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getStaffAttemptScript>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetStaffAttemptScriptQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 
 export const getSubmitPortalAttemptUrl = (id: number,) => {
 

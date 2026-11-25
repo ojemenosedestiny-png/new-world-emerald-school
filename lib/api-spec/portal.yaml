@@ -55,6 +55,18 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/PortalAttempt" }
+  attemptScript:
+    get:
+      operationId: getStaffAttemptScript
+      description: One student's whole script for marking (paper with answer key, answers, marks); staff who manage the exam only
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      responses:
+        "200":
+          description: The script
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PortalStaffAttempt" }
   attempt:
     get:
       operationId: getPortalAttempt
