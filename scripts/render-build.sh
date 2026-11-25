@@ -5,6 +5,11 @@ set -euo pipefail
 
 pnpm() { npx --yes pnpm@10.34.7 "$@"; }
 
+# NODE_OPTIONS in Render's settings is a memory cap for the running site (for example
+# --max-old-space-size=384 on a 512 MB plan). The build (Vite) needs more than that, so it
+# is not applied while building.
+unset NODE_OPTIONS
+
 # Catch pasted values like "NAME=value", quotes or spaces before building a site
 # whose sign-in silently fails. Values are never printed.
 check_key() {
