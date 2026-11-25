@@ -76,9 +76,9 @@ export function SchoolLife() {
           </div>
           
           <div className="grid grid-cols-2 gap-3 md:gap-4">
-            <img src={asset("/images/homepage/classroom-learning.webp")} alt="Pupils learning together at classroom desks" loading="lazy" decoding="async" className="w-full h-64 object-cover rounded-2xl rounded-tr-[4rem]" />
-            <img src={asset("/images/homepage/student-study.webp")} alt="A pupil concentrating on her workbook" loading="lazy" decoding="async" className="w-full h-64 object-cover rounded-2xl rounded-bl-[4rem] mt-8" />
-            <img src={asset("/images/homepage/teacher-guided-learning.webp")} alt="A teacher guiding a classroom lesson" loading="lazy" decoding="async" className="w-full h-64 object-cover rounded-2xl rounded-br-[4rem] col-span-2" />
+            <img width={1536} height={2048} src={asset("/images/homepage/classroom-learning.webp")} alt="Pupils learning together at classroom desks" loading="lazy" decoding="async" className="w-full h-64 object-cover rounded-2xl rounded-tr-[4rem]" />
+            <img width={1536} height={2048} src={asset("/images/homepage/student-study.webp")} alt="A pupil concentrating on her workbook" loading="lazy" decoding="async" className="w-full h-64 object-cover rounded-2xl rounded-bl-[4rem] mt-8" />
+            <img width={1536} height={2048} src={asset("/images/homepage/teacher-guided-learning.webp")} alt="A teacher guiding a classroom lesson" loading="lazy" decoding="async" className="w-full h-64 object-cover rounded-2xl rounded-br-[4rem] col-span-2" />
           </div>
         </div>
         <motion.div
@@ -214,7 +214,7 @@ export function Gallery() {
                 className={cn("relative block aspect-[4/3] w-full rounded-2xl overflow-hidden group cursor-pointer border-4 border-card shadow-sm hover:shadow-lg transition-shadow duration-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary")}
                 onClick={() => setSelectedImage(img.src)}
               >
-                <img src={img.src} alt={img.alt ?? "School gallery photo"} loading="lazy" decoding="async" className="h-full w-full object-cover" />
+                <img width={1200} height={900} src={img.src} alt={img.alt ?? "School gallery photo"} loading="lazy" decoding="async" className="h-full w-full object-cover" />
                 <div className="absolute inset-0 bg-secondary/50 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
                   <ZoomIn className="text-white w-10 h-10" />
                 </div>

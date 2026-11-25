@@ -97,8 +97,8 @@ function ExamRow({ exam, attempt }: { exam: PortalDashboardExamsItem; attempt?: 
 }
 
 export function StudentDashboard({ session, theme }: { session: PortalSession; theme: ReturnType<typeof usePortalTheme> }) {
-  const dash = useGetPortalDashboard({ query: { queryKey: getGetPortalDashboardQueryKey(), refetchInterval: 20000 } });
-  const messages = useGetMyMessages({ query: { queryKey: getGetMyMessagesQueryKey(), refetchInterval: 30000 } });
+  const dash = useGetPortalDashboard({ query: { queryKey: getGetPortalDashboardQueryKey(), refetchInterval: 60000 } });
+  const messages = useGetMyMessages({ query: { queryKey: getGetMyMessagesQueryKey(), refetchInterval: 120000 } });
   const unreadMessages = (messages.data?.threads ?? []).reduce((n, t) => n + t.unread, 0);
   const logout = useStudentLogout();
   const [, setLocation] = useLocation();

@@ -17,7 +17,7 @@ export function StoreProductImage({ product }: { product: StoreProduct }) {
   return (
     <figure className="border-b border-border bg-muted/30">
       <div className={product.category === "uniform" ? "aspect-[3/4] overflow-hidden" : "aspect-[4/3] overflow-hidden"}>
-        <img
+        <img width={600} height={450}
           src={src}
           alt={isDemoProductImage ? `Standalone ${product.title.replace(/^Demo — /, "")}, demo product illustration` : isDemo ? `School photograph illustrating ${product.title.replace(/^Demo — /, "")}` : product.title}
           loading="lazy"

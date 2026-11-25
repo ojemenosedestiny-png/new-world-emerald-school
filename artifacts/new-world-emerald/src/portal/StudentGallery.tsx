@@ -62,7 +62,7 @@ export function StudentGallery() {
         {album.photos.map((p, i) => (
           <li key={p.id}>
             <button type="button" className="block aspect-square w-full overflow-hidden rounded-lg bg-[hsl(var(--p-paper-2))]" onClick={() => setIndex(i)} aria-label={p.caption ? `Open photo: ${p.caption}` : `Open photo ${i + 1}`} data-testid={"photo-" + p.id}>
-              <img src={imageUrl(p.imageId)} alt="" loading="lazy" className="h-full w-full object-cover transition-transform hover:scale-105" />
+              <img width={600} height={600} src={imageUrl(p.imageId)} alt="" loading="lazy" className="h-full w-full object-cover transition-transform hover:scale-105" />
             </button>
           </li>
         ))}
@@ -78,7 +78,7 @@ export function StudentGallery() {
             <li key={a.id}>
               <button type="button" onClick={() => { setOpenId(a.id); setIndex(null); }} className="portal-card block w-full overflow-hidden text-left transition-transform hover:-translate-y-0.5" data-testid={"album-" + a.id}>
                 <span className="relative block aspect-[4/3] bg-[hsl(var(--p-paper-2))]">
-                  <img src={imageUrl(a.photos[0].imageId)} alt="" loading="lazy" className="h-full w-full object-cover" />
+                  <img width={800} height={600} src={imageUrl(a.photos[0].imageId)} alt="" loading="lazy" className="h-full w-full object-cover" />
                   <span className="absolute bottom-2 right-2 flex items-center gap-1 rounded-full bg-black/60 px-2 py-0.5 text-[11px] font-semibold text-white"><Images size={12} aria-hidden="true" /> {a.photos.length}</span>
                 </span>
                 <span className="block p-3">

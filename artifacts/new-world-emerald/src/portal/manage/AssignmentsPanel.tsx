@@ -54,7 +54,7 @@ function MarkRow({ row, maxScore, assignmentId }: { row: SubmissionRow; maxScore
               <div className="mt-2 flex flex-wrap gap-2">
                 {s.imageIds.map((id, i) => (
                   <a key={id} href={imageUrl(id)} target="_blank" rel="noreferrer" aria-label={`Open photo ${i + 1} from ${row.name}`}>
-                    <img src={imageUrl(id)} alt="" loading="lazy" className="h-20 w-20 rounded-lg border border-[hsl(var(--p-line))] object-cover" />
+                    <img width={80} height={80} src={imageUrl(id)} alt="" loading="lazy" className="h-20 w-20 rounded-lg border border-[hsl(var(--p-line))] object-cover" />
                   </a>
                 ))}
               </div>

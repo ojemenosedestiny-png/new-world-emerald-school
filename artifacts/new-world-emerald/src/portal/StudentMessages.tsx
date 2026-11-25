@@ -69,7 +69,7 @@ function TeacherPicker({ teachers, onPick, onClose }: { teachers: MessageTeacher
 export function StudentMessages() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  const q = useGetMyMessages({ query: { queryKey: getGetMyMessagesQueryKey(), refetchInterval: 20000 } });
+  const q = useGetMyMessages({ query: { queryKey: getGetMyMessagesQueryKey(), refetchInterval: 60000 } });
   const send = useSendMyMessage();
   const markRead = useMarkMyMessagesRead();
   const [pick, setPick] = useState<Sel>({ channel: "class" });

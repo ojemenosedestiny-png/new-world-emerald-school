@@ -87,7 +87,7 @@ export function HeroCarousel() {
     >
       <div className="relative mx-auto h-[min(54svh,460px)] min-h-[320px] w-full max-w-full overflow-hidden rounded-[1.75rem] border border-[#50362c]/10 bg-[#f0eadc] p-3 shadow-[0_18px_54px_rgba(80,54,44,0.13)] sm:rounded-[2rem] sm:p-4 lg:mr-0 lg:h-[min(76svh,680px)] lg:min-h-[560px] lg:max-w-[680px]">
         <AnimatePresence initial={false} mode="sync">
-          <motion.img
+          <motion.img width={1536} height={2048}
             key={slide.src}
             src={asset(slide.src)}
             alt={slide.alt}

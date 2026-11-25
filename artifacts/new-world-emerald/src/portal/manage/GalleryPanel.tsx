@@ -71,7 +71,7 @@ function AlbumPhotos({ album, onBack }: { album: PortalAlbum; onBack: () => void
         <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
           {album.photos.map((p) => (
             <li key={p.id} className="portal-card overflow-hidden" data-testid={"admin-photo-" + p.id}>
-              <img src={imageUrl(p.imageId)} alt={p.caption || ""} loading="lazy" className="aspect-square w-full object-cover" />
+              <img width={600} height={600} src={imageUrl(p.imageId)} alt={p.caption || ""} loading="lazy" className="aspect-square w-full object-cover" />
               <div className="flex items-center gap-1 p-2">
                 <input className="portal-input !py-1.5 text-xs" placeholder="Add a caption" maxLength={200} aria-label="Caption"
                   value={captions[p.id] ?? p.caption} onChange={(e) => setCaptions({ ...captions, [p.id]: e.target.value })}
@@ -133,7 +133,7 @@ export function GalleryPanel({ data }: { data: PortalManagement }) {
               <li key={a.id} className="portal-card overflow-hidden" data-testid={"card-album-" + a.id}>
                 <button type="button" className="block w-full text-left" onClick={() => setOpenId(a.id)} data-testid={"button-open-album-" + a.id}>
                   <span className="grid aspect-[16/9] place-items-center bg-[hsl(var(--p-paper-2))] text-[hsl(var(--p-ink)/0.35)]">
-                    {a.photos[0] ? <img src={imageUrl(a.photos[0].imageId)} alt="" loading="lazy" className="h-full w-full object-cover" /> : <Images size={30} />}
+                    {a.photos[0] ? <img width={800} height={450} src={imageUrl(a.photos[0].imageId)} alt="" loading="lazy" className="h-full w-full object-cover" /> : <Images size={30} />}
                   </span>
                 </button>
                 <div className="p-4">

@@ -44,7 +44,7 @@ export function Avatar({ name, photoId, size = 48, hue, className = "", style }:
     <span className={"relative grid shrink-0 place-items-center overflow-hidden rounded-full font-bold " + className}
       style={{ width: size, height: size, fontSize: size * 0.36, ...(hue ? { background: `hsl(${hue})`, color: "white" } : {}), ...style }} aria-hidden="true">
       {initialsOf(name)}
-      {show && <img src={imageUrl(photoId)} alt="" className="absolute inset-0 h-full w-full object-cover" onError={() => setFailed(photoId)} loading="lazy" />}
+      {show && <img src={imageUrl(photoId)} alt="" width={size} height={size} className="absolute inset-0 h-full w-full object-cover" onError={() => setFailed(photoId)} loading="lazy" />}
     </span>
   );
 }

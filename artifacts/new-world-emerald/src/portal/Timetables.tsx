@@ -43,7 +43,7 @@ function TimetableCard({ t, children }: { t: Timetable; children?: React.ReactNo
       </div>
       {t.fileType === "image" && (
         <a href={url} target="_blank" rel="noreferrer" className="block border-t border-[hsl(var(--p-line))] bg-[hsl(var(--p-paper-2)/0.5)]">
-          <img src={url} alt={t.title} loading="lazy" className="mx-auto max-h-[28rem] w-full object-contain" />
+          <img width={1200} height={900} src={url} alt={t.title} loading="lazy" className="mx-auto max-h-[28rem] w-full object-contain" />
         </a>
       )}
     </article>

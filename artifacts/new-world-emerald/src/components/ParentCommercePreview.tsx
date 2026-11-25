@@ -47,7 +47,7 @@ export function ParentCommercePreview() {
           : <div className="grid grid-cols-2 gap-3 sm:grid-cols-3" data-testid="homepage-store-products">
             {catalogue.map((product) => (
               <Link key={product.id} href="/commerce?section=shop" aria-label={`${product.title}, ${money(product.priceKobo)}. View order details.`} className="min-w-0 rounded-xl border border-border p-3 transition-colors hover:border-primary/40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary" data-testid={`homepage-uniform-${product.id}`}>
-                {product.imageUrl ? <img
+                {product.imageUrl ? <img width={400} height={300}
                   src={product.imageUrl.startsWith("/") ? asset(product.imageUrl) : product.imageUrl}
                   alt={product.title}
                   loading="lazy"

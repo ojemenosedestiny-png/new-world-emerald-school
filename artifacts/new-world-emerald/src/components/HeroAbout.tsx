@@ -121,7 +121,7 @@ export function About() {
           >
             <div className="absolute inset-0 bg-primary rounded-3xl translate-x-4 translate-y-4" />
             <div className="relative overflow-hidden rounded-3xl border border-border bg-card shadow-xl">
-              <img
+              <img width={1536} height={2048}
                 src={asset("/images/homepage/school-community.webp")}
                 alt="A pupil and two adults welcomed at the New World Emerald school entrance"
                 className="min-h-[420px] w-full object-cover md:min-h-[560px]"
