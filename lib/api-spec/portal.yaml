@@ -366,6 +366,7 @@ schemas:
       lockdown: { type: boolean }
       focusLosses: { type: integer }
       answersAt: { type: string, description: "Submitted while the exam is still open: when the right answers will show (the exam's closing time)" }
+      lateAnswersSent: { type: boolean, description: "This computer sent more answers after time ran out; the teacher will accept or ignore them" }
       review:
         type: array
         description: After submitting and once the exam has closed, the right answer to each multiple-choice question (no score)
@@ -422,6 +423,8 @@ schemas:
           classId: { type: integer }
           questionKeys: { type: array, items: { $ref: "#/schemas/PortalQuestionKey" } }
           closedBy: { type: [string, "null"], description: "student: they pressed Submit in time; time: time ran out first. Empty for older scripts" }
+          lateAnswerCount: { type: integer, description: "Answers the student's computer sent after time ran out (offline), waiting for the teacher to accept or ignore" }
+          lateAnswersAt: { type: [string, "null"], format: date-time }
           submittedAt: { type: [string, "null"], format: date-time }
   PortalManagement:
     type: object
@@ -484,7 +487,7 @@ schemas:
     type: object
     required: [action]
     properties:
-      action: { type: string, enum: [saveClass, saveStudent, saveTeacher, saveExam, saveMaterial, saveNotice, grade, examStatus, deleteExam, deleteMaterial, deleteNotice, extendAttempt, resetAttempt, reopenAttempt, addPracticeExams, inviteTeacher, deleteClass, deleteTeacher, moveStudent, setMakeup, removeMakeup] }
+      action: { type: string, enum: [saveClass, saveStudent, saveTeacher, saveExam, saveMaterial, saveNotice, grade, examStatus, deleteExam, deleteMaterial, deleteNotice, extendAttempt, resetAttempt, reopenAttempt, acceptLateAnswers, ignoreLateAnswers, addPracticeExams, inviteTeacher, deleteClass, deleteTeacher, moveStudent, setMakeup, removeMakeup] }
       makeup: { $ref: "#/schemas/PortalMakeupInput" }
       schoolClass: { $ref: "#/schemas/PortalClass" }
       student: { $ref: "#/schemas/PortalStudent" }

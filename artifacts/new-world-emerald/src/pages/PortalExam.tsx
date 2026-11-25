@@ -134,6 +134,11 @@ export default function PortalExam() {
           {attempt.instructions && <p className="mt-3 whitespace-pre-wrap rounded-xl bg-[hsl(var(--p-surface)/0.7)] p-4 text-sm leading-relaxed text-[hsl(var(--p-ink)/0.8)]">{attempt.instructions}</p>}
         </div>
 
+        {!inProgress && attempt.lateAnswersSent && (
+          <p className="portal-rise mb-4 rounded-xl border border-[hsl(var(--p-gold)/0.5)] bg-[hsl(var(--p-gold-soft))] p-4 text-sm" role="status" data-testid="text-late-answers-sent">
+            <b>Your answers reached the school after time was up</b>, because the connection was down. They are saved, and your teacher will check and accept them.
+          </p>
+        )}
         {!inProgress && (
           <div className="portal-card portal-rise mb-6 p-6" data-testid="panel-result">
             {released ? (

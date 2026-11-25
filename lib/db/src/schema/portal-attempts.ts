@@ -19,6 +19,10 @@ export const portalAttempts = pgTable("portal_attempts", {
   // When and how the attempt closed: "student" (they pressed Submit in time) or "time" (time ran out first).
   submittedAt: timestamp("submitted_at", { withTimezone: true }),
   closedBy: text("closed_by"),
+  // Answers the student's computer sent after time ran out (it was offline when the exam closed), kept aside until
+  // a teacher accepts or ignores them. The score is unchanged until then.
+  lateAnswers: jsonb("late_answers").$type<Record<string, string>>(),
+  lateAnswersAt: timestamp("late_answers_at", { withTimezone: true }),
 }, (t) => [uniqueIndex("portal_one_exam_attempt").on(t.studentId, t.examId)]);
 export const insertPortalAttemptSchema = createInsertSchema(portalAttempts).omit({ id: true });
 

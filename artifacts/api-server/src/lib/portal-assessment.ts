@@ -20,6 +20,8 @@ export function validateQuestions(questions: PortalQuestionData[], published: bo
     }
   }
 }
+/** Answered questions (a choice made or text written). */
+export const answeredCount = (answers: Record<string, string> | null | undefined) => Object.values(answers ?? {}).filter((v) => v !== "").length;
 export function validAnswers(questions: PortalQuestionData[], answers: Record<string, string>) {
   check(Object.keys(answers).length <= questions.length, "Invalid answer count.");
   const clean: Record<string, string> = {};
@@ -66,6 +68,7 @@ export function attemptView(attempt: PortalAttemptRecord, exam: PortalExamRecord
     answers: attempt.answers, startedAt: attempt.startedAt.toISOString(), deadline: attempt.deadline.toISOString(),
     serverNow: new Date().toISOString(), savedAt: attempt.savedAt.toISOString(), status: attempt.status,
     totalMarks: attempt.questions.reduce((sum, q) => sum + q.marks, 0), resultsReleased: released, lockdown: exam.lockdown,
+    ...(attempt.lateAnswers && !staff ? { lateAnswersSent: true } : {}),
     ...(exam.instantResults && finished && !closed && !staff ? { answersAt: new Date(Math.max(exam.endsAt.getTime(), closesAt.getTime())).toISOString() } : {}),
     ...(showAnswers ? { review: attempt.questions.filter((q) => q.type === "mcq" && q.correctAnswer != null).map((q) => ({ questionId: q.id, correctAnswer: q.correctAnswer!, correct: attempt.answers[q.id] === String(q.correctAnswer) })) } : {}),
     ...((staff || released) ? { score: attempt.marks.reduce((s, m) => s + m.score, 0), marks: attempt.marks } : {}),

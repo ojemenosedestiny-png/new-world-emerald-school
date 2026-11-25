@@ -24,6 +24,8 @@ export const PortalCommandAction = {
   extendAttempt: 'extendAttempt',
   resetAttempt: 'resetAttempt',
   reopenAttempt: 'reopenAttempt',
+  acceptLateAnswers: 'acceptLateAnswers',
+  ignoreLateAnswers: 'ignoreLateAnswers',
   addPracticeExams: 'addPracticeExams',
   inviteTeacher: 'inviteTeacher',
   deleteClass: 'deleteClass',

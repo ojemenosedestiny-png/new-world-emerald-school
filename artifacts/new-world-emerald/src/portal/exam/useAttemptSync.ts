@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
-  useSavePortalAnswers, useSubmitPortalAttempt, getGetPortalAttemptQueryKey, getGetPortalDashboardQueryKey,
+  submitPortalAttempt, useSavePortalAnswers, useSubmitPortalAttempt, getGetPortalAttemptQueryKey, getGetPortalDashboardQueryKey,
   type PortalAttempt,
 } from "@workspace/api-client-react";
 import { DRAFT_PREFIX, errorMessage, isNetworkError } from "../lib";
@@ -16,6 +16,29 @@ function readDraft(key: string): Draft | null {
 }
 function writeDraft(key: string, d: Draft) { try { localStorage.setItem(key, JSON.stringify(d)); } catch { /* storage full or blocked */ } }
 const same = (a: Answers, b: Answers) => JSON.stringify(a) === JSON.stringify(b);
+const answered = (a: Answers | undefined | null) => Object.values(a ?? {}).filter((v) => v !== "").length;
+
+/**
+ * Answers left on this computer for an exam that has since closed (it was offline when time ran out, or the page was
+ * closed): send them, so they reach the teacher as late answers to accept. Runs when the student's portal loads.
+ */
+const sending = new Set<number>();
+export async function sendLeftoverDrafts(studentId: string, attempts: { id: number; status: string; answers: Answers; lateAnswersSent?: boolean }[]) {
+  if (!studentId || typeof navigator !== "undefined" && !navigator.onLine) return 0;
+  let sent = 0;
+  for (const a of attempts) {
+    if (a.status === "in_progress" || sending.has(a.id)) continue;
+    const key = draftKey(studentId, a.id);
+    const draft = readDraft(key);
+    if (!draft?.dirty || answered(draft.answers) <= answered(a.answers)) continue;
+    sending.add(a.id);
+    try {
+      const res = await submitPortalAttempt(a.id, { answers: draft.answers });
+      if (res.lateAnswersSent || same(res.answers, draft.answers)) { try { localStorage.removeItem(key); } catch { /* ignore */ } sent++; }
+    } catch { /* try again next time the portal loads */ } finally { sending.delete(a.id); }
+  }
+  return sent;
+}
 
 export function useAttemptSync(attempt: PortalAttempt | undefined, studentId: string) {
   const queryClient = useQueryClient();

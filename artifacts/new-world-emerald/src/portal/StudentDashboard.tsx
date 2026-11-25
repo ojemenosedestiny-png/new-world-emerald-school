@@ -1,4 +1,5 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { sendLeftoverDrafts } from "./exam/useAttemptSync";
 import { useLocation } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
 import {
@@ -105,6 +106,12 @@ export function StudentDashboard({ session, theme }: { session: PortalSession; t
   const [pwOpen, setPwOpen] = useState(false);
   const [section, setSection] = useState<StudentSection>("home");
   const data = dash.data;
+  // Answers left on this computer from an exam that closed while it was offline go to the school now.
+  useEffect(() => {
+    if (!data?.attempts?.length || !session.studentId) return;
+    void sendLeftoverDrafts(session.studentId, data.attempts).then((n) => { if (n) void dash.refetch(); });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data?.attempts?.length, session.studentId]);
   // Exams open by the school's clock, not this computer's (which may be set wrong).
   if (data?.serverNow) setServerClock(data.serverNow, dash.dataUpdatedAt);
   const clockWrongBy = data?.serverNow ? Math.round(clockOffset() / 60_000) : 0;

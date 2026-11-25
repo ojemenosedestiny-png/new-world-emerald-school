@@ -86,6 +86,7 @@ const pct = (a: Attempt) => (a.status === "marked" && typeof a.score === "number
  * then each subject and its exams, with every student's script and score in one place.
  */
 export function MarkingPanel({ data }: { data: PortalManagement }) {
+  const lateCmd = useCommand();
   const [open, setOpen] = useState<number | null>(null);
   const [show, setShow] = useState<"todo" | "all">("todo");
   const [folderKey, setFolderKey] = useState("all");
@@ -210,6 +211,16 @@ export function MarkingPanel({ data }: { data: PortalManagement }) {
                             <div className="min-w-0 flex-1">
                               <p className="font-semibold">{a.studentName} <span className="font-mono text-xs text-[hsl(var(--p-ink)/0.5)]">{a.studentId}</span></p>
                               <p className="text-xs text-[hsl(var(--p-ink)/0.55)]">{a.closedBy === "student" && a.submittedAt ? `Submitted by the student ${formatDateTime(a.submittedAt)}` : `Last answer saved ${formatDateTime(a.savedAt)}`}</p>
+                              {(a.lateAnswerCount ?? 0) > 0 && (
+                                <div className="mt-1.5 rounded-lg border border-[hsl(var(--p-gold)/0.5)] bg-[hsl(var(--p-gold-soft)/0.7)] px-2.5 py-2 text-xs" data-testid={"late-answers-" + a.id}>
+                                  <p className="font-semibold">Their computer sent {a.lateAnswerCount} answers after time ran out{a.lateAnswersAt ? ` (${formatDateTime(a.lateAnswersAt)})` : ""}. The network was probably down.</p>
+                                  <p className="mt-0.5 text-[hsl(var(--p-ink)/0.7)]">The score still uses the {a.status === "marked" ? "answers" : "answers"} the school had when time ran out. Accept to use the late answers and mark again.</p>
+                                  <div className="mt-1.5 flex gap-1.5">
+                                    <button type="button" className="portal-btn !px-2.5 !py-1 text-xs" disabled={lateCmd.pending} onClick={() => void lateCmd.run({ action: "acceptLateAnswers", attemptControl: { attemptId: a.id } }, "Late answers accepted")} data-testid={"button-accept-late-" + a.id}>Accept answers</button>
+                                    <button type="button" className="portal-btn-ghost !px-2.5 !py-1 text-xs" disabled={lateCmd.pending} onClick={() => void lateCmd.run({ action: "ignoreLateAnswers", attemptControl: { attemptId: a.id } }, "Late answers ignored")} data-testid={"button-ignore-late-" + a.id}>Ignore</button>
+                                  </div>
+                                </div>
+                              )}
                               {a.closedBy === "time" && <p className="text-xs font-semibold text-[hsl(var(--p-gold-ink))]" data-testid={"text-closed-by-time-" + a.id}>Time ran out before the student submitted{a.submittedAt ? ` (closed ${formatDateTime(a.submittedAt)})` : ""}. If the connection failed, use Reopen in the exam's results.</p>}
                               {(a.focusLosses ?? 0) > 0 && <p className="text-xs font-semibold text-[hsl(var(--p-red))]" data-testid={"text-focus-losses-" + a.id}>Left the exam screen {a.focusLosses} {a.focusLosses === 1 ? "time" : "times"}</p>}
                             </div>

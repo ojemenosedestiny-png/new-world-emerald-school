@@ -209,6 +209,25 @@ test("student enrolment, exams, grading, isolation and revocation work end-to-en
     const byStudent = await closedOf(lateTimed.data.id);
     assert.equal(byStudent.closedBy, "student", "pressed Submit in time");
     assert.ok(byStudent.submittedAt && Math.abs(byStudent.submittedAt.getTime() - Date.now()) < 60_000);
+    // Offline when time ran out: the computer's answers arrive later and are kept aside for the teacher, not scored.
+    const [offExam] = await db.insert(portalExams).values({ ...examData, title: `${marker}-OFFLINE`, startsAt: new Date(examData.startsAt), endsAt: new Date(examData.endsAt), questions: [questions[0]] }).returning();
+    const off = await call(`/exams/${offExam.id}/start`, "POST", undefined, cookie);
+    await db.update(portalAttempts).set({ answers: {}, deadline: new Date(Date.now() - 5 * 60_000) }).where(eq(portalAttempts.id, off.data.id));
+    const lateSubmit = (await call(`/attempts/${off.data.id}/submit`, "POST", { answers: { "mcq-1": "1" } }, cookie)).data as unknown as { status: string; answers: Record<string, string>; lateAnswersSent?: boolean };
+    assert.deepEqual([lateSubmit.status, lateSubmit.answers["mcq-1"], lateSubmit.lateAnswersSent], ["marked", undefined, true], "closed by time, answer kept aside");
+    const lateRow = ((await call("/manage", "GET", undefined, "", true)).data as unknown as { attempts: { id: number; lateAnswerCount: number; lateAnswersAt: string | null }[] }).attempts.find((x) => x.id === off.data.id)!;
+    assert.equal(lateRow.lateAnswerCount, 1);
+    assert.ok(lateRow.lateAnswersAt);
+    const accepted = await command({ action: "acceptLateAnswers", attemptControl: { attemptId: off.data.id } });
+    assert.equal(accepted.status, 200, JSON.stringify(accepted.data));
+    const [afterAccept] = await db.select().from(portalAttempts).where(eq(portalAttempts.id, off.data.id));
+    assert.deepEqual([afterAccept.answers["mcq-1"], afterAccept.lateAnswers, afterAccept.status], ["1", null, "marked"]);
+    assert.equal((await command({ action: "acceptLateAnswers", attemptControl: { attemptId: off.data.id } })).status, 409, "nothing left to accept");
+    await call(`/attempts/${off.data.id}/submit`, "POST", { answers: { "mcq-1": "1" } }, cookie);
+    assert.equal((await db.select().from(portalAttempts).where(eq(portalAttempts.id, off.data.id)))[0].lateAnswers, null, "no new answers, nothing kept aside");
+    // A script the student submitted themselves never collects late answers (an old tab or second computer).
+    await call(`/attempts/${lateTimed.data.id}/submit`, "POST", { answers: { "mcq-1": "0" } }, cookie);
+    assert.equal((await db.select().from(portalAttempts).where(eq(portalAttempts.id, lateTimed.data.id)))[0].lateAnswers, null);
     // The dashboard carries the server clock.
     const dashNow = ((await call("/student", "GET", undefined, cookie)).data as unknown as { serverNow: string }).serverNow;
     assert.ok(Math.abs(new Date(dashNow).getTime() - Date.now()) < 60_000);

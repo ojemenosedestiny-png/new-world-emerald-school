@@ -3,7 +3,7 @@ import { and, eq, inArray, sql } from "drizzle-orm";
 import { db, portalStudents, portalExams, portalAttempts, portalMaterials, portalNotices, portalClasses } from "@workspace/db";
 import { SavePortalAnswersBody } from "@workspace/api-zod";
 import { check, portalActor, studentOnly } from "../lib/portal-auth";
-import { automaticMarks, attemptView, finalizeExpired, pastGrace, validAnswers } from "../lib/portal-assessment";
+import { answeredCount, automaticMarks, attemptView, finalizeExpired, pastGrace, validAnswers } from "../lib/portal-assessment";
 import { buildPaper, MAX_FOCUS_LOSSES, paperSize } from "../lib/cbt";
 import { lastSittingEnds, sittingWindow, studentMakeups } from "../lib/makeups";
 
@@ -77,8 +77,20 @@ async function updateAttempt(req: import("express").Request, submit: boolean) {
     const [exam] = await tx.select().from(portalExams).where(eq(portalExams.id, attempt.examId));
     check(exam, "Exam not found.", 404);
     const closesAt = (await lastSittingEnds([exam])).get(exam.id);
-    if (attempt.status !== "in_progress") return attemptView(attempt, exam, false, closesAt);
     const now = new Date();
+    // The computer was offline when time ran out: the answers it sends now are kept aside for the teacher to accept,
+    // never applied straight away (a student cannot add answers after time is up). Only when the timer closed the
+    // exam, and only when they hold more answers than the school already has.
+    const late = attempt.status !== "in_progress" ? attempt.closedBy !== "student" : pastGrace(attempt.deadline, now.getTime());
+    if (late && !exam.resultsReleased) {
+      let sent: Record<string, string> | null = null;
+      try { sent = validAnswers(attempt.questions, body.answers); } catch { sent = null; }
+      if (sent && answeredCount(sent) > answeredCount(attempt.answers) && answeredCount(sent) > answeredCount(attempt.lateAnswers)) {
+        await tx.update(portalAttempts).set({ lateAnswers: sent, lateAnswersAt: now }).where(eq(portalAttempts.id, attempt.id));
+        attempt.lateAnswers = sent; attempt.lateAnswersAt = now;
+      }
+    }
+    if (attempt.status !== "in_progress") return attemptView(attempt, exam, false, closesAt);
     // Time is up at the deadline, but answers sent within the grace (a lost connection at the end) still count.
     const expired = now.getTime() >= attempt.deadline.getTime();
     const answers = pastGrace(attempt.deadline, now.getTime()) ? attempt.answers : validAnswers(attempt.questions, body.answers);

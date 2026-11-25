@@ -124,7 +124,8 @@ portalManagementRouter.get("/manage", async (req, res) => {
   const summaries = exams.length ? await db.select({
     id: portalAttempts.id, examId: portalAttempts.examId, studentId: portalAttempts.studentId, status: portalAttempts.status,
     startedAt: portalAttempts.startedAt, deadline: portalAttempts.deadline, savedAt: portalAttempts.savedAt, focusLosses: portalAttempts.focusLosses,
-    closedBy: portalAttempts.closedBy, submittedAt: portalAttempts.submittedAt,
+    closedBy: portalAttempts.closedBy, submittedAt: portalAttempts.submittedAt, lateAnswersAt: portalAttempts.lateAnswersAt,
+    lateAnswerCount: sql<number>`coalesce((select count(*) from jsonb_each_text(${portalAttempts.lateAnswers}) e where e.value <> ''), 0)::int`,
     totalMarks: sql<number>`(select coalesce(sum((q->>'marks')::numeric), 0) from jsonb_array_elements(${portalAttempts.questions}) q)::float8`,
     score: sql<number>`(select coalesce(sum((m->>'score')::numeric), 0) from jsonb_array_elements(${portalAttempts.marks}) m)::float8`,
   }).from(portalAttempts).where(inArray(portalAttempts.examId, exams.map((e) => e.id))) : [];
@@ -150,6 +151,7 @@ portalManagementRouter.get("/manage", async (req, res) => {
       status: a.status, totalMarks: Number(a.totalMarks), resultsReleased: exam.resultsReleased && a.status === "marked", lockdown: exam.lockdown, score: Number(a.score),
       classId: exam.classId, studentName: student?.name ?? "Former enrolment", studentId: student?.studentId ?? "", questionKeys: [],
       focusLosses: a.focusLosses, closedBy: a.closedBy ?? null, submittedAt: a.submittedAt?.toISOString() ?? null,
+      lateAnswerCount: Number(a.lateAnswerCount), lateAnswersAt: a.lateAnswersAt?.toISOString() ?? null,
     };
   });
   const materials = await db.select().from(portalMaterials).where(scoped(actor, portalMaterials.classId));
@@ -540,6 +542,35 @@ portalManagementRouter.post("/manage", async (req, res) => {
       res.json({ message: setting ? `Make-up set for ${names.length === 1 ? names[0] : `${names.length} students`}. Only ${names.length === 1 ? "they see" : "they see"} the exam in that window.` : "Make-up removed." });
       return;
     }
+    case "acceptLateAnswers":
+    case "ignoreLateAnswers": {
+      // Answers a student's computer sent after time ran out (it was offline): the teacher applies them or not.
+      const data = body.attemptControl;
+      check(data, "Attempt required.");
+      const accept = body.action === "acceptLateAnswers";
+      let applied = 0;
+      await db.transaction(async (tx) => {
+        const [lookup] = await tx.select({ examId: portalAttempts.examId }).from(portalAttempts).where(eq(portalAttempts.id, data.attemptId));
+        check(lookup, "Attempt not found.", 404);
+        const [exam] = await tx.select().from(portalExams).where(eq(portalExams.id, lookup.examId)).for("update");
+        check(exam, "Exam not found.", 404); examAllowed(actor, exam);
+        const [attempt] = await tx.select().from(portalAttempts).where(eq(portalAttempts.id, data.attemptId)).for("update");
+        check(attempt.lateAnswers, "There are no late answers for this script.", 409);
+        if (accept) {
+          check(!exam.resultsReleased, "Withhold results before changing a script.", 409);
+          check(attempt.status !== "in_progress", "This student is still writing.", 409);
+          const answers = { ...attempt.answers, ...attempt.lateAnswers };
+          applied = Object.values(answers).filter((v) => v !== "").length;
+          // Multiple choice is marked again at once; written answers wait for the teacher (their marks are cleared).
+          const written = attempt.questions.some((q) => q.type === "written");
+          await tx.update(portalAttempts).set({ answers, marks: automaticMarks(attempt.questions, answers), status: written ? "submitted" : "marked", lateAnswers: null, lateAnswersAt: null }).where(eq(portalAttempts.id, attempt.id));
+        } else {
+          await tx.update(portalAttempts).set({ lateAnswers: null, lateAnswersAt: null }).where(eq(portalAttempts.id, attempt.id));
+        }
+      });
+      res.json({ message: accept ? `Late answers accepted: the script now has ${applied} answers and is marked again.` : "Late answers ignored. The script keeps the answers it had when time ran out." });
+      return;
+    }
     case "extendAttempt":
     case "reopenAttempt":
     case "resetAttempt": {
@@ -560,7 +591,7 @@ portalManagementRouter.post("/manage", async (req, res) => {
           // A student whose exam closed early (lost connection, computer failed) carries on with every answer kept.
           const writing = attempt.status === "in_progress" && attempt.deadline.getTime() > Date.now();
           check(!writing, "This student is still writing. Use extra time instead.", 409);
-          await tx.update(portalAttempts).set({ status: "in_progress", marks: [], submittedAt: null, closedBy: null, deadline: new Date(Date.now() + data.minutes! * 60_000) }).where(eq(portalAttempts.id, attempt.id));
+          await tx.update(portalAttempts).set({ status: "in_progress", marks: [], submittedAt: null, closedBy: null, answers: attempt.lateAnswers ? { ...attempt.answers, ...attempt.lateAnswers } : attempt.answers, lateAnswers: null, lateAnswersAt: null, deadline: new Date(Date.now() + data.minutes! * 60_000) }).where(eq(portalAttempts.id, attempt.id));
         } else if (extend) {
           check(attempt.status === "in_progress" && attempt.deadline.getTime() > Date.now(), "Only a student who is still writing can be given extra time.", 409);
           // Staff extensions may run past the exam window; they apply to this student only.

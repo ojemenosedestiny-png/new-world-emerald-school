@@ -4949,6 +4949,8 @@ export interface PortalAttempt {
   focusLosses?: number;
   /** Submitted while the exam is still open: when the right answers will show (the exam's closing time) */
   answersAt?: string;
+  /** This computer sent more answers after time ran out; the teacher will accept or ignore them */
+  lateAnswersSent?: boolean;
   /** After submitting and once the exam has closed, the right answer to each multiple-choice question (no score) */
   review?: PortalAttemptReviewItem[];
 }
@@ -5103,6 +5105,8 @@ export type PortalDashboardAttemptsItem = {
   focusLosses?: number;
   /** Submitted while the exam is still open: when the right answers will show (the exam's closing time) */
   answersAt?: string;
+  /** This computer sent more answers after time ran out; the teacher will accept or ignore them */
+  lateAnswersSent?: boolean;
   /** After submitting and once the exam has closed, the right answer to each multiple-choice question (no score) */
   review?: PortalDashboardAttemptsItemReviewItem[];
 };
@@ -5216,6 +5220,8 @@ export type PortalStaffAttempt = ({
   focusLosses?: number;
   /** Submitted while the exam is still open: when the right answers will show (the exam's closing time) */
   answersAt?: string;
+  /** This computer sent more answers after time ran out; the teacher will accept or ignore them */
+  lateAnswersSent?: boolean;
   /** After submitting and once the exam has closed, the right answer to each multiple-choice question (no score) */
   review?: {
   questionId: string;
@@ -5270,6 +5276,10 @@ export type PortalStaffAttempt = ({
      * @nullable
      */
   closedBy?: string | null;
+  /** Answers the student's computer sent after time ran out (offline), waiting for the teacher to accept or ignore */
+  lateAnswerCount?: number;
+  /** @nullable */
+  lateAnswersAt?: string | null;
   /** @nullable */
   submittedAt?: string | null;
 });
@@ -5528,6 +5538,8 @@ export type PortalManagementAttemptsItem = ({
   focusLosses?: number;
   /** Submitted while the exam is still open: when the right answers will show (the exam's closing time) */
   answersAt?: string;
+  /** This computer sent more answers after time ran out; the teacher will accept or ignore them */
+  lateAnswersSent?: boolean;
   /** After submitting and once the exam has closed, the right answer to each multiple-choice question (no score) */
   review?: {
   questionId: string;
@@ -5582,6 +5594,10 @@ export type PortalManagementAttemptsItem = ({
      * @nullable
      */
   closedBy?: string | null;
+  /** Answers the student's computer sent after time ran out (offline), waiting for the teacher to accept or ignore */
+  lateAnswerCount?: number;
+  /** @nullable */
+  lateAnswersAt?: string | null;
   /** @nullable */
   submittedAt?: string | null;
 });
@@ -5737,6 +5753,8 @@ export const PortalCommandAction = {
   extendAttempt: 'extendAttempt',
   resetAttempt: 'resetAttempt',
   reopenAttempt: 'reopenAttempt',
+  acceptLateAnswers: 'acceptLateAnswers',
+  ignoreLateAnswers: 'ignoreLateAnswers',
   addPracticeExams: 'addPracticeExams',
   inviteTeacher: 'inviteTeacher',
   deleteClass: 'deleteClass',

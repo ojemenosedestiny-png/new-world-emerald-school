@@ -143,6 +143,7 @@ export const GetPortalDashboardResponse = zod.object({
   "lockdown": zod.boolean().optional(),
   "focusLosses": zod.number().optional(),
   "answersAt": zod.string().optional().describe('Submitted while the exam is still open: when the right answers will show (the exam\'s closing time)'),
+  "lateAnswersSent": zod.boolean().optional().describe('This computer sent more answers after time ran out; the teacher will accept or ignore them'),
   "review": zod.array(zod.object({
   "questionId": zod.string(),
   "correctAnswer": zod.number(),
@@ -227,6 +228,7 @@ export const StartPortalExamResponse = zod.object({
   "lockdown": zod.boolean().optional(),
   "focusLosses": zod.number().optional(),
   "answersAt": zod.string().optional().describe('Submitted while the exam is still open: when the right answers will show (the exam\'s closing time)'),
+  "lateAnswersSent": zod.boolean().optional().describe('This computer sent more answers after time ran out; the teacher will accept or ignore them'),
   "review": zod.array(zod.object({
   "questionId": zod.string(),
   "correctAnswer": zod.number(),
@@ -294,6 +296,7 @@ export const GetPortalAttemptResponse = zod.object({
   "lockdown": zod.boolean().optional(),
   "focusLosses": zod.number().optional(),
   "answersAt": zod.string().optional().describe('Submitted while the exam is still open: when the right answers will show (the exam\'s closing time)'),
+  "lateAnswersSent": zod.boolean().optional().describe('This computer sent more answers after time ran out; the teacher will accept or ignore them'),
   "review": zod.array(zod.object({
   "questionId": zod.string(),
   "correctAnswer": zod.number(),
@@ -369,6 +372,7 @@ export const SavePortalAnswersResponse = zod.object({
   "lockdown": zod.boolean().optional(),
   "focusLosses": zod.number().optional(),
   "answersAt": zod.string().optional().describe('Submitted while the exam is still open: when the right answers will show (the exam\'s closing time)'),
+  "lateAnswersSent": zod.boolean().optional().describe('This computer sent more answers after time ran out; the teacher will accept or ignore them'),
   "review": zod.array(zod.object({
   "questionId": zod.string(),
   "correctAnswer": zod.number(),
@@ -456,6 +460,7 @@ export const GetStaffAttemptScriptResponse = zod.object({
   "lockdown": zod.boolean().optional(),
   "focusLosses": zod.number().optional(),
   "answersAt": zod.string().optional().describe('Submitted while the exam is still open: when the right answers will show (the exam\'s closing time)'),
+  "lateAnswersSent": zod.boolean().optional().describe('This computer sent more answers after time ran out; the teacher will accept or ignore them'),
   "review": zod.array(zod.object({
   "questionId": zod.string(),
   "correctAnswer": zod.number(),
@@ -478,6 +483,8 @@ export const GetStaffAttemptScriptResponse = zod.object({
   "rubric": zod.string().max(getStaffAttemptScriptResponseTwoQuestionKeysItemTwoRubricMax).optional()
 }))),
   "closedBy": zod.string().nullish().describe('student: they pressed Submit in time; time: time ran out first. Empty for older scripts'),
+  "lateAnswerCount": zod.number().optional().describe('Answers the student\'s computer sent after time ran out (offline), waiting for the teacher to accept or ignore'),
+  "lateAnswersAt": zod.coerce.date().nullish(),
   "submittedAt": zod.coerce.date().nullish()
 }))
 
@@ -549,6 +556,7 @@ export const SubmitPortalAttemptResponse = zod.object({
   "lockdown": zod.boolean().optional(),
   "focusLosses": zod.number().optional(),
   "answersAt": zod.string().optional().describe('Submitted while the exam is still open: when the right answers will show (the exam\'s closing time)'),
+  "lateAnswersSent": zod.boolean().optional().describe('This computer sent more answers after time ran out; the teacher will accept or ignore them'),
   "review": zod.array(zod.object({
   "questionId": zod.string(),
   "correctAnswer": zod.number(),
@@ -768,6 +776,7 @@ export const GetPortalManagementResponse = zod.object({
   "lockdown": zod.boolean().optional(),
   "focusLosses": zod.number().optional(),
   "answersAt": zod.string().optional().describe('Submitted while the exam is still open: when the right answers will show (the exam\'s closing time)'),
+  "lateAnswersSent": zod.boolean().optional().describe('This computer sent more answers after time ran out; the teacher will accept or ignore them'),
   "review": zod.array(zod.object({
   "questionId": zod.string(),
   "correctAnswer": zod.number(),
@@ -790,6 +799,8 @@ export const GetPortalManagementResponse = zod.object({
   "rubric": zod.string().max(getPortalManagementResponseAttemptsItemTwoQuestionKeysItemTwoRubricMax).optional()
 }))),
   "closedBy": zod.string().nullish().describe('student: they pressed Submit in time; time: time ran out first. Empty for older scripts'),
+  "lateAnswerCount": zod.number().optional().describe('Answers the student\'s computer sent after time ran out (offline), waiting for the teacher to accept or ignore'),
+  "lateAnswersAt": zod.coerce.date().nullish(),
   "submittedAt": zod.coerce.date().nullish()
 }))),
   "materials": zod.array(zod.object({
@@ -906,7 +917,7 @@ export const managePortalBodyAttemptControlMinutesMax = 240;
 
 
 export const ManagePortalBody = zod.object({
-  "action": zod.enum(['saveClass', 'saveStudent', 'saveTeacher', 'saveExam', 'saveMaterial', 'saveNotice', 'grade', 'examStatus', 'deleteExam', 'deleteMaterial', 'deleteNotice', 'extendAttempt', 'resetAttempt', 'reopenAttempt', 'addPracticeExams', 'inviteTeacher', 'deleteClass', 'deleteTeacher', 'moveStudent', 'setMakeup', 'removeMakeup']),
+  "action": zod.enum(['saveClass', 'saveStudent', 'saveTeacher', 'saveExam', 'saveMaterial', 'saveNotice', 'grade', 'examStatus', 'deleteExam', 'deleteMaterial', 'deleteNotice', 'extendAttempt', 'resetAttempt', 'reopenAttempt', 'acceptLateAnswers', 'ignoreLateAnswers', 'addPracticeExams', 'inviteTeacher', 'deleteClass', 'deleteTeacher', 'moveStudent', 'setMakeup', 'removeMakeup']),
   "makeup": zod.object({
   "examId": zod.number(),
   "studentIds": zod.array(zod.number()).min(1).max(managePortalBodyMakeupStudentIdsMax),
