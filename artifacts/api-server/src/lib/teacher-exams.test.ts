@@ -4,7 +4,7 @@ import { randomUUID } from "node:crypto";
 import express from "express";
 import type { AddressInfo } from "node:net";
 import { eq, inArray, like } from "drizzle-orm";
-import { db, pool, portalAttempts, portalClasses, portalExams, portalStudents, portalTeachers } from "@workspace/db";
+import { db, pool, portalAttempts, portalClasses, portalExams, portalStudents, portalSubjects, portalTeachers } from "@workspace/db";
 import portalRouter from "../routes/portal";
 import { setStaffEmailResolverForTest } from "./portal-auth";
 
@@ -98,6 +98,24 @@ test("teachers set exams for any class and manage the ones they set", async () =
     assert.ok(!(await call(musa)).data.exams.some((x: { id: number }) => x.id === hers.id), "not listed for him");
     assert.equal((await call(ngozi, { action: "deleteExam", target: { id: hers.id } })).status, 200, "she can remove her own");
 
+    // A subject teacher: Mrs Ngozi teaches Mathematics in JSS 2 Jade (not her class). She sees and manages every
+    // Mathematics exam there, whoever set it, with its marking scheme; not another subject, nor another class.
+    const [ngoziRow] = await db.select().from(portalTeachers).where(eq(portalTeachers.email, ngozi));
+    await db.insert(portalSubjects).values({ classId: other.id, name: "Mathematics", teacherId: ngoziRow.id });
+    assert.equal((await call(musa, { action: "saveExam", exam: { ...exam(other.id, `${marker} English`), subject: "English" } })).status, 200);
+    const [musaMaths] = (await copies()).filter((e) => e.classId === other.id);
+    const hersNow = await call(ngozi);
+    assert.equal(hersNow.status, 200, JSON.stringify(hersNow.data));
+    const seen = hersNow.data.exams.map((x: { title: string }) => x.title);
+    assert.ok(seen.includes(`${marker} Musa`), "the Mathematics exam Mr Musa set in her subject class");
+    assert.ok(!seen.includes(`${marker} English`), "not another subject");
+    assert.equal(hersNow.data.exams.filter((x: { title: string; classId: number }) => x.title === `${marker} Musa` && x.classId === other2.id).length, 0, "not a class she does not teach");
+    assert.equal(hersNow.data.exams.find((x: { id: number }) => x.id === musaMaths.id).questions[0].correctAnswer, 1, "she sees the marking scheme");
+    assert.ok(Array.isArray(hersNow.data.examStudents), "the class's students, for results");
+    assert.equal((await call(ngozi, { action: "examStatus", examStatus: { id: musaMaths.id, published: false, resultsReleased: false } })).status, 200, "she can manage it");
+    const [english] = await db.select().from(portalExams).where(eq(portalExams.title, `${marker} English`));
+    assert.equal((await call(ngozi, { action: "examStatus", examStatus: { id: english.id, published: false, resultsReleased: false } })).status, 403);
+
     // A class that does not exist is refused.
     assert.equal((await call(musa, { action: "saveExam", exam: exam(2_000_000_000, `${marker} Nowhere`) })).status, 404);
   } finally {
@@ -107,6 +125,7 @@ test("teachers set exams for any class and manage the ones they set", async () =
     if (left.length) await db.delete(portalAttempts).where(inArray(portalAttempts.examId, left.map((e) => e.id)));
     if (classIds.length) await db.delete(portalStudents).where(inArray(portalStudents.classId, classIds));
     if (classIds.length) await db.delete(portalExams).where(inArray(portalExams.classId, classIds));
+    if (classIds.length) await db.delete(portalSubjects).where(inArray(portalSubjects.classId, classIds));
     await db.delete(portalTeachers).where(like(portalTeachers.name, `${marker}%`));
     if (classIds.length) await db.delete(portalClasses).where(inArray(portalClasses.id, classIds));
     await pool.end();

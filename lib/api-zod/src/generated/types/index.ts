@@ -339,6 +339,7 @@ export * from './portalManagementExamClassesItem';
 export * from './portalManagementExamsItem';
 export * from './portalManagementExamsItemMode';
 export * from './portalManagementExamsItemQuestionsItem';
+export * from './portalManagementExamStudentsItem';
 export * from './portalManagementMakeupsItem';
 export * from './portalManagementMaterialsItem';
 export * from './portalManagementNoticesItem';

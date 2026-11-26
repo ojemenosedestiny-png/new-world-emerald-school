@@ -449,6 +449,18 @@ schemas:
       teaching: { $ref: "#/schemas/PortalTeaching" }
       examOfficer: { type: boolean, description: "The school has an exam officer: staff send exams to them to publish" }
       makeups: { type: array, items: { $ref: "#/schemas/PortalMakeup" }, description: "Make-up sittings for the exams listed" }
+      examStudents:
+        type: array
+        description: "Students of classes where the teacher teaches a subject (not their own classes): for exam results and make-ups"
+        items:
+          type: object
+          required: [id, studentId, name, classId, active]
+          properties:
+            id: { type: integer }
+            studentId: { type: string }
+            name: { type: string }
+            classId: { type: integer }
+            active: { type: boolean }
   PortalTeaching:
     type: object
     description: For a teacher, what the principal or office assigned them. Absent for administrators.

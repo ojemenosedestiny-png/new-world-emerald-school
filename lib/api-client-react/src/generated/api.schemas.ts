@@ -5666,6 +5666,14 @@ export type PortalManagementMakeupsItem = {
   createdBy: string;
 };
 
+export type PortalManagementExamStudentsItem = {
+  id: number;
+  studentId: string;
+  name: string;
+  classId: number;
+  active: boolean;
+};
+
 export interface PortalManagement {
   classes: PortalManagementClassesItem[];
   /** Every class an exam may be set for (teachers may set exams for any class, not only their own) */
@@ -5682,6 +5690,8 @@ export interface PortalManagement {
   examOfficer?: boolean;
   /** Make-up sittings for the exams listed */
   makeups?: PortalManagementMakeupsItem[];
+  /** Students of classes where the teacher teaches a subject (not their own classes): for exam results and make-ups */
+  examStudents?: PortalManagementExamStudentsItem[];
 }
 
 export type PortalTeachingClassTeacherOfItem = {

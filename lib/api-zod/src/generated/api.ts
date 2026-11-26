@@ -838,7 +838,14 @@ export const GetPortalManagementResponse = zod.object({
   "startsAt": zod.coerce.date(),
   "endsAt": zod.coerce.date(),
   "createdBy": zod.string()
-})).optional().describe('Make-up sittings for the exams listed')
+})).optional().describe('Make-up sittings for the exams listed'),
+  "examStudents": zod.array(zod.object({
+  "id": zod.number(),
+  "studentId": zod.string(),
+  "name": zod.string(),
+  "classId": zod.number(),
+  "active": zod.boolean()
+})).optional().describe('Students of classes where the teacher teaches a subject (not their own classes): for exam results and make-ups')
 })
 
 

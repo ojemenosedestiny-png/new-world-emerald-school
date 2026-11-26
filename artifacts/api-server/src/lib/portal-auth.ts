@@ -2,7 +2,7 @@ import { randomBytes, scrypt as scryptCallback, timingSafeEqual, createHash } fr
 import { promisify } from "node:util";
 import type { Request, Response, NextFunction } from "express";
 import { and, eq, gt } from "drizzle-orm";
-import { db, portalStudents, portalSessions, portalTeachers, type PortalStudentRecord } from "@workspace/db";
+import { db, portalStudents, portalSessions, portalSubjects, portalTeachers, type PortalStudentRecord } from "@workspace/db";
 import { adminNeedsMfa, isWebsiteAdmin } from "./website-admin";
 import { clerkClient, getAuth } from "@clerk/express";
 
@@ -44,6 +44,15 @@ export interface PortalActor {
   student?: PortalStudentRecord;
   /** The teacher record, for teachers. */
   teacherId?: number;
+  /** The subjects a teacher teaches, and in which classes (set by the principal). */
+  teaching?: { classId: number; subject: string }[];
+}
+/** Subject names compared loosely: "Basic Science", "basic science" and "Basic-Science" are the same subject. */
+export const subjectKey = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, "");
+/** A teacher teaches this exam's subject in this exam's class. */
+export function teachesExam(actor: Pick<PortalActor, "teaching">, exam: { classId: number; subject?: string | null }) {
+  const key = exam.subject ? subjectKey(exam.subject) : "";
+  return !!key && (actor.teaching ?? []).some((t) => t.classId === exam.classId && subjectKey(t.subject) === key);
 }
 const verifiedStaff = new Map<string, { email: string; until: number }>();
 /**
@@ -77,7 +86,10 @@ export async function portalActor(req: Request): Promise<PortalActor> {
   const email = await verifiedClerkEmail(req);
   if (email) {
     const [teacher] = await db.select().from(portalTeachers).where(and(eq(portalTeachers.email, email), eq(portalTeachers.active, true)));
-    if (teacher) return { role: "teacher", name: teacher.name, classIds: teacher.classIds, mustChangePassword: false, teacherId: teacher.id };
+    if (teacher) {
+      const teaching = await db.select({ classId: portalSubjects.classId, subject: portalSubjects.name }).from(portalSubjects).where(eq(portalSubjects.teacherId, teacher.id));
+      return { role: "teacher", name: teacher.name, classIds: teacher.classIds, mustChangePassword: false, teacherId: teacher.id, teaching };
+    }
   }
   const token = sessionToken(req);
   if (/^[a-f0-9]{64}$/.test(token)) {
@@ -100,9 +112,10 @@ export function staffOnly(actor: PortalActor) {
  * May this staff member manage this exam? The office always; a teacher for exams in their own classes, and for any
  * exam they set themselves (teachers may set exams for any class, not only the ones assigned to them).
  */
-export function examAllowed(actor: PortalActor, exam: { classId: number; createdByTeacherId: number | null }) {
+export function examAllowed(actor: PortalActor, exam: { classId: number; createdByTeacherId: number | null; subject?: string | null }) {
   staffOnly(actor);
-  check(actor.role === "admin" || actor.classIds.includes(exam.classId) || (!!actor.teacherId && exam.createdByTeacherId === actor.teacherId),
+  // The office; the class teacher; whoever set it; and every teacher who teaches that subject in that class.
+  check(actor.role === "admin" || actor.classIds.includes(exam.classId) || (!!actor.teacherId && exam.createdByTeacherId === actor.teacherId) || teachesExam(actor, exam),
     "This exam belongs to another teacher's class.", 403);
 }
 export function classAllowed(actor: PortalActor, classId: number) {

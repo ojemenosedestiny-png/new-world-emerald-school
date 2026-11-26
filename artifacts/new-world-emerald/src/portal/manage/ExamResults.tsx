@@ -7,7 +7,7 @@ import { StatusPill } from "../ui";
 import { formatDateTime, formatTime } from "../lib";
 import { MakeupDialog } from "./MakeupDialog";
 import { className, useCommand } from "./useCommand";
-import { PASS_PERCENT, downloadCsv, examRoster, examStats, resultsCsv, statusLabel, type RosterRow } from "./results";
+import { PASS_PERCENT, downloadCsv, examRoster, examStudentList, examStats, resultsCsv, statusLabel, type RosterRow } from "./results";
 
 const EXTRA_MINUTES = [5, 10, 15, 30];
 const TONE = { not_started: "muted", writing: "gold", submitted: "ink", marked: "green" } as const;
@@ -24,7 +24,7 @@ export function ExamResults({ data, exam, isAdmin, onClose }: { data: PortalMana
   const [reopen, setReopen] = useState<RosterRow | null>(null);
   const [reopenMinutes, setReopenMinutes] = useState(15);
   const makeups = (data.makeups ?? []).filter((m) => m.examId === exam.id);
-  const idOf = (code: string) => data.students.find((s) => s.studentId === code)?.id as number | undefined;
+  const idOf = (code: string) => examStudentList(data).find((s) => s.studentId === code)?.id as number | undefined;
   useEffect(() => { const t = window.setInterval(() => setNow(Date.now()), 15_000); return () => window.clearInterval(t); }, []);
   const rows = examRoster(data, exam, now);
   const stats = examStats(rows);

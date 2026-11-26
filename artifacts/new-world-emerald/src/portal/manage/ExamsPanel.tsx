@@ -6,6 +6,7 @@ import { EmptyState, StatusPill } from "../ui";
 import { examFolders, examTimeline, fileUrl, formatDateTime, type ExamGroupKey } from "../lib";
 import { ExamEditor, blankExam } from "./ExamEditor";
 import { ExamResults } from "./ExamResults";
+import { examStudentList } from "./results";
 import { className, useCommand } from "./useCommand";
 
 const clock = (v: string) => { const d = new Date(v); return Number.isNaN(d.getTime()) ? "" : new Intl.DateTimeFormat("en-NG", { hour: "numeric", minute: "2-digit" }).format(d); };
@@ -140,7 +141,7 @@ export function ExamsPanel({ data, isAdmin = false, canClear = false }: { data: 
                             <StatusPill tone={e.published ? "green" : e.reviewStatus === "submitted" ? "gold" : e.reviewStatus === "returned" ? "red" : "muted"}>{e.published ? "Published" : e.reviewStatus === "submitted" ? "Waiting for the exam officer" : e.reviewStatus === "returned" ? "Returned by the exam officer" : "Draft"}</StatusPill>
                             {e.resultsReleased && <StatusPill tone="ink">Results released</StatusPill>}
                             {started && <StatusPill tone="gold"><Lock size={10} /> Content frozen</StatusPill>}
-                            {!!e.onlyStudentIds?.length && <StatusPill tone="gold"><span className="inline-flex items-center gap-1" data-testid={"text-only-students-" + id}><UserCheck size={10} /> {(() => { const names = e.onlyStudentIds.map((s) => data.students.find((x) => x.id === s)?.name).filter(Boolean); return names.length === e.onlyStudentIds.length && names.length <= 2 ? `Only ${names.join(" and ")}` : `Only ${e.onlyStudentIds.length} chosen ${e.onlyStudentIds.length === 1 ? "student" : "students"}`; })()}</span></StatusPill>}
+                            {!!e.onlyStudentIds?.length && <StatusPill tone="gold"><span className="inline-flex items-center gap-1" data-testid={"text-only-students-" + id}><UserCheck size={10} /> {(() => { const names = e.onlyStudentIds.map((s) => examStudentList(data).find((x) => x.id === s)?.name).filter(Boolean); return names.length === e.onlyStudentIds.length && names.length <= 2 ? `Only ${names.join(" and ")}` : `Only ${e.onlyStudentIds.length} chosen ${e.onlyStudentIds.length === 1 ? "student" : "students"}`; })()}</span></StatusPill>}
                             <span className="text-xs text-[hsl(var(--p-ink)/0.55)]">{className(examClasses, e.classId)} / {e.subject} / {e.mode === "pdf" ? "PDF paper" : "Interactive"}</span>
                           </div>
                           <h3 className="mt-2 font-serif text-xl font-semibold">{e.title}</h3>

@@ -8,7 +8,7 @@ import {
 import { randomUUID } from "node:crypto";
 import { moveStudent } from "../lib/move-student";
 import { ManagePortalBody } from "@workspace/api-zod";
-import { check, portalActor, staffOnly, classAllowed, examAllowed, hashPassword, type PortalActor } from "../lib/portal-auth";
+import { check, portalActor, staffOnly, classAllowed, examAllowed, hashPassword, subjectKey, type PortalActor } from "../lib/portal-auth";
 import { automaticMarks, attemptView, finalizeExpired, pastGrace, validateQuestions } from "../lib/portal-assessment";
 import { diagramContentType } from "../lib/portal-pdf";
 import { siteBaseUrl, teacherStudentEditProblem, validEmail } from "../lib/accounts";
@@ -118,7 +118,13 @@ portalManagementRouter.get("/manage", async (req, res) => {
   // Signatures are only sent with the report workspace, not with every staff list.
   const teachers = actor.role === "admin" ? (await db.select().from(portalTeachers)).map(({ signature: _signature, ...t }) => t) : [];
   const own = scoped(actor, portalExams.classId);
-  const exams = await db.select().from(portalExams).where(own && actor.teacherId ? or(own, eq(portalExams.createdByTeacherId, actor.teacherId)) : own);
+  // A teacher sees the exams of their own classes, the ones they set, and every exam for a subject they teach in a class.
+  const taught = (actor.teaching ?? []).map((t) => and(eq(portalExams.classId, t.classId), sql`regexp_replace(lower(${portalExams.subject}), '[^a-z0-9]', '', 'g') = ${subjectKey(t.subject)}`));
+  const exams = await db.select().from(portalExams).where(own && actor.teacherId ? or(own, eq(portalExams.createdByTeacherId, actor.teacherId), ...taught) : own);
+  // Students of the classes a teacher teaches a subject in (not their own classes): names for results and make-ups.
+  const subjectClassIds = [...new Set(exams.map((e) => e.classId))].filter((c) => actor.role !== "admin" && !actor.classIds.includes(c));
+  const examStudents = subjectClassIds.length ? await db.select({ id: portalStudents.id, studentId: portalStudents.studentId, name: portalStudents.name, classId: portalStudents.classId, active: portalStudents.active })
+    .from(portalStudents).where(inArray(portalStudents.classId, subjectClassIds)) : [];
   // A summary of every script: the database adds up marks itself, so each student's paper and answers stay in the
   // database (a whole school's scripts are tens of megabytes). One script opens in full through /attempts/:id/script.
   const summaries = exams.length ? await db.select({
@@ -169,7 +175,7 @@ portalManagementRouter.get("/manage", async (req, res) => {
     : await db.select({ id: portalClasses.id, name: portalClasses.name }).from(portalClasses).orderBy(asc(portalClasses.name));
   const makeups = exams.length ? (await db.select().from(portalExamMakeups).where(inArray(portalExamMakeups.examId, exams.map((e) => e.id))))
     .map((m) => ({ examId: m.examId, studentId: m.studentId, startsAt: m.startsAt.toISOString(), endsAt: m.endsAt.toISOString(), createdBy: m.createdBy })) : [];
-  res.json({ classes, examClasses, students, teachers, exams, attempts, materials, notices, makeups, examOfficer: examOfficerEmails().length > 0, ...(teaching ? { teaching } : {}) });
+  res.json({ classes, examClasses, students, examStudents, teachers, exams, attempts, materials, notices, makeups, examOfficer: examOfficerEmails().length > 0, ...(teaching ? { teaching } : {}) });
 });
 portalManagementRouter.post("/manage", async (req, res) => {
   const actor = await portalActor(req);

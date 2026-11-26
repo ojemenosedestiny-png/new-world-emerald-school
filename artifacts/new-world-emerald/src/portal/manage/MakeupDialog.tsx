@@ -4,12 +4,13 @@ import { CalendarPlus, Trash2, UserCheck } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { formatDateTime, fromLocalInput, toLocalInput } from "../lib";
 import { className, useCommand } from "./useCommand";
+import { examStudentList } from "./results";
 
 /** Students of the exam's class who have not started it: the ones who can be given a make-up. */
 export function missedStudents(data: PortalManagement, exam: PortalManagementExamsItem) {
   const started = new Set(data.attempts.filter((a) => a.examId === exam.id).map((a) => a.studentId));
   const only = exam.onlyStudentIds?.length ? new Set(exam.onlyStudentIds) : null;
-  return data.students.filter((s) => s.classId === exam.classId && s.active && !started.has(s.studentId) && (!only || only.has(s.id as number))).sort((a, b) => a.name.localeCompare(b.name));
+  return examStudentList(data).filter((s) => s.classId === exam.classId && s.active && !started.has(s.studentId) && (!only || only.has(s.id as number))).sort((a, b) => a.name.localeCompare(b.name));
 }
 
 function defaultWindow(minutes: number) {
@@ -32,7 +33,7 @@ export function MakeupDialog({ data, exam, preselect = [], onClose }: { data: Po
     : !(length > 0) ? "The make-up must end after it starts."
       : length < exam.durationMinutes ? `Give at least the exam's ${exam.durationMinutes} minutes.`
         : new Date(win.endsAt).getTime() <= Date.now() ? "The make-up must end in the future." : "";
-  const nameOf = (id: number) => data.students.find((s) => s.id === id)?.name ?? "Student";
+  const nameOf = (id: number) => examStudentList(data).find((s) => s.id === id)?.name ?? "Student";
   const toggle = (id: number) => setChosen((c) => (c.includes(id) ? c.filter((x) => x !== id) : [...c, id]));
   const save = async () => {
     if (problem) return;

@@ -15,6 +15,12 @@ export type ExamStats = { marked: number; average: number; highest: number; lowe
 export const PASS_PERCENT = 50;
 
 /** Every active student in the exam's class, plus anyone with an attempt who has since left. */
+/** Every student staff can see for exams: their own classes, plus classes they teach a subject in. */
+export function examStudentList(data: PortalManagement) {
+  const seen = new Set(data.students.map((s) => s.id));
+  return [...data.students, ...(data.examStudents ?? []).filter((s) => !seen.has(s.id))];
+}
+
 export function examRoster(data: PortalManagement, exam: PortalManagementExamsItem, now = Date.now()): RosterRow[] {
   const totalMarks = exam.questions.reduce((sum, q) => sum + q.marks, 0);
   const attempts = data.attempts.filter((a) => a.examId === exam.id);
@@ -37,7 +43,7 @@ export function examRoster(data: PortalManagement, exam: PortalManagementExamsIt
   };
   // An exam set for particular students lists only them, not the whole class.
   const only = exam.onlyStudentIds?.length ? new Set(exam.onlyStudentIds) : null;
-  for (const s of data.students) if (s.classId === exam.classId && s.active && (!only || only.has(s.id as number))) add(s.studentId, s.name, byStudent.get(s.studentId));
+  for (const s of examStudentList(data)) if (s.classId === exam.classId && s.active && (!only || only.has(s.id as number))) add(s.studentId, s.name, byStudent.get(s.studentId));
   for (const a of attempts) if (!seen.has(a.studentId)) add(a.studentId, a.studentName, a);
   return rows.sort((x, y) => x.name.localeCompare(y.name));
 }

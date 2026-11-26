@@ -339,7 +339,7 @@ portalExamOfficerRouter.post("/exams/:examId/access", async (req, res) => {
   staffOnly(actor);
   const { examId } = RecordExamAccessParams.parse(req.params);
   RecordExamAccessBody.parse(req.body);
-  const [exam] = await db.select({ classId: portalExams.classId, createdByTeacherId: portalExams.createdByTeacherId }).from(portalExams).where(eq(portalExams.id, examId));
+  const [exam] = await db.select({ classId: portalExams.classId, createdByTeacherId: portalExams.createdByTeacherId, subject: portalExams.subject }).from(portalExams).where(eq(portalExams.id, examId));
   check(exam, "Exam not found.", 404);
   examAllowed(actor, exam);
   res.json({ message: "Recorded." });

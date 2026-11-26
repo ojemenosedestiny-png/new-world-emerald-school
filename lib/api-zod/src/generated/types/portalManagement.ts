@@ -9,6 +9,7 @@ import type { PortalManagementAttemptsItem } from './portalManagementAttemptsIte
 import type { PortalManagementClassesItem } from './portalManagementClassesItem';
 import type { PortalManagementExamClassesItem } from './portalManagementExamClassesItem';
 import type { PortalManagementExamsItem } from './portalManagementExamsItem';
+import type { PortalManagementExamStudentsItem } from './portalManagementExamStudentsItem';
 import type { PortalManagementMakeupsItem } from './portalManagementMakeupsItem';
 import type { PortalManagementMaterialsItem } from './portalManagementMaterialsItem';
 import type { PortalManagementNoticesItem } from './portalManagementNoticesItem';
@@ -32,4 +33,6 @@ export interface PortalManagement {
   examOfficer?: boolean;
   /** Make-up sittings for the exams listed */
   makeups?: PortalManagementMakeupsItem[];
+  /** Students of classes where the teacher teaches a subject (not their own classes): for exam results and make-ups */
+  examStudents?: PortalManagementExamStudentsItem[];
 }
